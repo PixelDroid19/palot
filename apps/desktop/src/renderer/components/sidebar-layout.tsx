@@ -25,6 +25,7 @@ import { AddProjectDialog } from "./add-project-dialog"
 import { APP_BAR_HEIGHT, AppBar } from "./app-bar"
 import { AppSidebarContent } from "./sidebar"
 import { useSidebarSlot } from "./sidebar-slot-context"
+import { TEST_IDS } from "@desktop/shared"
 import { UpdateBanner } from "./update-banner"
 
 // ============================================================
@@ -221,7 +222,7 @@ export function SidebarLayout() {
 		>
 			<SidebarProvider embedded defaultOpen={true}>
 				<NarrowWindowCollapser />
-				<Sidebar collapsible="offcanvas" variant="sidebar">
+				<Sidebar collapsible="offcanvas" variant="sidebar" data-testid={TEST_IDS.sidebar}>
 					{/* Sidebar header -- reserves space to match the app bar height so
 					 * sidebar content aligns with the main content area. Also clears
 					 * the traffic lights + the absolutely-positioned toggle button. */}

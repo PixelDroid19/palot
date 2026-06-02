@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, externalizeDepsPlugin } from "electron-vite"
 import type { Plugin } from "vite"
+import { createDesktopAliases, desktopFsAllow, DESKTOP_PRELOAD_ENTRY, DESKTOP_SHARED_ENTRY } from "./vite-aliases"
 
 /**
  * Copies the drizzle migrations directory into the main process output.
@@ -24,8 +25,21 @@ function copyDrizzleMigrations(): Plugin {
 	}
 }
 
+const rendererRoot = path.resolve(__dirname, "src/renderer")
+const palotUiRoot = path.resolve(__dirname, "../../packages/ui/src")
+
+const mainPreloadAliases = [
+	{ find: "@desktop/shared", replacement: DESKTOP_SHARED_ENTRY },
+	{ find: "@desktop/preload", replacement: DESKTOP_PRELOAD_ENTRY },
+]
+
+const rendererAliases = createDesktopAliases({ rendererRoot, palotUiRoot })
+
 export default defineConfig({
 	main: {
+		resolve: {
+			alias: mainPreloadAliases,
+		},
 		plugins: [
 			externalizeDepsPlugin({ exclude: ["@palot/configconv", "drizzle-orm"] }),
 			copyDrizzleMigrations(),
@@ -37,6 +51,9 @@ export default defineConfig({
 		},
 	},
 	preload: {
+		resolve: {
+			alias: mainPreloadAliases,
+		},
 		// No externalizeDepsPlugin — sandboxed preloads must bundle all deps.
 		// Output CJS because Electron sandboxed preloads cannot use ESM.
 		build: {
@@ -49,13 +66,10 @@ export default defineConfig({
 		},
 	},
 	renderer: {
-		root: path.resolve(__dirname, "src/renderer"),
+		root: rendererRoot,
 		plugins: [react(), tailwindcss()],
 		resolve: {
-			alias: {
-				"@": path.resolve(__dirname, "src/renderer"),
-				"@palot/ui": path.resolve(__dirname, "../../packages/ui/src"),
-			},
+			alias: rendererAliases,
 		},
 		worker: {
 			format: "es",
@@ -63,6 +77,9 @@ export default defineConfig({
 		server: {
 			port: 1420,
 			strictPort: true,
+			fs: {
+				allow: desktopFsAllow(),
+			},
 		},
 		build: {
 			rollupOptions: {

@@ -11,6 +11,7 @@
 
 import type {
 	Automation,
+	AutomationQueueStats,
 	AutomationRun,
 	CreateAutomationInput,
 	GitApplyResult,
@@ -24,7 +25,7 @@ import type {
 	ModelState,
 	OpenInTargetsResult,
 	UpdateAutomationInput,
-} from "../../preload/api"
+} from "@desktop/preload"
 import { createLogger } from "../lib/logger"
 
 const log = createLogger("backend")
@@ -72,7 +73,7 @@ export async function fetchOpenCodeUrl(): Promise<{ url: string }> {
  * For remote servers, returns the configured URL directly.
  */
 export async function resolveServerUrl(
-	server: import("../../preload/api").ServerConfig,
+	server: import("@desktop/preload").ServerConfig,
 ): Promise<string> {
 	switch (server.type) {
 		case "local": {
@@ -95,7 +96,7 @@ export async function resolveServerUrl(
  * Returns null for unauthenticated servers.
  */
 export async function resolveAuthHeader(
-	server: import("../../preload/api").ServerConfig,
+	server: import("@desktop/preload").ServerConfig,
 ): Promise<string | null> {
 	if (server.type === "local") return null
 	if (server.type === "remote" || server.type === "ssh") {
@@ -419,6 +420,13 @@ export async function runAutomationNow(id: string): Promise<boolean> {
 export async function fetchAutomationRuns(automationId?: string): Promise<AutomationRun[]> {
 	if (isElectron) {
 		return window.palot.automation.listRuns(automationId)
+	}
+	throw new Error("Automations are only available in Electron mode")
+}
+
+export async function fetchAutomationQueueStats(): Promise<AutomationQueueStats> {
+	if (isElectron) {
+		return window.palot.automation.queueStats()
 	}
 	throw new Error("Automations are only available in Electron mode")
 }

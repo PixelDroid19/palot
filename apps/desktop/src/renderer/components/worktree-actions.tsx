@@ -29,7 +29,7 @@ import {
 	XIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
-import type { GitDiffStat } from "../../preload/api"
+import type { GitDiffStat } from "@desktop/preload"
 import type { Agent } from "../lib/types"
 import {
 	fetchDiffStat,

@@ -5,7 +5,7 @@
  * free of Electron or React imports so it can be bundled in either context.
  */
 
-import type { LocalServerConfig, ServerSettings } from "../preload/api"
+import type { LocalServerConfig, ServerSettings } from "@desktop/preload"
 
 /** The built-in local server entry. Always present, cannot be deleted. */
 export const DEFAULT_LOCAL_SERVER: LocalServerConfig = {

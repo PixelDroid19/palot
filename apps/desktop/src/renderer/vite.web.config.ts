@@ -7,22 +7,27 @@
  */
 
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
+import { createDesktopAliases, desktopFsAllow } from "../../vite-aliases"
+
+const rendererRoot = path.dirname(fileURLToPath(import.meta.url))
+const palotUiRoot = path.resolve(rendererRoot, "../../../../packages/ui/src")
 
 export default defineConfig({
-	root: __dirname,
+	root: rendererRoot,
 	plugins: [react(), tailwindcss()],
 	resolve: {
-		alias: {
-			"@": __dirname,
-			"@palot/ui": path.resolve(__dirname, "../../../../packages/ui/src"),
-		},
+		alias: createDesktopAliases({ rendererRoot, palotUiRoot }),
 	},
 	clearScreen: false,
 	server: {
 		port: 1420,
 		strictPort: true,
+		fs: {
+			allow: desktopFsAllow(),
+		},
 	},
 })

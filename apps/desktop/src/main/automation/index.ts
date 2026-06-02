@@ -14,6 +14,7 @@ import { executeRun } from "./executor"
 import { createConfig, deleteConfig, listConfigs, readConfig, updateConfig } from "./registry"
 import { addTask, getNextRunTime, previewSchedule, removeTask, stopAll } from "./scheduler"
 import { automationRuns, automations } from "./schema"
+import { AUTOMATION_CONCURRENCY_LIMIT } from "@desktop/shared"
 import { Semaphore } from "./semaphore"
 import type {
 	Automation,
@@ -24,7 +25,22 @@ import type {
 
 const log = createLogger("automation")
 
-const semaphore = new Semaphore(5)
+const semaphore = new Semaphore(AUTOMATION_CONCURRENCY_LIMIT)
+
+export interface AutomationQueueStats {
+	limit: number
+	active: number
+	pending: number
+}
+
+/** Current automation execution queue (for UI / diagnostics). */
+export function getAutomationQueueStats(): AutomationQueueStats {
+	return {
+		limit: AUTOMATION_CONCURRENCY_LIMIT,
+		active: semaphore.active,
+		pending: semaphore.pending,
+	}
+}
 
 // ============================================================
 // Broadcast helper

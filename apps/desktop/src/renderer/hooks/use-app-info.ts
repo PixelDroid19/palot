@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import type { AppInfo } from "../../preload/api"
+import type { AppInfo } from "@desktop/preload"
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 

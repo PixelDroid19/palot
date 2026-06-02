@@ -24,6 +24,7 @@ import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"
 import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
 import { fetchSessionById } from "../services/connection-manager"
+import { TEST_IDS } from "@desktop/shared"
 import { AgentDetail } from "./agent-detail"
 
 const log = createLogger("session-view")
@@ -276,6 +277,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	}
 
 	return (
+		<div className="h-full" data-testid={TEST_IDS.sessionView}>
 		<AgentDetail
 			agent={selectedAgent}
 			chatTurns={chatTurns}
@@ -305,5 +307,6 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			onForkFromTurn={handleForkFromTurn}
 			onDeletePart={handleDeletePart}
 		/>
+		</div>
 	)
 }

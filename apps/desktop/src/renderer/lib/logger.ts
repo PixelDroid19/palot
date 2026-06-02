@@ -7,7 +7,7 @@
  * Usage:
  *   const log = createLogger("use-server")
  *   log.info("Sending prompt", { sessionId })
- *   log.error("Prompt failed", err)
+ *   log.error("Prompt failed", { sessionId }, err)
  */
 
 export interface Logger {

@@ -1,5 +1,6 @@
 import { atom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
+import { isMockModeUrl } from "@desktop/shared"
 
 // ============================================================
 // Mock mode state
@@ -12,15 +13,9 @@ import { atomWithStorage } from "jotai/utils"
  */
 export const mockModeStorageAtom = atomWithStorage<boolean>("palot:mockMode", false)
 
-/**
- * Check if ?mock=1 is present in the URL (works with both hash and regular URLs).
- */
 function hasMockUrlParam(): boolean {
 	if (typeof window === "undefined") return false
-	const hash = window.location.hash
-	const search = hash.includes("?") ? hash.slice(hash.indexOf("?")) : window.location.search
-	const params = new URLSearchParams(search)
-	return params.get("mock") === "1"
+	return isMockModeUrl(window.location.href)
 }
 
 /**

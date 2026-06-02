@@ -33,7 +33,7 @@ import type {
 	GitCheckoutResult,
 	GitStashResult,
 	GitStatusInfo,
-} from "../../preload/api"
+} from "@desktop/preload"
 import {
 	fetchGitBranches,
 	fetchGitStatus,

@@ -4,13 +4,13 @@ How the prompt toolbar selectors in ChatView work, how preferences are stored an
 
 ## Overview
 
-The ChatView component (`apps/desktop/src/renderer/components/chat/chat-view.tsx`) contains three selectors in the prompt toolbar:
+The ChatView component (`apps/desktop/src/renderer/features/chat/ui/chat-view.tsx`) contains three selectors in the prompt toolbar:
 
 1. **Agent Selector** -- which OpenCode agent to use (e.g. `build`, `ask`)
 2. **Model Selector** -- which provider/model combination to use (e.g. `anthropic/claude-opus-4-6`)
 3. **Variant Selector** -- which model variant to use (e.g. `thinking`), only shown when the effective model supports variants
 
-These are rendered by the `PromptToolbar` component in `apps/desktop/src/renderer/components/chat/prompt-toolbar.tsx`.
+These are rendered by the `PromptToolbar` component in `apps/desktop/src/renderer/features/chat/ui/prompt-toolbar.tsx`.
 
 ## Architecture Diagram
 
@@ -273,8 +273,8 @@ Fetched via `useModelState` hook (`use-opencode-data.ts:343-404`):
 
 | File | Purpose |
 |---|---|
-| `renderer/components/chat/chat-view.tsx` | Orchestration: local state, initialization, persistence, `handleSend` |
-| `renderer/components/chat/prompt-toolbar.tsx` | UI: `AgentSelector`, `ModelSelector`, `VariantSelector`, `PromptToolbar` |
+| `renderer/features/chat/ui/chat-view.tsx` | Orchestration: local state, initialization, persistence, `handleSend` |
+| `renderer/features/chat/ui/prompt-toolbar.tsx` | UI: `AgentSelector`, `ModelSelector`, `VariantSelector`, `PromptToolbar` |
 | `renderer/atoms/preferences.ts` | `projectModelsAtom` (localStorage), `PersistedModelRef` type, `setProjectModelAtom` |
 | `renderer/hooks/use-opencode-data.ts` | `resolveEffectiveModel()`, `useProviders`, `useConfig`, `useOpenCodeAgents`, `useModelState`, `getModelVariants` |
 | `renderer/services/backend.ts` | `fetchModelState()`, `updateModelRecent()` -- Electron/browser routing layer |

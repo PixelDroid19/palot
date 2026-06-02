@@ -21,12 +21,19 @@
 		"lint": {
 			"cache": false
 		},
+		"lint:imports": {
+			"cache": false
+		},
 		"build:types": {
 			"dependsOn": ["^build:types"],
 			"outputs": ["dist/**/*.d.ts", "dist/**/*.d.ts.map"]
 		},
 		"check-types": {
 			"dependsOn": ["^build:types"]
+		},
+		"test": {
+			"dependsOn": ["^test"],
+			"cache": false
 		},
 		"package": {
 			"dependsOn": ["build"],

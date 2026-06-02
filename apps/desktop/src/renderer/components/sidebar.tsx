@@ -47,6 +47,7 @@ import { projectPaginationFamily } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import type { Agent, AgentStatus, SidebarProject } from "../lib/types"
 import { loadMoreProjectSessions, loadProjectSessions } from "../services/connection-manager"
+import { PROJECT_SLUG_ATTR, SESSION_ID_ATTR, TEST_IDS } from "@desktop/shared"
 import { ServerIndicator } from "./server-indicator"
 
 // ============================================================
@@ -502,7 +503,10 @@ const ProjectFolder = memo(function ProjectFolder({
 	const isLoading = pagination.loading || isInitialLoading
 
 	return (
-		<SidebarMenuItem>
+		<SidebarMenuItem
+			data-testid={TEST_IDS.projectFolder}
+			{...{ [PROJECT_SLUG_ATTR]: project.slug }}
+		>
 			<Collapsible open={expanded} onOpenChange={setExpanded}>
 				<SidebarMenuButton
 					tooltip={project.name}
@@ -668,7 +672,10 @@ const SessionItem = memo(function SessionItem({
 	const tooltipLabel = showProject ? agent.project : agent.name
 
 	const btn = (
-		<SidebarMenuItem>
+		<SidebarMenuItem
+			data-testid={TEST_IDS.sessionItem}
+			{...{ [SESSION_ID_ATTR]: agent.id }}
+		>
 			<SidebarMenuButton
 				isActive={isSelected}
 				tooltip={tooltipLabel}

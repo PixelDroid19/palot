@@ -17,6 +17,7 @@ import { useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import type { DiscoveryPhase } from "../atoms/discovery"
 import { discoveryPhaseAtom } from "../atoms/discovery"
+import { TEST_IDS } from "@desktop/shared"
 import { PalotWordmark } from "./palot-wordmark"
 
 // ============================================================
@@ -93,6 +94,7 @@ export function StartupOverlay() {
 	return (
 		<div
 			data-slot="startup-overlay"
+			data-testid={TEST_IDS.startupOverlay}
 			className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center transition-opacity ${isVisible ? "opacity-100" : "opacity-0"}`}
 			style={{
 				transitionDuration: `${FADE_DURATION_MS}ms`,

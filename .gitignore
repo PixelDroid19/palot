@@ -5,6 +5,7 @@ node_modules/
 dist/
 .next/
 out/
+*.tsbuildinfo
 
 # Turborepo
 .turbo/
@@ -32,6 +33,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
 
 # Research (local only)
 research/

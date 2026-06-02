@@ -5,23 +5,27 @@ import {
 	createRouter,
 	redirect,
 } from "@tanstack/react-router"
-import { AutomationDetail } from "./components/automations/automation-detail"
-import { AutomationRunDetail } from "./components/automations/automation-run-detail"
-import { AutomationsPage } from "./components/automations/automations-page"
-import { InboxEmptyState } from "./components/automations/inbox-empty-state"
+import {
+	AboutSettings,
+	GeneralSettings,
+	NotificationSettings,
+	ProviderSettings,
+	ServerSettings,
+	SettingsPage,
+	SetupSettings,
+	WorktreeSettings,
+} from "@/features/settings"
+import {
+	AutomationDetail,
+	AutomationRunDetail,
+	AutomationsPage,
+	InboxEmptyState,
+} from "@/features/automations"
 import { ErrorPage } from "./components/error-page"
 import { NewChat } from "./components/new-chat"
 import { NotFoundPage } from "./components/not-found-page"
 import { RootLayout } from "./components/root-layout"
 import { SessionRoute } from "./components/session-route"
-import { AboutSettings } from "./components/settings/about-settings"
-import { GeneralSettings } from "./components/settings/general-settings"
-import { NotificationSettings } from "./components/settings/notification-settings"
-import { ProviderSettings } from "./components/settings/provider-settings"
-import { ServerSettings } from "./components/settings/server-settings"
-import { SettingsPage } from "./components/settings/settings-page"
-import { SetupSettings } from "./components/settings/setup-settings"
-import { WorktreeSettings } from "./components/settings/worktree-settings"
 import { SidebarLayout } from "./components/sidebar-layout"
 
 // ============================================================

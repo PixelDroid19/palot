@@ -3,7 +3,7 @@
  */
 
 import { atom } from "jotai"
-import type { Automation, AutomationRun } from "../../preload/api"
+import type { Automation, AutomationRun } from "@desktop/preload"
 
 /** List of all automations. */
 export const automationsAtom = atom<Automation[]>([])

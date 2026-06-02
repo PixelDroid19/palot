@@ -1,6 +1,6 @@
 import { atom } from "jotai"
-import type { DiscoveredMdnsServer, ServerConfig } from "../../preload/api"
-import { DEFAULT_LOCAL_SERVER, DEFAULT_SERVER_SETTINGS } from "../../shared/server-config"
+import type { DiscoveredMdnsServer, ServerConfig } from "@desktop/preload"
+import { DEFAULT_LOCAL_SERVER, DEFAULT_SERVER_SETTINGS } from "@desktop/shared"
 
 // ============================================================
 // Server configuration atoms (persisted via settings)

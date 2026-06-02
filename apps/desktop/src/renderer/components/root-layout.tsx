@@ -22,8 +22,9 @@ import { useThemeEffect } from "../hooks/use-theme"
 import { useWaitingIndicator } from "../hooks/use-waiting-indicator"
 import { AppBarProvider } from "./app-bar-context"
 import { CommandPalette } from "./command-palette"
-import { OnboardingOverlay } from "./onboarding/onboarding-overlay"
+import { OnboardingOverlay } from "@/features/onboarding"
 import { SidebarSlotProvider } from "./sidebar-slot-context"
+import { TEST_IDS } from "@desktop/shared"
 import { StartupOverlay } from "./startup-overlay"
 
 export function RootLayout() {
@@ -186,6 +187,7 @@ export function RootLayout() {
 			<AppBarProvider>
 				<SidebarSlotProvider>
 					<div
+						data-testid={TEST_IDS.appRoot}
 						className={`transition-opacity duration-300 ${contentReady ? "opacity-100" : "opacity-0"}`}
 					>
 						<Outlet />

@@ -5,6 +5,9 @@
  *   const log = createLogger("opencode-manager")
  *   log.info("Server started", { url, pid })
  *   log.error("Spawn failed", err)
+ *
+ * Prefer passing correlation ids in a plain object as the second argument:
+ *   log.info("Run finished", { runId, sessionId, durationMs })
  */
 
 export interface Logger {

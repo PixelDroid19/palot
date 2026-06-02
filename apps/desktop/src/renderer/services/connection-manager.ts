@@ -1,9 +1,12 @@
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
+import { coalescingKey } from "@desktop/shared"
+import { FRAME_BUDGET_MS } from "@desktop/shared"
 import { processEvent } from "../atoms/actions/event-processor"
 import { authHeaderAtom, serverConnectedAtom, serverUrlAtom } from "../atoms/connection"
 import { batchUpsertPartsAtom } from "../atoms/parts"
 import {
 	SESSIONS_PAGE_SIZE,
+	evictAllSessionsAtom,
 	setProjectPaginationLoadingAtom,
 	setSessionsAtom,
 	updateProjectPaginationAtom,
@@ -408,29 +411,13 @@ export function disconnect(): void {
 	}
 	setGlobalAbort(null)
 	eventLoopGeneration++
+	appStore.set(evictAllSessionsAtom)
 	appStore.set(serverConnectedAtom, false)
 }
 
 // ============================================================
 // Event Batching (OpenCode-inspired 16ms flush with coalescing)
 // ============================================================
-
-const FRAME_BUDGET_MS = 16
-
-function coalescingKey(event: Event): string | undefined {
-	switch (event.type) {
-		case "message.part.updated": {
-			const part = event.properties.part
-			return `part:${part.messageID}:${part.id}`
-		}
-		case "message.part.delta":
-			return `part:${event.properties.messageID}:${event.properties.partID}`
-		case "session.status":
-			return `status:${event.properties.sessionID}`
-		default:
-			return undefined
-	}
-}
 
 function createEventBatcher() {
 	let queue: Event[] = []

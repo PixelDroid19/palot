@@ -355,6 +355,12 @@ export interface Automation {
 	updatedAt: number
 }
 
+export interface AutomationQueueStats {
+	limit: number
+	active: number
+	pending: number
+}
+
 export type AutomationRunStatus =
 	| "queued"
 	| "running"
@@ -551,6 +557,7 @@ export interface PalotAPI {
 		acceptRun: (runId: string) => Promise<boolean>
 		markRunRead: (runId: string) => Promise<boolean>
 		previewSchedule: (rrule: string, timezone: string) => Promise<string[]>
+		queueStats: () => Promise<AutomationQueueStats>
 	}
 	/** Subscribe to automation run state changes. */
 	onAutomationRunsUpdated: (callback: () => void) => () => void

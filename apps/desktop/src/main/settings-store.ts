@@ -1,8 +1,8 @@
 import fs from "node:fs"
 import path from "node:path"
 import { app } from "electron"
-import type { AppSettings, NotificationSettings } from "../preload/api"
-import { DEFAULT_SERVER_SETTINGS } from "../shared/server-config"
+import type { AppSettings, NotificationSettings } from "@desktop/preload"
+import { DEFAULT_SERVER_SETTINGS } from "@desktop/shared"
 import { createLogger } from "./logger"
 
 const log = createLogger("settings-store")

@@ -6,12 +6,12 @@ import {
 	PromptInputTools,
 	usePromptInputController,
 } from "@palot/ui/components/ai-elements/prompt-input"
-import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./chat/mention-popover"
+import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "@/features/chat"
 import {
 	createAgentMention,
 	createFileMention,
 	insertMentionIntoText,
-} from "./chat/prompt-mentions"
+} from "@/features/chat"
 import { Popover, PopoverContent, PopoverTrigger } from "@palot/ui/components/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
@@ -52,8 +52,9 @@ import type { FileAttachment } from "../lib/types"
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
-import { PromptAttachmentPreview } from "./chat/prompt-attachments"
-import { PromptToolbar, StatusBar } from "./chat/prompt-toolbar"
+import { PromptAttachmentPreview } from "@/features/chat"
+import { PromptToolbar, StatusBar } from "@/features/chat"
+import { TEST_IDS } from "@desktop/shared"
 import { PalotWordmark } from "./palot-wordmark"
 
 // ============================================================
@@ -597,7 +598,7 @@ export function NewChat() {
 	const hasToolbar = providers
 
 	return (
-		<div className="relative flex h-full flex-col">
+		<div className="relative flex h-full flex-col" data-testid={TEST_IDS.newChatView}>
 			{/* Hero area — vertically centered */}
 			<div className="flex flex-1 flex-col items-center justify-center px-0 sm:px-6">
 				<div className="w-full max-w-4xl space-y-8">
@@ -686,7 +687,7 @@ export function NewChat() {
 								setMentionQuery(query)
 							}}
 						/>
-						<div className="relative">
+						<div className="relative" data-testid={TEST_IDS.newChatPrompt}>
 							<MentionPopover
 								ref={mentionPopoverRef}
 								query={mentionQuery}

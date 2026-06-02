@@ -7,7 +7,7 @@
  */
 import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
-import { getToolCategory } from "../../components/chat/tool-card"
+import { getToolCategory } from "../../lib/tool-category"
 import {
 	computeSessionMetricsExtended,
 	formatCost,

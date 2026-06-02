@@ -1,35 +1,9 @@
 import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
+import { binarySearchById, capMessageList, mergeMessagesById } from "@desktop/shared"
+import { MAX_MESSAGES_PER_SESSION } from "@desktop/shared"
 import type { Message, Part } from "../lib/types"
 import { partsFamily } from "./parts"
-
-// ============================================================
-// Helpers
-// ============================================================
-
-const MAX_MESSAGES_PER_SESSION = 200
-
-/**
- * Binary search for sorted arrays. Returns { found, index }.
- * If found, index is the position of the match.
- * If not found, index is where the item should be inserted.
- */
-function binarySearch<T>(
-	arr: T[],
-	target: string,
-	key: (item: T) => string,
-): { found: boolean; index: number } {
-	let lo = 0
-	let hi = arr.length
-	while (lo < hi) {
-		const mid = (lo + hi) >>> 1
-		const cmp = key(arr[mid]).localeCompare(target)
-		if (cmp < 0) lo = mid + 1
-		else if (cmp > 0) hi = mid
-		else return { found: true, index: mid }
-	}
-	return { found: false, index: lo }
-}
 
 // ============================================================
 // Per-session message list (sorted by id)
@@ -66,17 +40,7 @@ export const setMessagesAtom = atom(
 			return
 		}
 
-		// Merge: build a combined sorted array. For messages that exist
-		// in both the fetched data and the SSE-accumulated store, prefer
-		// the SSE version (it's likely newer).
-		const existingIds = new Set(existing.map((m) => m.id))
-		const merged = existing.slice()
-		for (const msg of args.messages) {
-			if (!existingIds.has(msg.id)) {
-				const result = binarySearch(merged, msg.id, (m) => m.id)
-				merged.splice(result.index, 0, msg)
-			}
-		}
+		const merged = mergeMessagesById(existing, args.messages)
 
 		// Merge parts: fetched parts fill in gaps, SSE parts take priority
 		for (const [messageId, fetchedParts] of Object.entries(args.parts)) {
@@ -112,7 +76,7 @@ export const upsertMessageAtom = atom(null, (get, set, message: Message) => {
 		}
 	}
 
-	const result = binarySearch(existing, message.id, (m) => m.id)
+	const result = binarySearchById(existing, message.id)
 
 	if (result.found) {
 		// Skip if reference-equal (no change)
@@ -120,23 +84,21 @@ export const upsertMessageAtom = atom(null, (get, set, message: Message) => {
 
 		const updated = existing.slice()
 		updated[result.index] = message
-		// Cap at MAX_MESSAGES_PER_SESSION
-		if (updated.length > MAX_MESSAGES_PER_SESSION) {
-			const removed = updated.shift()!
-			set(partsFamily(removed.id), [])
+		const capped = capMessageList(updated, MAX_MESSAGES_PER_SESSION)
+		for (const removedId of capped.removedIds) {
+			set(partsFamily(removedId), [])
 		}
-		set(messagesFamily(sessionId), updated)
+		set(messagesFamily(sessionId), capped.messages)
 		return
 	}
 
 	const updated = existing.slice()
 	updated.splice(result.index, 0, message)
-	// Cap at MAX_MESSAGES_PER_SESSION
-	if (updated.length > MAX_MESSAGES_PER_SESSION) {
-		const removed = updated.shift()!
-		set(partsFamily(removed.id), [])
+	const capped = capMessageList(updated, MAX_MESSAGES_PER_SESSION)
+	for (const removedId of capped.removedIds) {
+		set(partsFamily(removedId), [])
 	}
-	set(messagesFamily(sessionId), updated)
+	set(messagesFamily(sessionId), capped.messages)
 })
 
 /**
@@ -154,7 +116,7 @@ export const removeMessageAtom = atom(
 	) => {
 		const existing = get(messagesFamily(args.sessionId))
 		if (!existing) return
-		const result = binarySearch(existing, args.messageId, (m) => m.id)
+		const result = binarySearchById(existing, args.messageId)
 		if (!result.found) return
 		const updated = [...existing]
 		updated.splice(result.index, 1)

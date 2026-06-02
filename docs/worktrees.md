@@ -52,7 +52,7 @@ User can then:
 | `renderer/services/backend.ts` | Service | Re-exports from worktree-service, provides `gitApplyDiffText` for remote apply |
 | `renderer/components/new-chat.tsx` | UI | Worktree toggle, creation flow with loading phases |
 | `renderer/components/worktree-actions.tsx` | UI | "Apply to local" and "Commit & push" buttons on the session app bar |
-| `renderer/components/settings/worktree-settings.tsx` | UI | Settings page listing all worktrees with remove/reset actions |
+| `renderer/features/settings/ui/worktree-settings.tsx` | UI | Settings page listing all worktrees with remove/reset actions |
 | `renderer/atoms/actions/event-processor.ts` | State | Handles `worktree.ready` and `worktree.failed` SSE events |
 | `main/git-service.ts` | Main process | `applyDiffTextToLocal()` for applying raw diff text via `git apply` |
 | `main/ipc-handlers.ts` | Main process | `git:apply-diff-text` IPC handler |

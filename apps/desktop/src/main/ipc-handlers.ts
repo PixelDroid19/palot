@@ -5,6 +5,7 @@ import {
 	createAutomation,
 	deleteAutomation,
 	getAutomation,
+	getAutomationQueueStats,
 	listAutomations,
 	listRuns,
 	markRunRead,
@@ -613,6 +614,11 @@ export function registerIpcHandlers(): void {
 		withLogging("automation:preview-schedule", (_, rrule: string, timezone: string) =>
 			previewSchedule(rrule, timezone),
 		),
+	)
+
+	ipcMain.handle(
+		"automation:queue-stats",
+		withLogging("automation:queue-stats", () => getAutomationQueueStats()),
 	)
 
 	// --- Settings push channel (main -> renderer) ---

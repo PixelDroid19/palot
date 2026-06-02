@@ -1519,5 +1519,5 @@ export const MOCK_PARTS: Map<string, Record<string, Part[]>> = new Map([
 /** The first session ID, suitable for navigating to after enabling mock mode */
 export const MOCK_DEFAULT_SESSION_ID = IDS.sessionDarkMode
 
-/** Project slug for the default session (palot project) */
+/** Project slug for the default session (palot project); keep in sync with e2e/fixtures.ts */
 export const MOCK_DEFAULT_PROJECT_SLUG = `palot-${IDS.projectPalot.slice(0, 12)}`

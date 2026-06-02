@@ -15,6 +15,15 @@
 		"noEmit": true,
 		"paths": {
 			"@/*": ["./src/renderer/*"],
+			"@/features/automations": ["./src/renderer/features/automations/index.ts"],
+			"@/features/settings": ["./src/renderer/features/settings/index.ts"],
+			"@/features/onboarding": ["./src/renderer/features/onboarding/index.ts"],
+			"@/features/chat": ["./src/renderer/features/chat/index.ts"],
+			"@/components/public": ["./src/renderer/components/public.ts"],
+			"@desktop/shared": ["./src/shared/index.ts"],
+			"@desktop/shared/*": ["./src/shared/*"],
+			"@desktop/preload": ["./src/preload/public-api.ts"],
+			"@desktop/preload/*": ["./src/preload/*"],
 			"@palot/ui/*": ["../../packages/ui/src/*"]
 		}
 	},
@@ -22,8 +31,11 @@
 		"src/main/**/*.ts",
 		"src/preload/**/*.ts",
 		"src/preload/**/*.d.ts",
+		"src/shared/**/*.ts",
 		"src/renderer/**/*.ts",
-		"src/renderer/**/*.tsx"
+		"src/renderer/**/*.tsx",
+		"test/**/*.ts",
+		"vite-aliases.ts"
 	],
 	"exclude": ["node_modules", "dist", "out", "release"]
 }

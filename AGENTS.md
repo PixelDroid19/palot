@@ -19,7 +19,7 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 
 - **`main/`** -- Electron main process (Node.js): window management, IPC handlers, OpenCode server lifecycle, filesystem reads
 - **`preload/`** -- Electron preload bridge: exposes `window.palot` API via `contextBridge`
-- **`renderer/`** -- React app (browser context): components, hooks, services, atoms (Jotai)
+- **`renderer/`** -- React app (browser context): `features/*/ui` (domain UI), `components/` (shell), hooks, services, atoms (Jotai)
 
 ## Skills
 
@@ -30,25 +30,36 @@ generic knowledge.
 | Skill | When to load |
 |---|---|
 | `react-best-practices` | Writing or reviewing renderer components, optimizing re-renders or bundle size |
+| `electron-ipc` | Adding IPC channels, preload APIs, or debugging the `window.palot` bridge |
+| `opencode-sse` | SSE streaming, `connection-manager`, or OpenCode SDK v2 usage |
 
 ## Commands
 
-- **Electron dev**: `cd apps/desktop && bun run dev` (electron-vite, renderer on port 1420)
-- **Browser-only dev**: `cd apps/desktop && bun run dev:web` (Vite only, needs `apps/server` running)
-- **Backend server** (browser mode only): `cd apps/server && bun run dev` (port 3100)
+- **Electron dev** (default): `bun run dev` from root, or `cd apps/desktop && bun run dev` (port **1420**)
+- **Browser-only dev**: `bun run dev:browser` (server **3100** + Vite **1420**), or run `dev:server` and `dev:web` in two terminals
+- **Ports stuck** (`EADDRINUSE` on 1420/3100): `bun run dev:kill-ports` then start dev again
+- Do **not** use root `turbo dev` without a filter — it used to start server + desktop together and collide on ports
 - **Lint check**: `bun run lint` (from root)
 - **Lint/format fix**: `bun run lint:fix` or `bunx biome check --write .` (from root)
 - **Type check all**: `bun run check-types` (from root, via Turborepo)
 - **Type check desktop**: `cd apps/desktop && bun run check-types` (uses `tsgo`)
-- **Run all tests**: `cd packages/configconv && bun test`
+- **Run all tests**: `bun run test` (from root, via Turborepo)
+- **Run configconv tests**: `cd packages/configconv && bun test`
+- **Run desktop tests**: `cd apps/desktop && bun test`
 - **Run single test file**: `cd packages/configconv && bun test test/converter/config.test.ts`
 - **Run tests by name**: `cd packages/configconv && bun test --grep "converts model"`
+- **Pre-PR verify**: `bun run verify` (lint, types, tests, desktop build, E2E)
+- **E2E (web dev)**: `bunx playwright install chromium` then `bun run test:e2e` (auto-starts `apps/server` + `dev:web`)
 - **Rebuild server types**: `cd apps/server && bun run build:types` (required after adding server routes)
 - **Add UI component**: `cd packages/ui && bunx shadcn@latest add <component>`
 - **Package**: `cd apps/desktop && bun run package` (or `package:linux`, `package:mac`, `package:win`, `package:all`)
 - **Package without code signing (macOS)**: `CSC_IDENTITY_AUTO_DISCOVERY=false cd apps/desktop && bun run package:mac`
 - **Changeset -- add**: `bun changeset` (interactive -- pick packages, bump type, write description)
 - **Changeset -- version**: `bun run version-packages` (applies pending changesets, bumps versions, updates changelogs)
+
+## Imports
+
+See **[docs/IMPORT-ARCHITECTURE.md](docs/IMPORT-ARCHITECTURE.md)**. Cross-runtime: `@desktop/shared`, `@desktop/preload`. Renderer features: `@/features/<name>` only (not `features/*/ui/*`). Root `bun run lint` includes import boundaries.
 
 ## Code Style
 
@@ -185,9 +196,16 @@ Palot follows the XDG Base Directory Specification (same convention as OpenCode)
 
 ## Testing
 
-- **Framework**: Bun's built-in test runner (`bun:test`) -- no vitest/jest/playwright
-- **Tests exist only in `packages/configconv`** -- desktop app, server, and UI have no tests
-- Tests are NOT run in CI (only lint, type-check, and build are)
-- Run all: `cd packages/configconv && bun test`
-- Run one file: `cd packages/configconv && bun test test/converter/mcp.test.ts`
-- Run by name: `cd packages/configconv && bun test --grep "pattern"`
+See **[docs/TESTING.md](docs/TESTING.md)** for the full guide.
+
+- **Unit**: `bun run test` — business logic in `apps/desktop/src/shared/` + `apps/desktop/test/`
+- **E2E**: `bun run test:e2e` — use `data-testid` from `test-ids.ts`; **never assert on UI copy/text**
+- **Selectors**: add ids in `apps/desktop/src/shared/test-ids.ts` and mirror in `e2e/selectors.ts`
+
+### PR checklist
+
+- `bun run verify` (lint + types + unit tests + desktop build + E2E), or run those steps individually
+- If UI/routes changed without full verify: at least `bun run test:e2e`
+- IPC changes: `preload/index.ts`, `api.d.ts`, `ipc-handlers.ts` together
+- Server routes: `cd apps/server && bun run build:types`
+- User-facing: `bun changeset`

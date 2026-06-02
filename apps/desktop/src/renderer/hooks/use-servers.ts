@@ -7,8 +7,8 @@
 
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect } from "react"
-import type { DiscoveredMdnsServer, RemoteServerConfig, ServerConfig } from "../../preload/api"
-import { DEFAULT_LOCAL_SERVER } from "../../shared/server-config"
+import type { DiscoveredMdnsServer, RemoteServerConfig, ServerConfig } from "@desktop/preload"
+import { DEFAULT_LOCAL_SERVER } from "@desktop/shared"
 import {
 	activeServerConfigAtom,
 	activeServerIdAtom,

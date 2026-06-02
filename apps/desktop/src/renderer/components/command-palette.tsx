@@ -8,6 +8,7 @@ import {
 	CommandSeparator,
 	CommandShortcut,
 } from "@palot/ui/components/command"
+import { TEST_IDS } from "@desktop/shared"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
@@ -145,8 +146,11 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const hasSession = !!activeAgent
 
 	return (
-		<CommandDialog open={open} onOpenChange={onOpenChange}>
-			<CommandInput placeholder="Type a command or search..." />
+		<CommandDialog open={open} onOpenChange={onOpenChange} data-testid={TEST_IDS.commandPalette}>
+			<CommandInput
+				data-testid={TEST_IDS.commandPaletteInput}
+				placeholder="Type a command or search..."
+			/>
 			<CommandList>
 				<CommandEmpty>No results found.</CommandEmpty>
 

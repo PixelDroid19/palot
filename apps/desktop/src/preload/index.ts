@@ -251,6 +251,7 @@ contextBridge.exposeInMainWorld("palot", {
 		markRunRead: (runId: string) => ipcRenderer.invoke("automation:mark-run-read", runId),
 		previewSchedule: (rrule: string, timezone: string) =>
 			ipcRenderer.invoke("automation:preview-schedule", rrule, timezone),
+		queueStats: () => ipcRenderer.invoke("automation:queue-stats"),
 	},
 
 	onAutomationRunsUpdated: (callback: () => void) => {

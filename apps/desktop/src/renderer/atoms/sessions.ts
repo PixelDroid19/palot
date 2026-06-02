@@ -1,15 +1,11 @@
 import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
+import { SESSIONS_PAGE_SIZE } from "@desktop/shared"
 import type { PermissionRequest, QuestionRequest, Session, SessionStatus } from "../lib/types"
 import { messagesFamily } from "./messages"
-import { partsFamily } from "./parts"
+import { evictSessionState } from "./session-eviction"
 
-// ============================================================
-// Constants
-// ============================================================
-
-/** Number of sessions to load per page when paginating */
-export const SESSIONS_PAGE_SIZE = 5
+export { SESSIONS_PAGE_SIZE }
 
 // ============================================================
 // Types
@@ -110,18 +106,9 @@ export const upsertSessionAtom = atom(
 )
 
 export const removeSessionAtom = atom(null, (get, set, sessionId: string) => {
-	// Clean up message and part atoms to prevent memory leaks.
-	// messagesFamily/partsFamily create atoms on demand and never remove them,
-	// so we must explicitly clear and remove entries for deleted sessions.
 	const messages = get(messagesFamily(sessionId))
-	if (messages && messages.length > 0) {
-		for (const msg of messages) {
-			partsFamily.remove(msg.id)
-		}
-	}
-	messagesFamily.remove(sessionId)
-
-	sessionFamily.remove(sessionId)
+	const messageIds = messages?.map((m) => m.id) ?? []
+	evictSessionState(sessionId, messageIds)
 
 	const ids = get(sessionIdsAtom)
 	if (ids.has(sessionId)) {
@@ -413,4 +400,18 @@ export const resetProjectPaginationAtom = atom(null, (_get, set, directories: st
 	for (const dir of directories) {
 		set(projectPaginationFamily(dir), initial)
 	}
+})
+
+/**
+ * Write-only atom: evict all sessions and clear the index.
+ * Called on server disconnect to free renderer memory.
+ */
+export const evictAllSessionsAtom = atom(null, (get, set) => {
+	const ids = get(sessionIdsAtom)
+	for (const sessionId of ids) {
+		const messages = get(messagesFamily(sessionId))
+		const messageIds = messages?.map((m) => m.id) ?? []
+		evictSessionState(sessionId, messageIds)
+	}
+	set(sessionIdsAtom, new Set())
 })

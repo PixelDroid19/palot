@@ -18,14 +18,8 @@ import { sessionFamily, sessionIdsAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { sessionDiffFamily } from "../atoms/ui"
 import { createLogger } from "../lib/logger"
-import {
-	MOCK_DIFFS,
-	MOCK_DISCOVERY,
-	MOCK_MESSAGES,
-	MOCK_PARTS,
-	MOCK_SESSION_ENTRIES,
-	MOCK_SESSION_IDS,
-} from "../lib/mock-data"
+import { MOCK_MESSAGES, MOCK_SESSION_IDS } from "../lib/mock-data"
+import { hydrateMockMode } from "../mock-mode-bootstrap"
 import { disconnect } from "../services/connection-manager"
 import { resetDiscoveryGuard } from "./use-discovery"
 
@@ -59,38 +53,8 @@ export function useMockMode(): boolean {
 
 function activateMockMode(): void {
 	log.info("Activating mock mode")
-
-	// Disconnect from real server if connected
 	disconnect()
-
-	// 1. Hydrate discovery (marks loaded=true so useDiscovery() no-ops)
-	appStore.set(discoveryAtom, MOCK_DISCOVERY)
-
-	// 2. Hydrate sessions
-	appStore.set(sessionIdsAtom, new Set(MOCK_SESSION_IDS))
-	for (const [sessionId, entry] of MOCK_SESSION_ENTRIES) {
-		appStore.set(sessionFamily(sessionId), entry)
-	}
-
-	// 3. Hydrate messages and parts
-	for (const [sessionId, messages] of MOCK_MESSAGES) {
-		appStore.set(messagesFamily(sessionId), messages)
-	}
-	for (const [, sessionParts] of MOCK_PARTS) {
-		for (const [messageId, parts] of Object.entries(sessionParts)) {
-			appStore.set(partsFamily(messageId), parts)
-		}
-	}
-
-	// 4. Hydrate diffs
-	for (const [sessionId, diffs] of MOCK_DIFFS) {
-		appStore.set(sessionDiffFamily(sessionId), diffs)
-	}
-
-	// 5. Fake server connection state
-	appStore.set(serverUrlAtom, "http://mock-server:3100")
-	appStore.set(serverConnectedAtom, true)
-
+	hydrateMockMode()
 	log.info("Mock mode activated", {
 		sessions: MOCK_SESSION_IDS.size,
 		messages: MOCK_MESSAGES.size,
@@ -141,3 +105,5 @@ function deactivateMockMode(): void {
 
 	log.info("Mock mode deactivated, real discovery will restart")
 }
+
+
