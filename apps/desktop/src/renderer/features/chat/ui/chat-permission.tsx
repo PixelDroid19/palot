@@ -7,7 +7,7 @@ import {
 } from "@palot/ui/components/dropdown-menu"
 import { ChevronDownIcon, Loader2Icon, ShieldCheckIcon, ZapIcon } from "lucide-react"
 import { memo, useState } from "react"
-import type { Agent, PermissionRequest } from "../../../lib/types"
+import type { Agent, PermissionRequest } from "@/lib/types"
 
 interface PermissionItemProps {
 	agent: Agent

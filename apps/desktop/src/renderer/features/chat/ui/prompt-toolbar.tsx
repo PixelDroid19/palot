@@ -30,9 +30,9 @@ import {
 	SparklesIcon,
 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
-import { messagesFamily } from "../../../atoms/messages"
-import type { DisplayMode } from "../../../atoms/preferences"
-import { useDisplayMode, useSetDisplayMode } from "../../../hooks/use-agents"
+import { messagesFamily } from "@/atoms/messages"
+import type { DisplayMode } from "@/atoms/preferences"
+import { useDisplayMode, useSetDisplayMode } from "@/hooks/use-agents"
 import type {
 	CompactionConfig,
 	ModelRef,
@@ -40,14 +40,14 @@ import type {
 	SdkAgent,
 	SdkProvider,
 	VcsData,
-} from "../../../hooks/use-opencode-data"
-import { getModelVariants, parseModelRef } from "../../../hooks/use-opencode-data"
+} from "@/hooks/use-opencode-data"
+import { getModelVariants, parseModelRef } from "@/hooks/use-opencode-data"
 import {
 	computeContextUsage,
 	formatPercentage,
 	type ModelLimitInfo,
 	shortModelName,
-} from "../../../lib/session-metrics"
+} from "@/lib/session-metrics"
 import { ProviderIcon } from "@/features/settings"
 
 // ============================================================

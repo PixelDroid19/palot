@@ -25,11 +25,11 @@ import {
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import type { Automation, AutomationRun } from "@desktop/preload"
-import { useAutomationRuns, useAutomations } from "../../../hooks/use-automations"
-import { useCountdown } from "../../../hooks/use-countdown"
-import { formatScheduleSummary, rruleToScheduleConfig } from "../../../lib/rrule-ui"
-import { formatTimeAgo } from "../../../lib/time-format"
-import { runAutomationNow, updateAutomation } from "../../../services/backend"
+import { useAutomationRuns, useAutomations } from "@/hooks/use-automations"
+import { useCountdown } from "@/hooks/use-countdown"
+import { formatScheduleSummary, rruleToScheduleConfig } from "@/lib/rrule-ui"
+import { formatTimeAgo } from "@/lib/time-format"
+import { runAutomationNow, updateAutomation } from "@/services/backend"
 import { CreateAutomationDialog } from "./create-automation-dialog"
 
 // ============================================================

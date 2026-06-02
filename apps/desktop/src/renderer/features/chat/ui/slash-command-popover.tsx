@@ -35,7 +35,7 @@ import {
 	useRef,
 	useState,
 } from "react"
-import { useServerCommands } from "../../../hooks/use-opencode-data"
+import { useServerCommands } from "@/hooks/use-opencode-data"
 
 // ============================================================
 // Types

@@ -44,37 +44,34 @@ import {
 	useRef,
 	useState,
 } from "react"
-import { messagesFamily, removeMessageAtom } from "../../../atoms/messages"
-import { projectModelsAtom, setProjectModelAtom } from "../../../atoms/preferences"
-import type { SessionSetupPhase } from "../../../atoms/sessions"
-import { sessionFamily } from "../../../atoms/sessions"
+import { messagesFamily, removeMessageAtom } from "@/atoms/messages"
+import { projectModelsAtom, setProjectModelAtom } from "@/atoms/preferences"
+import type { SessionSetupPhase } from "@/atoms/sessions"
+import { sessionFamily } from "@/atoms/sessions"
 import {
 	effectivePermissionFamily,
 	effectiveQuestionFamily,
-} from "../../../atoms/derived/session-requests"
-import { appStore } from "../../../atoms/store"
-import { useDraftActions, useDraftSnapshot } from "../../../hooks/use-draft"
+} from "@/atoms/derived/session-requests"
+import { appStore } from "@/atoms/store"
+import { useDraftActions, useDraftSnapshot } from "@/hooks/use-draft"
 import type {
 	ConfigData,
 	ModelRef,
 	ProvidersData,
 	SdkAgent,
 	VcsData,
-} from "../../../hooks/use-opencode-data"
+} from "@/hooks/use-opencode-data"
 import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
 	useModelState,
-} from "../../../hooks/use-opencode-data"
-import type { ChatTurn } from "../../../hooks/use-session-chat"
-import { createLogger } from "../../../lib/logger"
-import { computeTurnWorkTimeSplit, formatWorkDuration } from "../../../lib/session-metrics"
-import type { Agent, FileAttachment, FilePart, QuestionAnswer, TextPart } from "../../../lib/types"
-import { getProjectClient } from "../../../services/connection-manager"
-
-const log = createLogger("chat-view")
-
+} from "@/hooks/use-opencode-data"
+import type { ChatTurn } from "@/hooks/use-session-chat"
+import { createLogger } from "@/lib/logger"
+import { computeTurnWorkTimeSplit, formatWorkDuration } from "@/lib/session-metrics"
+import type { Agent, FileAttachment, FilePart, QuestionAnswer, TextPart } from "@/lib/types"
+import { getProjectClient } from "@/services/connection-manager"
 import { PermissionItem } from "./chat-permission"
 import { ChatQuestionFlow } from "./chat-question"
 import { ChatTurnComponent } from "./chat-turn"
@@ -94,6 +91,8 @@ import { PromptToolbar, StatusBar } from "./prompt-toolbar"
 import { SessionTaskList } from "./session-task-list"
 import { SkillPickerDialog } from "./skill-picker-dialog"
 import { SlashCommandPopover, type SlashCommandPopoverHandle } from "./slash-command-popover"
+
+const log = createLogger("chat-view")
 
 /**
  * Small "+" button that opens the file picker for attachments.

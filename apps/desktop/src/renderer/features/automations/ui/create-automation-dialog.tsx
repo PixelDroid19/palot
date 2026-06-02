@@ -38,24 +38,24 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import type { Automation } from "@desktop/preload"
-import { activeServerConfigAtom } from "../../../atoms/connection"
-import { discoveryProjectsAtom } from "../../../atoms/discovery"
+import { activeServerConfigAtom } from "@/atoms/connection"
+import { discoveryProjectsAtom } from "@/atoms/discovery"
 import {
 	useModelState,
 	useOpenCodeAgents,
 	useProviders,
-} from "../../../hooks/use-opencode-data"
+} from "@/hooks/use-opencode-data"
 import {
 	createAutomation,
 	deleteAutomation,
 	pickDirectory,
 	runAutomationNow,
 	updateAutomation,
-} from "../../../services/backend"
-import type { ModelRef } from "../../../hooks/use-opencode-data"
+} from "@/services/backend"
+import type { ModelRef } from "@/hooks/use-opencode-data"
 import { AgentSelector, ModelSelector, VariantSelector } from "@/features/chat"
 import { SchedulePicker } from "./schedule-picker"
-import { getModelVariants } from "../../../hooks/use-opencode-data"
+import { getModelVariants } from "@/hooks/use-opencode-data"
 
 interface CreateAutomationDialogProps {
 	open: boolean

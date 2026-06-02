@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/to
 import { CircleIcon, PauseIcon, PencilIcon } from "lucide-react"
 import { memo, useState } from "react"
 import type { Automation } from "@desktop/preload"
-import { useCountdown } from "../../../hooks/use-countdown"
+import { useCountdown } from "@/hooks/use-countdown"
 
 interface AutomationRowProps {
 	automation: Automation

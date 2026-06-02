@@ -20,7 +20,7 @@ import { useQuery } from "@tanstack/react-query"
 import fuzzysort from "fuzzysort"
 import { BookOpenIcon, SearchIcon } from "lucide-react"
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { getProjectClient } from "../../../services/connection-manager"
+import { getProjectClient } from "@/services/connection-manager"
 
 // ============================================================
 // Types

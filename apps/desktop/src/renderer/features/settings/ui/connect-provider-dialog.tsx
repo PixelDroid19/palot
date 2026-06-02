@@ -34,10 +34,10 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type {
 	CatalogProvider,
 	SdkProviderAuthMethod as ProviderAuthMethod,
-} from "../../../hooks/use-opencode-data"
-import { createLogger } from "../../../lib/logger"
-import { PROVIDER_KEY_URLS, ZEN_PROVIDER_ID, ZEN_SIGNUP_URL } from "../../../lib/providers"
-import { getBaseClient } from "../../../services/connection-manager"
+} from "@/hooks/use-opencode-data"
+import { createLogger } from "@/lib/logger"
+import { PROVIDER_KEY_URLS, ZEN_PROVIDER_ID, ZEN_SIGNUP_URL } from "@/lib/providers"
+import { getBaseClient } from "@/services/connection-manager"
 import { ProviderIcon } from "./provider-icon"
 
 const log = createLogger("connect-provider-dialog")

@@ -52,15 +52,15 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type {
 	ConnectedProviderInfo,
 	SdkProviderAuthMethod as ProviderAuthMethod,
-} from "../../../hooks/use-opencode-data"
+} from "@/hooks/use-opencode-data"
 import {
 	type CatalogProvider,
 	queryKeys,
 	useAllProviders,
 	useConnectedProviders,
 	useProviderAuthMethods,
-} from "../../../hooks/use-opencode-data"
-import { createLogger } from "../../../lib/logger"
+} from "@/hooks/use-opencode-data"
+import { createLogger } from "@/lib/logger"
 import {
 	compareByPopularity,
 	isSubscriptionConnected,
@@ -70,8 +70,8 @@ import {
 	SUBSCRIPTION_LABELS,
 	ZEN_PROVIDER_ID,
 	ZEN_SIGNUP_URL,
-} from "../../../lib/providers"
-import { getBaseClient } from "../../../services/connection-manager"
+} from "@/lib/providers"
+import { getBaseClient } from "@/services/connection-manager"
 import { ConnectProviderDialog } from "./connect-provider-dialog"
 import { ProviderIcon } from "./provider-icon"
 import { SettingsSection } from "./settings-section"

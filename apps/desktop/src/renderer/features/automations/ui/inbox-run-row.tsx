@@ -22,7 +22,7 @@ import {
 } from "lucide-react"
 import { memo, useCallback, useState } from "react"
 import type { AutomationRun } from "@desktop/preload"
-import { formatTimeAgo } from "../../../lib/time-format"
+import { formatTimeAgo } from "@/lib/time-format"
 
 interface InboxRunRowProps {
 	run: AutomationRun

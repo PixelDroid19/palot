@@ -29,16 +29,16 @@ import {
 	XIcon,
 } from "lucide-react"
 import { memo, useCallback, useDeferredValue, useMemo, useRef, useState } from "react"
-import { useDisplayMode } from "../../../hooks/use-agents"
-import type { ChatMessageEntry, ChatTurn as ChatTurnType } from "../../../hooks/use-session-chat"
+import { useDisplayMode } from "@/hooks/use-agents"
+import type { ChatMessageEntry, ChatTurn as ChatTurnType } from "@/hooks/use-session-chat"
 import {
 	computeTurnCost,
 	computeTurnWorkTime,
 	formatCost,
 	formatWorkDuration,
 	shortModelName,
-} from "../../../lib/session-metrics"
-import type { FilePart, Part, ReasoningPart, TextPart, ToolPart } from "../../../lib/types"
+} from "@/lib/session-metrics"
+import type { FilePart, Part, ReasoningPart, TextPart, ToolPart } from "@/lib/types"
 import { ChatToolCall, getToolInfo, getToolSubtitle } from "./chat-tool-call"
 import { getToolCategory, TOOL_CATEGORY_COLORS, type ToolCategory } from "./tool-card"
 

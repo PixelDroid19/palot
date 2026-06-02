@@ -2,12 +2,12 @@ import { cn } from "@palot/ui/lib/utils"
 import { useAtomValue } from "jotai"
 import { CheckCircle2Icon, CircleDotIcon, Loader2Icon, XCircleIcon } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { messagesFamily } from "../../../atoms/messages"
-import { partsFamily } from "../../../atoms/parts"
-import { appStore } from "../../../atoms/store"
-import { streamingVersionFamily } from "../../../atoms/streaming"
-import { todosFamily } from "../../../atoms/todos"
-import type { Todo } from "../../../lib/types"
+import { messagesFamily } from "@/atoms/messages"
+import { partsFamily } from "@/atoms/parts"
+import { appStore } from "@/atoms/store"
+import { streamingVersionFamily } from "@/atoms/streaming"
+import { todosFamily } from "@/atoms/todos"
+import type { Todo } from "@/lib/types"
 
 /**
  * Derives the latest todo list for a session.

@@ -1,7 +1,7 @@
 import { Button } from "@palot/ui/components/button"
 import { CheckCircle2Icon, DownloadIcon, Loader2Icon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
-import { useUpdater } from "../../../hooks/use-updater"
+import { useUpdater } from "@/hooks/use-updater"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 

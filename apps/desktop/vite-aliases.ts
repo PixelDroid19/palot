@@ -27,6 +27,10 @@ export function createDesktopAliases(options: DesktopAliasOptions) {
 		{ find: "@/features/onboarding", replacement: path.join(rendererRoot, "features/onboarding/index.ts") },
 		{ find: "@/features/chat", replacement: path.join(rendererRoot, "features/chat/index.ts") },
 		{ find: "@/components/public", replacement: path.join(rendererRoot, "components/public.ts") },
+		{ find: "@/services", replacement: path.join(rendererRoot, "services") },
+		{ find: "@/hooks", replacement: path.join(rendererRoot, "hooks") },
+		{ find: "@/atoms", replacement: path.join(rendererRoot, "atoms") },
+		{ find: "@/lib", replacement: path.join(rendererRoot, "lib") },
 		{ find: "@", replacement: rendererRoot },
 		{ find: "@palot/ui", replacement: options.palotUiRoot },
 	]

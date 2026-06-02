@@ -11,17 +11,17 @@ import {
 } from "@palot/ui/components/ai-elements/prompt-input"
 import { PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
-import { setProjectModelAtom } from "../../../atoms/preferences"
-import { appStore } from "../../../atoms/store"
-import { useDraftActions, useDraftSnapshot } from "../../../hooks/use-draft"
-import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../../hooks/use-opencode-data"
+import { setProjectModelAtom } from "@/atoms/preferences"
+import { appStore } from "@/atoms/store"
+import { useDraftActions, useDraftSnapshot } from "@/hooks/use-draft"
+import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "@/hooks/use-opencode-data"
 import {
 	getModelInputCapabilities,
 	resolveEffectiveModel,
 	useModelState,
-} from "../../../hooks/use-opencode-data"
+} from "@/hooks/use-opencode-data"
 
-import type { Agent, FileAttachment } from "../../../lib/types"
+import type { Agent, FileAttachment } from "@/lib/types"
 import { ContextItems } from "./context-items"
 import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./mention-popover"
 import { PromptAttachmentPreview } from "./prompt-attachments"

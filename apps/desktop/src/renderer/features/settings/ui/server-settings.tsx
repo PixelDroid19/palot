@@ -38,8 +38,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { TEST_IDS } from "@desktop/shared"
 import type { LocalServerConfig, RemoteServerConfig } from "@desktop/preload"
-import { useServerActions, useServers } from "../../../hooks/use-servers"
-import { useSettings } from "../../../hooks/use-settings"
+import { useServerActions, useServers } from "@/hooks/use-servers"
+import { useSettings } from "@/hooks/use-settings"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 

@@ -27,14 +27,18 @@ packages/
 
 ## Rules
 
-### 1. Within the same folder / feature
+### 1. Within the renderer (features, shell, hooks)
 
-Short relatives are fine (max **2** parent segments):
+Prefer layer aliases over deep relatives:
 
 ```ts
-import { sessionFamily } from "../atoms/sessions"
-import { useAgents } from "../../hooks/use-agents"
+import { sessionFamily } from "@/atoms/sessions"
+import { useAgents } from "@/hooks/use-agents"
+import { createLogger } from "@/lib/logger"
+import { getProjectClient } from "@/services/connection-manager"
 ```
+
+Inside a feature `ui/` folder, `./` and `../` for sibling modules are fine.
 
 ### 2. Across desktop runtimes (main ↔ renderer ↔ shared)
 

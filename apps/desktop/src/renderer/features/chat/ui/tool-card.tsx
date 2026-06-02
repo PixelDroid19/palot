@@ -12,7 +12,7 @@ import {
 	getToolCategory,
 	TOOL_CATEGORY_COLORS,
 	type ToolCategory,
-} from "../../../lib/tool-category"
+} from "@/lib/tool-category"
 
 export { getToolCategory, TOOL_CATEGORY_COLORS, type ToolCategory }
 

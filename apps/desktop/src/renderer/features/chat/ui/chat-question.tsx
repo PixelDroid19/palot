@@ -8,7 +8,7 @@ import {
 	ZapIcon,
 } from "lucide-react"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
-import type { QuestionAnswer, QuestionInfo, QuestionRequest } from "../../../lib/types"
+import type { QuestionAnswer, QuestionInfo, QuestionRequest } from "@/lib/types"
 
 // ---------------------------------------------------------------------------
 // Types

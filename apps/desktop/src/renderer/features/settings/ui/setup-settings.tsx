@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import type { OpenCodeCheckResult } from "@desktop/preload"
-import { onboardingStateAtom } from "../../../atoms/onboarding"
+import { onboardingStateAtom } from "@/atoms/onboarding"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 

@@ -14,8 +14,8 @@
 import { Button } from "@palot/ui/components/button"
 import { GitForkIcon, Loader2Icon, RotateCcwIcon, TrashIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useProjectList } from "../../../hooks/use-agents"
-import { listWorktrees, removeWorktree, resetWorktree } from "../../../services/worktree-service"
+import { useProjectList } from "@/hooks/use-agents"
+import { listWorktrees, removeWorktree, resetWorktree } from "@/services/worktree-service"
 import { SettingsSection } from "./settings-section"
 
 // ============================================================

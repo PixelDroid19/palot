@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/to
 import type { AutomationQueueStats } from "@desktop/preload"
 import { FilterIcon, PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
-import { fetchAutomationQueueStats } from "../../../services/backend"
+import { fetchAutomationQueueStats } from "@/services/backend"
 
 interface InboxToolbarProps {
 	onNewClick: () => void

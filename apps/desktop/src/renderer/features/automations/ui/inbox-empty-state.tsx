@@ -6,7 +6,7 @@
 
 import { Button } from "@palot/ui/components/button"
 import { PlusIcon, SmileIcon, ZapIcon } from "lucide-react"
-import { useAutomations, useUnreadRunCount } from "../../../hooks/use-automations"
+import { useAutomations, useUnreadRunCount } from "@/hooks/use-automations"
 
 interface InboxEmptyStateProps {
 	onNewClick?: () => void

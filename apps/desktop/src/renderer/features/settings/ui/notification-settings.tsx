@@ -7,7 +7,7 @@ import {
 } from "@palot/ui/components/select"
 import { Switch } from "@palot/ui/components/switch"
 import { useCallback } from "react"
-import { useSettings } from "../../../hooks/use-settings"
+import { useSettings } from "@/hooks/use-settings"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 

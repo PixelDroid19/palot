@@ -39,7 +39,7 @@ import {
 	scheduleConfigToRrule,
 	WEEKDAY_LABELS,
 	type Weekday,
-} from "../../../lib/rrule-ui"
+} from "@/lib/rrule-ui"
 
 // ============================================================
 // Props

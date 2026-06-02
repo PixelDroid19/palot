@@ -20,8 +20,8 @@ import {
 	useRef,
 	useState,
 } from "react"
-import { useFileSearch } from "../../../hooks/use-file-search"
-import type { SdkAgent } from "../../../hooks/use-opencode-data"
+import { useFileSearch } from "@/hooks/use-file-search"
+import type { SdkAgent } from "@/hooks/use-opencode-data"
 
 // ============================================================
 // Types
