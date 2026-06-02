@@ -9,7 +9,7 @@ import {
 	automationsAtom,
 	pendingRunCountAtom,
 	unreadRunCountAtom,
-} from "../atoms/automations"
+} from "@/atoms/automations"
 
 export function useAutomations() {
 	return useAtomValue(automationsAtom)

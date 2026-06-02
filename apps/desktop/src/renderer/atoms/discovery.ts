@@ -1,5 +1,5 @@
 import { atom } from "jotai"
-import type { OpenCodeProject } from "../lib/types"
+import type { OpenCodeProject } from "@/lib/types"
 
 // ============================================================
 // Types

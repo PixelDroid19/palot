@@ -1,15 +1,15 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { isMockModeAtom } from "../atoms/mock-mode"
+import { isMockModeAtom } from "@/atoms/mock-mode"
 import {
 	diffFilterFamily,
 	sessionDiffFamily,
 	sessionDiffStatsFamily,
 	setSessionDiffAtom,
-} from "../atoms/ui"
-import type { FileDiff } from "../lib/types"
-import { getProjectClient } from "../services/connection-manager"
-import { getSessionDiff } from "../services/opencode"
+} from "@/atoms/ui"
+import type { FileDiff } from "@/lib/types"
+import { getProjectClient } from "@/services/connection-manager"
+import { getSessionDiff } from "@/services/opencode"
 
 /**
  * Hook that fetches session diffs and subscribes to real-time updates

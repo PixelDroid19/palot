@@ -59,7 +59,7 @@ generic knowledge.
 
 ## Imports
 
-See **[docs/IMPORT-ARCHITECTURE.md](docs/IMPORT-ARCHITECTURE.md)**. Cross-runtime: `@desktop/shared`, `@desktop/preload`. Renderer features: `@/features/<name>` only (not `features/*/ui/*`). Root `bun run lint` includes import boundaries.
+See **[docs/IMPORT-ARCHITECTURE.md](docs/IMPORT-ARCHITECTURE.md)**. Cross-runtime: `@desktop/shared`, `@desktop/preload`. Renderer: `@/atoms`, `@/hooks`, `@/lib`, `@/services`, `@/features/<name>`, `@/components/public`. Root `bun run lint` includes import boundaries. Pre-push: `bun run verify`.
 
 ## Code Style
 

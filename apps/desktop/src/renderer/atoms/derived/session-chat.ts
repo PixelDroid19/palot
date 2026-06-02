@@ -1,4 +1,4 @@
-import type { Message, Part } from "../../lib/types"
+import type { Message, Part } from "@/lib/types"
 import { getStreamingPartsForSession } from "../streaming"
 
 // ============================================================

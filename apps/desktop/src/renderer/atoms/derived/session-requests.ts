@@ -17,9 +17,9 @@
 import { atom } from "jotai"
 import type { Getter } from "jotai"
 import { atomFamily } from "jotai-family"
-import type { PermissionRequest, QuestionRequest } from "../../lib/types"
+import type { PermissionRequest, QuestionRequest } from "@/lib/types"
 import { sessionFamily, sessionIdsAtom } from "../sessions"
-import { buildChildrenMap, findTreeRequest } from "../../lib/session-tree"
+import { buildChildrenMap, findTreeRequest } from "@/lib/session-tree"
 
 // ============================================================
 // Shared children map — recomputes when session set changes

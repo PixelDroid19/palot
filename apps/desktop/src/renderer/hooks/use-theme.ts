@@ -1,7 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useLayoutEffect, useMemo } from "react"
-import { colorSchemeAtom, themeAtom } from "../atoms/preferences"
-import { type ColorScheme, getAvailableThemes, getTheme, type ThemeDefinition } from "../lib/themes"
+import { colorSchemeAtom, themeAtom } from "@/atoms/preferences"
+import { type ColorScheme, getAvailableThemes, getTheme, type ThemeDefinition } from "@/lib/themes"
 
 // ============================================================
 // useThemeEffect — synchronises persisted store to <html> element

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import type { UpdateState } from "@desktop/preload"
-import { isElectron } from "../services/backend"
+import { isElectron } from "@/services/backend"
 
 const defaultState: UpdateState = { status: "idle", canAutoInstall: true }
 

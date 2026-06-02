@@ -16,9 +16,9 @@ import { useAtomValue } from "jotai"
 import { CheckIcon, GlobeIcon, MonitorIcon, RadarIcon, SettingsIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ServerConfig } from "@desktop/preload"
-import { serverConnectedAtom } from "../atoms/connection"
-import { useServerActions, useServers } from "../hooks/use-servers"
-import { isElectron, resolveAuthHeader, resolveServerUrl } from "../services/backend"
+import { serverConnectedAtom } from "@/atoms/connection"
+import { useServerActions, useServers } from "@/hooks/use-servers"
+import { isElectron, resolveAuthHeader, resolveServerUrl } from "@/services/backend"
 
 // ============================================================
 // Health probe helper

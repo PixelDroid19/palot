@@ -2,7 +2,7 @@ import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
 import { binarySearchById, capMessageList, mergeMessagesById } from "@desktop/shared"
 import { MAX_MESSAGES_PER_SESSION } from "@desktop/shared"
-import type { Message, Part } from "../lib/types"
+import type { Message, Part } from "@/lib/types"
 import { partsFamily } from "./parts"
 
 // ============================================================

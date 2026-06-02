@@ -1,7 +1,7 @@
 import { atom, useAtomValue } from "jotai"
 import { useCallback, useEffect, useMemo, useRef } from "react"
-import { clearDraftAtom, draftsAtom, setDraftAtom } from "../atoms/preferences"
-import { appStore } from "../atoms/store"
+import { clearDraftAtom, draftsAtom, setDraftAtom } from "@/atoms/preferences"
+import { appStore } from "@/atoms/store"
 
 /** Key used for the new-chat (landing page) draft */
 export const NEW_CHAT_DRAFT_KEY = "__new_chat__"

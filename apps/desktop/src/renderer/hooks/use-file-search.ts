@@ -5,7 +5,7 @@
  */
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
-import { getProjectClient } from "../services/connection-manager"
+import { getProjectClient } from "@/services/connection-manager"
 
 const FILE_SEARCH_DEBOUNCE_MS = 150
 

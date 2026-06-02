@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from "react"
-import { formatCountdown } from "../lib/time-format"
+import { formatCountdown } from "@/lib/time-format"
 
 export function useCountdown(futureTimestamp: number | null): string | null {
 	const [label, setLabel] = useState(() =>

@@ -1,6 +1,6 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
-import type { FileDiff } from "../lib/types"
+import type { FileDiff } from "@/lib/types"
 
 export const commandPaletteOpenAtom = atom(false)
 

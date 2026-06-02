@@ -45,9 +45,9 @@ import {
 	reviewPanelOpenAtom,
 	reviewPanelSelectedFileAtom,
 	reviewPanelSettingsAtom,
-} from "../../atoms/ui"
-import { useSessionDiff } from "../../hooks/use-session-diff"
-import type { FileDiff } from "../../lib/types"
+} from "@/atoms/ui"
+import { useSessionDiff } from "@/hooks/use-session-diff"
+import type { FileDiff } from "@/lib/types"
 import { DiffCommentButton, ReviewPanelComments, useDiffComments } from "./review-comments"
 
 // ============================================================

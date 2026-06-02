@@ -40,7 +40,7 @@ import {
 	gitCheckout,
 	gitStashAndCheckout,
 	isElectron,
-} from "../services/backend"
+} from "@/services/backend"
 
 // ============================================================
 // Types

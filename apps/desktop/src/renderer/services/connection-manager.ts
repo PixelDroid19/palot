@@ -1,17 +1,17 @@
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { coalescingKey } from "@desktop/shared"
 import { FRAME_BUDGET_MS } from "@desktop/shared"
-import { processEvent } from "../atoms/actions/event-processor"
-import { authHeaderAtom, serverConnectedAtom, serverUrlAtom } from "../atoms/connection"
-import { batchUpsertPartsAtom } from "../atoms/parts"
+import { processEvent } from "@/atoms/actions/event-processor"
+import { authHeaderAtom, serverConnectedAtom, serverUrlAtom } from "@/atoms/connection"
+import { batchUpsertPartsAtom } from "@/atoms/parts"
 import {
 	SESSIONS_PAGE_SIZE,
 	evictAllSessionsAtom,
 	setProjectPaginationLoadingAtom,
 	setSessionsAtom,
 	updateProjectPaginationAtom,
-} from "../atoms/sessions"
-import { appStore } from "../atoms/store"
+} from "@/atoms/sessions"
+import { appStore } from "@/atoms/store"
 import {
 	applyStreamingDelta,
 	flushStreamingParts,
@@ -19,9 +19,9 @@ import {
 	isStreamingPartType,
 	streamingVersionFamily,
 	updateStreamingPart,
-} from "../atoms/streaming"
-import { createLogger } from "../lib/logger"
-import type { Event } from "../lib/types"
+} from "@/atoms/streaming"
+import { createLogger } from "@/lib/logger"
+import type { Event } from "@/lib/types"
 import {
 	connectToServer,
 	disposeAllInstances,

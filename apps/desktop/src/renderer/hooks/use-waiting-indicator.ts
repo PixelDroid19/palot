@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai"
 import { useEffect } from "react"
-import { hasWaitingAtom } from "../atoms/derived/waiting"
+import { hasWaitingAtom } from "@/atoms/derived/waiting"
 
 /**
  * Updates the browser tab title when any agent is waiting for user input.

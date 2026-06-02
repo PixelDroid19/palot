@@ -1,7 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useEffect } from "react"
 import type { WindowChromeTier } from "@desktop/preload"
-import { chromeTierAtom, isTransparentAtom, opaqueWindowsAtom } from "../atoms/preferences"
+import { chromeTierAtom, isTransparentAtom, opaqueWindowsAtom } from "@/atoms/preferences"
 
 /**
  * Detect whether we're running inside Electron (preload injects `window.palot`).

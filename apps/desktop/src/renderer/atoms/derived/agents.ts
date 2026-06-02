@@ -6,7 +6,7 @@ import type {
 	OpenCodeProject,
 	SessionStatus,
 	SidebarProject,
-} from "../../lib/types"
+} from "@/lib/types"
 import { discoveryAtom } from "../discovery"
 import { sessionFamily, sessionIdsAtom } from "../sessions"
 import { effectivePermissionFamily, effectiveQuestionFamily } from "./session-requests"

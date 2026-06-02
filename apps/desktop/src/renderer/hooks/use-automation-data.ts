@@ -10,9 +10,9 @@
 
 import { useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { setAutomationRunsAtom, setAutomationsAtom } from "../atoms/automations"
-import { createLogger } from "../lib/logger"
-import { fetchAutomationRuns, fetchAutomations } from "../services/backend"
+import { setAutomationRunsAtom, setAutomationsAtom } from "@/atoms/automations"
+import { createLogger } from "@/lib/logger"
+import { fetchAutomationRuns, fetchAutomations } from "@/services/backend"
 
 const log = createLogger("use-automation-data")
 

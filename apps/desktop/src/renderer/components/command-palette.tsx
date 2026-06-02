@@ -34,23 +34,23 @@ import {
 	Undo2Icon,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { sessionMetricsFamily } from "../atoms/derived/session-metrics"
-import { automationsEnabledAtom, toggleAutomationsAtom } from "../atoms/feature-flags"
-import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
-import { opaqueWindowsAtom } from "../atoms/preferences"
-import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
-import { useSessionRevert } from "../hooks/use-commands"
+import { sessionMetricsFamily } from "@/atoms/derived/session-metrics"
+import { automationsEnabledAtom, toggleAutomationsAtom } from "@/atoms/feature-flags"
+import { isMockModeAtom, toggleMockModeAtom } from "@/atoms/mock-mode"
+import { opaqueWindowsAtom } from "@/atoms/preferences"
+import { isReactScanAtom, toggleReactScanAtom } from "@/atoms/react-scan"
+import { useSessionRevert } from "@/hooks/use-commands"
 import {
 	useAvailableThemes,
 	useColorScheme,
 	useCurrentTheme,
 	useSetColorScheme,
 	useSetTheme,
-} from "../hooks/use-theme"
-import { createLogger } from "../lib/logger"
-import type { ColorScheme } from "../lib/themes"
-import type { Agent } from "../lib/types"
-import { reloadConfig } from "../services/connection-manager"
+} from "@/hooks/use-theme"
+import { createLogger } from "@/lib/logger"
+import type { ColorScheme } from "@/lib/themes"
+import type { Agent } from "@/lib/types"
+import { reloadConfig } from "@/services/connection-manager"
 
 interface CommandPaletteProps {
 	open: boolean

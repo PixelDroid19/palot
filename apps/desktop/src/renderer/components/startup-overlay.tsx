@@ -15,8 +15,8 @@
 
 import { useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
-import type { DiscoveryPhase } from "../atoms/discovery"
-import { discoveryPhaseAtom } from "../atoms/discovery"
+import type { DiscoveryPhase } from "@/atoms/discovery"
+import { discoveryPhaseAtom } from "@/atoms/discovery"
 import { TEST_IDS } from "@desktop/shared"
 import { PalotWordmark } from "./palot-wordmark"
 

@@ -6,7 +6,7 @@ import {
 	XIcon,
 } from "lucide-react"
 import { useState } from "react"
-import { useUpdater } from "../hooks/use-updater"
+import { useUpdater } from "@/hooks/use-updater"
 
 /**
  * Floating toast-style update notification that appears in the bottom-right

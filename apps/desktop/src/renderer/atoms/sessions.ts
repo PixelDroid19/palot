@@ -1,7 +1,7 @@
 import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
 import { SESSIONS_PAGE_SIZE } from "@desktop/shared"
-import type { PermissionRequest, QuestionRequest, Session, SessionStatus } from "../lib/types"
+import type { PermissionRequest, QuestionRequest, Session, SessionStatus } from "@/lib/types"
 import { messagesFamily } from "./messages"
 import { evictSessionState } from "./session-eviction"
 

@@ -6,10 +6,10 @@ import {
 	formatRelativeTime,
 	projectListAtom,
 	sessionNameFamily,
-} from "../atoms/derived/agents"
-import { type DisplayMode, displayModeAtom } from "../atoms/preferences"
-import { commandPaletteOpenAtom } from "../atoms/ui"
-import type { Agent, SidebarProject } from "../lib/types"
+} from "@/atoms/derived/agents"
+import { type DisplayMode, displayModeAtom } from "@/atoms/preferences"
+import { commandPaletteOpenAtom } from "@/atoms/ui"
+import type { Agent, SidebarProject } from "@/lib/types"
 
 // Re-export helpers from derived atom module
 export { formatRelativeTime, formatElapsed }

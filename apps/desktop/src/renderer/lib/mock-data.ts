@@ -4,8 +4,8 @@
  * All timestamps are relative to `Date.now()` so the UI always
  * looks fresh regardless of when the screenshot is taken.
  */
-import type { DiscoveryState } from "../atoms/discovery"
-import type { SessionEntry } from "../atoms/sessions"
+import type { DiscoveryState } from "@/atoms/discovery"
+import type { SessionEntry } from "@/atoms/sessions"
 import type {
 	AssistantMessage,
 	FileDiff,
@@ -1044,7 +1044,7 @@ export function Settings() {
 import { Label } from "@/ui/label"
 import { ToggleGroup, ToggleGroupItem } from "@/ui/toggle-group"
 import { Sun, Moon, Monitor } from "lucide-react"
-import { useTheme } from "../hooks/use-theme"
+import { useTheme } from "@/hooks/use-theme"
 
 export function Settings() {
   const { theme, setTheme } = useTheme()

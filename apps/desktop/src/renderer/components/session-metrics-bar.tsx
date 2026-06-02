@@ -13,8 +13,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/to
 import { useAtomValue } from "jotai"
 import { BarChart3Icon, CoinsIcon, TimerIcon } from "lucide-react"
 import { Fragment, memo, useEffect, useState } from "react"
-import { type SessionMetricsValue, sessionMetricsFamily } from "../atoms/derived/session-metrics"
-import { formatTokens, formatWorkDuration } from "../lib/session-metrics"
+import { type SessionMetricsValue, sessionMetricsFamily } from "@/atoms/derived/session-metrics"
+import { formatTokens, formatWorkDuration } from "@/lib/session-metrics"
 
 // ============================================================
 // Tool category display labels

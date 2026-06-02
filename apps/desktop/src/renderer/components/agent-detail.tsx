@@ -26,18 +26,18 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { OpenInTarget } from "@desktop/preload"
-import { reviewPanelOpenAtom, reviewPanelSettingsAtom, sessionDiffStatsFamily } from "../atoms/ui"
+import { reviewPanelOpenAtom, reviewPanelSettingsAtom, sessionDiffStatsFamily } from "@/atoms/ui"
 import type {
 	ConfigData,
 	ModelRef,
 	ProvidersData,
 	SdkAgent,
 	VcsData,
-} from "../hooks/use-opencode-data"
-import { useServerConnection } from "../hooks/use-server"
-import type { ChatTurn } from "../hooks/use-session-chat"
-import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
-import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backend"
+} from "@/hooks/use-opencode-data"
+import { useServerConnection } from "@/hooks/use-server"
+import type { ChatTurn } from "@/hooks/use-session-chat"
+import type { Agent, FileAttachment, QuestionAnswer } from "@/lib/types"
+import { fetchOpenInTargets, isElectron, openInTarget } from "@/services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "@/features/chat"
 import { PalotWordmark } from "./palot-wordmark"

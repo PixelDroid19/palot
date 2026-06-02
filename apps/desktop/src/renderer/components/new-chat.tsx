@@ -25,18 +25,18 @@ import {
 	MonitorIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
+import { projectModelsAtom, setProjectModelAtom } from "@/atoms/preferences"
 import {
 	removeSessionAtom,
 	setSessionBranchAtom,
 	setSessionSetupPhaseAtom,
 	setSessionWorktreeAtom,
 	upsertSessionAtom,
-} from "../atoms/sessions"
-import { appStore } from "../atoms/store"
-import { useAgents, useProjectList } from "../hooks/use-agents"
-import { NEW_CHAT_DRAFT_KEY, useDraftActions, useDraftSnapshot } from "../hooks/use-draft"
-import type { ModelRef } from "../hooks/use-opencode-data"
+} from "@/atoms/sessions"
+import { appStore } from "@/atoms/store"
+import { useAgents, useProjectList } from "@/hooks/use-agents"
+import { NEW_CHAT_DRAFT_KEY, useDraftActions, useDraftSnapshot } from "@/hooks/use-draft"
+import type { ModelRef } from "@/hooks/use-opencode-data"
 import {
 	getModelInputCapabilities,
 	getModelVariants,
@@ -46,10 +46,10 @@ import {
 	useOpenCodeAgents,
 	useProviders,
 	useVcs,
-} from "../hooks/use-opencode-data"
-import { useAgentActions } from "../hooks/use-server"
-import type { FileAttachment } from "../lib/types"
-import { createWorktree, randomWorktreeName } from "../services/worktree-service"
+} from "@/hooks/use-opencode-data"
+import { useAgentActions } from "@/hooks/use-server"
+import type { FileAttachment } from "@/lib/types"
+import { createWorktree, randomWorktreeName } from "@/services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
 import { PromptAttachmentPreview } from "@/features/chat"

@@ -1,11 +1,11 @@
 import { useAtomValue } from "jotai"
 import { useCallback } from "react"
-import { connectionAtom } from "../atoms/connection"
-import { upsertMessageAtom } from "../atoms/messages"
-import { upsertPartAtom } from "../atoms/parts"
-import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
-import { appStore } from "../atoms/store"
-import { createLogger } from "../lib/logger"
+import { connectionAtom } from "@/atoms/connection"
+import { upsertMessageAtom } from "@/atoms/messages"
+import { upsertPartAtom } from "@/atoms/parts"
+import { sessionFamily, upsertSessionAtom } from "@/atoms/sessions"
+import { appStore } from "@/atoms/store"
+import { createLogger } from "@/lib/logger"
 import type {
 	FileAttachment,
 	FilePart,
@@ -14,8 +14,8 @@ import type {
 	Session,
 	TextPart,
 	UserMessage,
-} from "../lib/types"
-import { getProjectClient } from "../services/connection-manager"
+} from "@/lib/types"
+import { getProjectClient } from "@/services/connection-manager"
 
 const log = createLogger("use-server")
 

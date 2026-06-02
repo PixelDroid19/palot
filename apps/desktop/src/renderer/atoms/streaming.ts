@@ -1,6 +1,6 @@
 import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
-import type { Part } from "../lib/types"
+import type { Part } from "@/lib/types"
 import { appStore } from "./store"
 
 // ============================================================

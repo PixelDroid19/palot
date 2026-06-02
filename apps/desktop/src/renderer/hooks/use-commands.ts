@@ -1,11 +1,11 @@
 import { useAtomValue } from "jotai"
 import { useCallback, useMemo } from "react"
-import { messagesFamily } from "../atoms/messages"
-import { partsFamily } from "../atoms/parts"
-import { sessionFamily } from "../atoms/sessions"
-import { appStore } from "../atoms/store"
-import type { Session, TextPart } from "../lib/types"
-import { getProjectClient } from "../services/connection-manager"
+import { messagesFamily } from "@/atoms/messages"
+import { partsFamily } from "@/atoms/parts"
+import { sessionFamily } from "@/atoms/sessions"
+import { appStore } from "@/atoms/store"
+import type { Session, TextPart } from "@/lib/types"
+import { getProjectClient } from "@/services/connection-manager"
 import { useServerCommands } from "./use-opencode-data"
 
 // ============================================================

@@ -1,8 +1,8 @@
 import { useAtomValue } from "jotai"
 import { useCallback, useEffect } from "react"
-import { agentFamily } from "../atoms/derived/agents"
-import { pendingCountAtom } from "../atoms/derived/waiting"
-import { appStore } from "../atoms/store"
+import { agentFamily } from "@/atoms/derived/agents"
+import { pendingCountAtom } from "@/atoms/derived/waiting"
+import { appStore } from "@/atoms/store"
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 

@@ -7,7 +7,7 @@
  */
 
 import type { OpencodeClient, Worktree } from "@opencode-ai/sdk/v2/client"
-import { createLogger } from "../lib/logger"
+import { createLogger } from "@/lib/logger"
 import { isElectron } from "./backend"
 import { getProjectClient } from "./connection-manager"
 

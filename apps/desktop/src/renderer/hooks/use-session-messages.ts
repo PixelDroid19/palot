@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { Activity } from "../lib/types"
-import { getBaseClient, getProjectClient } from "../services/connection-manager"
+import type { Activity } from "@/lib/types"
+import { getBaseClient, getProjectClient } from "@/services/connection-manager"
 
 /**
  * SDK returns messages as { info: Message, parts: Part[] }

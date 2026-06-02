@@ -1,16 +1,16 @@
 import { useAtomValue } from "jotai"
 import { useEffect } from "react"
-import { activeServerConfigAtom, serverConnectedAtom } from "../atoms/connection"
-import { discoveryAtom } from "../atoms/discovery"
-import { isMockModeAtom } from "../atoms/mock-mode"
-import { appStore } from "../atoms/store"
-import { createLogger } from "../lib/logger"
-import { resolveAuthHeader, resolveServerUrl } from "../services/backend"
+import { activeServerConfigAtom, serverConnectedAtom } from "@/atoms/connection"
+import { discoveryAtom } from "@/atoms/discovery"
+import { isMockModeAtom } from "@/atoms/mock-mode"
+import { appStore } from "@/atoms/store"
+import { createLogger } from "@/lib/logger"
+import { resolveAuthHeader, resolveServerUrl } from "@/services/backend"
 import {
 	connectToOpenCode,
 	loadAllProjects,
 	loadProjectSessions,
-} from "../services/connection-manager"
+} from "@/services/connection-manager"
 
 const log = createLogger("discovery")
 

@@ -30,7 +30,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import type { GitDiffStat } from "@desktop/preload"
-import type { Agent } from "../lib/types"
+import type { Agent } from "@/lib/types"
 import {
 	fetchDiffStat,
 	getGitRemoteUrl,
@@ -39,7 +39,7 @@ import {
 	gitCreateBranch,
 	gitPush,
 	isElectron,
-} from "../services/backend"
+} from "@/services/backend"
 
 // ============================================================
 // Types

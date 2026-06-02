@@ -7,7 +7,7 @@
  */
 import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
-import { getToolCategory } from "../../lib/tool-category"
+import { getToolCategory } from "@/lib/tool-category"
 import {
 	computeSessionMetricsExtended,
 	formatCost,
@@ -18,8 +18,8 @@ import {
 	type SessionMetricsExtended,
 	shortModelName,
 	type ToolBreakdown,
-} from "../../lib/session-metrics"
-import type { Part } from "../../lib/types"
+} from "@/lib/session-metrics"
+import type { Part } from "@/lib/types"
 import { messagesFamily } from "../messages"
 import { partsFamily } from "../parts"
 import { appStore } from "../store"

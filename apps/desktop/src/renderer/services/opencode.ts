@@ -1,7 +1,7 @@
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
-import { createLogger } from "../lib/logger"
-import type { Event, OpenCodeProject, QuestionAnswer, Session, SessionStatus } from "../lib/types"
+import { createLogger } from "@/lib/logger"
+import type { Event, OpenCodeProject, QuestionAnswer, Session, SessionStatus } from "@/lib/types"
 
 export type { OpencodeClient }
 

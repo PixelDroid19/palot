@@ -14,13 +14,13 @@ import {
 	activeServerIdAtom,
 	discoveredMdnsServersAtom,
 	serversAtom,
-} from "../atoms/connection"
-import { discoveryAtom } from "../atoms/discovery"
-import { resetProjectPaginationAtom, sessionIdsAtom } from "../atoms/sessions"
-import { appStore } from "../atoms/store"
-import { createLogger } from "../lib/logger"
-import { isElectron } from "../services/backend"
-import { disconnect } from "../services/connection-manager"
+} from "@/atoms/connection"
+import { discoveryAtom } from "@/atoms/discovery"
+import { resetProjectPaginationAtom, sessionIdsAtom } from "@/atoms/sessions"
+import { appStore } from "@/atoms/store"
+import { createLogger } from "@/lib/logger"
+import { isElectron } from "@/services/backend"
+import { disconnect } from "@/services/connection-manager"
 import { resetDiscoveryGuard } from "./use-discovery"
 
 const log = createLogger("use-servers")

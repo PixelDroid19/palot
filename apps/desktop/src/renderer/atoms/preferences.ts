@@ -1,7 +1,7 @@
 import { atom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
 import type { WindowChromeTier } from "@desktop/preload"
-import type { ColorScheme } from "../lib/themes"
+import type { ColorScheme } from "@/lib/themes"
 
 // ============================================================
 // Types

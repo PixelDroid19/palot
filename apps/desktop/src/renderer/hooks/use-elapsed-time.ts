@@ -10,8 +10,8 @@
  */
 
 import { useEffect, useState } from "react"
-import { getPartFirstSeenAt } from "../atoms/parts"
-import type { ToolPart } from "../lib/types"
+import { getPartFirstSeenAt } from "@/atoms/parts"
+import type { ToolPart } from "@/lib/types"
 
 function formatElapsed(ms: number): string {
 	if (ms < 1000) return "0s"

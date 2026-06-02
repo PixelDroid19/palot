@@ -26,7 +26,7 @@ import type {
 	OpenInTargetsResult,
 	UpdateAutomationInput,
 } from "@desktop/preload"
-import { createLogger } from "../lib/logger"
+import { createLogger } from "@/lib/logger"
 
 const log = createLogger("backend")
 

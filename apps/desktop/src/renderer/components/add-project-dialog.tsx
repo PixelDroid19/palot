@@ -24,8 +24,8 @@ import { Label } from "@palot/ui/components/label"
 import { useAtomValue } from "jotai"
 import { FolderOpenIcon, Loader2Icon } from "lucide-react"
 import { useCallback, useState } from "react"
-import { activeServerConfigAtom } from "../atoms/connection"
-import { loadProjectSessions } from "../services/connection-manager"
+import { activeServerConfigAtom } from "@/atoms/connection"
+import { loadProjectSessions } from "@/services/connection-manager"
 
 interface AddProjectDialogProps {
 	open: boolean

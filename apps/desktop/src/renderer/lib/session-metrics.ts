@@ -5,7 +5,7 @@
  * numeric totals. No atoms or React dependencies -- safe to use anywhere.
  */
 
-import type { ChatTurn } from "../atoms/derived/session-chat"
+import type { ChatTurn } from "@/atoms/derived/session-chat"
 import type { ToolCategory } from "./tool-category"
 import type { AssistantMessage, Message, Part } from "./types"
 

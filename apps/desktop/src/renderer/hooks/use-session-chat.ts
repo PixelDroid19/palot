@@ -5,14 +5,14 @@ import {
 	type ChatTurn,
 	groupIntoTurns,
 	mergeSessionParts,
-} from "../atoms/derived/session-chat"
-import { messagesFamily, setMessagesAtom } from "../atoms/messages"
-import { isMockModeAtom } from "../atoms/mock-mode"
-import { partsFamily } from "../atoms/parts"
-import { appStore } from "../atoms/store"
-import { streamingVersionFamily } from "../atoms/streaming"
-import type { Message, Part } from "../lib/types"
-import { getBaseClient, getProjectClient } from "../services/connection-manager"
+} from "@/atoms/derived/session-chat"
+import { messagesFamily, setMessagesAtom } from "@/atoms/messages"
+import { isMockModeAtom } from "@/atoms/mock-mode"
+import { partsFamily } from "@/atoms/parts"
+import { appStore } from "@/atoms/store"
+import { streamingVersionFamily } from "@/atoms/streaming"
+import type { Message, Part } from "@/lib/types"
+import { getBaseClient, getProjectClient } from "@/services/connection-manager"
 
 // Re-export types for consumers
 export type { ChatMessageEntry, ChatTurn }
