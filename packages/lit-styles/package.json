@@ -7,16 +7,16 @@
 	"type": "module",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.ts",
-			"default": "./src/index.ts"
+			"types": "./dist/src/index.d.ts",
+			"default": "./dist/src/index.js"
 		},
 		"./build-scss-css-js": {
-			"types": "./dist/build-scss-css-js.d.ts",
-			"default": "./src/build-scss-css-js.ts"
+			"types": "./dist/src/build-scss-css-js.d.ts",
+			"default": "./dist/src/build-scss-css-js.js"
 		},
 		"./vite-plugin": {
-			"types": "./dist/vite-plugin-palot-lit-scss.d.ts",
-			"default": "./src/vite-plugin-palot-lit-scss.ts"
+			"types": "./dist/src/vite-plugin-palot-lit-scss.d.ts",
+			"default": "./dist/src/vite-plugin-palot-lit-scss.js"
 		}
 	},
 	"scripts": {
