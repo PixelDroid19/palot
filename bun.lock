@@ -24,7 +24,15 @@
         "@fontsource/ibm-plex-mono": "^5.2.7",
         "@libsql/client": "^0.17.0",
         "@opencode-ai/sdk": "^1.2.1",
+        "@palot/agent-adapter-opencode": "workspace:*",
+        "@palot/agent-harness": "workspace:*",
         "@palot/configconv": "workspace:*",
+        "@palot/core": "workspace:*",
+        "@palot/events": "workspace:*",
+        "@palot/ipc-contracts": "workspace:*",
+        "@palot/lit-components": "workspace:*",
+        "@palot/lit-styles": "workspace:*",
+        "@palot/tokens": "workspace:*",
         "@palot/ui": "workspace:*",
         "@pierre/diffs": "^1.0.10",
         "@tanstack/react-query": "^5.90.20",
@@ -89,6 +97,24 @@
         "typescript": "^5.8.3",
       },
     },
+    "packages/agent-adapter-claude-code": {
+      "name": "@palot/agent-adapter-claude-code",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@palot/core": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5.8.3",
+      },
+    },
+    "packages/agent-adapter-codex": {
+      "name": "@palot/agent-adapter-codex",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@palot/core": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5.8.3",
+      },
+    },
     "packages/agent-adapter-opencode": {
       "name": "@palot/agent-adapter-opencode",
       "version": "0.0.1",
@@ -106,6 +132,7 @@
       "name": "@palot/agent-harness",
       "version": "0.0.1",
       "devDependencies": {
+        "@palot/agent-adapter-opencode": "workspace:*",
         "@palot/core": "workspace:*",
         "@palot/events": "workspace:*",
         "@types/bun": "latest",
@@ -728,6 +755,10 @@
     "@opencode-ai/sdk": ["@opencode-ai/sdk@1.2.1", "", {}, "sha512-K5e15mIXTyAykBw0GX+8O28IJHlPMw1jI/m3SDu+hgUHjmg2refqLPqyuqv8hE2nRcuGi8HajhpDJjkO7H2S0A=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
+
+    "@palot/agent-adapter-claude-code": ["@palot/agent-adapter-claude-code@workspace:packages/agent-adapter-claude-code"],
+
+    "@palot/agent-adapter-codex": ["@palot/agent-adapter-codex@workspace:packages/agent-adapter-codex"],
 
     "@palot/agent-adapter-opencode": ["@palot/agent-adapter-opencode@workspace:packages/agent-adapter-opencode"],
 

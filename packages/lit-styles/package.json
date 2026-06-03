@@ -16,8 +16,7 @@
 		},
 		"./vite-plugin": {
 			"types": "./dist/vite-plugin-palot-lit-scss.d.ts",
-			"bun": "./src/vite-plugin-palot-lit-scss.ts",
-			"default": "./dist/vite-plugin-palot-lit-scss.js"
+			"default": "./src/vite-plugin-palot-lit-scss.ts"
 		}
 	},
 	"scripts": {

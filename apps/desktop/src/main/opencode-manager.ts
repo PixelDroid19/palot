@@ -4,6 +4,7 @@ import path from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 import { dialog } from "electron"
 import type { LocalServerConfig } from "@desktop/preload"
+import { createDefaultLocalServer } from "@desktop/shared"
 import { getCredential } from "./credential-store"
 import { findFreePort } from "./find-free-port"
 import { createLogger } from "./logger"
@@ -51,7 +52,7 @@ const DEFAULT_HOSTNAME = "127.0.0.1"
 function getLocalServerConfig(): LocalServerConfig {
 	const settings = getSettings()
 	const local = settings.servers.servers.find((s) => s.id === "local")
-	return (local as LocalServerConfig) ?? { id: "local", name: "This Mac", type: "local" }
+	return (local as LocalServerConfig) ?? createDefaultLocalServer(process.platform)
 }
 
 /**

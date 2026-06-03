@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import type { AppSettings } from "@desktop/preload"
-import { DEFAULT_SERVER_SETTINGS } from "@desktop/shared"
+import { resolveDefaultServerSettings } from "@desktop/shared"
+import { getRendererPlatform } from "@/lib/platform"
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 
@@ -13,7 +14,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 		dockBadge: true,
 	},
 	opaqueWindows: false,
-	servers: DEFAULT_SERVER_SETTINGS,
+	servers: resolveDefaultServerSettings(getRendererPlatform()),
 }
 
 export function useSettings() {

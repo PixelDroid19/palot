@@ -190,6 +190,10 @@ Never open external URLs inside the Electron window. Use `setWindowOpenHandler` 
 
 Palot follows the XDG Base Directory Specification (same convention as OpenCode). Config at `~/.config/palot/`, data at `~/.local/share/palot/`. Automation configs live at `~/.config/palot/automations/<id>/`, SQLite database at `~/.local/share/palot/palot.db`. See `main/automation/paths.ts` for the implementation. Do NOT use `~/.palot/` (legacy) or Electron's `userData` path for automation storage.
 
+### Local server display name and legacy config
+
+The built-in local server label comes from `getLocalServerDisplayName(platform)` in `@desktop/shared` (`This Mac` / `This PC` / `This Linux`). Do NOT hardcode "This Mac" for all platforms. Legacy `local-grok` / `runtime: grok` entries in `settings.json` are removed on load via `sanitizeServerSettings()` in `settings-store.ts` (init credential store before settings store so orphaned credentials are deleted). Renderer fallbacks use `resolveDefaultLocalServer(getRendererPlatform())` from `renderer/lib/platform.ts`.
+
 ### electron-vite -- Three Build Targets
 
 `electron.vite.config.ts` has three sections: `main`, `preload`, `renderer`. Main and preload use `externalizeDepsPlugin()` to keep Node.js deps external.

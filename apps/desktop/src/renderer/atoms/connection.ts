@@ -1,6 +1,10 @@
 import { atom } from "jotai"
 import type { DiscoveredMdnsServer, ServerConfig } from "@desktop/preload"
-import { DEFAULT_LOCAL_SERVER, DEFAULT_SERVER_SETTINGS } from "@desktop/shared"
+import { resolveDefaultLocalServer, resolveDefaultServerSettings } from "@desktop/shared"
+import { getRendererPlatform } from "@/lib/platform"
+
+const initialServerSettings = resolveDefaultServerSettings(getRendererPlatform())
+const initialLocalServer = resolveDefaultLocalServer(getRendererPlatform())
 
 // Platform core integration (dual write from legacy mapper + future adapter path).
 // Imported here so connection-manager (imperative) and hooks can share reactive state.
@@ -13,16 +17,16 @@ import { initialFullCoreState } from "@palot/core"
 // ============================================================
 
 /** All configured servers. Initialized from settings on app start. */
-export const serversAtom = atom<ServerConfig[]>(DEFAULT_SERVER_SETTINGS.servers)
+export const serversAtom = atom<ServerConfig[]>(initialServerSettings.servers)
 
 /** ID of the currently active server. */
-export const activeServerIdAtom = atom<string>(DEFAULT_SERVER_SETTINGS.activeServerId)
+export const activeServerIdAtom = atom<string>(initialServerSettings.activeServerId)
 
 /** Derived: the active server config object. Falls back to local if ID not found. */
 export const activeServerConfigAtom = atom<ServerConfig>((get) => {
 	const servers = get(serversAtom)
 	const activeId = get(activeServerIdAtom)
-	return servers.find((s) => s.id === activeId) ?? DEFAULT_LOCAL_SERVER
+	return servers.find((s) => s.id === activeId) ?? initialLocalServer
 })
 
 // ============================================================

@@ -284,8 +284,8 @@ if (!gotLock) {
 		)
 		log.info("Registered PNA header injection for 127.0.0.1 requests")
 
-		initSettingsStore()
 		initCredentialStore()
+		initSettingsStore()
 		registerIpcHandlers()
 		initAutomations().catch(console.error)
 		startMdnsScanner().catch((err) => log.warn("mDNS scanner failed to start", err))

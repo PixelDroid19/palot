@@ -8,7 +8,8 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect } from "react"
 import type { DiscoveredMdnsServer, RemoteServerConfig, ServerConfig } from "@desktop/preload"
-import { DEFAULT_LOCAL_SERVER } from "@desktop/shared"
+import { resolveDefaultLocalServer, sanitizeServerSettings } from "@desktop/shared"
+import { getRendererPlatform } from "@/lib/platform"
 import {
 	activeServerConfigAtom,
 	activeServerIdAtom,
@@ -25,6 +26,17 @@ import { resetDiscoveryGuard } from "./use-discovery"
 
 const log = createLogger("use-servers")
 
+function applyServerSettingsToAtoms(
+	servers: { servers: ServerConfig[]; activeServerId: string },
+	setServers: (servers: ServerConfig[]) => void,
+	setActiveServerId: (id: string) => void,
+): void {
+	const platform = getRendererPlatform()
+	const { settings: sanitized } = sanitizeServerSettings(servers, platform)
+	setServers(sanitized.servers)
+	setActiveServerId(sanitized.activeServerId)
+}
+
 /**
  * Syncs server settings from the main process settings store into Jotai atoms.
  * Should be called once near the root of the app.
@@ -40,8 +52,7 @@ export function useServerSettingsSync() {
 		// Load initial settings
 		window.palot.getSettings().then((settings) => {
 			if (settings.servers) {
-				setServers(settings.servers.servers)
-				setActiveServerId(settings.servers.activeServerId)
+				applyServerSettingsToAtoms(settings.servers, setServers, setActiveServerId)
 			}
 		})
 
@@ -49,8 +60,7 @@ export function useServerSettingsSync() {
 		const unsub = window.palot.onSettingsChanged((settings) => {
 			const s = settings as { servers?: { servers: ServerConfig[]; activeServerId: string } }
 			if (s.servers) {
-				setServers(s.servers.servers)
-				setActiveServerId(s.servers.activeServerId)
+				applyServerSettingsToAtoms(s.servers, setServers, setActiveServerId)
 			}
 		})
 		return unsub
@@ -96,7 +106,8 @@ export function useServerActions() {
 		}
 
 		const settings = await window.palot.getSettings()
-		const currentServers = settings.servers?.servers ?? [DEFAULT_LOCAL_SERVER]
+		const currentServers =
+			settings.servers?.servers ?? [resolveDefaultLocalServer(getRendererPlatform())]
 
 		await window.palot.updateSettings({
 			servers: {
@@ -121,7 +132,8 @@ export function useServerActions() {
 			}
 
 			const settings = await window.palot.getSettings()
-			const currentServers = settings.servers?.servers ?? [DEFAULT_LOCAL_SERVER]
+			const currentServers =
+			settings.servers?.servers ?? [resolveDefaultLocalServer(getRendererPlatform())]
 
 			const updatedServers = currentServers.map((s) => {
 				if (s.id !== serverId) return s
@@ -151,7 +163,8 @@ export function useServerActions() {
 		await window.palot.credential.delete(serverId)
 
 		const settings = await window.palot.getSettings()
-		const currentServers = settings.servers?.servers ?? [DEFAULT_LOCAL_SERVER]
+		const currentServers =
+			settings.servers?.servers ?? [resolveDefaultLocalServer(getRendererPlatform())]
 
 		const filteredServers = currentServers.filter((s) => s.id !== serverId)
 		const activeId = settings.servers?.activeServerId
@@ -181,7 +194,7 @@ export function useServerActions() {
 		await window.palot.updateSettings({
 			servers: {
 				...settings.servers,
-				servers: settings.servers?.servers ?? [DEFAULT_LOCAL_SERVER],
+				servers: settings.servers?.servers ?? [resolveDefaultLocalServer(getRendererPlatform())],
 				activeServerId: serverId,
 			},
 		})

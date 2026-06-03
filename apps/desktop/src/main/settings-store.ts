@@ -2,7 +2,8 @@ import fs from "node:fs"
 import path from "node:path"
 import { app } from "electron"
 import type { AppSettings, NotificationSettings } from "@desktop/preload"
-import { DEFAULT_SERVER_SETTINGS } from "@desktop/shared"
+import { createDefaultServerSettings, sanitizeServerSettings } from "@desktop/shared"
+import { deleteCredential } from "./credential-store"
 import { createLogger } from "./logger"
 
 const log = createLogger("settings-store")
@@ -22,7 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 		dockBadge: true,
 	},
 	opaqueWindows: false,
-	servers: DEFAULT_SERVER_SETTINGS,
+	servers: createDefaultServerSettings(process.platform),
 }
 
 // ============================================================
@@ -60,8 +61,31 @@ export function initSettingsStore(): void {
 		log.error("Failed to load settings, using defaults", err)
 	}
 
+	migrateServerSettings()
+
 	// Migrate opaqueWindows from the old preferences.json into settings.json
 	migrateFromPreferencesJson(configDir)
+}
+
+/** Drop legacy grok servers and align the local server label with the host OS. */
+function migrateServerSettings(): void {
+	if (!settings.servers) return
+	const previousIds = new Set(settings.servers.servers.map((s) => s.id))
+	const { settings: sanitized, changed } = sanitizeServerSettings(
+		settings.servers,
+		process.platform,
+	)
+	const nextIds = new Set(sanitized.servers.map((s) => s.id))
+	for (const id of previousIds) {
+		if (id !== "local" && !nextIds.has(id)) {
+			deleteCredential(id)
+		}
+	}
+	settings = { ...settings, servers: sanitized }
+	if (changed) {
+		persist()
+		log.info("Migrated server settings", { platform: process.platform })
+	}
 }
 
 /**
@@ -107,7 +131,23 @@ export function getOpaqueWindows(): boolean {
 
 /** Update settings with a partial object. Deep-merges and persists to disk. */
 export function updateSettings(partial: DeepPartial<AppSettings>): AppSettings {
+	const previousServerIds = settings.servers
+		? new Set(settings.servers.servers.map((s) => s.id))
+		: new Set<string>()
 	settings = deepMerge(settings, partial)
+	if (settings.servers) {
+		const { settings: sanitized } = sanitizeServerSettings(settings.servers, process.platform)
+		const nextIds = new Set(sanitized.servers.map((s) => s.id))
+		for (const id of previousServerIds) {
+			if (id !== "local" && !nextIds.has(id)) {
+				deleteCredential(id)
+			}
+		}
+		settings = {
+			...settings,
+			servers: sanitized,
+		}
+	}
 	persist()
 	notifyListeners()
 	return settings
