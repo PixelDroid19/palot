@@ -1,5 +1,11 @@
 # @palot/desktop
 
+## 0.11.1
+
+### Patch Changes
+
+- [`f4c2294`](https://github.com/ItsWendell/palot/commit/f4c22945f5e6992adef147acbd1717e21fbd62ad) Thanks [@PixelDroid19](https://github.com/PixelDroid19)! - Fix local server label to match the host OS on Linux and Windows, remove legacy unsupported `local-grok` server entries from settings on startup, and drop orphaned credentials for removed servers.
+
 ## 0.11.0
 
 ### Minor Changes
