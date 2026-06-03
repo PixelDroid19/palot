@@ -85,7 +85,7 @@ function getGlassModule() {
  * @param isOpaque - Whether the user has opted for opaque windows
  * @returns BrowserWindow options to spread into the constructor
  */
-/** Custom title bar on Linux/Windows — hidden native bar + Window Controls Overlay. */
+/** Hidden title bar + native window controls overlay (Linux/Windows use system buttons). */
 function linuxWindowsTitleBarOptions(): Partial<BrowserWindowConstructorOptions> {
 	if (process.platform === "darwin") return {}
 
