@@ -227,7 +227,7 @@ export function SidebarLayout() {
 					 * sidebar content aligns with the main content area. Also clears
 					 * the traffic lights + the absolutely-positioned toggle button. */}
 					<SidebarHeader
-						className="flex-row items-center gap-1 shrink-0"
+						className="flex-row items-center gap-1 shrink-0 [padding-right:env(titlebar-area-width,0px)]"
 						style={{
 							height: APP_BAR_HEIGHT,
 							// Make header draggable on Electron (acts as title bar above sidebar)

@@ -15,8 +15,8 @@
 			"default": "./dist/src/build-scss-css-js.js"
 		},
 		"./vite-plugin": {
-			"types": "./dist/src/vite-plugin-palot-lit-scss.d.ts",
-			"default": "./dist/src/vite-plugin-palot-lit-scss.js"
+			"types": "./src/vite-plugin-palot-lit-scss.ts",
+			"default": "./src/vite-plugin-palot-lit-scss.ts"
 		}
 	},
 	"scripts": {

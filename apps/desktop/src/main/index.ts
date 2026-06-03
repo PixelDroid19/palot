@@ -32,13 +32,19 @@ startEnvResolution()
 // Minimal menu — required on macOS for Cmd+C/V/X/A to work in web contents.
 // A null menu kills native Edit shortcuts on macOS. This minimal template is
 // negligible overhead compared to the full default menu.
+// macOS: app menu in the system menu bar (required for Cmd+C/V/X/A in web contents).
+// Linux/Windows: no in-window menu bar — custom title bar + Window Controls Overlay instead.
 const menuTemplate: Electron.MenuItemConstructorOptions[] = [
 	...(process.platform === "darwin" ? [{ role: "appMenu" as const }] : []),
 	{ role: "editMenu" as const },
 	{ role: "viewMenu" as const },
 	{ role: "windowMenu" as const },
 ]
-Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
+if (process.platform === "darwin") {
+	Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
+} else {
+	Menu.setApplicationMenu(null)
+}
 
 // Collect Chromium feature flags — must be merged into a single --disable-features
 // switch because Electron's appendSwitch overwrites (not appends) duplicate keys.

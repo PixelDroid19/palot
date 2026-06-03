@@ -9,6 +9,7 @@
  */
 
 import type { BrowserWindow, BrowserWindowConstructorOptions } from "electron"
+import { APP_BAR_HEIGHT_PX, TITLE_BAR_OVERLAY_COLOR } from "@desktop/shared"
 import { createLogger } from "./logger"
 
 const log = createLogger("liquid-glass")
@@ -84,6 +85,19 @@ function getGlassModule() {
  * @param isOpaque - Whether the user has opted for opaque windows
  * @returns BrowserWindow options to spread into the constructor
  */
+/** Custom title bar on Linux/Windows — hidden native bar + Window Controls Overlay. */
+function linuxWindowsTitleBarOptions(): Partial<BrowserWindowConstructorOptions> {
+	if (process.platform === "darwin") return {}
+
+	return {
+		titleBarStyle: "hidden" as const,
+		titleBarOverlay: {
+			height: APP_BAR_HEIGHT_PX,
+			color: TITLE_BAR_OVERLAY_COLOR,
+		},
+	}
+}
+
 export async function resolveWindowChrome(isOpaque: boolean): Promise<WindowChromeResult> {
 	const isMac = process.platform === "darwin"
 
@@ -98,6 +112,7 @@ export async function resolveWindowChrome(isOpaque: boolean): Promise<WindowChro
 					titleBarStyle: "hiddenInset" as const,
 					trafficLightPosition: { x: 15, y: 15 },
 				}),
+				...linuxWindowsTitleBarOptions(),
 			},
 		}
 	}

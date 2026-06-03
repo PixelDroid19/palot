@@ -1,7 +1,8 @@
+import { APP_BAR_HEIGHT_PX } from "@desktop/shared"
 import { useAppBarContent } from "./app-bar-context"
 
-// Height of the app bar in pixels — used as CSS variable
-export const APP_BAR_HEIGHT = 46
+/** Height of the app bar in pixels — used as CSS variable */
+export const APP_BAR_HEIGHT = APP_BAR_HEIGHT_PX
 
 /**
  * Detect whether we're running inside Electron (preload injects `window.palot`).
@@ -16,7 +17,7 @@ export function AppBar() {
 	return (
 		<div
 			data-slot="app-bar"
-			className="relative z-30 flex shrink-0 items-center border-b border-border/50 pl-4 pr-3 transition-[padding-left] duration-250 ease-in-out group-data-[state=collapsed]/sidebar-wrapper:pl-[var(--window-controls-inset)]"
+			className="relative z-30 flex shrink-0 items-center border-b border-border/50 pl-4 pr-3 transition-[padding-left] duration-250 ease-in-out group-data-[state=collapsed]/sidebar-wrapper:pl-[var(--window-controls-inset)] [padding-right:max(0.75rem,env(titlebar-area-width,0px))]"
 			style={{
 				height: APP_BAR_HEIGHT,
 				// Make entire bar draggable on Electron (title bar replacement)
