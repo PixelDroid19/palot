@@ -11,6 +11,7 @@
 			"apps/*/src/**/*.tsx",
 			"apps/*/src/**/*.js",
 			"apps/desktop/test/**/*.ts",
+			"packages/*/test/**/*.ts",
 			"apps/desktop/eslint.config.js",
 			"apps/desktop/vite-aliases.ts",
 			"e2e/**/*.ts",

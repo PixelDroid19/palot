@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, externalizeDepsPlugin } from "electron-vite"
 import type { Plugin } from "vite"
+import { palotLitScss } from "@palot/lit-styles/vite-plugin"
 import { createDesktopAliases, desktopFsAllow, DESKTOP_PRELOAD_ENTRY, DESKTOP_SHARED_ENTRY } from "./vite-aliases"
 
 /**
@@ -42,6 +43,8 @@ export default defineConfig({
 		},
 		plugins: [
 			externalizeDepsPlugin({ exclude: ["@palot/configconv", "drizzle-orm"] }),
+			// Note: platform @palot/events, @palot/core, @palot/ipc-contracts are pure and could be used from shared/main if needed (add to exclude + mainPreloadAliases then);
+			// currently renderer-only per import boundary rules (adapter/harness stay renderer safe, no main import). Foundational wiring complete.
 			copyDrizzleMigrations(),
 		],
 		build: {
@@ -67,7 +70,7 @@ export default defineConfig({
 	},
 	renderer: {
 		root: rendererRoot,
-		plugins: [react(), tailwindcss()],
+		plugins: [react(), tailwindcss(), palotLitScss()],
 		resolve: {
 			alias: rendererAliases,
 		},

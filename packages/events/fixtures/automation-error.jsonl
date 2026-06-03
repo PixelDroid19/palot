@@ -1,0 +1,9 @@
+{"channel":"automation.runs","event":{"type":"automation.run.updated","at":1720000700000,"run":{"id":"run-err","automationId":"auto-fail","status":"pending"}}}
+{"channel":"automation.runs","event":{"type":"automation.run.updated","at":1720000700100,"run":{"id":"run-err","automationId":"auto-fail","status":"running","startedAt":1720000700100}}}
+{"channel":"session.lifecycle","event":{"type":"session.created","at":1720000700200,"session":{"id":"s-auto-err","workspaceId":"w1","title":"Auto Error","status":"idle"}}}
+{"channel":"automation.runs","event":{"type":"automation.run.updated","at":1720000700300,"run":{"id":"run-err","automationId":"auto-fail","status":"running","startedAt":1720000700100,"sessionId":"s-auto-err"}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000700400,"sessionId":"s-auto-err","status":"busy"}}
+{"channel":"session.messages","event":{"type":"message.upserted","at":1720000700500,"sessionId":"s-auto-err","message":{"id":"m-err","role":"assistant","parts":[{"id":"p-err","type":"text","content":"Attempting..."}]}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000700600,"sessionId":"s-auto-err","status":"error"}}
+{"channel":"provider.connection","event":{"type":"provider.disconnected","at":1720000700700,"providerId":"opencode","reason":"automation failed"}}
+{"channel":"automation.runs","event":{"type":"automation.run.updated","at":1720000700800,"run":{"id":"run-err","automationId":"auto-fail","status":"failed","startedAt":1720000700100,"endedAt":1720000700800,"sessionId":"s-auto-err"}}}

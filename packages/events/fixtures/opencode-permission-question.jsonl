@@ -1,0 +1,9 @@
+{"channel":"session.lifecycle","event":{"type":"session.created","at":1720000100000,"session":{"id":"s-perm","workspaceId":"w1","title":"Perm Q","status":"idle"}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000100100,"sessionId":"s-perm","status":"busy"}}
+{"channel":"session.messages","event":{"type":"message.upserted","at":1720000100200,"sessionId":"s-perm","message":{"id":"m-user","role":"user","parts":[{"id":"p-text","type":"text","content":"run ls in /tmp"}]}}}
+{"channel":"session.permissions","event":{"type":"permission.requested","at":1720000100300,"sessionId":"s-perm","request":{"id":"pr-1","tool":"bash","args":{"command":"ls /tmp"},"description":"Execute shell command"}}}
+{"channel":"session.questions","event":{"type":"question.requested","at":1720000100400,"sessionId":"s-perm","request":{"id":"q-1","prompt":"Which dir to list?","options":[{"id":"opt-tmp","label":"/tmp"},{"id":"opt-home","label":"~"}]}}}
+{"channel":"session.permissions","event":{"type":"permission.resolved","at":1720000100500,"sessionId":"s-perm","requestId":"pr-1","response":"allow"}}
+{"channel":"session.questions","event":{"type":"question.resolved","at":1720000100600,"sessionId":"s-perm","requestId":"q-1","answers":[{"optionId":"opt-tmp"}]}}
+{"channel":"session.messages","event":{"type":"message.upserted","at":1720000100700,"sessionId":"s-perm","message":{"id":"m-assist","role":"assistant","parts":[{"id":"p-resp","type":"text","content":"Listed /tmp successfully."},{"id":"p-tool","type":"tool-result","tool":{"name":"bash","result":{"stdout":"file1\nfile2"}}}]}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000100800,"sessionId":"s-perm","status":"idle"}}

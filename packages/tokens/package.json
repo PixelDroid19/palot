@@ -1,0 +1,42 @@
+{
+	"name": "@palot/tokens",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"description": "Shared design tokens (--palot-* CSS custom properties + TS) for React (@palot/ui) and Lit (@palot/lit-components). Theme, colors, spacing, typography, radius.",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./src/index.ts"
+		},
+		"./colors": {
+			"types": "./dist/colors.d.ts",
+			"default": "./src/colors.ts"
+		},
+		"./radius": {
+			"types": "./dist/radius.d.ts",
+			"default": "./src/radius.ts"
+		},
+		"./spacing": {
+			"types": "./dist/spacing.d.ts",
+			"default": "./src/spacing.ts"
+		},
+		"./typography": {
+			"types": "./dist/typography.d.ts",
+			"default": "./src/typography.ts"
+		},
+		"./theme.css": "./src/theme.css"
+	},
+	"scripts": {
+		"build": "tsc",
+		"build:types": "tsc",
+		"check-types": "tsgo --noEmit",
+		"lint": "biome check .",
+		"clean": "rm -rf dist node_modules .turbo"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5.8.3"
+	}
+}

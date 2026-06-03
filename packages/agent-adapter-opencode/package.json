@@ -1,0 +1,31 @@
+{
+	"name": "@palot/agent-adapter-opencode",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"description": "OpenCode implementation of AgentProviderAdapter. Maps OpenCode v2 SDK events (/global/event) and commands to canonical Palot events/commands. Enforces resolved model for promptAsync.",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./src/index.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"build:types": "tsc",
+		"check-types": "tsgo --noEmit",
+		"test": "bun test",
+		"lint": "biome check .",
+		"clean": "rm -rf dist node_modules .turbo"
+	},
+	"dependencies": {
+		"@opencode-ai/sdk": "^1.2.1",
+		"@palot/core": "workspace:*"
+	},
+	"devDependencies": {
+		"@palot/events": "workspace:*",
+		"@types/bun": "latest",
+		"typescript": "^5.8.3"
+	}
+}

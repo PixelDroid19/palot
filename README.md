@@ -189,13 +189,25 @@ cd apps/desktop && bun run dev:web  # port 1420
 
 ```
 apps/
-  desktop/       Electron 40 + Vite + React 19 desktop app
+  desktop/       Electron 40 + Vite + React 19 desktop app (host during migration)
   server/        Bun + Hono backend (browser-mode dev only)
 packages/
-  ui/            Shared shadcn/ui component library (@palot/ui)
+  ui/            Shared shadcn/ui component library (@palot/ui) — React layer
   configconv/    Universal agent config converter (Claude Code, Cursor, OpenCode)
   configconv-cli/ CLI wrapper for the config converter
+  tokens/        @palot/tokens — shared CSS vars + TS design tokens
+  lit-styles/    @palot/lit-styles — scss → lit css.js generator + vite plugin
+  lit-components/@palot/lit-components — portable palot-* Web Components (Lit)
+  events/        @palot/events — typed bus, PalotEvent, channels, replay (pure)
+  core/          @palot/core — commands, reducers, view-models, use-cases, ports (pure)
+  ipc-contracts/ @palot/ipc-contracts — single source IPC channels + validation
+  agent-adapter-opencode/ @palot/agent-adapter-opencode — OpenCode adapter impl
+  agent-harness/ @palot/agent-harness — deterministic test harness (no live provider)
+  agent-adapter-codex/    (Phase 2 placeholder)
+  agent-adapter-claude-code/ (Phase 2 placeholder)
 ```
+
+The platform packages (`@palot/{events,core,*,lit-*,tokens,ipc-contracts,agent-*}`) implement the agent platform extraction per `roadmap/`. React surfaces continue to work; new Lit components + core view models are exercised in demos and tests. See `docs/IMPORT-ARCHITECTURE.md` and `roadmap/README.md`.
 
 The desktop app has three runtime contexts:
 

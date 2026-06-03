@@ -13,6 +13,11 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noEmit": true,
+		// Lit decorator support (new + legacy for packages/lit-components which uses experimentalDecorators + useDefineForClassFields).
+		// Required because paths map @palot/lit-* directly to src (dev/hot reload + typecheck consume source).
+		// Matches packages/lit-components/tsconfig.json .
+		"experimentalDecorators": true,
+		"useDefineForClassFields": true,
 		"paths": {
 			"@/*": ["./src/renderer/*"],
 			"@/features/automations": ["./src/renderer/features/automations/index.ts"],
@@ -24,7 +29,23 @@
 			"@desktop/shared/*": ["./src/shared/*"],
 			"@desktop/preload": ["./src/preload/public-api.ts"],
 			"@desktop/preload/*": ["./src/preload/*"],
-			"@palot/ui/*": ["../../packages/ui/src/*"]
+			"@palot/ui/*": ["../../packages/ui/src/*"],
+			"@palot/tokens": ["../../packages/tokens/src/index.ts"],
+			"@palot/tokens/*": ["../../packages/tokens/src/*"],
+			"@palot/lit-components": ["../../packages/lit-components/src/index.ts"],
+			"@palot/lit-components/*": ["../../packages/lit-components/src/*"],
+			"@palot/lit-styles": ["../../packages/lit-styles/src/index.ts"],
+			"@palot/lit-styles/*": ["../../packages/lit-styles/src/*"],
+			"@palot/events": ["../../packages/events/src/index.ts"],
+			"@palot/events/*": ["../../packages/events/src/*"],
+			"@palot/core": ["../../packages/core/src/index.ts"],
+			"@palot/core/*": ["../../packages/core/src/*"],
+			"@palot/agent-adapter-opencode": ["../../packages/agent-adapter-opencode/src/index.ts"],
+			"@palot/agent-adapter-opencode/*": ["../../packages/agent-adapter-opencode/src/*"],
+			"@palot/agent-harness": ["../../packages/agent-harness/src/index.ts"],
+			"@palot/agent-harness/*": ["../../packages/agent-harness/src/*"],
+			"@palot/ipc-contracts": ["../../packages/ipc-contracts/src/index.ts"],
+			"@palot/ipc-contracts/*": ["../../packages/ipc-contracts/src/*"]
 		}
 	},
 	"include": [
@@ -35,7 +56,8 @@
 		"src/renderer/**/*.ts",
 		"src/renderer/**/*.tsx",
 		"test/**/*.ts",
-		"vite-aliases.ts"
+		"vite-aliases.ts",
+		"src/custom-elements.d.ts"
 	],
 	"exclude": ["node_modules", "dist", "out", "release"]
 }

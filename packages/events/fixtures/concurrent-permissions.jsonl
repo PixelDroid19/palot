@@ -1,0 +1,9 @@
+{"channel":"session.lifecycle","event":{"type":"session.created","at":1720000500000,"session":{"id":"s-conc1","workspaceId":"w-conc","title":"Concurrent 1","status":"idle"}}}
+{"channel":"session.lifecycle","event":{"type":"session.created","at":1720000500100,"session":{"id":"s-conc2","workspaceId":"w-conc","title":"Concurrent 2","status":"idle"}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000500200,"sessionId":"s-conc1","status":"busy"}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000500250,"sessionId":"s-conc2","status":"busy"}}
+{"channel":"session.permissions","event":{"type":"permission.requested","at":1720000500300,"sessionId":"s-conc1","request":{"id":"pr-conc1","tool":"bash","description":"Run in conc1?"}}}
+{"channel":"session.messages","event":{"type":"message.upserted","at":1720000500400,"sessionId":"s-conc2","message":{"id":"m-conc2","role":"user","parts":[{"id":"p-conc2","type":"text","content":"do concurrent work"}]}}}
+{"channel":"session.permissions","event":{"type":"permission.resolved","at":1720000500500,"sessionId":"s-conc1","requestId":"pr-conc1","response":"allow"}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000500600,"sessionId":"s-conc1","status":"idle"}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000500700,"sessionId":"s-conc2","status":"idle"}}

@@ -33,6 +33,23 @@ export function createDesktopAliases(options: DesktopAliasOptions) {
 		{ find: "@/lib", replacement: path.join(rendererRoot, "lib") },
 		{ find: "@", replacement: rendererRoot },
 		{ find: "@palot/ui", replacement: options.palotUiRoot },
+		// Platform packages (core pure, events bus, ipc contracts, adapters for mapping only, harness for tests, lit portable, tokens shared).
+		// Wired per foundational monorepo integration + roadmap (Subagent-D closeout). Use only in renderer (or shared if pure); main process aliases limited to prevent misuse.
+		{ find: "@palot/tokens", replacement: path.join(DESKTOP_ROOT, "../../packages/tokens/src/index.ts") },
+		{ find: "@palot/lit-styles", replacement: path.join(DESKTOP_ROOT, "../../packages/lit-styles/src/index.ts") },
+		{ find: "@palot/lit-components", replacement: path.join(DESKTOP_ROOT, "../../packages/lit-components/src/index.ts") },
+		{ find: "@palot/events", replacement: path.join(DESKTOP_ROOT, "../../packages/events/src/index.ts") },
+		{ find: "@palot/core", replacement: path.join(DESKTOP_ROOT, "../../packages/core/src/index.ts") },
+		{ find: "@palot/agent-adapter-opencode", replacement: path.join(DESKTOP_ROOT, "../../packages/agent-adapter-opencode/src/index.ts") },
+		{ find: "@palot/agent-harness", replacement: path.join(DESKTOP_ROOT, "../../packages/agent-harness/src/index.ts") },
+		{ find: "@palot/ipc-contracts", replacement: path.join(DESKTOP_ROOT, "../../packages/ipc-contracts/src/index.ts") },
+		// Subpath support for core exports (commands, sessions, view-models etc) and events if used directly.
+		{ find: "@palot/core/commands", replacement: path.join(DESKTOP_ROOT, "../../packages/core/src/commands/index.ts") },
+		{ find: "@palot/core/sessions", replacement: path.join(DESKTOP_ROOT, "../../packages/core/src/sessions/index.ts") },
+		{ find: "@palot/core/view-models", replacement: path.join(DESKTOP_ROOT, "../../packages/core/src/view-models/index.ts") },
+		{ find: "@palot/core/use-cases", replacement: path.join(DESKTOP_ROOT, "../../packages/core/src/use-cases/index.ts") },
+		{ find: "@palot/core/events", replacement: path.join(DESKTOP_ROOT, "../../packages/core/src/events/index.ts") },
+		{ find: "@palot/core/state", replacement: path.join(DESKTOP_ROOT, "../../packages/core/src/state.ts") },
 	]
 }
 

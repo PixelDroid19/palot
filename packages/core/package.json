@@ -1,0 +1,67 @@
+{
+	"name": "@palot/core",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"description": "Palot platform core: canonical commands, events, reducers, view models, use cases, provider adapter port. Pure TS only (forbidden: React/Jotai/Lit/Electron/DOM/Node/provider SDKs).",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./src/index.ts"
+		},
+		"./commands": {
+			"types": "./dist/commands/index.d.ts",
+			"default": "./src/commands/index.ts"
+		},
+		"./sessions": {
+			"types": "./dist/sessions/index.d.ts",
+			"default": "./src/sessions/index.ts"
+		},
+		"./automations": {
+			"types": "./dist/automations/index.d.ts",
+			"default": "./src/automations/index.ts"
+		},
+		"./settings": {
+			"types": "./dist/settings/index.d.ts",
+			"default": "./src/settings/index.ts"
+		},
+		"./workspaces": {
+			"types": "./dist/workspaces/index.d.ts",
+			"default": "./src/workspaces/index.ts"
+		},
+		"./state": {
+			"types": "./dist/state.d.ts",
+			"default": "./src/state.ts"
+		},
+		"./view-models": {
+			"types": "./dist/view-models/index.d.ts",
+			"default": "./src/view-models/index.ts"
+		},
+		"./use-cases": {
+			"types": "./dist/use-cases/index.d.ts",
+			"default": "./src/use-cases/index.ts"
+		},
+		"./events": {
+			"types": "./dist/events/index.d.ts",
+			"default": "./src/events/index.ts"
+		},
+		"./provider-adapter": {
+			"types": "./dist/provider-adapter.d.ts",
+			"default": "./src/provider-adapter.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"build:types": "tsc",
+		"check-types": "tsgo --noEmit",
+		"test": "bun test",
+		"lint": "biome check .",
+		"clean": "rm -rf dist node_modules .turbo"
+	},
+	"devDependencies": {
+		"@palot/events": "workspace:*",
+		"@types/bun": "latest",
+		"typescript": "^5.8.3"
+	}
+}

@@ -1,0 +1,7 @@
+{"channel":"session.lifecycle","event":{"type":"session.created","at":1720000000000,"session":{"id":"s-basic","workspaceId":"w1","title":"Basic Session","status":"idle"}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000001000,"sessionId":"s-basic","status":"busy"}}
+{"channel":"session.messages","event":{"type":"message.upserted","at":1720000002000,"sessionId":"s-basic","message":{"id":"m1","role":"user","parts":[{"id":"p1","type":"text","content":"Hello"}]}}}
+{"channel":"session.messages","event":{"type":"message.upserted","at":1720000003000,"sessionId":"s-basic","message":{"id":"m2","role":"assistant","parts":[{"id":"p2","type":"text","content":"Hi there"}]}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000004000,"sessionId":"s-basic","status":"idle"}}
+{"channel":"session.messages","event":{"type":"message.part.upserted","at":1720000005000,"sessionId":"s-basic","messageId":"m2","part":{"id":"p2","type":"text","content":"Hi there, expanded fixture"}}}
+{"channel":"session.permissions","event":{"type":"permission.requested","at":1720000006000,"sessionId":"s-basic","request":{"id":"pr-basic","tool":"bash","description":"Run command?"}}}

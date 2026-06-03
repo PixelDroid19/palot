@@ -1,0 +1,27 @@
+{
+	"name": "@palot/agent-adapter-codex",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"description": "Codex provider adapter (Phase 2 / future). Placeholder implementing AgentProviderAdapter contract. See roadmap.",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./src/index.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"build:types": "tsc",
+		"check-types": "tsgo --noEmit",
+		"test": "bun test",
+		"lint": "biome check .",
+		"clean": "rm -rf dist node_modules .turbo"
+	},
+	"devDependencies": {
+		"@palot/core": "workspace:*",
+		"@types/bun": "latest",
+		"typescript": "^5.8.3"
+	}
+}

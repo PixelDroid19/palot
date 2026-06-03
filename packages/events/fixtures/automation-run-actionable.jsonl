@@ -1,0 +1,6 @@
+{"channel":"automation.runs","event":{"type":"automation.run.updated","at":1720000400000,"run":{"id":"run-1","automationId":"auto-daily","status":"pending"}}}
+{"channel":"automation.runs","event":{"type":"automation.run.updated","at":1720000400100,"run":{"id":"run-1","automationId":"auto-daily","status":"running","startedAt":1720000400100}}}
+{"channel":"session.lifecycle","event":{"type":"session.created","at":1720000400200,"session":{"id":"s-auto","workspaceId":"w1","title":"Automation #42","status":"idle"}}}
+{"channel":"automation.runs","event":{"type":"automation.run.updated","at":1720000400300,"run":{"id":"run-1","automationId":"auto-daily","status":"running","startedAt":1720000400100,"sessionId":"s-auto"}}}
+{"channel":"session.messages","event":{"type":"message.upserted","at":1720000400400,"sessionId":"s-auto","message":{"id":"ma1","role":"assistant","parts":[{"id":"pa1","type":"text","content":"Automation task complete."}]}}}
+{"channel":"automation.runs","event":{"type":"automation.run.updated","at":1720000400500,"run":{"id":"run-1","automationId":"auto-daily","status":"succeeded","startedAt":1720000400100,"endedAt":1720000400500,"sessionId":"s-auto"}}}

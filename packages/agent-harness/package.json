@@ -1,0 +1,29 @@
+{
+	"name": "@palot/agent-harness",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"description": "Deterministic local agent harness for functional tests and E2E. Simulates sessions, streaming, permissions, questions, diffs, errors, reconnects, automations without live external providers.",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./src/index.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"build:types": "tsc",
+		"check-types": "tsgo --noEmit",
+		"test": "bun test",
+		"lint": "biome check .",
+		"clean": "rm -rf dist node_modules .turbo"
+	},
+	"devDependencies": {
+		"@palot/core": "workspace:*",
+		"@palot/events": "workspace:*",
+		"@palot/agent-adapter-opencode": "workspace:*",
+		"@types/bun": "latest",
+		"typescript": "^5.8.3"
+	}
+}

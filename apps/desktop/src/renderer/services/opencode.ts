@@ -8,8 +8,10 @@ export type { OpencodeClient }
 /**
  * Callable fetch signature. We avoid `typeof fetch` because Node 24 adds
  * static properties (e.g. `preconnect`) that wrapper functions don't carry.
+ *
+ * Re-exported for @palot/agent-adapter-opencode connect usage from backend host.
  */
-type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+export type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 
 const log = createLogger("opencode")
 
@@ -36,8 +38,11 @@ function isTransientNetworkError(err: unknown): boolean {
  *
  * Only retries on TypeError (network-level failures). HTTP error responses
  * (4xx, 5xx) are NOT retried — they indicate server-side issues.
+ *
+ * Exported for @palot/* adapter usage in the new platform integration path
+ * (connection-manager + backend host use the same retry+proxy behavior).
  */
-function createRetryFetch(baseFetch: FetchFn = fetch, maxRetries = 2, baseDelayMs = 150): FetchFn {
+export function createRetryFetch(baseFetch: FetchFn = fetch, maxRetries = 2, baseDelayMs = 150): FetchFn {
 	return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
 		let lastError: unknown
 		for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -73,8 +78,10 @@ function createRetryFetch(baseFetch: FetchFn = fetch, maxRetries = 2, baseDelayM
  * Checks whether a Request is for an SSE (Server-Sent Events) stream.
  * SSE requests must stay in the renderer because they return a streaming
  * ReadableStream body that can't be serialized over IPC.
+ *
+ * Exported for platform adapter fetch wrappers in backend/palot-agent-host paths.
  */
-function isSseRequest(request: Request): boolean {
+export function isSseRequest(request: Request): boolean {
 	return (
 		request.headers.get("accept") === "text/event-stream" || request.url.includes("/global/event")
 	)
@@ -93,8 +100,12 @@ function isSseRequest(request: Request): boolean {
  *
  * When `authHeader` is provided, it is injected into every request (including
  * SSE) to support HTTP Basic Auth for remote OpenCode servers.
+ *
+ * Exported for the PalotAgentHost / backend platform integration layer
+ * (so @palot/agent-adapter-opencode can receive the proxy fetch without
+ * duplicating Chromium bypass logic).
  */
-function createIpcFetch(authHeader?: string): FetchFn {
+export function createIpcFetch(authHeader?: string): FetchFn {
 	return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
 		// Normalize input to a Request object (the SDK always passes a Request,
 		// but handle URL/string too for robustness)
@@ -214,8 +225,10 @@ export function connectToServer(url: string, options?: ConnectOptions): Opencode
 /**
  * Creates a browser fetch wrapper that optionally injects an auth header.
  * Used in non-Electron (browser dev) mode.
+ *
+ * Exported for the platform adapter host in backend (symmetric to createIpcFetch).
  */
-function createBrowserFetch(authHeader?: string): FetchFn {
+export function createBrowserFetch(authHeader?: string): FetchFn {
 	if (!authHeader) return fetch
 	return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
 		const request = input instanceof Request ? input : new Request(input, init)

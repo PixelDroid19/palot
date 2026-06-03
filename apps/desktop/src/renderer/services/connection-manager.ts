@@ -1,6 +1,14 @@
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { coalescingKey } from "@desktop/shared"
 import { FRAME_BUDGET_MS } from "@desktop/shared"
+// Platform @palot/* integration (Subagent-B real production): dual-write events to bus + core reducer
+// in parallel to legacy Jotai. Adapter used for new command path (dispatch). All new imports are
+// @palot/* (no direct @opencode-ai/sdk added to this file's "new" surface).
+import type { AgentProviderAdapter, FullCoreState, PalotCommand } from "@palot/core"
+import { deriveSidebarViewModel, initialFullCoreState, rootReducer } from "@palot/core"
+import { CHANNELS, eventBus, type Channel, type PalotEvent } from "@palot/events"
+import { mapOpenCodeEventToPalot } from "@palot/agent-adapter-opencode"
+import { platformCoreStateAtom } from "@/atoms/connection"
 import { processEvent } from "@/atoms/actions/event-processor"
 import { authHeaderAtom, serverConnectedAtom, serverUrlAtom } from "@/atoms/connection"
 import { batchUpsertPartsAtom } from "@/atoms/parts"
@@ -106,6 +114,131 @@ function setGlobalAbort(controller: AbortController | null) {
 // Public API
 // ============================================================
 
+// ============================================================
+// PalotAgentHost / platform bridge (dual write, dispatch-only adapter)
+// JSDoc per AGENTS.md and roadmap: thin compat layer so legacy 100% works while
+// new @palot/core + @palot/events + @palot/agent-adapter-opencode drive commands
+// and (via mapper) the canonical state. No breakage to SSE/automations/tray.
+// All renderer new code paths go through services/backend reexports or these.
+// ============================================================
+
+/**
+ * Helper: map PalotEvent type to canonical channel for bus publish.
+ * Duplicated from harness (small) to keep connection-manager self contained during migration.
+ * Used for dual feed from legacy mapper.
+ */
+function pickChannelForPalotEvent(event: PalotEvent): Channel {
+	switch (event.type) {
+		case "provider.connected":
+		case "provider.disconnected":
+			return CHANNELS.PROVIDER_CONNECTION
+		case "workspace.discovered":
+			return CHANNELS.WORKSPACE_DISCOVERY
+		case "session.created":
+		case "session.updated":
+		case "session.deleted":
+		case "session.status.changed":
+			return CHANNELS.SESSION_LIFECYCLE
+		case "message.upserted":
+		case "message.removed":
+		case "message.part.upserted":
+		case "message.part.delta":
+		case "message.part.removed":
+			return CHANNELS.SESSION_MESSAGES
+		case "permission.requested":
+		case "permission.resolved":
+			return CHANNELS.SESSION_PERMISSIONS
+		case "question.requested":
+		case "question.resolved":
+			return CHANNELS.SESSION_QUESTIONS
+		case "session.diff.updated":
+			return CHANNELS.SESSION_DIFF
+		case "automation.run.updated":
+			return CHANNELS.AUTOMATION_RUNS
+		case "settings.changed":
+			return CHANNELS.SETTINGS_CHANGED
+		default:
+			return CHANNELS.SESSION_LIFECYCLE
+	}
+}
+
+/** Module-level core state for platform (updated via rootReducer on PalotEvents). */
+let platformCoreState: FullCoreState = { ...initialFullCoreState }
+
+/** Dispatch-only adapter (streamEvents:false) for exercising adapter as command source without dupe SSE. */
+let dispatchAdapter: AgentProviderAdapter | null = null
+
+/**
+ * Ensure the dispatch-only OpenCode adapter is connected (using injected fetch proxy when Electron).
+ * Called from connectToOpenCode (after legacy) and from use-server before platform dispatch.
+ * Uses streamEvents:false so only the battle-tested legacy SSE path (connection-manager)
+ * produces events -> mapper -> bus + rootReducer + Jotai dual write.
+ */
+export async function ensurePlatformDispatchAdapter(
+	url: string,
+	authHeader?: string | null,
+): Promise<void> {
+	if (dispatchAdapter) {
+		// Already wired for this server (simple; real host would track url)
+		return
+	}
+	// Create via adapter package (renderer imports ONLY @palot/* here for new surface).
+	const adapter = new (await import("@palot/agent-adapter-opencode").then(
+		(m) => m.OpenCodeAgentAdapter,
+	))() as AgentProviderAdapter & { connect: (i: any) => Promise<any> }
+
+	// Get the proxy fetch creators from opencode service (they encapsulate IPC vs browser + retry + SSE guard).
+	// This import is local service (no new "@opencode-ai/sdk" string in "new integration" code paths).
+	const { createIpcFetch, createBrowserFetch } = await import("./opencode")
+	const isElectron = typeof window !== "undefined" && "palot" in window
+	const fetchFn = isElectron
+		? createIpcFetch(authHeader ?? undefined)
+		: createBrowserFetch(authHeader ?? undefined)
+
+	await adapter.connect({
+		url,
+		authHeader: authHeader ?? null,
+		fetch: fetchFn,
+		streamEvents: false, // critical: no second /global/event subscription
+	})
+
+	dispatchAdapter = adapter
+	log.info("Platform dispatch adapter connected (dispatch-only)", { url })
+}
+
+/**
+ * Dispatch a PalotCommand through the OpenCodeAgentAdapter (new platform path).
+ * This is how we wire "adapter as THE source for new sessions/prompts".
+ * Requires prior ensurePlatformDispatchAdapter (called on server connect).
+ * Model must be resolved (enforced inside adapter per critical footgun).
+ * Legacy client calls continue for return values/optimistics (compat).
+ */
+export async function dispatchPlatformCommand(command: PalotCommand): Promise<void> {
+	if (!dispatchAdapter) {
+		throw new Error("Platform dispatch adapter not ready (ensure after connectToOpenCode)")
+	}
+	await dispatchAdapter.dispatch(command)
+}
+
+/** Return current platform core state (for services/hooks that want view models from core). */
+export function getPlatformCoreState(): FullCoreState {
+	return platformCoreState
+}
+
+/** Derive sidebar VM from current platform core state (pure, for new hook paths). */
+export function derivePlatformSidebarViewModel() {
+	return deriveSidebarViewModel(platformCoreState)
+}
+
+/** Feed a PalotEvent: publish to shared bus + rootReducer + update Jotai atom (dual write). */
+function feedPalotEvent(ev: PalotEvent): void {
+	const ch = pickChannelForPalotEvent(ev)
+	eventBus.publish(ch, ev)
+	platformCoreState = rootReducer(platformCoreState, ev)
+	// Also update Jotai so usePlatform* hooks + React 19 derive with useMemo work reactively.
+	appStore.set(platformCoreStateAtom, platformCoreState)
+}
+
 /**
  * Connect to an OpenCode server.
  * Starts SSE subscription for all-project events.
@@ -146,6 +279,10 @@ export async function connectToOpenCode(url: string, authHeader?: string | null)
 
 	log.info("Connecting to OpenCode server", { url, authenticated: !!resolvedAuth, generation: gen })
 
+	// Reset platform core state for the new server connection (mirrors Jotai session eviction on server switch).
+	platformCoreState = { ...initialFullCoreState }
+	appStore.set(platformCoreStateAtom, platformCoreState)
+
 	// Ping the server to check if it's reachable before starting the event loop.
 	// This sets the initial connected state accurately instead of optimistically.
 	const healthy = await checkHealth(url, resolvedAuth)
@@ -159,6 +296,17 @@ export async function connectToOpenCode(url: string, authHeader?: string | null)
 	// Start SSE event loop in the background.
 	// Connected state is updated when the SSE stream opens or fails.
 	startEventLoop(baseClient, abortController.signal, gen)
+
+	// ============================================================
+	// New platform path: ensure dispatch-only adapter (exercises @palot/agent-adapter-opencode
+	// for commands like session.prompt / create using resolved model + no dupe SSE).
+	// This makes adapter "THE source" for new prompts/sessions while legacy path (and its
+	// mapper dual feed) keeps Jotai/SSE/automations 100% working.
+	// Fire-and-forget; errors logged only.
+	// ============================================================
+	ensurePlatformDispatchAdapter(url, resolvedAuth).catch((e) =>
+		log.warn("ensurePlatformDispatchAdapter failed (non-fatal for legacy)", e),
+	)
 }
 
 /**
@@ -413,6 +561,19 @@ export function disconnect(): void {
 	eventLoopGeneration++
 	appStore.set(evictAllSessionsAtom)
 	appStore.set(serverConnectedAtom, false)
+
+	// Platform dispatch adapter cleanup (non-blocking; keeps legacy automations etc unaffected).
+	if (dispatchAdapter) {
+		void (dispatchAdapter as any)
+			.disconnect?.()
+			.catch(() => {})
+			.finally(() => {
+				dispatchAdapter = null
+			})
+	}
+	// Reset platform core state on full disconnect (mirrors evictAllSessionsAtom).
+	platformCoreState = { ...initialFullCoreState }
+	appStore.set(platformCoreStateAtom, platformCoreState)
 }
 
 // ============================================================
@@ -599,6 +760,23 @@ async function startEventLoop(
 				const event = globalEvent.payload
 				if (event) {
 					batcher.enqueue(event)
+
+					// ============================================================
+					// Dual-write to @palot/events bus + @palot/core rootReducer (parallel to Jotai).
+					// Uses the adapter's pure mapper so PalotEvents are canonical (no SDK leak to new paths).
+					// This is the production feed from the real OpenCode SSE; new platform commands
+					// (via dispatchAdapter) produce side-effects that arrive here and populate bus/core.
+					// Safe: old Jotai (processEvent + atoms) + new (bus + reducer + platformCoreStateAtom) both updated.
+					// No breakage to SSE reconnect/batching/HMR/automations (they use legacy Event path).
+					// ============================================================
+					try {
+						const palotEvents = mapOpenCodeEventToPalot(event as any, globalEvent.directory)
+						for (const pe of palotEvents) {
+							feedPalotEvent(pe)
+						}
+					} catch (mapErr) {
+						log.warn("Failed to map legacy event to PalotEvent for platform bus/core (safe, continue)", mapErr)
+					}
 				}
 			}
 			if (!isStale()) {

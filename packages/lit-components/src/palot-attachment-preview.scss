@@ -1,0 +1,41 @@
+:host {
+	display: inline-flex;
+}
+
+.preview {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--palot-space-xs);
+	padding: var(--palot-space-xs) var(--palot-space-sm);
+	border: 1px solid var(--palot-border);
+	border-radius: var(--palot-radius-sm);
+	background: var(--palot-bg-elevated);
+	font-size: var(--palot-font-size-xs);
+	max-width: 160px;
+}
+
+.icon {
+	flex-shrink: 0;
+}
+
+.name {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-family: var(--palot-font-mono);
+}
+
+button {
+	border: none;
+	background: transparent;
+	color: var(--palot-danger);
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+	padding: 0 2px;
+}
+
+button:hover {
+	opacity: 0.8;
+}

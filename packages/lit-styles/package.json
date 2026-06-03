@@ -1,0 +1,39 @@
+{
+	"name": "@palot/lit-styles",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"description": "SCSS to Lit css.js generator + Vite plugin for @palot/lit-components. Central build pipeline: edit .scss, generate deterministic css.js + .d.ts. Run via `bun run build:styles` from root.",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./src/index.ts"
+		},
+		"./build-scss-css-js": {
+			"types": "./dist/build-scss-css-js.d.ts",
+			"default": "./src/build-scss-css-js.ts"
+		},
+		"./vite-plugin": {
+			"types": "./dist/vite-plugin-palot-lit-scss.d.ts",
+			"bun": "./src/vite-plugin-palot-lit-scss.ts",
+			"default": "./dist/vite-plugin-palot-lit-scss.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"build:types": "tsc",
+		"build:styles": "bun src/build-scss-css-js.ts",
+		"check-types": "tsgo --noEmit",
+		"lint": "biome check .",
+		"clean": "rm -rf dist node_modules .turbo"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5.8.3"
+	},
+	"dependencies": {
+		"lit": "^3.2.1",
+		"sass": "^1.77.0"
+	}
+}

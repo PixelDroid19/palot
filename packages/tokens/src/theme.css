@@ -1,0 +1,34 @@
+:root {
+	--palot-bg: #0d0d0d;
+	--palot-bg-elevated: #1a1a1a;
+	--palot-border: #2a2a2a;
+	--palot-text: #e5e5e5;
+	--palot-text-muted: #a1a1a1;
+	--palot-accent: #3b82f6;
+	--palot-danger: #ef4444;
+	--palot-success: #22c55e;
+
+	--palot-space-xs: 4px;
+	--palot-space-sm: 8px;
+	--palot-space-md: 12px;
+	--palot-space-lg: 16px;
+	--palot-space-xl: 24px;
+
+	--palot-font-sans: Inter, system-ui, sans-serif;
+	--palot-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+	--palot-font-size-xs: 10px;
+	--palot-font-size-sm: 12px;
+	--palot-font-size-md: 13px;
+	--palot-font-size-lg: 14px;
+
+	--palot-font-weight-normal: 400;
+	--palot-font-weight-medium: 500;
+
+	--palot-radius-xs: 2px;
+	--palot-radius-sm: 4px;
+	--palot-radius-md: 6px;
+	--palot-radius-lg: 8px;
+	--palot-radius-xl: 12px;
+	--palot-radius-full: 999px;
+}

@@ -1,0 +1,6 @@
+{"channel":"session.lifecycle","event":{"type":"session.created","at":1720000300000,"session":{"id":"s-err","workspaceId":"w1","title":"Error Case","status":"idle"}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000300100,"sessionId":"s-err","status":"busy"}}
+{"channel":"session.messages","event":{"type":"message.upserted","at":1720000300200,"sessionId":"s-err","message":{"id":"merr","role":"user","parts":[{"id":"perr","type":"text","content":"do impossible thing"}]}}}
+{"channel":"session.lifecycle","event":{"type":"session.status.changed","at":1720000300300,"sessionId":"s-err","status":"error"}}
+{"channel":"provider.connection","event":{"type":"provider.disconnected","at":1720000300400,"providerId":"opencode","reason":"agent crashed"}}
+{"channel":"session.diff","event":{"type":"session.diff.updated","at":1720000300500,"sessionId":"s-err","diff":{"id":"d-err","sessionId":"s-err","filePath":"err.txt","patch":"--- /dev/null\n+++ b/err.txt\n@@ -0,0 +1 @@\n+crash log"}}}

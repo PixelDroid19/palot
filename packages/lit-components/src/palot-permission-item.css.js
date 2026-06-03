@@ -1,0 +1,55 @@
+import { css } from "lit"
+
+export const styles = css`
+:host {
+  display: block;
+  padding: var(--palot-space-sm) var(--palot-space-md);
+  border: 1px solid var(--palot-border);
+  border-radius: var(--palot-radius-md);
+  background: var(--palot-bg-elevated);
+  font-size: var(--palot-font-size-md, 13px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--palot-space-xs);
+  font-weight: var(--palot-font-weight-medium);
+}
+
+.tool {
+  font-family: var(--palot-font-mono);
+  color: var(--palot-accent);
+}
+
+.actions {
+  display: flex;
+  gap: var(--palot-space-sm);
+  margin-top: var(--palot-space-sm);
+}
+
+button {
+  font: inherit;
+  padding: var(--palot-space-xs) var(--palot-space-sm);
+  border-radius: var(--palot-radius-sm);
+  border: 1px solid var(--palot-border);
+  background: transparent;
+  color: var(--palot-text);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--palot-bg);
+}
+
+button[part=allow] {
+  border-color: var(--palot-success);
+  color: var(--palot-success);
+}
+
+button[part=deny] {
+  border-color: var(--palot-danger);
+  color: var(--palot-danger);
+}
+`

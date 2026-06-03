@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"composite": true,
+		"declaration": true,
+		"declarationMap": true,
+		"outDir": "dist"
+		// Paths for cross-package during dev. tsgo with strict includes may require building referenced projects first.
+		// "paths": { "@palot/events": ["../events/src/index.ts"] }
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules", "dist"]
+	// Project references enabled once packages have proper "build:types" + composite outputs.
+	// "references": [ { "path": "../events/tsconfig.json" } ]
+}

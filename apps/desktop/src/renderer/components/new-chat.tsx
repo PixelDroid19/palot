@@ -24,7 +24,7 @@ import {
 	GitPullRequestIcon,
 	MonitorIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { createElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { projectModelsAtom, setProjectModelAtom } from "@/atoms/preferences"
 import {
 	removeSessionAtom,
@@ -56,6 +56,19 @@ import { PromptAttachmentPreview } from "@/features/chat"
 import { PromptToolbar, StatusBar } from "@/features/chat"
 import { TEST_IDS } from "@desktop/shared"
 import { PalotWordmark } from "./palot-wordmark"
+
+// Platform package imports (foundational 100% + migration path).
+// Pure layers (@palot/events, @palot/core, harness, adapter-opencode). These + the bus/reducers will become the source of truth.
+// Legacy direct-OpenCode paths remain during incremental surface migration (see roadmap). Adapter is constructed in demo only.
+import type { Channel, PalotEvent } from "@palot/events"
+import { createHarness } from "@palot/agent-harness"
+import { OpenCodeAgentAdapter } from "@palot/agent-adapter-opencode"
+import {
+	deriveSidebarViewModel,
+	initialFullCoreState,
+	rootReducer,
+} from "@palot/core"
+import { replayEventsIntoReducer } from "@palot/events"
 
 // ============================================================
 // Worktree mode toggle
@@ -265,6 +278,54 @@ export function NewChat() {
 		// Restore the per-project agent preference (null = use config default)
 		setSelectedAgent(stored?.agent ?? null)
 	}, [selectedDirectory, projectModels])
+
+	// ============================================================
+	// Foundational platform demo (100% slice): exercises @palot/core + @palot/agent-harness + @palot/events (replay/bus/reducer/vm) + @palot/agent-adapter-opencode (construct) + @palot/lit-components (via createElement).
+	// Dev-only (guarded). Non-breaking. No pollution of production OpenCode paths (which still use legacy direct services for now).
+	// Proves monorepo wiring, pure contracts, and React hosting of Lit during migration. Will evolve to real bus+adapter wiring in surface migration phase (see roadmap/README.md).
+	// Lit registration now happens in main.tsx (side-effect import of @palot/lit-components).
+	// ============================================================
+	useEffect(() => {
+		if (typeof window === "undefined") return
+		// dev-only guard (Vite sets import.meta.env.DEV)
+		if (!((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV)) return
+
+		const harness = createHarness()
+		// Demonstrate real adapter boundary (the thing that will replace direct SDK usage).
+		// In production wiring (see sub B): const adapter = new OpenCodeAgentAdapter(); await adapter.connect({url, fetch: proxiedFetch}); for await (const ev of adapter.events(signal)) { bus.publish(...) }
+		void new OpenCodeAgentAdapter() // construct to prove the adapter class is usable from renderer (future: real connect in bridge)
+
+		const demoEvents: PalotEvent[] = [
+			{
+				type: "session.created",
+				at: Date.now(),
+				session: { id: "demo-platform", workspaceId: "w-demo", title: "Platform Demo", status: "idle" },
+			},
+			{
+				type: "session.status.changed",
+				at: Date.now() + 1,
+				sessionId: "demo-platform",
+				status: "busy",
+			},
+		]
+		demoEvents.forEach((e) => harness.emit(e))
+
+		// exercise core reducer + view model derivation + replay util
+		let state = initialFullCoreState
+		state = rootReducer(state, demoEvents[0])
+		state = rootReducer(state, demoEvents[1])
+		const vm = deriveSidebarViewModel(state)
+		const replayed = replayEventsIntoReducer(demoEvents.map((e) => ({ channel: "session.lifecycle" as Channel, event: e })), initialFullCoreState, rootReducer)
+		// log for verification (visible in console during dev)
+		console.debug("[platform-demo] core+harness+bus+vm+replay exercised (safe demo)", {
+			vmSessions: vm.sessions.length,
+			replayedSessions: Object.keys(replayed.sessions.sessions).length,
+			harnessRecorded: harness.bus.getRecorded().length,
+		})
+
+		// cleanup
+		harness.reset()
+	}, [])
 
 	const selectedProject = useMemo(
 		() => projects.find((p) => p.directory === selectedDirectory),
@@ -610,6 +671,20 @@ export function NewChat() {
 					{/* "Build what's next" + project name */}
 					<div className="text-center">
 						<h1 className="text-2xl font-semibold text-foreground">Build what's next</h1>
+
+						{/* Platform demo (foundational slice complete): palot-* Lit components hosted in React (via createElement).
+						     Exercises portable components + tokens + side-effect registration. Visual only here; driven by core/harness in the effect above for tests.
+						     Will be promoted / moved during surface migration (next after 100% foundational). */}
+						<div style={{ marginTop: 8, fontSize: 11, opacity: 0.6 }} aria-hidden="true">
+							{createElement("palot-project-row", { name: "Demo Project (lit)", "agent-count": 1 })}
+							{createElement("palot-session-row", {
+								"session-id": "demo-s1",
+								title: "Demo Session Row (lit+core)",
+								status: "idle",
+							})}
+							{createElement("palot-status-badge", { status: "idle", label: "core demo" })}
+							{createElement("palot-automation-row", { "automation-id": "a1", status: "pending", title: "Daily run" })}
+						</div>
 						{projects.length > 1 ? (
 							<Popover open={projectPickerOpen} onOpenChange={setProjectPickerOpen}>
 								<PopoverTrigger

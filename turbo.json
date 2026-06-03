@@ -42,6 +42,10 @@
 		},
 		"clean": {
 			"cache": false
+		},
+		"build:styles": {
+			"dependsOn": ["^build:styles"],
+			"cache": false
 		}
 	}
 }

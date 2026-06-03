@@ -1,0 +1,31 @@
+{
+	"name": "@palot/lit-components",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"description": "Portable palot-* Lit Web Components (session-row, project-row, status-badge, permission-item, etc). Local .scss + generated .css.js, typed props + CustomEvents (bubbles+composed). No React/Jotai/Electron/providers. Import barrel for side-effect registration in host.",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./src/index.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"build:types": "tsc",
+		"check-types": "tsgo --noEmit",
+		"test": "bun test",
+		"lint": "biome check .",
+		"build:styles": "bun ../lit-styles/src/build-scss-css-js.ts",
+		"clean": "rm -rf dist node_modules .turbo"
+	},
+	"dependencies": {
+		"lit": "^3.2.1"
+	},
+	"devDependencies": {
+		"@happy-dom/global-registrator": "latest",
+		"@types/bun": "latest",
+		"typescript": "^5.8.3"
+	}
+}
