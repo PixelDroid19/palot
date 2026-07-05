@@ -88,6 +88,20 @@ describe("AgentHost", () => {
 		await expect(pending).rejects.toThrow("cancelled")
 	})
 
+	test("cancel aborts a run still queued behind the same session", async () => {
+		const host = makeHost([
+			shellAdapter("slow", () => "sleep 0.3; echo done"),
+			shellAdapter("fast", () => "echo quick"),
+		])
+		const first = host.run("s1-a", "slow", { prompt: "x", cwd: "/tmp" }, { sessionKey: "s" })
+		const queued = host.run("s1-b", "fast", { prompt: "x", cwd: "/tmp" }, { sessionKey: "s" })
+		await new Promise((r) => setTimeout(r, 50))
+		expect(host.cancel("s1-b")).toBe(true)
+		expect(host.cancel("no-such-run")).toBe(false)
+		await expect(queued).rejects.toThrow("cancelled")
+		await expect(first).resolves.toMatchObject({ message: "done" })
+	})
+
 	test("timeout rejects with a diagnosable error", async () => {
 		const host = makeHost([shellAdapter("hang", () => "sleep 30")])
 		await expect(

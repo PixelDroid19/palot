@@ -56,6 +56,10 @@ export class AgentHost {
 	readonly events = new EventBus<HostEvents>()
 
 	private active = new Map<string, RunHandle>()
+	/** Runs accepted but not yet spawned (waiting on session chain / cap). */
+	private pending = new Set<string>()
+	/** Runs cancelled before they reached the spawn stage (queued/waiting). */
+	private cancelledEarly = new Set<string>()
 	private sessionChains = new Map<string, Promise<void>>()
 	private queue: QueueEntry[] = []
 	private running = 0
@@ -93,6 +97,7 @@ export class AgentHost {
 		const adapter = this.adapters.get(runtimeId)
 		if (!adapter) throw new Error(`Unknown agent runtime: ${runtimeId}`)
 
+		this.pending.add(runId)
 		const sessionKey = extra.sessionKey ?? runId
 		const previous = this.sessionChains.get(sessionKey) ?? Promise.resolve()
 
@@ -107,6 +112,8 @@ export class AgentHost {
 			return await this.schedule(() => this.execute(runId, adapter, opts, extra.onUpdate))
 		} finally {
 			release()
+			this.pending.delete(runId)
+			this.cancelledEarly.delete(runId)
 			if (this.sessionChains.get(sessionKey) === chained) {
 				this.sessionChains.delete(sessionKey)
 			}
@@ -137,11 +144,17 @@ export class AgentHost {
 		})
 	}
 
-	/** Cancel a running (or queued) run. Returns true if a run was found. */
+	/** Cancel a running or still-queued run. Returns true if a run was found. */
 	cancel(runId: string): boolean {
 		const handle = this.active.get(runId)
-		if (!handle) return false
-		handle.cancel()
+		if (handle) {
+			handle.cancel()
+			return true
+		}
+		// Not spawned yet (waiting on the session chain or the concurrency cap):
+		// mark it so execute() aborts before starting the process.
+		if (!this.pending.has(runId)) return false
+		this.cancelledEarly.add(runId)
 		return true
 	}
 
@@ -178,6 +191,9 @@ export class AgentHost {
 		opts: AgentRunOptions,
 		onUpdate?: (update: AgentUpdate) => void,
 	): Promise<AgentRunResult> {
+		if (this.cancelledEarly.delete(runId)) {
+			throw new Error(`${adapter.displayName} run was cancelled`)
+		}
 		const binary = await this.resolveBinary(adapter)
 		if (!binary) throw new Error(`${adapter.displayName} CLI is not installed`)
 
