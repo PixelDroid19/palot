@@ -35,6 +35,7 @@ import {
 	PlusIcon,
 	SearchIcon,
 	SettingsIcon,
+	TerminalIcon,
 	TimerIcon,
 	TrashIcon,
 	XIcon,
@@ -223,6 +224,16 @@ export function AppSidebarContent({
 								</SidebarMenuButton>
 							</SidebarMenuItem>
 						)}
+						<SidebarMenuItem>
+							<SidebarMenuButton
+								tooltip="CLI Agents"
+								onClick={() => navigate({ to: "/subagents" })}
+								className="text-muted-foreground"
+							>
+								<TerminalIcon className="size-4" />
+								<span>CLI Agents</span>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
 					</SidebarMenu>
 				</SidebarGroupContent>
 			</SidebarGroup>
