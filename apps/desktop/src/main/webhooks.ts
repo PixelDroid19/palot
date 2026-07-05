@@ -39,22 +39,40 @@ function buildPayload(target: WebhookTarget, event: WebhookEvent): unknown {
 	}
 }
 
+/** Abort a webhook POST if the endpoint hasn't responded in this many ms. */
+const WEBHOOK_TIMEOUT_MS = 10_000
+
 function post(url: string, payload: unknown): Promise<{ success: boolean; error?: string }> {
 	return new Promise((resolve) => {
 		try {
 			const request = net.request({ method: "POST", url })
 			request.setHeader("Content-Type", "application/json")
+
+			// Resolve exactly once, and guard against a hung endpoint leaving the
+			// request (and its timer) pending forever.
+			let settled = false
+			const finish = (result: { success: boolean; error?: string }) => {
+				if (settled) return
+				settled = true
+				clearTimeout(timer)
+				resolve(result)
+			}
+			const timer = setTimeout(() => {
+				request.abort()
+				finish({ success: false, error: `Timed out after ${WEBHOOK_TIMEOUT_MS}ms` })
+			}, WEBHOOK_TIMEOUT_MS)
+
 			request.on("response", (response) => {
 				const ok = response.statusCode >= 200 && response.statusCode < 300
 				// Drain the response so the socket closes cleanly.
 				response.on("data", () => {})
 				response.on("end", () => {
-					if (ok) resolve({ success: true })
-					else resolve({ success: false, error: `HTTP ${response.statusCode}` })
+					if (ok) finish({ success: true })
+					else finish({ success: false, error: `HTTP ${response.statusCode}` })
 				})
 			})
 			request.on("error", (err) => {
-				resolve({ success: false, error: err.message })
+				finish({ success: false, error: err.message })
 			})
 			request.write(JSON.stringify(payload))
 			request.end()
