@@ -714,7 +714,7 @@ function ContextUsageIndicator({
 			? "text-red-400"
 			: compPct != null && compPct >= 80
 				? "text-yellow-400"
-				: "text-background/60"
+				: "text-muted-foreground"
 
 	return (
 		<Tooltip>
@@ -734,7 +734,7 @@ function ContextUsageIndicator({
 			<TooltipContent side="top" align="end">
 				<div className="space-y-1.5 text-xs">
 					<p className="font-medium">Context Window</p>
-					<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-background/60">
+					<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-muted-foreground">
 						<span>Usage</span>
 						<span className="text-right tabular-nums">{formatPercentage(pct)}</span>
 						<span>Tokens</span>
@@ -747,8 +747,8 @@ function ContextUsageIndicator({
 						<span className="text-right">{shortModelName(usage.modelID)}</span>
 					</div>
 					{usage.compactionThreshold != null && compPct != null && (
-						<div className="border-t border-background/15 pt-1">
-							<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-background/60">
+						<div className="border-t border-border pt-1">
+							<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-muted-foreground">
 								<span>Compaction</span>
 								<span className={cn("text-right tabular-nums", compColor)}>
 									{compPct >= 100 ? "now" : `at ${usage.compactionThreshold.toLocaleString()}`}

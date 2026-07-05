@@ -74,7 +74,7 @@ export const SessionMetricsBar = memo(function SessionMetricsBar({
 				<TooltipContent side="bottom" align="end">
 					<div className="space-y-1 text-xs">
 						<p className="font-medium">Work Time</p>
-						<p className="text-background/60">Avg per exchange: {metrics.avgExchangeTime}</p>
+						<p className="text-muted-foreground">Avg per exchange: {metrics.avgExchangeTime}</p>
 					</div>
 				</TooltipContent>
 			</Tooltip>
@@ -95,7 +95,7 @@ export const SessionMetricsBar = memo(function SessionMetricsBar({
 						<TooltipContent side="bottom" align="end">
 							<div className="space-y-1 text-xs">
 								<p className="font-medium">Cost</p>
-								<p className="text-background/60">Avg per exchange: {metrics.avgExchangeCost}</p>
+								<p className="text-muted-foreground">Avg per exchange: {metrics.avgExchangeCost}</p>
 							</div>
 						</TooltipContent>
 					</Tooltip>
