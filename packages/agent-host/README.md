@@ -71,6 +71,18 @@ host.adapters.register({
 })
 ```
 
+## Capabilities & model discovery
+
+`host.describeRuntimes()` returns, per runtime: install state, capabilities
+(`imageInput`, `reasoningEffort`, `resume`), and the model catalog read from
+the CLI's own source of truth — Codex's `~/.codex/models_cache.json` (with
+per-model reasoning-effort levels), Claude's stable aliases. UIs should build
+pickers from this instead of hardcoding models.
+
+Image attachments: pass absolute file paths via `AgentRunOptions.images`.
+Codex receives them with `-i`; Claude reads them with its Read tool (allowed
+headlessly), referenced from the prompt.
+
 ## Reliability notes
 
 - Prompts travel over **stdin**, never argv (length limits, quoting hazards).
