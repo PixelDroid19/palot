@@ -12,10 +12,6 @@ import {
 	createFileMention,
 	insertMentionIntoText,
 } from "./chat/prompt-mentions"
-import {
-	NativeSelect,
-	NativeSelectOption,
-} from "@palot/ui/components/native-select"
 import { Popover, PopoverContent, PopoverTrigger } from "@palot/ui/components/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
@@ -53,14 +49,7 @@ import {
 	useVcs,
 } from "../hooks/use-opencode-data"
 import { useAgentActions } from "../hooks/use-server"
-import type { AgentRuntimeId } from "../../preload/api"
 import type { FileAttachment } from "../lib/types"
-import {
-	CLI_RUNTIME_IDS,
-	isCliRuntime,
-	SESSION_RUNTIMES,
-	type SessionRuntimeId,
-} from "../lib/session-runtimes"
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
@@ -239,17 +228,6 @@ export function NewChat() {
 	const [error, setError] = useState<string | null>(null)
 	const [worktreeMode, setWorktreeMode] = useState<"local" | "worktree">("local")
 
-	// Session runtime: OpenCode (built-in) or a detected coding-agent CLI.
-	const [sessionRuntime, setSessionRuntime] = useState<SessionRuntimeId>("opencode")
-	const [cliRuntimeIds, setCliRuntimeIds] = useState<AgentRuntimeId[]>([])
-	useEffect(() => {
-		if (typeof window === "undefined" || !("palot" in window)) return
-		window.palot.agentClis.detect().then((clis) => {
-			setCliRuntimeIds(
-				CLI_RUNTIME_IDS.filter((id) => clis.some((c) => c.id === id && c.installed)),
-			)
-		})
-	}, [])
 
 	// Draft persistence — survives page reloads.
 	// Non-reactive snapshot: the draft is only used for PromptInputProvider's
@@ -602,16 +580,6 @@ export function NewChat() {
 	const handleLaunch = useCallback(
 		async (promptText: string, files?: FileAttachment[]) => {
 			if (!selectedDirectory || !promptText) return
-			// CLI runtimes (Codex, Claude, …) run through the CLI Agents chat rather
-			// than the OpenCode session flow. Hand off the prompt as the first turn.
-			if (isCliRuntime(sessionRuntime)) {
-				clearDraft()
-				navigate({
-					to: "/subagents",
-					search: { runtime: sessionRuntime, prompt: promptText, cwd: selectedDirectory },
-				})
-				return
-			}
 			setLaunching(true)
 			setError(null)
 			try {
@@ -629,7 +597,7 @@ export function NewChat() {
 				setLaunching(false)
 			}
 		},
-		[selectedDirectory, worktreeMode, launchLocal, launchWorktree, sessionRuntime, clearDraft, navigate],
+		[selectedDirectory, worktreeMode, launchLocal, launchWorktree],
 	)
 
 	const hasToolbar = providers
@@ -799,27 +767,9 @@ export function NewChat() {
 								) : undefined
 							}
 							extraSlot={
-								<div className="flex items-center gap-2">
-									{cliRuntimeIds.length > 0 && (
-										<NativeSelect
-											aria-label="Session runtime"
-											size="sm"
-											value={sessionRuntime}
-											onChange={(e) => setSessionRuntime(e.target.value as SessionRuntimeId)}
-										>
-											{SESSION_RUNTIMES.filter(
-												(r) => r.builtIn || cliRuntimeIds.includes(r.id as AgentRuntimeId),
-											).map((r) => (
-												<NativeSelectOption key={r.id} value={r.id}>
-													{r.label}
-												</NativeSelectOption>
-											))}
-										</NativeSelect>
-									)}
-									{vcs && !isCliRuntime(sessionRuntime) && (
-										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
-									)}
-								</div>
+								vcs ? (
+									<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
+								) : undefined
 							}
 						/>
 					)}

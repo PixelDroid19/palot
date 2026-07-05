@@ -8,7 +8,6 @@ import {
 import { AutomationDetail } from "./components/automations/automation-detail"
 import { AutomationRunDetail } from "./components/automations/automation-run-detail"
 import { AutomationsPage } from "./components/automations/automations-page"
-import { SubagentsPage } from "./components/subagents/subagents-page"
 import { InboxEmptyState } from "./components/automations/inbox-empty-state"
 import { ErrorPage } from "./components/error-page"
 import { NewChat } from "./components/new-chat"
@@ -170,23 +169,9 @@ const automationRunRoute = createRoute({
 	component: AutomationRunDetail,
 })
 
-const subagentsRoute = createRoute({
-	getParentRoute: () => sidebarLayout,
-	path: "subagents",
-	component: SubagentsPage,
-	validateSearch: (
-		search: Record<string, unknown>,
-	): { runtime?: string; prompt?: string; cwd?: string } => ({
-		runtime: typeof search.runtime === "string" ? search.runtime : undefined,
-		prompt: typeof search.prompt === "string" ? search.prompt : undefined,
-		cwd: typeof search.cwd === "string" ? search.cwd : undefined,
-	}),
-})
-
 const routeTree = rootRoute.addChildren([
 	sidebarLayout.addChildren([
 		indexRoute,
-		subagentsRoute,
 		projectRoute.addChildren([projectIndexRoute, sessionRoute]),
 		automationsRoute.addChildren([
 			automationsIndexRoute,
