@@ -45,6 +45,7 @@ export function createCliSession(args: {
 	directory: string
 	runtimeId: AgentRuntimeId
 	sandbox: AgentSandbox
+	model?: string
 }): string {
 	const sessionId = crypto.randomUUID()
 	const session: Session = {
@@ -58,6 +59,7 @@ export function createCliSession(args: {
 		runtimeId: args.runtimeId,
 		cwd: args.directory,
 		sandbox: args.sandbox,
+		model: args.model || undefined,
 		threadId: null,
 	})
 	log.info("Created CLI session", { sessionId, runtime: args.runtimeId })
@@ -101,7 +103,7 @@ export async function runCliTurn(sessionId: string, text: string): Promise<void>
 		sessionID: sessionId,
 		role: "assistant",
 		parentID: userId,
-		modelID: meta.runtimeId,
+		modelID: meta.model || meta.runtimeId,
 		providerID: "cli",
 		time: { created: ts + 1 },
 		tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
@@ -145,6 +147,7 @@ export async function runCliTurn(sessionId: string, text: string): Promise<void>
 			prompt: text,
 			cwd: meta.cwd || ".",
 			sandbox: meta.sandbox,
+			model: meta.model,
 			resumeId: meta.threadId ?? undefined,
 		})
 		// Finalize the assistant text (result.message is the authoritative answer).
@@ -171,7 +174,7 @@ export async function runCliTurn(sessionId: string, text: string): Promise<void>
 			sessionID: sessionId,
 			role: "assistant",
 			parentID: userId,
-			modelID: meta.runtimeId,
+			modelID: meta.model || meta.runtimeId,
 			providerID: "cli",
 			time: { created: ts + 1, completed: Date.now() },
 			tokens: {

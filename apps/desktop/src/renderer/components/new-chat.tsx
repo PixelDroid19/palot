@@ -59,6 +59,7 @@ import type { FileAttachment } from "../lib/types"
 import {
 	CLI_RUNTIME_IDS,
 	isCliRuntime,
+	runtimeModels,
 	SESSION_RUNTIMES,
 	type SessionRuntimeId,
 } from "../lib/session-runtimes"
@@ -242,6 +243,7 @@ export function NewChat() {
 
 	// Session runtime: OpenCode (built-in) or a detected coding-agent CLI.
 	const [sessionRuntime, setSessionRuntime] = useState<SessionRuntimeId>("opencode")
+	const [cliModel, setCliModel] = useState<string>("")
 	const [cliRuntimeIds, setCliRuntimeIds] = useState<AgentRuntimeId[]>([])
 	useEffect(() => {
 		if (typeof window === "undefined" || !("palot" in window)) return
@@ -609,6 +611,7 @@ export function NewChat() {
 					directory: selectedDirectory,
 					runtimeId: sessionRuntime,
 					sandbox: "read-only",
+					model: cliModel || undefined,
 				})
 				clearDraft()
 				// Fire the first turn (writes the user message into the atoms
@@ -643,6 +646,7 @@ export function NewChat() {
 			clearDraft,
 			navigateToSession,
 			sendPrompt,
+			cliModel,
 		],
 	)
 
@@ -821,13 +825,30 @@ export function NewChat() {
 											aria-label="Session runtime"
 											size="sm"
 											value={sessionRuntime}
-											onChange={(e) => setSessionRuntime(e.target.value as SessionRuntimeId)}
+											onChange={(e) => {
+												setSessionRuntime(e.target.value as SessionRuntimeId)
+												setCliModel("")
+											}}
 										>
 											{SESSION_RUNTIMES.filter(
 												(r) => r.builtIn || cliRuntimeIds.includes(r.id as AgentRuntimeId),
 											).map((r) => (
 												<NativeSelectOption key={r.id} value={r.id}>
 													{r.label}
+												</NativeSelectOption>
+											))}
+										</NativeSelect>
+									)}
+									{isCliRuntime(sessionRuntime) && runtimeModels(sessionRuntime).length > 0 && (
+										<NativeSelect
+											aria-label="Model"
+											size="sm"
+											value={cliModel}
+											onChange={(e) => setCliModel(e.target.value)}
+										>
+											{runtimeModels(sessionRuntime).map((m) => (
+												<NativeSelectOption key={m.slug} value={m.slug}>
+													{m.label}
 												</NativeSelectOption>
 											))}
 										</NativeSelect>

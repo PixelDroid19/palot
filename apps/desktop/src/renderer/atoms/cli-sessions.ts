@@ -15,6 +15,8 @@ export interface CliSessionMeta {
 	runtimeId: AgentRuntimeId
 	cwd: string
 	sandbox: AgentSandbox
+	/** Model slug to pass to the CLI; empty = the CLI's own default. */
+	model?: string
 	/** The CLI's own session id, used to resume for multi-turn context. */
 	threadId: string | null
 }
