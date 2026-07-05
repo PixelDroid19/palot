@@ -646,7 +646,9 @@ export function NewChat() {
 		],
 	)
 
-	const hasToolbar = providers
+	// The agent/model picker is OpenCode-specific; CLI runtimes use their own
+	// model, so hide it when a CLI runtime is selected.
+	const hasToolbar = providers && !isCliRuntime(sessionRuntime)
 
 	return (
 		<div className="relative flex h-full flex-col">

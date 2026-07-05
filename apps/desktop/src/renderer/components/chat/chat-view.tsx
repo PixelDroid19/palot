@@ -38,6 +38,7 @@ import {
 	useRef,
 	useState,
 } from "react"
+import { isCliSession } from "../../atoms/cli-sessions"
 import { messagesFamily, removeMessageAtom } from "../../atoms/messages"
 import { projectModelsAtom, setProjectModelAtom } from "../../atoms/preferences"
 import type { SessionSetupPhase } from "../../atoms/sessions"
@@ -789,6 +790,8 @@ function ChatInputSection({
 	onForkFromTurn,
 }: ChatInputSectionProps) {
 	const [sending, setSending] = useState(false)
+	// CLI-backed sessions use their own model; hide the OpenCode agent/model picker.
+	const isCli = isCliSession(agent.sessionId)
 
 	// Tree-scoped interactive requests — bubbles up from sub-agent sessions.
 	// These replace the direct `agent.permissions` / `agent.questions` arrays
@@ -1411,21 +1414,25 @@ function ChatInputSection({
 									{/* Toolbar inside the card — agent + model + variant selectors + submit */}
 									<PromptInputFooter>
 										<PromptInputTools>
-											<AttachButton disabled={!isConnected} />
-											<PromptToolbar
-												agents={openCodeAgents ?? []}
-												selectedAgent={selectedAgent}
-												defaultAgent={config?.defaultAgent}
-												onSelectAgent={setSelectedAgent}
-												providers={providers ?? null}
-												effectiveModel={effectiveModel}
-												hasModelOverride={!!selectedModel}
-												onSelectModel={handleModelSelect}
-												recentModels={recentModels}
-												selectedVariant={selectedVariant}
-												onSelectVariant={setSelectedVariant}
-												disabled={!isConnected}
-											/>
+											{!isCli && (
+												<>
+													<AttachButton disabled={!isConnected} />
+													<PromptToolbar
+														agents={openCodeAgents ?? []}
+														selectedAgent={selectedAgent}
+														defaultAgent={config?.defaultAgent}
+														onSelectAgent={setSelectedAgent}
+														providers={providers ?? null}
+														effectiveModel={effectiveModel}
+														hasModelOverride={!!selectedModel}
+														onSelectModel={handleModelSelect}
+														recentModels={recentModels}
+														selectedVariant={selectedVariant}
+														onSelectVariant={setSelectedVariant}
+														disabled={!isConnected}
+													/>
+												</>
+											)}
 										</PromptInputTools>
 										<PromptInputSubmit
 											disabled={!canSend}
