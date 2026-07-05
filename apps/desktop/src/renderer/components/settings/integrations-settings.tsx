@@ -574,8 +574,8 @@ export function IntegrationsSettings() {
 			<div>
 				<h2 className="text-xl font-semibold">Integrations</h2>
 				<p className="mt-1 text-sm text-muted-foreground">
-					Push agent events to chat bots, sync skills across machines, and connect from other
-					devices.
+					Work with your other coding CLIs, push agent events to chat bots, sync skills across
+					machines, and connect from other devices.
 				</p>
 			</div>
 

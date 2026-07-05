@@ -143,7 +143,11 @@ export function UsageSettings() {
 				<>
 					<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 						<StatCard label="Total cost" value={formatCost(stats.totalCost)} />
-						<StatCard label="Total tokens" value={formatTokens(stats.totalTokens.total)} />
+						<StatCard
+							label="Total tokens"
+							value={formatTokens(stats.totalTokens.total)}
+							hint={`${stats.messageCount} assistant messages`}
+						/>
 						<StatCard
 							label="Sessions"
 							value={String(stats.sessionCount)}
