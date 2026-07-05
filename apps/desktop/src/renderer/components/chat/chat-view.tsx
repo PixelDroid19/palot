@@ -575,6 +575,27 @@ export function ChatView({
 		[onStop, onSendMessage, isWorking, agent],
 	)
 
+	const handleCancelQueued = useCallback(
+		async (turn: ChatTurn) => {
+			// A queued message has no response yet; deleting its parts on the
+			// server leaves nothing for the loop to respond to, and removing it
+			// locally makes the cancellation immediate in the UI (#66).
+			if (onDeletePart) {
+				const { id: messageId, sessionID } = turn.userMessage.info
+				await Promise.all(
+					turn.userMessage.parts.map((p) =>
+						onDeletePart(sessionID, messageId, p.id).catch(() => {}),
+					),
+				)
+			}
+			appStore.set(removeMessageAtom, {
+				sessionId: agent.sessionId,
+				messageId: turn.userMessage.info.id,
+			})
+		},
+		[onDeletePart, agent.sessionId],
+	)
+
 	// Keyboard shortcuts for undo/redo
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -654,6 +675,7 @@ export function ChatView({
 									isWorking={isWorking}
 									onRevertToMessage={onRevertToMessage}
 									onSendNow={isWorking ? handleSendNow : undefined}
+									onCancelQueued={isWorking ? handleCancelQueued : undefined}
 									onForkFromTurn={
 										onForkFromTurn
 											? () => {

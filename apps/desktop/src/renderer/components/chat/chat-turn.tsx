@@ -574,6 +574,8 @@ interface ChatTurnProps {
 	onRevertToMessage?: (messageId: string) => Promise<void>
 	/** Interrupt the current work and send this queued message immediately */
 	onSendNow?: (turn: ChatTurnType) => Promise<void>
+	/** Delete this queued message before it is processed */
+	onCancelQueued?: (turn: ChatTurnType) => Promise<void>
 	/** Fork the conversation from this turn boundary */
 	onForkFromTurn?: () => Promise<void>
 	/** Delete a specific part from a message (for error recovery) */
@@ -602,6 +604,7 @@ export const ChatTurnComponent = memo(
 		isWorking,
 		onRevertToMessage,
 		onSendNow,
+		onCancelQueued,
 		onForkFromTurn,
 		onDeletePart,
 	}: ChatTurnProps) {
@@ -722,6 +725,17 @@ export const ChatTurnComponent = memo(
 			}
 		}, [onSendNow, sendingNow, turn])
 
+		const [cancelling, setCancelling] = useState(false)
+		const handleCancelQueued = useCallback(async () => {
+			if (!onCancelQueued || cancelling) return
+			setCancelling(true)
+			try {
+				await onCancelQueued(turn)
+			} finally {
+				setCancelling(false)
+			}
+		}, [onCancelQueued, cancelling, turn])
+
 		const handleDeleteFile = useCallback(
 			async (file: FilePart) => {
 				if (!onDeletePart) return
@@ -769,6 +783,17 @@ export const ChatTurnComponent = memo(
 										>
 											<SendIcon className="size-2.5" />
 											{sendingNow ? "Sending..." : "Send now"}
+										</button>
+									)}
+									{onCancelQueued && (
+										<button
+											type="button"
+											onClick={handleCancelQueued}
+											disabled={cancelling}
+											className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+										>
+											<XIcon className="size-2.5" />
+											{cancelling ? "Cancelling..." : "Cancel"}
 										</button>
 									)}
 								</span>
