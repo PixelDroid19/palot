@@ -3,11 +3,12 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { createLogger } from "./logger"
+import { buildRsyncArgs, type SkillSyncDirection } from "./rsync-command"
 import { getSettings } from "./settings-store"
 
-const log = createLogger("skill-sync")
+export type { SkillSyncDirection } from "./rsync-command"
 
-export type SkillSyncDirection = "push" | "pull"
+const log = createLogger("skill-sync")
 
 export interface SkillSyncResult {
 	success: boolean
@@ -53,17 +54,7 @@ export async function syncSkills(direction: SkillSyncDirection): Promise<SkillSy
 		fs.mkdirSync(local, { recursive: true })
 	}
 
-	// Trailing slashes make rsync copy directory *contents* rather than nesting.
-	const localSpec = `${local.replace(/\/?$/, "")}/`
-	const remoteSpec = `${host}:${remotePath.replace(/\/?$/, "")}/`
-	const sshCmd = `ssh -p ${port || 22} -o BatchMode=yes -o StrictHostKeyChecking=accept-new`
-
-	const args = ["-avz", "--delete", "-e", sshCmd]
-	if (direction === "push") {
-		args.push(localSpec, remoteSpec)
-	} else {
-		args.push(remoteSpec, localSpec)
-	}
+	const args = buildRsyncArgs({ direction, host, remotePath, localDir: local, port })
 
 	log.info("Syncing skills", { direction, host, remotePath, port })
 	const result = await run("rsync", args)
