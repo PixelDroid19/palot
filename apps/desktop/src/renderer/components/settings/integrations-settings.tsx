@@ -14,6 +14,8 @@ import QRCode from "qrcode"
 import { useCallback, useEffect, useState } from "react"
 import type {
 	AgentCliDetection,
+	MigrationProvider,
+	MigrationResult,
 	RemoteAccessInfo,
 	RemoteEndpoint,
 	WebhookTarget,
@@ -364,6 +366,150 @@ const AUTH_LABEL: Record<AgentCliDetection["auth"], string> = {
 	unknown: "",
 }
 
+/**
+ * Map a detected CLI to the migration source provider understood by the
+ * onboarding/config-migration system. Only CLIs with a supported config
+ * migration path to OpenCode appear here.
+ */
+const MIGRATION_PROVIDER: Partial<Record<AgentCliDetection["id"], MigrationProvider>> = {
+	claude: "claude-code",
+	cursor: "cursor",
+}
+
+// The convert step ports every category present in the scan; `categories`
+// primarily gates history import. Passing the full set migrates everything.
+const ALL_MIGRATION_CATEGORIES = [
+	"config",
+	"mcp",
+	"history",
+	"agents",
+	"commands",
+	"rules",
+	"permissions",
+	"hooks",
+	"skills",
+]
+
+type MigrateState =
+	| { status: "idle" }
+	| { status: "confirm" }
+	| { status: "running" }
+	| { status: "done"; result: MigrationResult }
+	| { status: "error"; message: string }
+
+function AgentCliRow({ cli }: { cli: AgentCliDetection }) {
+	const provider = MIGRATION_PROVIDER[cli.id]
+	const [migrate, setMigrate] = useState<MigrateState>({ status: "idle" })
+
+	const runMigration = useCallback(async () => {
+		if (!isElectron || !provider) return
+		setMigrate({ status: "running" })
+		try {
+			const { scanResult } = await window.palot.onboarding.scanProvider(provider)
+			const result = await window.palot.onboarding.executeMigration(
+				provider,
+				scanResult,
+				ALL_MIGRATION_CATEGORIES,
+			)
+			setMigrate({ status: "done", result })
+		} catch (err) {
+			setMigrate({
+				status: "error",
+				message: err instanceof Error ? err.message : "Migration failed",
+			})
+		}
+	}, [provider])
+
+	const canMigrate = !!provider && cli.installed
+
+	return (
+		<div className="flex flex-col gap-2 px-4 py-3">
+			<div className="flex items-center justify-between gap-3">
+				<div className="flex min-w-0 flex-col gap-0.5">
+					<div className="flex items-center gap-2">
+						{cli.installed ? (
+							<CheckCircle2Icon aria-hidden="true" className="size-4 shrink-0 text-green-500" />
+						) : (
+							<XCircleIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+						)}
+						<span className="font-medium">{cli.displayName}</span>
+						{cli.managed && (
+							<span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+								Managed
+							</span>
+						)}
+						{cli.installed && cli.version && (
+							<span className="font-mono text-xs text-muted-foreground">v{cli.version}</span>
+						)}
+					</div>
+					<span className="truncate text-xs text-muted-foreground">
+						{cli.installed ? (
+							<>
+								{AUTH_LABEL[cli.auth]}
+								{cli.auth !== "unknown" && cli.binaryPath ? " · " : ""}
+								<span className="font-mono">{cli.binaryPath}</span>
+							</>
+						) : (
+							<span className="font-mono">{cli.installHint}</span>
+						)}
+					</span>
+				</div>
+				<div className="flex shrink-0 items-center gap-3">
+					{canMigrate &&
+						(migrate.status === "idle" ? (
+							<Button variant="outline" size="sm" onClick={() => setMigrate({ status: "confirm" })}>
+								Migrate to OpenCode
+							</Button>
+						) : migrate.status === "confirm" ? (
+							<div className="flex items-center gap-1">
+								<Button variant="ghost" size="sm" onClick={() => setMigrate({ status: "idle" })}>
+									Cancel
+								</Button>
+								<Button variant="default" size="sm" onClick={runMigration}>
+									Confirm
+								</Button>
+							</div>
+						) : migrate.status === "running" ? (
+							<span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+								<Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
+								Migrating…
+							</span>
+						) : null)}
+					<a
+						href={cli.docsUrl}
+						target="_blank"
+						rel="noreferrer"
+						className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+					>
+						Docs
+					</a>
+				</div>
+			</div>
+
+			{migrate.status === "confirm" && (
+				<p className="text-xs text-muted-foreground">
+					Imports {cli.displayName}'s config (settings, MCP servers, agents, commands, rules,
+					sessions) into OpenCode. Existing files are preserved and a backup is created — you can
+					undo it from the Setup tab.
+				</p>
+			)}
+			{migrate.status === "done" && (
+				<p className="text-xs text-green-600 dark:text-green-500">
+					Migrated {migrate.result.filesWritten.length} file
+					{migrate.result.filesWritten.length === 1 ? "" : "s"} to OpenCode
+					{migrate.result.errors.length > 0
+						? ` · ${migrate.result.errors.length} error(s)`
+						: ""}
+					{migrate.result.backupDir ? " · backup created" : ""}.
+				</p>
+			)}
+			{migrate.status === "error" && (
+				<p className="text-xs text-destructive">{migrate.message}</p>
+			)}
+		</div>
+	)
+}
+
 function AgentClisPanel() {
 	const [clis, setClis] = useState<AgentCliDetection[] | null>(null)
 	const [loading, setLoading] = useState(false)
@@ -403,47 +549,7 @@ function AgentClisPanel() {
 					Rescan
 				</Button>
 			</div>
-			{clis?.map((cli) => (
-				<div key={cli.id} className="flex items-center justify-between gap-3 px-4 py-3">
-					<div className="flex min-w-0 flex-col gap-0.5">
-						<div className="flex items-center gap-2">
-							{cli.installed ? (
-								<CheckCircle2Icon aria-hidden="true" className="size-4 shrink-0 text-green-500" />
-							) : (
-								<XCircleIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-							)}
-							<span className="font-medium">{cli.displayName}</span>
-							{cli.managed && (
-								<span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-									Managed
-								</span>
-							)}
-							{cli.installed && cli.version && (
-								<span className="font-mono text-xs text-muted-foreground">v{cli.version}</span>
-							)}
-						</div>
-						<span className="truncate text-xs text-muted-foreground">
-							{cli.installed ? (
-								<>
-									{AUTH_LABEL[cli.auth]}
-									{cli.auth !== "unknown" && cli.binaryPath ? " · " : ""}
-									<span className="font-mono">{cli.binaryPath}</span>
-								</>
-							) : (
-								<span className="font-mono">{cli.installHint}</span>
-							)}
-						</span>
-					</div>
-					<a
-						href={cli.docsUrl}
-						target="_blank"
-						rel="noreferrer"
-						className="shrink-0 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-					>
-						Docs
-					</a>
-				</div>
-			))}
+			{clis?.map((cli) => <AgentCliRow key={cli.id} cli={cli} />)}
 		</SettingsSection>
 	)
 }

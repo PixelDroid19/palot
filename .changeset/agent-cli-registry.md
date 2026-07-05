@@ -13,3 +13,8 @@ machine, not just OpenCode.
 - New **Coding CLIs** panel (Settings → Integrations): shows which agent CLIs
   are installed with their version, sign-in state, binary path, and docs link;
   missing CLIs show an install hint. OpenCode is flagged as the managed backend.
+- CLIs with a supported config path (Claude Code, Cursor) get an inline
+  **Migrate to OpenCode** action that reuses the existing migration engine
+  (scan → convert → write with backup), so a detected CLI's settings, MCP
+  servers, agents, commands, rules, and sessions can be imported in one click
+  and undone from the Setup tab.
