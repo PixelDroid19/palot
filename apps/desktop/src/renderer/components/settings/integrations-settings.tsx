@@ -500,7 +500,8 @@ function AgentCliRow({ cli }: { cli: AgentCliDetection }) {
 					{migrate.result.errors.length > 0
 						? ` · ${migrate.result.errors.length} error(s)`
 						: ""}
-					{migrate.result.backupDir ? " · backup created" : ""}.
+					{migrate.result.backupDir ? " · backup created" : ""}. Restart the OpenCode server to
+					load the imported config.
 				</p>
 			)}
 			{migrate.status === "error" && (
