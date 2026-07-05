@@ -261,6 +261,38 @@ export type WebhookTarget = "feishu" | "wechat" | "generic"
 /** A detected coding-agent CLI (re-exported from @palot/cli-registry). */
 export type AgentCliDetection = import("@palot/cli-registry").CliDetection
 
+export type CodexSandbox = "read-only" | "workspace-write" | "danger-full-access"
+
+export interface CodexSubagentOptions {
+	prompt: string
+	cwd: string
+	sandbox?: CodexSandbox
+	model?: string
+}
+
+export interface CodexUsage {
+	inputTokens: number
+	cachedInputTokens: number
+	outputTokens: number
+	reasoningOutputTokens: number
+}
+
+export interface CodexRunResult {
+	message: string
+	threadId: string | null
+	usage: CodexUsage | null
+	notices: string[]
+}
+
+/** A normalized streamed update from a running Codex subagent. */
+export type CodexUpdate =
+	| { kind: "thread"; threadId: string }
+	| { kind: "message"; text: string }
+	| { kind: "reasoning"; text: string }
+	| { kind: "notice"; text: string }
+	| { kind: "usage"; usage: CodexUsage }
+	| { kind: "unknown"; raw: unknown }
+
 export interface AppSettings {
 	notifications: NotificationSettings
 	/** Whether the user prefers opaque (solid) windows. Read at window creation time. */
@@ -616,6 +648,16 @@ export interface PalotAPI {
 	agentClis: {
 		/** Detect installed coding-agent CLIs, their versions, and auth state. */
 		detect: (force?: boolean) => Promise<AgentCliDetection[]>
+	}
+
+	// Codex subagent
+	codexSubagent: {
+		/** Run a headless Codex agent for a delegated task; resolves with the final result. */
+		run: (runId: string, opts: CodexSubagentOptions) => Promise<CodexRunResult>
+		/** Cancel a running subagent. Returns true if a matching run was killed. */
+		cancel: (runId: string) => Promise<boolean>
+		/** Subscribe to streamed updates for any run. Returns an unsubscribe function. */
+		onUpdate: (callback: (runId: string, update: CodexUpdate) => void) => () => void
 	}
 
 	// Onboarding
