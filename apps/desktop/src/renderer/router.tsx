@@ -17,10 +17,13 @@ import { SessionRoute } from "./components/session-route"
 import { AboutSettings } from "./components/settings/about-settings"
 import { GeneralSettings } from "./components/settings/general-settings"
 import { NotificationSettings } from "./components/settings/notification-settings"
+import { IntegrationsSettings } from "./components/settings/integrations-settings"
+import { PluginsSettings } from "./components/settings/plugins-settings"
 import { ProviderSettings } from "./components/settings/provider-settings"
 import { ServerSettings } from "./components/settings/server-settings"
 import { SettingsPage } from "./components/settings/settings-page"
 import { SetupSettings } from "./components/settings/setup-settings"
+import { UsageSettings } from "./components/settings/usage-settings"
 import { WorktreeSettings } from "./components/settings/worktree-settings"
 import { SidebarLayout } from "./components/sidebar-layout"
 
@@ -119,6 +122,24 @@ const settingsAboutRoute = createRoute({
 	component: AboutSettings,
 })
 
+const settingsIntegrationsRoute = createRoute({
+	getParentRoute: () => settingsRoute,
+	path: "integrations",
+	component: IntegrationsSettings,
+})
+
+const settingsPluginsRoute = createRoute({
+	getParentRoute: () => settingsRoute,
+	path: "plugins",
+	component: PluginsSettings,
+})
+
+const settingsUsageRoute = createRoute({
+	getParentRoute: () => settingsRoute,
+	path: "usage",
+	component: UsageSettings,
+})
+
 const automationsRoute = createRoute({
 	getParentRoute: () => sidebarLayout,
 	path: "automations",
@@ -163,6 +184,9 @@ const routeTree = rootRoute.addChildren([
 			settingsNotificationsRoute,
 			settingsProvidersRoute,
 			settingsWorktreesRoute,
+			settingsPluginsRoute,
+			settingsIntegrationsRoute,
+			settingsUsageRoute,
 			settingsSetupRoute,
 			settingsAboutRoute,
 		]),

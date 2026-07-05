@@ -206,12 +206,59 @@ export interface NotificationSettings {
 	dockBadge: boolean
 }
 
+export interface WebhookEventToggles {
+	completion: boolean
+	permissions: boolean
+	questions: boolean
+	errors: boolean
+}
+
+export interface WebhookSettings {
+	/** Master switch for webhook delivery. */
+	enabled: boolean
+	/** Feishu (Lark) custom-bot incoming webhook URL. */
+	feishuUrl: string
+	/** WeChat Work group-robot webhook URL. */
+	wechatUrl: string
+	/** Generic JSON POST endpoint. */
+	genericUrl: string
+	/** Which event types are forwarded. */
+	events: WebhookEventToggles
+}
+
+export interface SkillSyncSettings {
+	/** SSH target, e.g. "user@host". */
+	host: string
+	/** Absolute remote path to the skills directory. */
+	remotePath: string
+	/** SSH port. */
+	port: number
+}
+
+export interface SkillSyncResult {
+	success: boolean
+	output: string
+	error?: string
+}
+
+export interface RemoteAccessInfo {
+	url: string | null
+	lanUrls: string[]
+	port: number | null
+}
+
+export type WebhookTarget = "feishu" | "wechat" | "generic"
+
 export interface AppSettings {
 	notifications: NotificationSettings
 	/** Whether the user prefers opaque (solid) windows. Read at window creation time. */
 	opaqueWindows: boolean
 	/** Server connection configuration. */
 	servers: ServerSettings
+	/** Feishu / WeChat / generic webhook notification config. */
+	webhooks: WebhookSettings
+	/** SSH remote skill sync config. */
+	skillSync: SkillSyncSettings
 }
 
 // ============================================================
@@ -536,6 +583,22 @@ export interface PalotAPI {
 	updateSettings: (partial: Record<string, unknown>) => Promise<AppSettings>
 	/** Subscribe to settings changes pushed from the main process. */
 	onSettingsChanged: (callback: (settings: AppSettings) => void) => () => void
+
+	// Webhook integrations (Feishu / WeChat / generic)
+	webhooks: {
+		/** Send a test message to a configured webhook target. */
+		test: (target: WebhookTarget) => Promise<{ success: boolean; error?: string }>
+	}
+
+	// SSH remote skill sync
+	skills: {
+		/** Sync user-level skills to ("push") or from ("pull") the configured remote host. */
+		sync: (direction: "push" | "pull") => Promise<SkillSyncResult>
+	}
+
+	// Remote / mobile access
+	/** Get LAN-reachable URLs for the running OpenCode server. */
+	getRemoteAccessInfo: () => Promise<RemoteAccessInfo>
 
 	// Onboarding
 	// Automations

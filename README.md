@@ -62,6 +62,20 @@ Palot spawns and manages the OpenCode server automatically, streams responses in
 
 - **Session compaction** -- Summarize long conversations to reclaim context window tokens, manually or automatically.
 
+- **Knowledge base generation** -- A one-click new-chat action that has the agent explore the whole codebase and write or update `AGENTS.md` with architecture, key modules, conventions, and build/test commands.
+
+### Usage & Extensions
+
+- **Usage statistics** -- A dashboard (Settings -> Usage) that aggregates cost and token usage (input, output, reasoning, cache read/write) across every project and session, with a cache-hit rate, a 30-day cost chart, and per-model and per-project breakdowns.
+
+- **Plugin management** -- View, add, and remove OpenCode plugins (npm packages or local paths) from Settings -> Plugins. Changes are written to the global OpenCode config.
+
+- **Bot notifications** -- Forward agent events (completion, permissions, questions, errors) to Feishu, WeChat Work, or a generic JSON webhook, with per-event toggles and a per-target test button.
+
+- **SSH remote skill sync** -- Push or pull your user-level OpenCode skills to/from a remote host over SSH (rsync).
+
+- **Remote & mobile access** -- Surfaces the running OpenCode server's LAN URLs so another device (a laptop's Palot, the web build, or a phone browser) can connect on the same network.
+
 ### Review & Git Workflow
 
 - **Review panel** -- A dedicated, collapsible side panel that shows all file changes from the current session. Powered by virtualized rendering and a worker pool for off-thread syntax highlighting, so it stays fast even with hundreds of changed files.

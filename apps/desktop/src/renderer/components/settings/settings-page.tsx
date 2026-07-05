@@ -10,9 +10,12 @@ import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
 	ArrowLeftIcon,
 	BellIcon,
+	ChartColumnIcon,
 	GitForkIcon,
 	InfoIcon,
+	PackageIcon,
 	PlugIcon,
+	PlugZapIcon,
 	ServerIcon,
 	SettingsIcon,
 	WrenchIcon,
@@ -30,6 +33,9 @@ type SettingsTab =
 	| "notifications"
 	| "providers"
 	| "worktrees"
+	| "plugins"
+	| "integrations"
+	| "usage"
 	| "setup"
 	| "about"
 
@@ -39,6 +45,9 @@ const tabs: { id: SettingsTab; label: string; icon: typeof SettingsIcon }[] = [
 	{ id: "notifications", label: "Notifications", icon: BellIcon },
 	{ id: "providers", label: "Providers", icon: PlugIcon },
 	{ id: "worktrees", label: "Worktrees", icon: GitForkIcon },
+	{ id: "plugins", label: "Plugins", icon: PackageIcon },
+	{ id: "integrations", label: "Integrations", icon: PlugZapIcon },
+	{ id: "usage", label: "Usage", icon: ChartColumnIcon },
 	{ id: "setup", label: "Setup", icon: WrenchIcon },
 	{ id: "about", label: "About", icon: InfoIcon },
 ]

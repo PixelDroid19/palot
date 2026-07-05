@@ -14,6 +14,18 @@ const DEFAULT_SETTINGS: AppSettings = {
 	},
 	opaqueWindows: false,
 	servers: DEFAULT_SERVER_SETTINGS,
+	webhooks: {
+		enabled: false,
+		feishuUrl: "",
+		wechatUrl: "",
+		genericUrl: "",
+		events: { completion: true, permissions: true, questions: true, errors: true },
+	},
+	skillSync: {
+		host: "",
+		remotePath: "~/.config/opencode/skills",
+		port: 22,
+	},
 }
 
 export function useSettings() {

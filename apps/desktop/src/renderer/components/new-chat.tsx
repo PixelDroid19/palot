@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/to
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import {
+	BookMarkedIcon,
 	ChevronDownIcon,
 	CodeIcon,
 	FileTextIcon,
@@ -180,6 +181,10 @@ const SUGGESTIONS = [
 	{
 		icon: GitPullRequestIcon,
 		text: "Review recent changes and suggest improvements.",
+	},
+	{
+		icon: BookMarkedIcon,
+		text: "Generate a knowledge base: explore the whole codebase and write or update AGENTS.md with the architecture, key modules, conventions, build/test commands, and gotchas a new contributor needs.",
 	},
 ]
 

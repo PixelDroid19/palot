@@ -36,6 +36,9 @@ import { getDiscoveredServers } from "./mdns-scanner"
 
 import { readModelState, updateModelRecent } from "./model-state"
 import { dismissNotification, updateBadgeCount } from "./notifications"
+import { getRemoteAccessInfo } from "./remote-access"
+import { type SkillSyncDirection, syncSkills } from "./skill-sync"
+import { type WebhookTarget, testWebhook } from "./webhooks"
 import type { MigrationProvider } from "./onboarding"
 import {
 	checkOpenCodeInstallation,
@@ -330,6 +333,18 @@ export function registerIpcHandlers(): void {
 	ipcMain.handle("cli:install", () => installCli())
 
 	ipcMain.handle("cli:uninstall", () => uninstallCli())
+
+	// --- Webhook integrations (Feishu / WeChat / generic) ---
+
+	ipcMain.handle("webhooks:test", (_event, target: WebhookTarget) => testWebhook(target))
+
+	// --- SSH remote skill sync ---
+
+	ipcMain.handle("skills:sync", (_event, direction: SkillSyncDirection) => syncSkills(direction))
+
+	// --- Remote / mobile access ---
+
+	ipcMain.handle("remote-access:info", () => getRemoteAccessInfo())
 
 	// --- Open in external app ---
 

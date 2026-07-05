@@ -151,6 +151,23 @@ contextBridge.exposeInMainWorld("palot", {
 		uninstall: () => ipcRenderer.invoke("cli:uninstall"),
 	},
 
+	// --- Webhook integrations (Feishu / WeChat / generic) ---
+
+	webhooks: {
+		test: (target: "feishu" | "wechat" | "generic") =>
+			ipcRenderer.invoke("webhooks:test", target),
+	},
+
+	// --- SSH remote skill sync ---
+
+	skills: {
+		sync: (direction: "push" | "pull") => ipcRenderer.invoke("skills:sync", direction),
+	},
+
+	// --- Remote / mobile access ---
+
+	getRemoteAccessInfo: () => ipcRenderer.invoke("remote-access:info"),
+
 	// --- Open in external app ---
 
 	openIn: {

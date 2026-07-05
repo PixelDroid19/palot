@@ -7,6 +7,7 @@ import type {
 // Re-export all SDK types from v2
 export type {
 	AssistantMessage,
+	Config,
 	Event,
 	EventMessagePartDelta,
 	EventMessagePartUpdated,

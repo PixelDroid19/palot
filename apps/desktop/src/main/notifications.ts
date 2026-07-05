@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Notification, net } from "electron"
 import { createLogger } from "./logger"
 import { getNotificationSettings } from "./settings-store"
+import { sendWebhookNotification } from "./webhooks"
 
 const log = createLogger("notifications")
 
@@ -188,6 +189,14 @@ function fireNotification(request: NotificationRequest): void {
 
 	activeNotifications.set(request.sessionId, notification)
 	notification.show()
+
+	// Mirror the event to configured Feishu/WeChat/generic webhooks (fire-and-forget).
+	sendWebhookNotification({
+		type: request.type,
+		title: request.title,
+		body: request.body,
+		sessionId: request.sessionId,
+	})
 
 	// Platform attention signals for blocking events
 	if (request.type === "permission" || request.type === "question") {
