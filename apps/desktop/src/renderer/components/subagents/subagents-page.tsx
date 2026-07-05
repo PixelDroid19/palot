@@ -1,6 +1,7 @@
 import { Button } from "@palot/ui/components/button"
 import { NativeSelect, NativeSelectOption } from "@palot/ui/components/native-select"
 import { Textarea } from "@palot/ui/components/textarea"
+import { useSearch } from "@tanstack/react-router"
 import { Loader2Icon, PlusIcon, SendIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { AgentRuntimeId, AgentSandbox, AgentUpdate } from "../../../preload/api"
@@ -28,10 +29,17 @@ interface Turn {
  */
 export function SubagentsPage() {
 	const { t } = useTranslation()
+	// Optional entry params from the New Session screen: which CLI to use and an
+	// initial prompt to send as the first turn.
+	const search = useSearch({ strict: false }) as {
+		runtime?: string
+		prompt?: string
+		cwd?: string
+	}
 	const [installedIds, setInstalledIds] = useState<AgentRuntimeId[] | null>(null)
 	const [runtimeId, setRuntimeId] = useState<AgentRuntimeId>("codex")
 	const [sandbox, setSandbox] = useState<AgentSandbox>("read-only")
-	const [cwd, setCwd] = useState("")
+	const [cwd, setCwd] = useState(() => search.cwd ?? "")
 	const [turns, setTurns] = useState<Turn[]>([])
 	const [input, setInput] = useState("")
 	const [running, setRunning] = useState(false)
@@ -39,6 +47,7 @@ export function SubagentsPage() {
 	const threadRef = useRef<string | null>(null)
 	const runIdRef = useRef<string | null>(null)
 	const scrollRef = useRef<HTMLDivElement>(null)
+	const autoSentRef = useRef(false)
 
 	useEffect(() => {
 		if (!isElectron) return
@@ -73,9 +82,11 @@ export function SubagentsPage() {
 	)
 	const runtimeLabel = availableRuntimes.find((r) => r.id === runtimeId)?.label ?? "agent"
 
-	const send = useCallback(async () => {
-		const prompt = input.trim()
+	const send = useCallback(
+		async (explicit?: string, runtimeOverride?: AgentRuntimeId) => {
+		const prompt = (explicit ?? input).trim()
 		if (!isElectron || !prompt || running) return
+		const runtime = runtimeOverride ?? runtimeId
 		const runId = crypto.randomUUID()
 		runIdRef.current = runId
 		setInput("")
@@ -83,7 +94,7 @@ export function SubagentsPage() {
 		setTurns((prev) => [...prev, { role: "user", text: prompt }])
 		setRunning(true)
 		try {
-			const result = await window.palot.agentSubagent.run(runId, runtimeId, {
+			const result = await window.palot.agentSubagent.run(runId, runtime, {
 				prompt,
 				cwd: cwd.trim() || ".",
 				sandbox,
@@ -126,6 +137,21 @@ export function SubagentsPage() {
 		setStreamed("")
 		setInput("")
 	}, [])
+
+	// Entry from New Session: preselect the requested runtime and, once, send the
+	// initial prompt as the first turn.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: run once when detection + params are ready
+	useEffect(() => {
+		if (installedIds === null || autoSentRef.current) return
+		const requested = search.runtime as AgentRuntimeId | undefined
+		const target = requested && installedIds.includes(requested) ? requested : undefined
+		if (target) setRuntimeId(target)
+		if (search.prompt && installedIds.length > 0) {
+			autoSentRef.current = true
+			// Pass the runtime explicitly so the first turn isn't raced by state.
+			send(search.prompt, target)
+		}
+	}, [installedIds, search.runtime, search.prompt])
 
 	if (installedIds !== null && availableRuntimes.length === 0) {
 		return (
@@ -271,7 +297,7 @@ export function SubagentsPage() {
 							{t("subagentChat.stop")}
 						</Button>
 					) : (
-						<Button onClick={send} disabled={!input.trim()}>
+						<Button onClick={() => send()} disabled={!input.trim()}>
 							<SendIcon aria-hidden="true" className="size-4" />
 							{t("subagentChat.send")}
 						</Button>

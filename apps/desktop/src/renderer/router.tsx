@@ -174,6 +174,13 @@ const subagentsRoute = createRoute({
 	getParentRoute: () => sidebarLayout,
 	path: "subagents",
 	component: SubagentsPage,
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { runtime?: string; prompt?: string; cwd?: string } => ({
+		runtime: typeof search.runtime === "string" ? search.runtime : undefined,
+		prompt: typeof search.prompt === "string" ? search.prompt : undefined,
+		cwd: typeof search.cwd === "string" ? search.cwd : undefined,
+	}),
 })
 
 const routeTree = rootRoute.addChildren([
