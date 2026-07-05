@@ -100,13 +100,38 @@ export function persistCliSession(sessionId: string): void {
 	}
 }
 
+/** Rewrite legacy `cli-user-<ts>`/`cli-asst-<ts>` ids to the sortable scheme. */
+function migrateLegacyId(id: string): string {
+	const match = /^cli-(user|asst)-(\d+)(.*)$/.exec(id)
+	if (!match) return id
+	const [, role, ts, suffix] = match
+	return `cli-${ts}-${role === "user" ? "0u" : "1a"}${suffix}`
+}
+
+function migrateLegacyIds(data: PersistedCliSession): PersistedCliSession {
+	const messages = data.messages.map((m) => ({
+		...m,
+		id: migrateLegacyId(m.id),
+		...("parentID" in m && m.parentID ? { parentID: migrateLegacyId(m.parentID) } : {}),
+	})) as Message[]
+	const parts: Record<string, Part[]> = {}
+	for (const [messageId, list] of Object.entries(data.parts)) {
+		parts[migrateLegacyId(messageId)] = list.map((p) => ({
+			...p,
+			id: migrateLegacyId(p.id),
+			messageID: migrateLegacyId(p.messageID),
+		})) as Part[]
+	}
+	return { ...data, messages, parts }
+}
+
 /** Rehydrate all persisted CLI sessions into the shared atoms. Call once at startup. */
 export function restoreCliSessions(): void {
 	for (const sessionId of readIndex()) {
 		try {
 			const raw = localStorage.getItem(SESSION_KEY_PREFIX + sessionId)
 			if (!raw) continue
-			const data = JSON.parse(raw) as PersistedCliSession
+			const data = migrateLegacyIds(JSON.parse(raw) as PersistedCliSession)
 			appStore.set(upsertSessionAtom, { session: data.session, directory: data.directory })
 			setCliMeta(sessionId, data.meta)
 			for (const message of data.messages) {
@@ -195,8 +220,12 @@ export async function runCliTurn(
 	}
 
 	const ts = Date.now()
-	// User message + text part.
-	const userId = `cli-user-${ts}`
+	// Message ids must sort chronologically AND user-before-assistant within a
+	// turn: the message store keeps a per-session array sorted by id, and turn
+	// grouping collects the assistant messages that FOLLOW a user message.
+	// (`cli-user-*`/`cli-asst-*` broke this — "asst" < "user" lexically, so
+	// responses sorted before their prompts and never rendered.)
+	const userId = `cli-${ts}-0u`
 	appStore.set(upsertMessageAtom, {
 		id: userId,
 		sessionID: sessionId,
@@ -225,7 +254,7 @@ export async function runCliTurn(
 	}
 
 	// Assistant message shell + growing parts.
-	const asstId = `cli-asst-${ts}`
+	const asstId = `cli-${ts}-1a`
 	const textPartId = `${asstId}-text`
 	const reasoningPartId = `${asstId}-reasoning`
 	appStore.set(upsertMessageAtom, {
