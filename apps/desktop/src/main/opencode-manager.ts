@@ -3,6 +3,7 @@ import { homedir } from "node:os"
 import path from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 import { dialog } from "electron"
+import { whichOnPath } from "@palot/cli-registry"
 import type { LocalServerConfig } from "../preload/api"
 import { DEFAULT_LOCAL_SERVER } from "../shared/server-config"
 import { getCredential } from "./credential-store"
@@ -337,7 +338,13 @@ async function spawnServer(
 		binDir: opencodeBinDir,
 	})
 
-	const proc = spawn("opencode", args, {
+	// Some install methods name the binary `opencode-cli` (#107).
+	const binary =
+		(await whichOnPath("opencode", augmentedPath)) ??
+		(await whichOnPath("opencode-cli", augmentedPath)) ??
+		"opencode"
+
+	const proc = spawn(binary, args, {
 		cwd: homedir(),
 		stdio: "pipe",
 		env: { ...process.env, PATH: augmentedPath },

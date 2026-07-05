@@ -22,9 +22,9 @@ function windowsExecExts(): string[] {
  * shell would. Pure filesystem probing — it never executes the binary, so it is
  * safe to call for CLIs we don't control. Returns null when not found.
  */
-export async function whichOnPath(binary: string): Promise<string | null> {
+export async function whichOnPath(binary: string, pathOverride?: string): Promise<string | null> {
 	const isWindows = process.platform === "win32"
-	const dirs = (process.env.PATH ?? "").split(path.delimiter).filter(Boolean)
+	const dirs = (pathOverride ?? process.env.PATH ?? "").split(path.delimiter).filter(Boolean)
 	const candidates = isWindows
 		? [binary, ...windowsExecExts().map((ext) => binary + ext)]
 		: [binary]

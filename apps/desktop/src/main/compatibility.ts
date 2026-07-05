@@ -11,6 +11,7 @@ import { homedir } from "node:os"
 import path from "node:path"
 import { coerce, satisfies, valid } from "semver"
 import { createLogger } from "./logger"
+import { waitForEnv } from "./shell-env"
 
 const log = createLogger("compatibility")
 
@@ -68,30 +69,36 @@ function execAsync(
 	})
 }
 
+/** Binary names OpenCode installs under, depending on the install method (#107). */
+const OPENCODE_BINARIES = ["opencode", "opencode-cli"]
+
 /** Try to find the opencode binary and get its version. */
 async function detectOpenCode(): Promise<{ version: string | null; path: string | null }> {
+	// GUI launches get a minimal launchd env; wait for the login-shell PATH so
+	// the check agrees with what the user's terminal sees.
+	await waitForEnv()
 	const augmentedPath = getAugmentedPath()
 	const env = { ...process.env, PATH: augmentedPath }
+	const whichCmd = process.platform === "win32" ? "where" : "which"
 
-	// Try `opencode --version` (the correct flag)
-	const versionOutput = await execAsync("opencode", ["--version"], env)
-	if (versionOutput) {
-		// Parse version from output -- could be "v0.2.14", "opencode v0.2.14", or "local"
-		const match = versionOutput.match(/v?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)/)
-		const version = match ? match[1] : versionOutput.trim()
-
-		// Try to find the path with `which` or `where`
-		const whichCmd = process.platform === "win32" ? "where" : "which"
-		const binaryPath = await execAsync(whichCmd, ["opencode"], env)
-
-		return { version, path: binaryPath }
+	for (const binary of OPENCODE_BINARIES) {
+		// Try `<binary> --version` (the correct flag)
+		const versionOutput = await execAsync(binary, ["--version"], env)
+		if (versionOutput) {
+			// Parse version from output -- could be "v0.2.14", "opencode v0.2.14", or "local"
+			const match = versionOutput.match(/v?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)/)
+			const version = match ? match[1] : versionOutput.trim()
+			const binaryPath = await execAsync(whichCmd, [binary], env)
+			return { version, path: binaryPath }
+		}
 	}
 
-	// Fallback: check if the binary exists at all (might not support --version)
-	const whichCmd = process.platform === "win32" ? "where" : "which"
-	const binaryPath = await execAsync(whichCmd, ["opencode"], env)
-	if (binaryPath) {
-		return { version: "unknown", path: binaryPath }
+	// Fallback: check if a binary exists at all (might not support --version)
+	for (const binary of OPENCODE_BINARIES) {
+		const binaryPath = await execAsync(whichCmd, [binary], env)
+		if (binaryPath) {
+			return { version: "unknown", path: binaryPath }
+		}
 	}
 
 	return { version: null, path: null }

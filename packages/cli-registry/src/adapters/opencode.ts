@@ -7,7 +7,8 @@ import type { CliAdapter } from "../types"
 export const opencodeAdapter: CliAdapter = {
 	id: "opencode",
 	displayName: "OpenCode",
-	binaries: ["opencode"],
+	// Some distro packages install the binary as `opencode-cli` (#107).
+	binaries: ["opencode", "opencode-cli"],
 	versionArgs: ["--version"],
 	authPaths: [
 		"~/.local/share/opencode/auth.json",
