@@ -52,7 +52,12 @@ import {
 	restoreMigrationBackup,
 	scanProvider,
 } from "./onboarding"
-import { getOpenInTargets, openInTarget, setPreferredTarget } from "./open-in-targets"
+import {
+	getOpenInTargets,
+	type OpenInRemote,
+	openInTarget,
+	setPreferredTarget,
+} from "./open-in-targets"
 import { ensureServer, getServerUrl, restartServer, stopServer } from "./opencode-manager"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
@@ -379,8 +384,13 @@ export function registerIpcHandlers(): void {
 		"open-in:open",
 		withLogging(
 			"open-in:open",
-			async (_, directory: string, targetId: string, persistPreferred?: boolean) =>
-				await openInTarget(directory, targetId, { persistPreferred }),
+			async (
+				_,
+				directory: string,
+				targetId: string,
+				persistPreferred?: boolean,
+				remote?: OpenInRemote,
+			) => await openInTarget(directory, targetId, { persistPreferred, remote }),
 		),
 	)
 

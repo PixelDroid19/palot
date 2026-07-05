@@ -24,9 +24,10 @@ import {
 	TerminalIcon,
 	XIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
 import { reviewPanelOpenAtom, reviewPanelSettingsAtom, sessionDiffStatsFamily } from "../atoms/ui"
+import { activeServerConfigAtom } from "../atoms/connection"
 import type {
 	ConfigData,
 	ModelRef,
@@ -545,11 +546,26 @@ function OpenInButton({ directory }: { directory: string }) {
 		void loadTargets()
 	}, [loadTargets])
 
+	// Directories on an SSH server don't exist locally; VS Code-like editors
+	// open them through Remote-SSH instead (#49).
+	const activeServer = useAtomValue(activeServerConfigAtom)
+	const remote = useMemo(
+		() =>
+			activeServer.type === "ssh"
+				? {
+						sshHost: activeServer.sshHost,
+						sshUser: activeServer.sshUser,
+						sshPort: activeServer.sshPort,
+					}
+				: undefined,
+		[activeServer],
+	)
+
 	const handleOpen = useCallback(
 		async (targetId: string) => {
 			setOpening(targetId)
 			try {
-				await openInTarget(directory, targetId, true)
+				await openInTarget(directory, targetId, true, remote)
 				setPreferred(targetId)
 			} catch {
 				// Silently fail
@@ -557,7 +573,7 @@ function OpenInButton({ directory }: { directory: string }) {
 				setOpening(null)
 			}
 		},
-		[directory],
+		[directory, remote],
 	)
 
 	const handlePrimaryClick = useCallback(async () => {

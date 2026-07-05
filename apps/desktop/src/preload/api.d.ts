@@ -558,7 +558,12 @@ export interface PalotAPI {
 	// Open in external app
 	openIn: {
 		getTargets: () => Promise<OpenInTargetsResult>
-		open: (directory: string, targetId: string, persistPreferred?: boolean) => Promise<void>
+		open: (
+			directory: string,
+			targetId: string,
+			persistPreferred?: boolean,
+			remote?: { sshHost: string; sshUser?: string; sshPort?: number },
+		) => Promise<void>
 		setPreferred: (targetId: string) => Promise<{ success: boolean }>
 	}
 

@@ -493,13 +493,23 @@ export async function getOpenInTargets(): Promise<OpenInTargetsResult> {
 	}
 }
 
+/** Targets built on the VS Code shell, which support Remote-SSH via --remote. */
+const VSCODE_LIKE_TARGETS = new Set(["vscode", "vscodeInsiders", "cursor", "windsurf"])
+
+/** SSH endpoint for opening a folder that lives on a remote server (#49). */
+export interface OpenInRemote {
+	sshHost: string
+	sshUser?: string
+	sshPort?: number
+}
+
 /**
  * Opens a directory in the specified target app.
  */
 export async function openInTarget(
 	directory: string,
 	targetId: string,
-	options?: { persistPreferred?: boolean },
+	options?: { persistPreferred?: boolean; remote?: OpenInRemote },
 ): Promise<{ success: boolean }> {
 	if (process.platform !== "darwin") {
 		throw new Error("Open-in targets are only supported on macOS")
@@ -515,6 +525,23 @@ export async function openInTarget(
 	// Persist preference
 	if (options?.persistPreferred) {
 		preferredTargetId = targetId
+	}
+
+	// A directory on a remote server doesn't exist locally: opening it in a
+	// local editor gives a blank window (#49). VS Code-shell editors can open
+	// it through Remote-SSH instead.
+	if (options?.remote) {
+		if (!VSCODE_LIKE_TARGETS.has(targetId)) {
+			throw new Error(
+				`"${target.label}" can't open folders on a remote server; use a VS Code-compatible editor`,
+			)
+		}
+		const { sshHost, sshUser, sshPort } = options.remote
+		const authority = `ssh-remote+${sshUser ? `${sshUser}@` : ""}${sshHost}${
+			sshPort && sshPort !== 22 ? `:${sshPort}` : ""
+		}`
+		await spawnAsync(binary, ["--remote", authority, directory])
+		return { success: true }
 	}
 
 	// For terminal and file manager targets, use `open` command

@@ -206,8 +206,12 @@ contextBridge.exposeInMainWorld("palot", {
 
 	openIn: {
 		getTargets: () => ipcRenderer.invoke("open-in:targets"),
-		open: (directory: string, targetId: string, persistPreferred?: boolean) =>
-			ipcRenderer.invoke("open-in:open", directory, targetId, persistPreferred),
+		open: (
+			directory: string,
+			targetId: string,
+			persistPreferred?: boolean,
+			remote?: { sshHost: string; sshUser?: string; sshPort?: number },
+		) => ipcRenderer.invoke("open-in:open", directory, targetId, persistPreferred, remote),
 		setPreferred: (targetId: string) => ipcRenderer.invoke("open-in:set-preferred", targetId),
 	},
 

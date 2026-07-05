@@ -353,9 +353,10 @@ export async function openInTarget(
 	directory: string,
 	targetId: string,
 	persistPreferred?: boolean,
+	remote?: { sshHost: string; sshUser?: string; sshPort?: number },
 ): Promise<void> {
 	if (isElectron) {
-		return window.palot.openIn.open(directory, targetId, persistPreferred)
+		return window.palot.openIn.open(directory, targetId, persistPreferred, remote)
 	}
 	throw new Error("Open-in targets are only available in Electron mode")
 }

@@ -27,7 +27,9 @@ import {
 	Loader2Icon,
 	SearchIcon,
 } from "lucide-react"
+import { useAtomValue } from "jotai"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { activeServerConfigAtom } from "../atoms/connection"
 import type {
 	GitBranchInfo,
 	GitCheckoutResult,
@@ -68,6 +70,7 @@ export function BranchPicker({
 	activeSessionCount = 0,
 }: BranchPickerProps) {
 	const [open, setOpen] = useState(false)
+	const activeServer = useAtomValue(activeServerConfigAtom)
 	const [branches, setBranches] = useState<GitBranchInfo | null>(null)
 	const [loading, setLoading] = useState(false)
 
@@ -210,6 +213,22 @@ export function BranchPicker({
 
 	// Don't render in browser mode
 	if (!isElectron) return null
+
+	// Git IPC runs on this machine; on a remote server the project directory
+	// only exists on the server, so the picker would show an empty list (#50).
+	// Show the current branch read-only instead.
+	if (activeServer.type !== "local") {
+		if (!currentBranch) return null
+		return (
+			<span
+				title="Branch switching isn't available on remote servers yet"
+				className="flex cursor-default items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground/60"
+			>
+				<GitBranchIcon className="size-3" />
+				<span className="max-w-[140px] truncate">{currentBranch}</span>
+			</span>
+		)
+	}
 
 	return (
 		<>
