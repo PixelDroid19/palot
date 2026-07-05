@@ -1,11 +1,15 @@
 import { describe, expect, test } from "bun:test"
 import type { Message } from "../src/renderer/lib/types"
 import {
+	computeCompactionThreshold,
+	computeContextUsage,
 	computeSessionCost,
 	computeSessionTokens,
 	formatCost,
 	formatPercentage,
 	formatTokens,
+	formatWorkDuration,
+	type ModelLimitInfo,
 	shortModelName,
 } from "../src/renderer/lib/session-metrics"
 
@@ -97,5 +101,74 @@ describe("shortModelName", () => {
 	test("returns the id unchanged when no pattern matches", () => {
 		expect(shortModelName("o3-mini")).toBe("o3-mini")
 		expect(shortModelName("")).toBe("")
+	})
+})
+
+describe("computeCompactionThreshold", () => {
+	test("uses input limit minus the reserved buffer when input is known", () => {
+		// maxOutput = min(8000, 32000) = 8000; reserved = min(20000, 8000) = 8000
+		expect(computeCompactionThreshold({ context: 200_000, input: 200_000, output: 8_000 })).toBe(
+			192_000,
+		)
+	})
+	test("falls back to context minus max output when there is no input limit", () => {
+		expect(computeCompactionThreshold({ context: 128_000, output: 4_096 })).toBe(123_904)
+	})
+	test("honors an explicit reserved override", () => {
+		expect(
+			computeCompactionThreshold({ context: 200_000, input: 200_000, output: 8_000 }, 20_000),
+		).toBe(180_000)
+	})
+	test("treats a zero output limit as the 32k default", () => {
+		// maxOutput = min(0,32000) || 32000 = 32000; reserved = min(20000,32000) = 20000
+		expect(computeCompactionThreshold({ context: 200_000, input: 200_000, output: 0 })).toBe(
+			180_000,
+		)
+	})
+})
+
+describe("computeContextUsage", () => {
+	const limit: ModelLimitInfo = { context: 200_000, input: 200_000, output: 8_000 }
+	const getLimit = () => limit
+
+	test("reads the last assistant message with tokens", () => {
+		const msgs = [
+			user(),
+			assistant(0, { input: 1_000, output: 500 } as Message["tokens"]),
+		]
+		// tag providerID/modelID the function reads
+		;(msgs[1] as unknown as { providerID: string; modelID: string }).providerID = "anthropic"
+		;(msgs[1] as unknown as { providerID: string; modelID: string }).modelID = "claude"
+		const usage = computeContextUsage(msgs, getLimit)
+		expect(usage?.lastMessageTokens).toBe(1_500)
+		expect(usage?.contextLimit).toBe(200_000)
+		expect(usage?.compactionThreshold).toBe(192_000)
+	})
+
+	test("returns null when no assistant message has tokens", () => {
+		expect(computeContextUsage([user()], getLimit)).toBeNull()
+	})
+
+	test("returns null when the model limit is unknown", () => {
+		const msgs = [assistant(0, { input: 10 } as Message["tokens"])]
+		expect(computeContextUsage(msgs, () => undefined)).toBeNull()
+	})
+
+	test("omits the compaction threshold when auto-compaction is disabled", () => {
+		const msgs = [assistant(0, { input: 1_000 } as Message["tokens"])]
+		const usage = computeContextUsage(msgs, getLimit, { auto: false })
+		expect(usage?.compactionThreshold).toBeNull()
+		expect(usage?.compactionPercentage).toBeNull()
+	})
+})
+
+describe("formatWorkDuration", () => {
+	test("formats sub-second, seconds, minutes, and hours", () => {
+		expect(formatWorkDuration(500)).toBe("0s")
+		expect(formatWorkDuration(5_000)).toBe("5s")
+		expect(formatWorkDuration(60_000)).toBe("1m")
+		expect(formatWorkDuration(65_000)).toBe("1m 5s")
+		expect(formatWorkDuration(3_600_000)).toBe("1h")
+		expect(formatWorkDuration(3_660_000)).toBe("1h 1m")
 	})
 })
