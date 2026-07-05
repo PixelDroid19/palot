@@ -27,7 +27,12 @@ function copyDrizzleMigrations(): Plugin {
 export default defineConfig({
 	main: {
 		plugins: [
-			externalizeDepsPlugin({ exclude: ["@palot/configconv", "drizzle-orm"] }),
+			// Workspace packages ship as TypeScript source, so they must be bundled
+			// into the main process rather than externalized (Node's ESM loader
+			// can't resolve their extensionless/source imports at runtime).
+			externalizeDepsPlugin({
+				exclude: ["@palot/configconv", "@palot/cli-registry", "drizzle-orm"],
+			}),
 			copyDrizzleMigrations(),
 		],
 		build: {
