@@ -124,6 +124,10 @@ function OpaqueWindowsRow() {
 	const opaque = useAtomValue(opaqueWindowsAtom)
 	const setOpaque = useSetAtom(opaqueWindowsAtom)
 
+	// Translucency (liquid glass / vibrancy) only exists on macOS; other
+	// platforms are always opaque, so the toggle would do nothing (#64).
+	const isMac = isElectron && window.palot.platform === "darwin"
+
 	const handleChange = useCallback(
 		async (checked: boolean) => {
 			setOpaque(checked)
@@ -135,6 +139,8 @@ function OpaqueWindowsRow() {
 		},
 		[setOpaque],
 	)
+
+	if (!isMac) return null
 
 	return (
 		<SettingsRow

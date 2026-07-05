@@ -2,7 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { app } from "electron"
 import type { AppSettings, NotificationSettings } from "../preload/api"
-import { DEFAULT_SERVER_SETTINGS } from "../shared/server-config"
+import { DEFAULT_SERVER_SETTINGS, normalizeLocalServerName } from "../shared/server-config"
 import { createLogger } from "./logger"
 
 const log = createLogger("settings-store")
@@ -79,6 +79,18 @@ export function initSettingsStore(): void {
 
 	// Migrate opaqueWindows from the old preferences.json into settings.json
 	migrateFromPreferencesJson(configDir)
+
+	// Re-label a stale default local-server name for this platform (#63:
+	// Windows installs persisted "This Mac" from older builds).
+	settings = {
+		...settings,
+		servers: {
+			...settings.servers,
+			servers: settings.servers.servers.map((s) =>
+				s.id === "local" ? { ...s, name: normalizeLocalServerName(s.name) } : s,
+			),
+		},
+	}
 }
 
 /**
