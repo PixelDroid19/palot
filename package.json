@@ -15,6 +15,7 @@
 		"dev:web": "turbo dev:web --filter=@palot/desktop",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
+		"test": "turbo test",
 		"format": "biome format --write .",
 		"check-types": "turbo check-types",
 		"package": "turbo package",

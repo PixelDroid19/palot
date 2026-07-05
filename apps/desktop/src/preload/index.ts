@@ -168,6 +168,12 @@ contextBridge.exposeInMainWorld("palot", {
 
 	getRemoteAccessInfo: () => ipcRenderer.invoke("remote-access:info"),
 
+	// --- Agent CLI detection ---
+
+	agentClis: {
+		detect: (force?: boolean) => ipcRenderer.invoke("agent-clis:detect", force),
+	},
+
 	// --- Open in external app ---
 
 	openIn: {

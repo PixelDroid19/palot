@@ -2,7 +2,7 @@
 "@palot/desktop": minor
 ---
 
-Close remaining ZCode feature-parity gaps:
+Expand Palot's power-user feature set:
 
 - **Usage statistics dashboard** (Settings → Usage): aggregates cost and token
   usage (input, output, reasoning, cache read/write) across every project and

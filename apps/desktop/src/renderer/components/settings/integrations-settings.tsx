@@ -7,11 +7,17 @@ import {
 	Loader2Icon,
 	RefreshCwIcon,
 	SmartphoneIcon,
+	TerminalIcon,
 	XCircleIcon,
 } from "lucide-react"
 import QRCode from "qrcode"
 import { useCallback, useEffect, useState } from "react"
-import type { RemoteAccessInfo, RemoteEndpoint, WebhookTarget } from "../../../preload/api"
+import type {
+	AgentCliDetection,
+	RemoteAccessInfo,
+	RemoteEndpoint,
+	WebhookTarget,
+} from "../../../preload/api"
 import { useSettings } from "../../hooks/use-settings"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
@@ -349,6 +355,100 @@ function RemoteAccessPanel() {
 }
 
 // ============================================================
+// Agent CLI detection
+// ============================================================
+
+const AUTH_LABEL: Record<AgentCliDetection["auth"], string> = {
+	authenticated: "Signed in",
+	unauthenticated: "Not signed in",
+	unknown: "",
+}
+
+function AgentClisPanel() {
+	const [clis, setClis] = useState<AgentCliDetection[] | null>(null)
+	const [loading, setLoading] = useState(false)
+
+	const load = useCallback(async (force = false) => {
+		if (!isElectron) return
+		setLoading(true)
+		try {
+			setClis(await window.palot.agentClis.detect(force))
+		} finally {
+			setLoading(false)
+		}
+	}, [])
+
+	useEffect(() => {
+		load()
+	}, [load])
+
+	return (
+		<SettingsSection
+			title="Coding CLIs"
+			description="Palot works with multiple coding-agent CLIs. These are detected on this machine — OpenCode runs as a managed backend today; the others are recognized for config migration and quick access."
+		>
+			<div className="flex items-center justify-between px-4 py-3">
+				<div className="flex items-center gap-2 text-sm text-muted-foreground">
+					<TerminalIcon aria-hidden="true" className="size-4" />
+					{clis
+						? `${clis.filter((c) => c.installed).length} of ${clis.length} installed`
+						: "Detecting…"}
+				</div>
+				<Button variant="outline" size="sm" onClick={() => load(true)} disabled={loading}>
+					{loading ? (
+						<Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
+					) : (
+						<RefreshCwIcon aria-hidden="true" className="size-4" />
+					)}
+					Rescan
+				</Button>
+			</div>
+			{clis?.map((cli) => (
+				<div key={cli.id} className="flex items-center justify-between gap-3 px-4 py-3">
+					<div className="flex min-w-0 flex-col gap-0.5">
+						<div className="flex items-center gap-2">
+							{cli.installed ? (
+								<CheckCircle2Icon aria-hidden="true" className="size-4 shrink-0 text-green-500" />
+							) : (
+								<XCircleIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+							)}
+							<span className="font-medium">{cli.displayName}</span>
+							{cli.managed && (
+								<span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+									Managed
+								</span>
+							)}
+							{cli.installed && cli.version && (
+								<span className="font-mono text-xs text-muted-foreground">v{cli.version}</span>
+							)}
+						</div>
+						<span className="truncate text-xs text-muted-foreground">
+							{cli.installed ? (
+								<>
+									{AUTH_LABEL[cli.auth]}
+									{cli.auth !== "unknown" && cli.binaryPath ? " · " : ""}
+									<span className="font-mono">{cli.binaryPath}</span>
+								</>
+							) : (
+								<span className="font-mono">{cli.installHint}</span>
+							)}
+						</span>
+					</div>
+					<a
+						href={cli.docsUrl}
+						target="_blank"
+						rel="noreferrer"
+						className="shrink-0 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+					>
+						Docs
+					</a>
+				</div>
+			))}
+		</SettingsSection>
+	)
+}
+
+// ============================================================
 // Page
 // ============================================================
 
@@ -433,6 +533,7 @@ export function IntegrationsSettings() {
 				</SettingsRow>
 			</SettingsSection>
 
+			<AgentClisPanel />
 			<SkillSyncPanel />
 			<RemoteAccessPanel />
 		</div>

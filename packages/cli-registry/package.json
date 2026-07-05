@@ -1,0 +1,23 @@
+{
+	"name": "@palot/cli-registry",
+	"version": "0.1.0",
+	"private": true,
+	"license": "MIT",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./adapters": "./src/adapters/index.ts",
+		"./adapters/*": "./src/adapters/*.ts",
+		"./types": "./src/types.ts"
+	},
+	"scripts": {
+		"check-types": "tsgo --noEmit",
+		"test": "bun test",
+		"lint": "biome check .",
+		"clean": "rm -rf node_modules .turbo"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5.8.3"
+	}
+}

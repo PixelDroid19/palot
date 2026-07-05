@@ -21,6 +21,10 @@
 		"lint": {
 			"cache": false
 		},
+		"test": {
+			"dependsOn": ["^build:types"],
+			"cache": false
+		},
 		"build:types": {
 			"dependsOn": ["^build:types"],
 			"outputs": ["dist/**/*.d.ts", "dist/**/*.d.ts.map"]

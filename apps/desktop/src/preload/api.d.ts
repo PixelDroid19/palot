@@ -258,6 +258,9 @@ export interface RemoteAccessInfo {
 
 export type WebhookTarget = "feishu" | "wechat" | "generic"
 
+/** A detected coding-agent CLI (re-exported from @palot/cli-registry). */
+export type AgentCliDetection = import("@palot/cli-registry").CliDetection
+
 export interface AppSettings {
 	notifications: NotificationSettings
 	/** Whether the user prefers opaque (solid) windows. Read at window creation time. */
@@ -608,6 +611,12 @@ export interface PalotAPI {
 	// Remote / mobile access
 	/** Get LAN-reachable URLs for the running OpenCode server. */
 	getRemoteAccessInfo: () => Promise<RemoteAccessInfo>
+
+	// Agent CLI detection
+	agentClis: {
+		/** Detect installed coding-agent CLIs, their versions, and auth state. */
+		detect: (force?: boolean) => Promise<AgentCliDetection[]>
+	}
 
 	// Onboarding
 	// Automations

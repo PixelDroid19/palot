@@ -36,6 +36,7 @@ import { getDiscoveredServers } from "./mdns-scanner"
 
 import { readModelState, updateModelRecent } from "./model-state"
 import { dismissNotification, updateBadgeCount } from "./notifications"
+import { detectAgentClis } from "./agent-clis"
 import { getRemoteAccessInfo } from "./remote-access"
 import { type SkillSyncDirection, syncSkills } from "./skill-sync"
 import { type WebhookTarget, testWebhook } from "./webhooks"
@@ -345,6 +346,10 @@ export function registerIpcHandlers(): void {
 	// --- Remote / mobile access ---
 
 	ipcMain.handle("remote-access:info", () => getRemoteAccessInfo())
+
+	// --- Agent CLI detection (OpenCode, Claude Code, Codex, Cursor, Gemini) ---
+
+	ipcMain.handle("agent-clis:detect", (_event, force?: boolean) => detectAgentClis(force))
 
 	// --- Open in external app ---
 

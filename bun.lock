@@ -23,6 +23,7 @@
         "@fontsource/ibm-plex-mono": "^5.2.7",
         "@libsql/client": "^0.17.0",
         "@opencode-ai/sdk": "^1.2.1",
+        "@palot/cli-registry": "workspace:*",
         "@palot/configconv": "workspace:*",
         "@palot/ui": "workspace:*",
         "@pierre/diffs": "^1.0.10",
@@ -85,6 +86,14 @@
       },
       "devDependencies": {
         "@types/bun": "^1.2.14",
+        "typescript": "^5.8.3",
+      },
+    },
+    "packages/cli-registry": {
+      "name": "@palot/cli-registry",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "latest",
         "typescript": "^5.8.3",
       },
     },
@@ -613,6 +622,8 @@
     "@opencode-ai/sdk": ["@opencode-ai/sdk@1.2.1", "", {}, "sha512-K5e15mIXTyAykBw0GX+8O28IJHlPMw1jI/m3SDu+hgUHjmg2refqLPqyuqv8hE2nRcuGi8HajhpDJjkO7H2S0A=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
+
+    "@palot/cli-registry": ["@palot/cli-registry@workspace:packages/cli-registry"],
 
     "@palot/configconv": ["@palot/configconv@workspace:packages/configconv"],
 
