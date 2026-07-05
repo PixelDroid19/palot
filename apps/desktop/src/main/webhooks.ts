@@ -1,43 +1,11 @@
 import { net } from "electron"
 import { createLogger } from "./logger"
 import { getSettings } from "./settings-store"
+import { buildPayload, type WebhookEvent, type WebhookTarget } from "./webhook-payloads"
+
+export type { WebhookEvent, WebhookTarget } from "./webhook-payloads"
 
 const log = createLogger("webhooks")
-
-export type WebhookTarget = "feishu" | "wechat" | "generic"
-
-export interface WebhookEvent {
-	type: "permission" | "question" | "completed" | "error"
-	title: string
-	body: string
-	sessionId?: string
-}
-
-// ============================================================
-// Payload builders
-//
-// Feishu (Lark) custom bot:  { msg_type: "text", content: { text } }
-// WeChat Work group robot:   { msgtype: "text", text: { content } }
-// Generic:                   { title, body, type, sessionId }
-// ============================================================
-
-function buildPayload(target: WebhookTarget, event: WebhookEvent): unknown {
-	const text = `[Palot] ${event.title}\n${event.body}`
-	switch (target) {
-		case "feishu":
-			return { msg_type: "text", content: { text } }
-		case "wechat":
-			return { msgtype: "text", text: { content: text } }
-		case "generic":
-			return {
-				title: event.title,
-				body: event.body,
-				type: event.type,
-				sessionId: event.sessionId,
-				source: "palot",
-			}
-	}
-}
 
 /** Abort a webhook POST if the endpoint hasn't responded in this many ms. */
 const WEBHOOK_TIMEOUT_MS = 10_000
