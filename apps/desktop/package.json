@@ -32,6 +32,7 @@
 		"rebuild": "electron-rebuild",
 		"lint": "biome check .",
 		"check-types": "tsgo --noEmit",
+		"test": "bun test test/",
 		"clean": "rm -rf out release dist node_modules .turbo"
 	},
 	"dependencies": {
