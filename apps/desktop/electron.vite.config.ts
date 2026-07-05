@@ -31,7 +31,7 @@ export default defineConfig({
 			// into the main process rather than externalized (Node's ESM loader
 			// can't resolve their extensionless/source imports at runtime).
 			externalizeDepsPlugin({
-				exclude: ["@palot/configconv", "@palot/cli-registry", "drizzle-orm"],
+				exclude: ["@palot/configconv", "@palot/cli-registry", "@palot/agent-host", "drizzle-orm"],
 			}),
 			copyDrizzleMigrations(),
 		],
