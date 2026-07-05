@@ -7,10 +7,11 @@
  * multi-turn context.
  */
 import type { AgentRuntimeId, AgentSandbox, AgentUpdate } from "../../preload/api"
-import { getCliMeta, patchCliMeta, setCliMeta } from "../atoms/cli-sessions"
-import { upsertMessageAtom } from "../atoms/messages"
-import { upsertPartAtom } from "../atoms/parts"
+import { type CliSessionMeta, getCliMeta, patchCliMeta, setCliMeta } from "../atoms/cli-sessions"
+import { messagesFamily, upsertMessageAtom } from "../atoms/messages"
+import { partsFamily, upsertPartAtom } from "../atoms/parts"
 import {
+	sessionFamily,
 	setSessionErrorAtom,
 	setSessionStatusAtom,
 	upsertSessionAtom,
@@ -18,7 +19,15 @@ import {
 import { appStore } from "../atoms/store"
 import { streamingVersionFamily } from "../atoms/streaming"
 import { createLogger } from "../lib/logger"
-import type { AssistantMessage, ReasoningPart, Session, TextPart, UserMessage } from "../lib/types"
+import type {
+	AssistantMessage,
+	Message,
+	Part,
+	ReasoningPart,
+	Session,
+	TextPart,
+	UserMessage,
+} from "../lib/types"
 
 const log = createLogger("cli-chat")
 
@@ -31,6 +40,92 @@ const isElectron = typeof window !== "undefined" && "palot" in window
 
 /** Maps an active session to its in-flight run id, so a turn can be cancelled. */
 const activeRuns = new Map<string, string>()
+
+// ============================================================
+// Persistence — CLI transcripts survive reloads (localStorage)
+// ============================================================
+
+const INDEX_KEY = "palot:cliSessions"
+const SESSION_KEY_PREFIX = "palot:cliSession:"
+const MAX_PERSISTED_SESSIONS = 50
+
+interface PersistedCliSession {
+	session: Session
+	directory: string
+	meta: CliSessionMeta
+	messages: Message[]
+	parts: Record<string, Part[]>
+}
+
+function readIndex(): string[] {
+	try {
+		const raw = localStorage.getItem(INDEX_KEY)
+		const ids = raw ? JSON.parse(raw) : []
+		return Array.isArray(ids) ? ids : []
+	} catch {
+		return []
+	}
+}
+
+/** Snapshot one CLI session (meta + transcript) into localStorage. */
+export function persistCliSession(sessionId: string): void {
+	const meta = getCliMeta(sessionId)
+	const entry = appStore.get(sessionFamily(sessionId))
+	if (!meta || !entry) return
+	const messages = appStore.get(messagesFamily(sessionId))
+	const parts: Record<string, Part[]> = {}
+	for (const message of messages) {
+		parts[message.id] = appStore.get(partsFamily(message.id))
+	}
+	try {
+		const payload: PersistedCliSession = {
+			session: entry.session,
+			directory: entry.directory,
+			meta,
+			messages,
+			parts,
+		}
+		localStorage.setItem(SESSION_KEY_PREFIX + sessionId, JSON.stringify(payload))
+		const ids = readIndex().filter((id) => id !== sessionId)
+		ids.push(sessionId)
+		// Evict the oldest transcripts beyond the cap.
+		while (ids.length > MAX_PERSISTED_SESSIONS) {
+			const evicted = ids.shift()
+			if (evicted) localStorage.removeItem(SESSION_KEY_PREFIX + evicted)
+		}
+		localStorage.setItem(INDEX_KEY, JSON.stringify(ids))
+	} catch (err) {
+		log.warn("Failed to persist CLI session", { sessionId }, err)
+	}
+}
+
+/** Rehydrate all persisted CLI sessions into the shared atoms. Call once at startup. */
+export function restoreCliSessions(): void {
+	for (const sessionId of readIndex()) {
+		try {
+			const raw = localStorage.getItem(SESSION_KEY_PREFIX + sessionId)
+			if (!raw) continue
+			const data = JSON.parse(raw) as PersistedCliSession
+			appStore.set(upsertSessionAtom, { session: data.session, directory: data.directory })
+			setCliMeta(sessionId, data.meta)
+			for (const message of data.messages) {
+				appStore.set(upsertMessageAtom, message)
+				for (const part of data.parts[message.id] ?? []) {
+					appStore.set(upsertPartAtom, part)
+				}
+			}
+		} catch (err) {
+			log.warn("Failed to restore CLI session", { sessionId }, err)
+		}
+	}
+}
+
+/** Drop a CLI session from persistence (e.g. when the user deletes it). */
+export function forgetCliSession(sessionId: string): void {
+	localStorage.removeItem(SESSION_KEY_PREFIX + sessionId)
+	const ids = readIndex().filter((id) => id !== sessionId)
+	localStorage.setItem(INDEX_KEY, JSON.stringify(ids))
+}
 
 /** Force the active session's chat view to recompute (mirrors the SSE path). */
 function bump(sessionId: string) {
@@ -64,6 +159,7 @@ export function createCliSession(args: {
 		effort: args.effort || undefined,
 		threadId: null,
 	})
+	persistCliSession(sessionId)
 	log.info("Created CLI session", { sessionId, runtime: args.runtimeId })
 	return sessionId
 }
@@ -225,6 +321,7 @@ export async function runCliTurn(sessionId: string, text: string): Promise<void>
 		activeRuns.delete(sessionId)
 		appStore.set(setSessionStatusAtom, { sessionId, status: { type: "idle" } })
 		bump(sessionId)
+		persistCliSession(sessionId)
 	}
 }
 

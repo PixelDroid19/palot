@@ -4,6 +4,11 @@ import { Provider as JotaiProvider } from "jotai"
 import { appStore } from "./atoms/store"
 import { queryClient } from "./lib/query-client"
 import { router } from "./router"
+import { restoreCliSessions } from "./services/cli-chat"
+
+// Rehydrate CLI-backed sessions (Codex, Claude Code, …) before first render so
+// they appear in the sidebar and their transcripts survive reloads.
+restoreCliSessions()
 
 export function App() {
 	return (

@@ -4,10 +4,10 @@ import { isCliSession } from "../atoms/cli-sessions"
 import { connectionAtom } from "../atoms/connection"
 import { upsertMessageAtom } from "../atoms/messages"
 import { upsertPartAtom } from "../atoms/parts"
-import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
+import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
-import { cancelCliTurn, runCliTurn } from "../services/cli-chat"
+import { cancelCliTurn, forgetCliSession, persistCliSession, runCliTurn } from "../services/cli-chat"
 import type {
 	FileAttachment,
 	FilePart,
@@ -187,10 +187,6 @@ export function useAgentActions() {
 	}, [])
 
 	const renameSession = useCallback(async (directory: string, sessionId: string, title: string) => {
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
-		log.debug("renameSession", { sessionId, title })
-
 		// Optimistic update
 		const entry = appStore.get(sessionFamily(sessionId))
 		if (entry) {
@@ -199,6 +195,16 @@ export function useAgentActions() {
 				directory: entry.directory,
 			})
 		}
+
+		// CLI-backed sessions only exist locally.
+		if (isCliSession(sessionId)) {
+			persistCliSession(sessionId)
+			return
+		}
+
+		const client = getProjectClient(directory)
+		if (!client) throw new Error("Not connected to OpenCode server")
+		log.debug("renameSession", { sessionId, title })
 
 		try {
 			await client.session.update({ sessionID: sessionId, title })
@@ -209,6 +215,14 @@ export function useAgentActions() {
 	}, [])
 
 	const deleteSession = useCallback(async (directory: string, sessionId: string) => {
+		// CLI-backed sessions only exist locally: drop them from the atoms and
+		// their persisted transcript, never from the OpenCode server.
+		if (isCliSession(sessionId)) {
+			cancelCliTurn(sessionId)
+			forgetCliSession(sessionId)
+			appStore.set(removeSessionAtom, sessionId)
+			return
+		}
 		const client = getProjectClient(directory)
 		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("deleteSession", { sessionId })

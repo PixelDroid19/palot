@@ -4,8 +4,8 @@
  * view; this atom is the discriminator the write actions branch on so prompts
  * route to the CLI runner instead of the OpenCode client.
  *
- * In-memory only for now: CLI transcripts live in the message/part atoms and
- * are not rehydrated on reload (persistence is a later phase).
+ * Transcripts live in the shared message/part atoms and are persisted to
+ * localStorage by services/cli-chat.ts (restored at startup by the app shell).
  */
 import { atom } from "jotai"
 import type { AgentRuntimeId, AgentSandbox } from "../../preload/api"
