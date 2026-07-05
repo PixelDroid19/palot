@@ -305,11 +305,20 @@ function RemoteAccessPanel() {
 					)}
 					<div className="flex min-w-0 flex-1 flex-col gap-1">
 						{endpoints.map((ep) => (
-							<button
-								type="button"
+							// Row is a clickable div (not a button) so the copy Button can nest
+							// inside it without producing invalid <button> inside <button>.
+							<div
 								key={ep.url}
+								role="button"
+								tabIndex={0}
 								onClick={() => setSelected(ep.url)}
-								className={`flex items-center justify-between gap-2 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted ${
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault()
+										setSelected(ep.url)
+									}
+								}}
+								className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted ${
 									selected === ep.url ? "bg-muted" : ""
 								}`}
 							>
@@ -335,7 +344,7 @@ function RemoteAccessPanel() {
 										<CopyIcon aria-hidden="true" className="size-4" />
 									)}
 								</Button>
-							</button>
+							</div>
 						))}
 						{!hasTailscale && (
 							<p className="mt-1 text-xs text-muted-foreground">
