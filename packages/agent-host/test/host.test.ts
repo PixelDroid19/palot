@@ -12,6 +12,8 @@ function shellAdapter(id: string, script: (prompt: string) => string): AgentAdap
 		id,
 		displayName: id,
 		binary: "sh",
+		capabilities: { imageInput: false, reasoningEffort: false, resume: false },
+		listModels: async () => [],
 		buildCommand: (opts) => ({ args: ["-c", script(opts.prompt)] }),
 		parseLine: (line) => (line.trim() ? [{ kind: "message", text: line.trim() }] : []),
 	}

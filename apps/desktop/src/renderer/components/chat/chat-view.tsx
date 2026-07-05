@@ -90,6 +90,7 @@ import {
 	type PromptMention,
 	reconcileMentions,
 } from "./prompt-mentions"
+import { CliSessionToolbar } from "./cli-toolbar"
 import { PromptToolbar, StatusBar } from "./prompt-toolbar"
 import { SessionTaskList } from "./session-task-list"
 import { SkillPickerDialog } from "./skill-picker-dialog"
@@ -1436,6 +1437,12 @@ function ChatInputSection({
 									{/* Toolbar inside the card — agent + model + variant selectors + submit */}
 									<PromptInputFooter>
 										<PromptInputTools>
+											{isCli && (
+												<>
+													<AttachButton disabled={!isConnected} />
+													<CliSessionToolbar sessionId={agent.sessionId} />
+												</>
+											)}
 											{!isCli && (
 												<>
 													<AttachButton disabled={!isConnected} />

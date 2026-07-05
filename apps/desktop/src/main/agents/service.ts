@@ -5,14 +5,16 @@
  * script is written, which Node binary CLIs use to launch it, and the
  * run/cancel functions the IPC layer calls.
  */
-import { mkdirSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { extname, join } from "node:path"
 import {
 	AgentBridge,
 	AgentHost,
 	MCP_PROXY_SOURCE,
 	type AgentRunOptions,
 	type AgentRunResult,
+	type AgentRuntimeDescriptor,
 	type AgentRuntimeId,
 	type AgentUpdate,
 } from "@palot/agent-host"
@@ -61,16 +63,55 @@ async function ensureBridge(): Promise<void> {
 	await bridgeStarting
 }
 
+/** Image attachment sent from the renderer as a data URL. */
+export interface AgentImageAttachment {
+	dataUrl: string
+	filename?: string
+}
+
+/**
+ * Materialize renderer image attachments (data URLs) as temp files the CLI can
+ * read. Returns the paths plus a cleanup function.
+ */
+function writeImageFiles(images: AgentImageAttachment[]): { paths: string[]; cleanup: () => void } {
+	const dir = join(tmpdir(), `palot-images-${Math.random().toString(36).slice(2)}`)
+	mkdirSync(dir, { recursive: true })
+	const paths: string[] = []
+	for (const [index, image] of images.entries()) {
+		const match = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(image.dataUrl)
+		if (!match) continue
+		const [, mime, isBase64, data] = match
+		const ext =
+			(image.filename && extname(image.filename)) ||
+			(mime === "image/jpeg" ? ".jpg" : mime === "image/webp" ? ".webp" : ".png")
+		const file = join(dir, `image-${index}${ext}`)
+		writeFileSync(file, isBase64 ? Buffer.from(data, "base64") : decodeURIComponent(data))
+		paths.push(file)
+	}
+	return { paths, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
+}
+
+/** Runtime descriptors (install state, capabilities, model catalog) for pickers. */
+export function describeAgentRuntimes(): Promise<AgentRuntimeDescriptor[]> {
+	return getAgentHost().describeRuntimes()
+}
+
 /** Run one agent turn, streaming normalized updates. Called from IPC. */
 export async function runAgent(
 	runId: string,
 	runtimeId: AgentRuntimeId,
-	opts: AgentRunOptions & { sessionKey?: string },
+	opts: AgentRunOptions & { sessionKey?: string; imageAttachments?: AgentImageAttachment[] },
 	onUpdate: (update: AgentUpdate) => void,
 ): Promise<AgentRunResult> {
 	await ensureBridge()
-	const { sessionKey, ...runOpts } = opts
-	return getAgentHost().run(runId, runtimeId, runOpts, { sessionKey, onUpdate })
+	const { sessionKey, imageAttachments, ...runOpts } = opts
+	const images = imageAttachments?.length ? writeImageFiles(imageAttachments) : null
+	if (images?.paths.length) runOpts.images = images.paths
+	try {
+		return await getAgentHost().run(runId, runtimeId, runOpts, { sessionKey, onUpdate })
+	} finally {
+		images?.cleanup()
+	}
 }
 
 /** Cancel a running agent turn. Returns true if a matching run was killed. */

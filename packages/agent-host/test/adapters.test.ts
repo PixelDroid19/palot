@@ -127,6 +127,17 @@ describe("codex adapter", () => {
 		expect(args).toContain("/work")
 	})
 
+	test("buildCommand attaches images with -i", () => {
+		const { args } = codexAdapter.buildCommand({
+			prompt: "describe these",
+			cwd: "/w",
+			images: ["/tmp/a.png", "/tmp/b.jpg"],
+		})
+		expect(args).toContain("-i")
+		expect(args).toContain("/tmp/a.png")
+		expect(args).toContain("/tmp/b.jpg")
+	})
+
 	test("buildCommand resume keeps model overrides", () => {
 		const { args } = codexAdapter.buildCommand({
 			prompt: "task",

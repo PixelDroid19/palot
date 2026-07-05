@@ -3,89 +3,55 @@
  * built-in runtime; the others are coding-agent CLIs that render in the same
  * chat view via a CLI-backed session.
  *
- * Each CLI runtime declares its own selectable models (learned from synara's
- * per-provider model model): the model picker for a CLI session lists these,
- * never OpenCode's. An empty model slug means "use the CLI's configured
- * default".
+ * CLI model catalogs are NOT hardcoded here: they come from the agent-host
+ * core (`describeRuntimes`), which reads each CLI's own source of truth (e.g.
+ * Codex's models cache). This module keeps a small cache the UI reads
+ * synchronously after `loadRuntimeDescriptors()` resolves.
  */
-import type { AgentRuntimeId } from "../../preload/api"
+import type { AgentRuntimeDescriptor, AgentRuntimeId } from "../../preload/api"
 
 export type SessionRuntimeId = "opencode" | AgentRuntimeId
 
-export interface RuntimeModel {
-	/** Value passed to the CLI's model flag; "" = the CLI's own default. */
-	slug: string
-	label: string
+const isElectron = typeof window !== "undefined" && "palot" in window
+
+let descriptorCache: AgentRuntimeDescriptor[] | null = null
+let inflight: Promise<AgentRuntimeDescriptor[]> | null = null
+
+/**
+ * Fetch runtime descriptors from the core (cached). Safe to call from any
+ * component; resolves to [] in browser mode.
+ */
+export function loadRuntimeDescriptors(): Promise<AgentRuntimeDescriptor[]> {
+	if (descriptorCache) return Promise.resolve(descriptorCache)
+	if (!isElectron) return Promise.resolve([])
+	inflight ??= window.palot.agentSubagent
+		.describeRuntimes()
+		.then((descriptors) => {
+			descriptorCache = descriptors
+			return descriptors
+		})
+		.catch(() => {
+			inflight = null
+			return []
+		})
+	return inflight
 }
 
-export interface RuntimeEffort {
-	/** Value passed to the CLI's reasoning-effort flag; "" = the CLI's default. */
-	value: string
-	label: string
+/** Synchronous view of the loaded descriptors ([] until loaded). */
+export function runtimeDescriptors(): AgentRuntimeDescriptor[] {
+	return descriptorCache ?? []
 }
 
-export interface SessionRuntimeMeta {
-	id: SessionRuntimeId
-	label: string
-	builtIn: boolean
-	/** Selectable models for a CLI runtime (first is the default choice). */
-	models?: RuntimeModel[]
-	/** Selectable reasoning-effort levels (first is the default choice). */
-	efforts?: RuntimeEffort[]
+export function runtimeDescriptor(id: SessionRuntimeId): AgentRuntimeDescriptor | undefined {
+	return runtimeDescriptors().find((d) => d.id === id)
 }
-
-const DEFAULT_MODEL: RuntimeModel = { slug: "", label: "Default" }
-
-// Codex reasoning-effort levels (from `model_reasoning_effort`).
-const CODEX_EFFORTS: RuntimeEffort[] = [
-	{ value: "", label: "Effort: Default" },
-	{ value: "low", label: "Effort: Low" },
-	{ value: "medium", label: "Effort: Medium" },
-	{ value: "high", label: "Effort: High" },
-	{ value: "xhigh", label: "Effort: Extra High" },
-]
-
-export const SESSION_RUNTIMES: readonly SessionRuntimeMeta[] = [
-	{ id: "opencode", label: "OpenCode", builtIn: true },
-	{
-		id: "codex",
-		label: "Codex",
-		builtIn: false,
-		models: [
-			DEFAULT_MODEL,
-			{ slug: "gpt-5.5", label: "GPT-5.5" },
-			{ slug: "gpt-5.4", label: "GPT-5.4" },
-			{ slug: "gpt-5.3-codex", label: "GPT-5.3 Codex" },
-			{ slug: "gpt-5.2-codex", label: "GPT-5.2 Codex" },
-		],
-		efforts: CODEX_EFFORTS,
-	},
-	{
-		id: "claude",
-		label: "Claude Code",
-		builtIn: false,
-		// Claude accepts short aliases for the latest model of each family.
-		models: [
-			DEFAULT_MODEL,
-			{ slug: "opus", label: "Opus" },
-			{ slug: "sonnet", label: "Sonnet" },
-			{ slug: "haiku", label: "Haiku" },
-		],
-	},
-]
-
-export const CLI_RUNTIME_IDS: AgentRuntimeId[] = SESSION_RUNTIMES.filter((r) => !r.builtIn).map(
-	(r) => r.id as AgentRuntimeId,
-)
 
 export function isCliRuntime(id: SessionRuntimeId): id is AgentRuntimeId {
 	return id !== "opencode"
 }
 
-export function runtimeModels(id: SessionRuntimeId): RuntimeModel[] {
-	return SESSION_RUNTIMES.find((r) => r.id === id)?.models ?? []
-}
-
-export function runtimeEfforts(id: SessionRuntimeId): RuntimeEffort[] {
-	return SESSION_RUNTIMES.find((r) => r.id === id)?.efforts ?? []
+/** Human label for a runtime id (falls back to the id itself). */
+export function runtimeLabel(id: SessionRuntimeId): string {
+	if (id === "opencode") return "OpenCode"
+	return runtimeDescriptor(id)?.displayName ?? id
 }

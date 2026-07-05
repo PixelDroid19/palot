@@ -53,15 +53,13 @@ import {
 	useVcs,
 } from "../hooks/use-opencode-data"
 import { useAgentActions } from "../hooks/use-server"
-import type { AgentRuntimeId } from "../../preload/api"
+import type { AgentRuntimeDescriptor } from "../../preload/api"
 import { createCliSession } from "../services/cli-chat"
 import type { FileAttachment } from "../lib/types"
+import { useTranslation } from "../i18n/use-translation"
 import {
-	CLI_RUNTIME_IDS,
 	isCliRuntime,
-	runtimeEfforts,
-	runtimeModels,
-	SESSION_RUNTIMES,
+	loadRuntimeDescriptors,
 	type SessionRuntimeId,
 } from "../lib/session-runtimes"
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
@@ -242,17 +240,24 @@ export function NewChat() {
 	const [error, setError] = useState<string | null>(null)
 	const [worktreeMode, setWorktreeMode] = useState<"local" | "worktree">("local")
 
+	const { t } = useTranslation()
+
 	// Session runtime: OpenCode (built-in) or a detected coding-agent CLI.
 	const [sessionRuntime, setSessionRuntime] = useState<SessionRuntimeId>("opencode")
 	const [cliModel, setCliModel] = useState<string>("")
 	const [cliEffort, setCliEffort] = useState<string>("")
-	const [cliRuntimeIds, setCliRuntimeIds] = useState<AgentRuntimeId[]>([])
+	// Runtime descriptors come from the agent-host core: install state,
+	// capabilities, and each CLI's own model catalog (never hardcoded here).
+	const [cliRuntimes, setCliRuntimes] = useState<AgentRuntimeDescriptor[]>([])
 	useEffect(() => {
-		if (typeof window === "undefined" || !("palot" in window)) return
-		window.palot.agentClis.detect().then((clis) => {
-			setCliRuntimeIds(CLI_RUNTIME_IDS.filter((id) => clis.some((c) => c.id === id && c.installed)))
-		})
+		loadRuntimeDescriptors().then((all) => setCliRuntimes(all.filter((d) => d.installed)))
 	}, [])
+	const activeCliRuntime = isCliRuntime(sessionRuntime)
+		? cliRuntimes.find((d) => d.id === sessionRuntime)
+		: undefined
+	const cliModels = activeCliRuntime?.models ?? []
+	// Efforts are per-model: switching models re-derives the effort choices.
+	const cliEfforts = cliModels.find((m) => m.slug === cliModel)?.efforts ?? []
 
 
 	// Draft persistence — survives page reloads.
@@ -824,9 +829,9 @@ export function NewChat() {
 							}
 							extraSlot={
 								<div className="flex items-center gap-2">
-									{cliRuntimeIds.length > 0 && (
+									{cliRuntimes.length > 0 && (
 										<NativeSelect
-											aria-label="Session runtime"
+											aria-label={t("runtimePicker.runtime")}
 											size="sm"
 											value={sessionRuntime}
 											onChange={(e) => {
@@ -835,39 +840,44 @@ export function NewChat() {
 												setCliEffort("")
 											}}
 										>
-											{SESSION_RUNTIMES.filter(
-												(r) => r.builtIn || cliRuntimeIds.includes(r.id as AgentRuntimeId),
-											).map((r) => (
+											<NativeSelectOption value="opencode">OpenCode</NativeSelectOption>
+											{cliRuntimes.map((r) => (
 												<NativeSelectOption key={r.id} value={r.id}>
-													{r.label}
+													{r.displayName}
 												</NativeSelectOption>
 											))}
 										</NativeSelect>
 									)}
-									{isCliRuntime(sessionRuntime) && runtimeModels(sessionRuntime).length > 0 && (
+									{isCliRuntime(sessionRuntime) && cliModels.length > 0 && (
 										<NativeSelect
-											aria-label="Model"
+											aria-label={t("runtimePicker.model")}
 											size="sm"
 											value={cliModel}
-											onChange={(e) => setCliModel(e.target.value)}
+											onChange={(e) => {
+												setCliModel(e.target.value)
+												setCliEffort("")
+											}}
 										>
-											{runtimeModels(sessionRuntime).map((m) => (
+											{cliModels.map((m) => (
 												<NativeSelectOption key={m.slug} value={m.slug}>
-													{m.label}
+													{m.slug === "" ? t("runtimePicker.defaultModel") : m.label}
 												</NativeSelectOption>
 											))}
 										</NativeSelect>
 									)}
-									{isCliRuntime(sessionRuntime) && runtimeEfforts(sessionRuntime).length > 0 && (
+									{isCliRuntime(sessionRuntime) && cliEfforts.length > 0 && (
 										<NativeSelect
-											aria-label="Reasoning effort"
+											aria-label={t("runtimePicker.effort")}
 											size="sm"
 											value={cliEffort}
 											onChange={(e) => setCliEffort(e.target.value)}
 										>
-											{runtimeEfforts(sessionRuntime).map((ef) => (
-												<NativeSelectOption key={ef.value} value={ef.value}>
-													{ef.label}
+											<NativeSelectOption value="">
+												{t("runtimePicker.effortDefault")}
+											</NativeSelectOption>
+											{cliEfforts.map((effort) => (
+												<NativeSelectOption key={effort} value={effort}>
+													{t("runtimePicker.effortLevel", { level: effort })}
 												</NativeSelectOption>
 											))}
 										</NativeSelect>

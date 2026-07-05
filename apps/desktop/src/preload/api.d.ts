@@ -268,6 +268,8 @@ export type AgentRunOptions = import("@palot/agent-host").AgentRunOptions
 export type AgentUsage = import("@palot/agent-host").AgentUsage
 export type AgentRunResult = import("@palot/agent-host").AgentRunResult
 export type AgentUpdate = import("@palot/agent-host").AgentUpdate
+export type AgentModelInfo = import("@palot/agent-host").AgentModelInfo
+export type AgentRuntimeDescriptor = import("@palot/agent-host").AgentRuntimeDescriptor
 
 export interface AppSettings {
 	notifications: NotificationSettings
@@ -637,8 +639,13 @@ export interface PalotAPI {
 		run: (
 			runId: string,
 			runtimeId: AgentRuntimeId,
-			opts: AgentRunOptions & { sessionKey?: string },
+			opts: AgentRunOptions & {
+				sessionKey?: string
+				imageAttachments?: { dataUrl: string; filename?: string }[]
+			},
 		) => Promise<AgentRunResult>
+		/** Runtime descriptors: install state, capabilities, model catalog. */
+		describeRuntimes: () => Promise<AgentRuntimeDescriptor[]>
 		/** Cancel a running subagent. Returns true if a matching run was killed. */
 		cancel: (runId: string) => Promise<boolean>
 		/** Subscribe to streamed updates for any run. Returns an unsubscribe function. */

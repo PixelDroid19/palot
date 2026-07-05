@@ -1,0 +1,73 @@
+/**
+ * Toolbar for CLI-backed sessions: model and reasoning-effort pickers driven
+ * by the runtime's own catalog (agent-host descriptors), applied to the NEXT
+ * turn via the session's CLI meta. Mid-session switching works because both
+ * Codex and Claude accept model overrides when resuming a session.
+ */
+import { NativeSelect, NativeSelectOption } from "@palot/ui/components/native-select"
+import { useAtomValue } from "jotai"
+import { useEffect, useState } from "react"
+import type { AgentRuntimeDescriptor } from "../../../preload/api"
+import { cliSessionsAtom, patchCliMeta } from "../../atoms/cli-sessions"
+import { useTranslation } from "../../i18n/use-translation"
+import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
+import { persistCliSession } from "../../services/cli-chat"
+
+export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
+	const { t } = useTranslation()
+	const meta = useAtomValue(cliSessionsAtom)[sessionId]
+	const [descriptor, setDescriptor] = useState<AgentRuntimeDescriptor | undefined>()
+
+	const runtimeId = meta?.runtimeId
+	useEffect(() => {
+		if (!runtimeId) return
+		loadRuntimeDescriptors().then((all) => setDescriptor(all.find((d) => d.id === runtimeId)))
+	}, [runtimeId])
+
+	if (!meta || !descriptor) return null
+
+	const models = descriptor.models
+	const efforts = models.find((m) => m.slug === (meta.model ?? ""))?.efforts ?? []
+
+	const apply = (patch: { model?: string; effort?: string }) => {
+		patchCliMeta(sessionId, {
+			model: patch.model === "" ? undefined : (patch.model ?? meta.model),
+			effort: patch.effort === "" ? undefined : (patch.effort ?? meta.effort),
+		})
+		persistCliSession(sessionId)
+	}
+
+	return (
+		<div className="flex items-center gap-1.5">
+			{models.length > 0 && (
+				<NativeSelect
+					aria-label={t("runtimePicker.model")}
+					size="sm"
+					value={meta.model ?? ""}
+					onChange={(e) => apply({ model: e.target.value, effort: "" })}
+				>
+					{models.map((m) => (
+						<NativeSelectOption key={m.slug} value={m.slug}>
+							{m.slug === "" ? t("runtimePicker.defaultModel") : m.label}
+						</NativeSelectOption>
+					))}
+				</NativeSelect>
+			)}
+			{descriptor.capabilities.reasoningEffort && efforts.length > 0 && (
+				<NativeSelect
+					aria-label={t("runtimePicker.effort")}
+					size="sm"
+					value={meta.effort ?? ""}
+					onChange={(e) => apply({ effort: e.target.value })}
+				>
+					<NativeSelectOption value="">{t("runtimePicker.effortDefault")}</NativeSelectOption>
+					{efforts.map((effort) => (
+						<NativeSelectOption key={effort} value={effort}>
+							{t("runtimePicker.effortLevel", { level: effort })}
+						</NativeSelectOption>
+					))}
+				</NativeSelect>
+			)}
+		</div>
+	)
+}

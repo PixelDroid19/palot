@@ -189,9 +189,13 @@ contextBridge.exposeInMainWorld("palot", {
 				resumeId?: string
 				/** Serializes turns of the same chat session in the host. */
 				sessionKey?: string
+				/** Image attachments as data URLs (written to temp files in main). */
+				imageAttachments?: { dataUrl: string; filename?: string }[]
 			},
 		) => ipcRenderer.invoke("agent-subagent:run", runId, runtimeId, opts),
 		cancel: (runId: string) => ipcRenderer.invoke("agent-subagent:cancel", runId),
+		/** Runtime descriptors: install state, capabilities, model catalog. */
+		describeRuntimes: () => ipcRenderer.invoke("agent-subagent:runtimes"),
 		onUpdate: (callback: (runId: string, update: unknown) => void) => {
 			const listener = (_event: unknown, runId: string, update: unknown) =>
 				callback(runId, update)

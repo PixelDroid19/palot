@@ -12,6 +12,8 @@ const echoAdapter: AgentAdapter = {
 	id: "echo",
 	displayName: "Echo",
 	binary: "sh",
+	capabilities: { imageInput: false, reasoningEffort: false, resume: false },
+	listModels: async () => [],
 	buildCommand: (opts) => ({ args: ["-c", `echo "answer:${opts.prompt}"`] }),
 	parseLine: (line) => (line.trim() ? [{ kind: "message", text: line.trim() }] : []),
 }

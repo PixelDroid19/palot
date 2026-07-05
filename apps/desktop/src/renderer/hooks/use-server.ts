@@ -76,7 +76,7 @@ export function useAgentActions() {
 
 			// CLI-backed sessions run through the agent runtime, not the OpenCode client.
 			if (isCliSession(sessionId)) {
-				await runCliTurn(sessionId, text)
+				await runCliTurn(sessionId, text, options?.files)
 				return
 			}
 

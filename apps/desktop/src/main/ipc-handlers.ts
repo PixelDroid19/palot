@@ -38,7 +38,7 @@ import { readModelState, updateModelRecent } from "./model-state"
 import { dismissNotification, updateBadgeCount } from "./notifications"
 import { detectAgentClis } from "./agent-clis"
 import type { AgentRunOptions, AgentRuntimeId } from "@palot/agent-host"
-import { cancelAgent, runAgent } from "./agents/service"
+import { cancelAgent, describeAgentRuntimes, runAgent } from "./agents/service"
 import { getRemoteAccessInfo } from "./remote-access"
 import { type SkillSyncDirection, syncSkills } from "./skill-sync"
 import { type WebhookTarget, testWebhook } from "./webhooks"
@@ -366,7 +366,10 @@ export function registerIpcHandlers(): void {
 			event,
 			runId: string,
 			runtimeId: AgentRuntimeId,
-			opts: AgentRunOptions & { sessionKey?: string },
+			opts: AgentRunOptions & {
+				sessionKey?: string
+				imageAttachments?: { dataUrl: string; filename?: string }[]
+			},
 		) =>
 			runAgent(runId, runtimeId, opts, (update) => {
 				if (!event.sender.isDestroyed()) {
@@ -375,6 +378,9 @@ export function registerIpcHandlers(): void {
 			}),
 	)
 	ipcMain.handle("agent-subagent:cancel", (_event, runId: string) => cancelAgent(runId))
+	// Runtime descriptors: install state, capabilities, and each CLI's own
+	// model catalog — the UI never hardcodes model lists.
+	ipcMain.handle("agent-subagent:runtimes", () => describeAgentRuntimes())
 
 	// --- Open in external app ---
 

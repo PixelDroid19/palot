@@ -24,10 +24,13 @@ import type {
 	AgentAdapter,
 	AgentRunOptions,
 	AgentRunResult,
+	AgentRuntimeDescriptor,
 	AgentRuntimeId,
 	AgentUpdate,
 	BridgeInfo,
 } from "./types"
+
+const RUNTIME_CACHE_TTL_MS = 60_000
 
 export interface HostEvents extends Record<string, unknown> {
 	"run:start": { runId: string; runtimeId: AgentRuntimeId }
@@ -58,6 +61,7 @@ export class AgentHost {
 	private active = new Map<string, RunHandle>()
 	/** Runs accepted but not yet spawned (waiting on session chain / cap). */
 	private pending = new Set<string>()
+	private runtimeCache: { at: number; value: AgentRuntimeDescriptor[] } | null = null
 	/** Runs cancelled before they reached the spawn stage (queued/waiting). */
 	private cancelledEarly = new Set<string>()
 	private sessionChains = new Map<string, Promise<void>>()
@@ -160,6 +164,36 @@ export class AgentHost {
 
 	listRuntimes(): { id: AgentRuntimeId; displayName: string }[] {
 		return this.adapters.list().map((a) => ({ id: a.id, displayName: a.displayName }))
+	}
+
+	/**
+	 * Full runtime descriptors (install state, capabilities, model catalog) for
+	 * pickers. Model catalogs come from each CLI's own source of truth, so the
+	 * app never hardcodes model lists. Cached briefly — CLIs don't change
+	 * mid-session, but a fresh install should show up without a restart.
+	 */
+	async describeRuntimes(): Promise<AgentRuntimeDescriptor[]> {
+		const now = Date.now()
+		if (this.runtimeCache && now - this.runtimeCache.at < RUNTIME_CACHE_TTL_MS) {
+			return this.runtimeCache.value
+		}
+		const descriptors = await Promise.all(
+			this.adapters.list().map(async (adapter): Promise<AgentRuntimeDescriptor> => {
+				const [binary, models] = await Promise.all([
+					this.resolveBinary(adapter).catch(() => null),
+					adapter.listModels().catch(() => []),
+				])
+				return {
+					id: adapter.id,
+					displayName: adapter.displayName,
+					installed: !!binary,
+					capabilities: adapter.capabilities,
+					models,
+				}
+			}),
+		)
+		this.runtimeCache = { at: now, value: descriptors }
+		return descriptors
 	}
 
 	// --- internals ---

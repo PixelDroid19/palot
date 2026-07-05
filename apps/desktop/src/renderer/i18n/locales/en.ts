@@ -31,6 +31,21 @@ export const en = {
 		failed: "Subagent failed: {{error}}",
 		empty: "No output yet. Enter a task and run the subagent.",
 	},
+	runtimePicker: {
+		runtime: "Session runtime",
+		model: "Model",
+		defaultModel: "Default model",
+		effort: "Reasoning effort",
+		effortDefault: "Effort: Default",
+		effortLevel: "Effort: {{level}}",
+	},
+	queuedMessage: {
+		sendNow: "Send now",
+		sending: "Sending…",
+		cancel: "Cancel",
+		cancelling: "Cancelling…",
+		queued: "Queued",
+	},
 	subagentChat: {
 		title: "CLI Agents",
 		description:

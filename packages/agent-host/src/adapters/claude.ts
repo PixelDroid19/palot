@@ -1,4 +1,11 @@
-import { type AgentAdapter, type AgentUpdate, asRecord, readNumber, readString } from "../types"
+import {
+	type AgentAdapter,
+	type AgentModelInfo,
+	type AgentUpdate,
+	asRecord,
+	readNumber,
+	readString,
+} from "../types"
 
 /**
  * Claude Code adapter, driven with `claude -p --output-format stream-json
@@ -78,10 +85,24 @@ export function parseClaudeLine(line: string): AgentUpdate[] {
 	}
 }
 
+/**
+ * Claude Code has no on-disk model catalog; it accepts stable aliases that
+ * always point at the latest model of each family (per `claude --help`).
+ */
+const CLAUDE_MODELS: AgentModelInfo[] = [
+	{ slug: "", label: "Default", efforts: [] },
+	{ slug: "fable", label: "Fable", efforts: [] },
+	{ slug: "opus", label: "Opus", efforts: [] },
+	{ slug: "sonnet", label: "Sonnet", efforts: [] },
+	{ slug: "haiku", label: "Haiku", efforts: [] },
+]
+
 export const claudeAdapter: AgentAdapter = {
 	id: "claude",
 	displayName: "Claude Code",
 	binary: "claude",
+	capabilities: { imageInput: false, reasoningEffort: false, resume: true },
+	listModels: async () => CLAUDE_MODELS,
 	buildCommand: (opts) => {
 		// Claude runs in the process cwd (set by the runner); it has no -C flag.
 		const args = ["-p", "--output-format", "stream-json", "--verbose"]

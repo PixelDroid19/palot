@@ -37,6 +37,35 @@ export type AgentUpdate =
 
 export type AgentSandbox = "read-only" | "workspace-write" | "danger-full-access"
 
+/** A model a runtime can run, discovered from the CLI's own catalog. */
+export interface AgentModelInfo {
+	/** Value passed to the CLI's model flag; "" = the CLI's configured default. */
+	slug: string
+	label: string
+	/** Reasoning-effort levels this model supports (empty = not tunable). */
+	efforts: string[]
+	defaultEffort?: string
+}
+
+/** What a runtime can do — drives which UI affordances are shown. */
+export interface AgentRuntimeCapabilities {
+	/** Accepts image attachments on a prompt. */
+	imageInput: boolean
+	/** Supports a reasoning-effort flag. */
+	reasoningEffort: boolean
+	/** Can resume its own sessions for multi-turn context. */
+	resume: boolean
+}
+
+/** Full description of a runtime for pickers and settings UIs. */
+export interface AgentRuntimeDescriptor {
+	id: AgentRuntimeId
+	displayName: string
+	installed: boolean
+	capabilities: AgentRuntimeCapabilities
+	models: AgentModelInfo[]
+}
+
 /**
  * Capabilities the host offers to a run (inter-agent bridge). When present,
  * adapters that support MCP inject the Palot bridge so the CLI can delegate
@@ -74,6 +103,8 @@ export interface AgentRunOptions {
 	 * run's result) to keep multi-turn context. Omit to start a fresh session.
 	 */
 	resumeId?: string
+	/** Absolute paths of image files to attach to the prompt. */
+	images?: string[]
 	/** Inter-agent bridge to expose to the CLI (adapters may ignore it). */
 	bridge?: BridgeInfo
 	/** Hard wall-clock limit for the run. Default: 10 minutes. */
@@ -101,6 +132,14 @@ export interface AgentAdapter {
 	displayName: string
 	/** Executable name to resolve on PATH. */
 	binary: string
+	capabilities: AgentRuntimeCapabilities
+	/**
+	 * Discover the models this CLI can run — from the CLI's own catalog when it
+	 * publishes one (e.g. Codex's models cache), otherwise a maintained static
+	 * list. Never throws; returns the fallback on any error. The first entry
+	 * should be the "default" choice.
+	 */
+	listModels: () => Promise<AgentModelInfo[]>
 	/**
 	 * Build the non-interactive invocation for a run. When `stdin` is returned,
 	 * the runner writes it to the process and closes the pipe — preferred for

@@ -21,6 +21,7 @@ import { streamingVersionFamily } from "../atoms/streaming"
 import { createLogger } from "../lib/logger"
 import type {
 	AssistantMessage,
+	FileAttachment,
 	Message,
 	Part,
 	ReasoningPart,
@@ -169,9 +170,19 @@ export function createCliSession(args: {
  * response into the shared atoms as an assistant message. Resumes the CLI's
  * session so context carries across turns.
  */
-export async function runCliTurn(sessionId: string, text: string): Promise<void> {
+export async function runCliTurn(
+	sessionId: string,
+	text: string,
+	files?: FileAttachment[],
+): Promise<void> {
 	const meta = getCliMeta(sessionId)
 	if (!meta || !isElectron) return
+
+	// Only image attachments are forwarded (as data URLs; the main process
+	// writes them to temp files the CLI can read).
+	const images = (files ?? []).filter(
+		(f) => f.mediaType?.startsWith("image/") && f.url.startsWith("data:"),
+	)
 
 	const ts = Date.now()
 	// User message + text part.
@@ -191,6 +202,17 @@ export async function runCliTurn(sessionId: string, text: string): Promise<void>
 		type: "text",
 		text,
 	} as TextPart)
+	for (const [index, file] of images.entries()) {
+		appStore.set(upsertPartAtom, {
+			id: `${userId}-file-${index}`,
+			sessionID: sessionId,
+			messageID: userId,
+			type: "file",
+			mime: file.mediaType ?? "image/png",
+			filename: file.filename,
+			url: file.url,
+		} as Part)
+	}
 
 	// Assistant message shell + growing parts.
 	const asstId = `cli-asst-${ts}`
@@ -266,6 +288,9 @@ export async function runCliTurn(sessionId: string, text: string): Promise<void>
 			resumeId: meta.threadId ?? undefined,
 			// Serializes turns of this chat session in the host.
 			sessionKey: sessionId,
+			imageAttachments: images.length
+				? images.map((f) => ({ dataUrl: f.url, filename: f.filename }))
+				: undefined,
 		})
 		// Finalize the assistant text (result.message is the authoritative answer).
 		const finalText = result.message || messageText || "(no output)"
