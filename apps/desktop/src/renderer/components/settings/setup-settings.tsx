@@ -13,7 +13,7 @@ import {
 	UndoIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
-import type { OpenCodeCheckResult } from "../../../preload/api"
+import type { AgentCliDetection, OpenCodeCheckResult } from "../../../preload/api"
 import { onboardingStateAtom } from "../../atoms/onboarding"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
@@ -38,9 +38,70 @@ export function SetupSettings() {
 			</div>
 
 			<OpenCodeStatusSection />
+			<OtherClisSection />
 			<MigrationSection />
 			<OnboardingSection />
 		</div>
+	)
+}
+
+// ============================================================
+// Other coding-agent CLIs (Codex, Claude Code, Cursor, Gemini)
+// ============================================================
+
+function OtherClisSection() {
+	const [clis, setClis] = useState<AgentCliDetection[] | null>(null)
+	const [loading, setLoading] = useState(false)
+
+	const load = useCallback(async (force = false) => {
+		if (!isElectron) return
+		setLoading(true)
+		try {
+			setClis(await window.palot.agentClis.detect(force))
+		} finally {
+			setLoading(false)
+		}
+	}, [])
+
+	useEffect(() => {
+		load()
+	}, [load])
+
+	// OpenCode has its own section above; list the rest here.
+	const others = clis?.filter((c) => c.id !== "opencode") ?? []
+
+	return (
+		<SettingsSection
+			title="Other coding CLIs"
+			description="Palot also detects other coding-agent CLIs on this machine. Installed ones can be used as subagents from Integrations."
+		>
+			<div className="flex items-center justify-end px-4 pt-3">
+				<Button variant="outline" size="sm" onClick={() => load(true)} disabled={loading} className="gap-1.5">
+					<RefreshCwIcon aria-hidden="true" className="size-3" />
+					Rescan
+				</Button>
+			</div>
+			{others.map((cli) => (
+				<SettingsRow
+					key={cli.id}
+					label={cli.displayName}
+					description={cli.installed ? (cli.binaryPath ?? "") : cli.installHint}
+				>
+					<div className="flex items-center gap-2">
+						{cli.installed ? (
+							<>
+								{cli.version && (
+									<span className="text-sm text-muted-foreground">v{cli.version}</span>
+								)}
+								<CheckCircle2Icon className="size-4 text-emerald-500" />
+							</>
+						) : (
+							<span className="text-sm text-muted-foreground">Not installed</span>
+						)}
+					</div>
+				</SettingsRow>
+			))}
+		</SettingsSection>
 	)
 }
 
