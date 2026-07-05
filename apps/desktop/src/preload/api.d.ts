@@ -261,36 +261,39 @@ export type WebhookTarget = "feishu" | "wechat" | "generic"
 /** A detected coding-agent CLI (re-exported from @palot/cli-registry). */
 export type AgentCliDetection = import("@palot/cli-registry").CliDetection
 
-export type CodexSandbox = "read-only" | "workspace-write" | "danger-full-access"
+/** Coding-agent runtimes Palot can drive headlessly. */
+export type AgentRuntimeId = "codex" | "claude"
 
-export interface CodexSubagentOptions {
+export type AgentSandbox = "read-only" | "workspace-write" | "danger-full-access"
+
+export interface AgentRunOptions {
 	prompt: string
 	cwd: string
-	sandbox?: CodexSandbox
+	sandbox?: AgentSandbox
 	model?: string
 }
 
-export interface CodexUsage {
+export interface AgentUsage {
 	inputTokens: number
 	cachedInputTokens: number
 	outputTokens: number
 	reasoningOutputTokens: number
 }
 
-export interface CodexRunResult {
+export interface AgentRunResult {
 	message: string
 	threadId: string | null
-	usage: CodexUsage | null
+	usage: AgentUsage | null
 	notices: string[]
 }
 
-/** A normalized streamed update from a running Codex subagent. */
-export type CodexUpdate =
+/** A normalized streamed update from a running agent subagent. */
+export type AgentUpdate =
 	| { kind: "thread"; threadId: string }
 	| { kind: "message"; text: string }
 	| { kind: "reasoning"; text: string }
 	| { kind: "notice"; text: string }
-	| { kind: "usage"; usage: CodexUsage }
+	| { kind: "usage"; usage: AgentUsage }
 	| { kind: "unknown"; raw: unknown }
 
 export interface AppSettings {
@@ -650,14 +653,18 @@ export interface PalotAPI {
 		detect: (force?: boolean) => Promise<AgentCliDetection[]>
 	}
 
-	// Codex subagent
-	codexSubagent: {
-		/** Run a headless Codex agent for a delegated task; resolves with the final result. */
-		run: (runId: string, opts: CodexSubagentOptions) => Promise<CodexRunResult>
+	// Agent subagents (multi-CLI)
+	agentSubagent: {
+		/** Run a headless agent (Codex, Claude Code, …) for a delegated task. */
+		run: (
+			runId: string,
+			runtimeId: AgentRuntimeId,
+			opts: AgentRunOptions,
+		) => Promise<AgentRunResult>
 		/** Cancel a running subagent. Returns true if a matching run was killed. */
 		cancel: (runId: string) => Promise<boolean>
 		/** Subscribe to streamed updates for any run. Returns an unsubscribe function. */
-		onUpdate: (callback: (runId: string, update: CodexUpdate) => void) => () => void
+		onUpdate: (callback: (runId: string, update: AgentUpdate) => void) => () => void
 	}
 
 	// Onboarding

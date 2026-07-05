@@ -15,10 +15,10 @@ describe("interpolate", () => {
 
 describe("translate", () => {
 	test("resolves a dot-path key from the base locale", () => {
-		expect(translate("en", "codexSubagent.title")).toBe("Codex subagent")
+		expect(translate("en", "subagent.title")).toBe("Agent subagent")
 	})
 	test("interpolates params into the resolved string", () => {
-		expect(translate("en", "codexSubagent.usage", { input: 1200, output: 34 })).toBe(
+		expect(translate("en", "subagent.usage", { input: 1200, output: 34 })).toBe(
 			"1200 in · 34 out tokens",
 		)
 	})

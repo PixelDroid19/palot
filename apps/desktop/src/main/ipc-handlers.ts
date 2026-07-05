@@ -37,11 +37,8 @@ import { getDiscoveredServers } from "./mdns-scanner"
 import { readModelState, updateModelRecent } from "./model-state"
 import { dismissNotification, updateBadgeCount } from "./notifications"
 import { detectAgentClis } from "./agent-clis"
-import {
-	cancelCodexSubagent,
-	type CodexSubagentOptions,
-	runCodexSubagent,
-} from "./codex-subagent"
+import { cancelAgent, runAgent } from "./agents/runner"
+import type { AgentRunOptions, AgentRuntimeId } from "./agents/types"
 import { getRemoteAccessInfo } from "./remote-access"
 import { type SkillSyncDirection, syncSkills } from "./skill-sync"
 import { type WebhookTarget, testWebhook } from "./webhooks"
@@ -356,18 +353,18 @@ export function registerIpcHandlers(): void {
 
 	ipcMain.handle("agent-clis:detect", (_event, force?: boolean) => detectAgentClis(force))
 
-	// --- Codex subagent (delegate a task to a headless Codex agent) ---
+	// --- Agent subagents (delegate a task to a headless CLI agent) ---
 
 	ipcMain.handle(
-		"codex-subagent:run",
-		(event, runId: string, opts: CodexSubagentOptions) =>
-			runCodexSubagent(runId, opts, (update) => {
+		"agent-subagent:run",
+		(event, runId: string, runtimeId: AgentRuntimeId, opts: AgentRunOptions) =>
+			runAgent(runId, runtimeId, opts, (update) => {
 				if (!event.sender.isDestroyed()) {
-					event.sender.send("codex-subagent:update", runId, update)
+					event.sender.send("agent-subagent:update", runId, update)
 				}
 			}),
 	)
-	ipcMain.handle("codex-subagent:cancel", (_event, runId: string) => cancelCodexSubagent(runId))
+	ipcMain.handle("agent-subagent:cancel", (_event, runId: string) => cancelAgent(runId))
 
 	// --- Open in external app ---
 

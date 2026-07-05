@@ -174,25 +174,26 @@ contextBridge.exposeInMainWorld("palot", {
 		detect: (force?: boolean) => ipcRenderer.invoke("agent-clis:detect", force),
 	},
 
-	// --- Codex subagent ---
+	// --- Agent subagents (multi-CLI: Codex, Claude Code, …) ---
 
-	codexSubagent: {
+	agentSubagent: {
 		run: (
 			runId: string,
+			runtimeId: "codex" | "claude",
 			opts: {
 				prompt: string
 				cwd: string
 				sandbox?: "read-only" | "workspace-write" | "danger-full-access"
 				model?: string
 			},
-		) => ipcRenderer.invoke("codex-subagent:run", runId, opts),
-		cancel: (runId: string) => ipcRenderer.invoke("codex-subagent:cancel", runId),
+		) => ipcRenderer.invoke("agent-subagent:run", runId, runtimeId, opts),
+		cancel: (runId: string) => ipcRenderer.invoke("agent-subagent:cancel", runId),
 		onUpdate: (callback: (runId: string, update: unknown) => void) => {
 			const listener = (_event: unknown, runId: string, update: unknown) =>
 				callback(runId, update)
-			ipcRenderer.on("codex-subagent:update", listener)
+			ipcRenderer.on("agent-subagent:update", listener)
 			return () => {
-				ipcRenderer.removeListener("codex-subagent:update", listener)
+				ipcRenderer.removeListener("agent-subagent:update", listener)
 			}
 		},
 	},

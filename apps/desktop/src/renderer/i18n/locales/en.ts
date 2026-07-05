@@ -7,13 +7,14 @@
  * migrated yet.
  */
 export const en = {
-	codexSubagent: {
-		title: "Codex subagent",
+	subagent: {
+		title: "Agent subagent",
 		description:
-			"Delegate a task to a local Codex agent. It runs headless and streams its result back here.",
-		notInstalled: "Codex CLI is not installed. Install it to delegate tasks.",
+			"Delegate a task to a local coding-agent CLI. It runs headless and streams its result back here.",
+		noneInstalled: "No supported agent CLI is installed. Install Codex or Claude Code to delegate tasks.",
+		agentLabel: "Agent",
 		promptLabel: "Task",
-		promptPlaceholder: "Describe the task for Codex to work on…",
+		promptPlaceholder: "Describe the task for the agent to work on…",
 		workingDirLabel: "Working directory",
 		workingDirPlaceholder: "/path/to/project",
 		sandboxLabel: "Sandbox",
@@ -27,7 +28,7 @@ export const en = {
 		cancel: "Cancel",
 		result: "Result",
 		usage: "{{input}} in · {{output}} out tokens",
-		failed: "Codex subagent failed: {{error}}",
+		failed: "Subagent failed: {{error}}",
 		empty: "No output yet. Enter a task and run the subagent.",
 	},
 } as const
