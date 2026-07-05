@@ -10,6 +10,8 @@ import { useAtomValue, useSetAtom } from "jotai"
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { type DisplayMode, displayModeAtom, opaqueWindowsAtom } from "../../atoms/preferences"
+import { AVAILABLE_LOCALES, type Locale } from "../../i18n"
+import { useTranslation } from "../../i18n/use-translation"
 import { useColorScheme, useSetColorScheme } from "../../hooks/use-theme"
 import type { ColorScheme } from "../../lib/themes"
 import { fetchOpenInTargets, setOpenInPreferred } from "../../services/backend"
@@ -33,6 +35,7 @@ export function GeneralSettings() {
 				<ThemeRow />
 				<OpaqueWindowsRow />
 				<DisplayModeRow />
+				<LanguageRow />
 			</SettingsSection>
 		</div>
 	)
@@ -148,6 +151,28 @@ function OpaqueWindowsRow() {
 			description="Make windows use a solid background rather than system translucency"
 		>
 			<Switch checked={opaque} onCheckedChange={handleChange} />
+		</SettingsRow>
+	)
+}
+
+const LOCALE_LABELS: Record<string, string> = { en: "English", es: "Español" }
+
+function LanguageRow() {
+	const { t, locale, setLocale } = useTranslation()
+	return (
+		<SettingsRow label={t("settings.language")} description={t("settings.languageDescription")}>
+			<Select value={locale} onValueChange={(v) => setLocale(v as Locale)}>
+				<SelectTrigger className="min-w-[140px]">
+					<SelectValue />
+				</SelectTrigger>
+				<SelectContent>
+					{AVAILABLE_LOCALES.map((code) => (
+						<SelectItem key={code} value={code}>
+							{LOCALE_LABELS[code] ?? code}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 		</SettingsRow>
 	)
 }

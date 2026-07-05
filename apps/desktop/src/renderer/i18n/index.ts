@@ -6,12 +6,17 @@
  * `{{name}}` placeholders. New locales register here and must mirror `en`.
  */
 import { en } from "./locales/en"
+import { es } from "./locales/es"
 
-export type Locale = "en"
+export type Locale = "en" | "es"
 
 export const DEFAULT_LOCALE: Locale = "en"
 
 type Messages = typeof en
+
+/** Same key structure as `en`, but with widened string leaves for translations. */
+type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> }
+export type LocaleMessages = Widen<Messages>
 
 /** Recursively collect dot-path keys whose leaves are strings. */
 type DotPaths<T> = {
@@ -23,13 +28,14 @@ export type TranslationKey = DotPaths<Messages>
 export type TranslationParams = Record<string, string | number>
 
 // Every locale must provide the same shape as the English base.
-const LOCALES: Record<Locale, Messages> = {
+const LOCALES: Record<Locale, LocaleMessages> = {
 	en,
+	es,
 }
 
 export const AVAILABLE_LOCALES: Locale[] = Object.keys(LOCALES) as Locale[]
 
-function lookup(messages: Messages, key: string): string | undefined {
+function lookup(messages: LocaleMessages, key: string): string | undefined {
 	// biome-ignore lint/suspicious/noExplicitAny: dynamic dot-path walk over a typed object
 	let node: any = messages
 	for (const segment of key.split(".")) {

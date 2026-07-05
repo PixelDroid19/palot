@@ -7,7 +7,7 @@
 import { NativeSelect, NativeSelectOption } from "@palot/ui/components/native-select"
 import { useAtomValue } from "jotai"
 import { useEffect, useState } from "react"
-import type { AgentRuntimeDescriptor } from "../../../preload/api"
+import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import { cliSessionsAtom, patchCliMeta } from "../../atoms/cli-sessions"
 import { useTranslation } from "../../i18n/use-translation"
 import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
@@ -29,10 +29,11 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 	const models = descriptor.models
 	const efforts = models.find((m) => m.slug === (meta.model ?? ""))?.efforts ?? []
 
-	const apply = (patch: { model?: string; effort?: string }) => {
+	const apply = (patch: { model?: string; effort?: string; sandbox?: AgentSandbox }) => {
 		patchCliMeta(sessionId, {
 			model: patch.model === "" ? undefined : (patch.model ?? meta.model),
 			effort: patch.effort === "" ? undefined : (patch.effort ?? meta.effort),
+			sandbox: patch.sandbox ?? meta.sandbox,
 		})
 		persistCliSession(sessionId)
 	}
@@ -53,6 +54,22 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 					))}
 				</NativeSelect>
 			)}
+			<NativeSelect
+				aria-label={t("runtimePicker.sandbox")}
+				size="sm"
+				value={meta.sandbox}
+				onChange={(e) => apply({ sandbox: e.target.value as AgentSandbox })}
+			>
+				<NativeSelectOption value="read-only">
+					{t("runtimePicker.sandboxReadOnly")}
+				</NativeSelectOption>
+				<NativeSelectOption value="workspace-write">
+					{t("runtimePicker.sandboxWorkspaceWrite")}
+				</NativeSelectOption>
+				<NativeSelectOption value="danger-full-access">
+					{t("runtimePicker.sandboxFullAccess")}
+				</NativeSelectOption>
+			</NativeSelect>
 			{descriptor.capabilities.reasoningEffort && efforts.length > 0 && (
 				<NativeSelect
 					aria-label={t("runtimePicker.effort")}

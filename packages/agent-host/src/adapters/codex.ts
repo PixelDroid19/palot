@@ -152,17 +152,31 @@ export const codexAdapter: AgentAdapter = {
 	capabilities: { imageInput: true, reasoningEffort: true, resume: true },
 	listModels: listCodexModels,
 	buildCommand: (opts) => {
-		// Resume keeps multi-turn context; the recorded session carries its own
-		// cwd/sandbox, so those flags are only set when starting fresh.
-		const sandboxArgs =
-			opts.sandbox === "danger-full-access"
-				? // The bypass flag (not `-s danger-full-access`) so MCP tool calls
-					// aren't auto-cancelled by the unanswerable approval prompt.
-					["--dangerously-bypass-approvals-and-sandbox"]
-				: ["-s", opts.sandbox ?? "read-only"]
+		// The bypass flag (not `-s danger-full-access`) so MCP tool calls aren't
+		// auto-cancelled by the unanswerable approval prompt. `exec resume` has
+		// no `-s`, so sandbox changes there go through `-c sandbox_mode`.
+		const fullAccess = opts.sandbox === "danger-full-access"
 		const args = opts.resumeId
-			? ["exec", "resume", opts.resumeId, "--json", "--skip-git-repo-check"]
-			: ["exec", "--json", "--skip-git-repo-check", ...sandboxArgs, "-C", opts.cwd]
+			? [
+					"exec",
+					"resume",
+					opts.resumeId,
+					"--json",
+					"--skip-git-repo-check",
+					...(fullAccess
+						? ["--dangerously-bypass-approvals-and-sandbox"]
+						: ["-c", `sandbox_mode=${JSON.stringify(opts.sandbox ?? "read-only")}`]),
+				]
+			: [
+					"exec",
+					"--json",
+					"--skip-git-repo-check",
+					...(fullAccess
+						? ["--dangerously-bypass-approvals-and-sandbox"]
+						: ["-s", opts.sandbox ?? "read-only"]),
+					"-C",
+					opts.cwd,
+				]
 		if (opts.model) args.push("-c", `model=${JSON.stringify(opts.model)}`)
 		if (opts.reasoningEffort)
 			args.push("-c", `model_reasoning_effort=${JSON.stringify(opts.reasoningEffort)}`)

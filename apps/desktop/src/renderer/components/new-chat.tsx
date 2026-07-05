@@ -53,7 +53,7 @@ import {
 	useVcs,
 } from "../hooks/use-opencode-data"
 import { useAgentActions } from "../hooks/use-server"
-import type { AgentRuntimeDescriptor } from "../../preload/api"
+import type { AgentRuntimeDescriptor, AgentSandbox } from "../../preload/api"
 import { createCliSession } from "../services/cli-chat"
 import type { FileAttachment } from "../lib/types"
 import { useTranslation } from "../i18n/use-translation"
@@ -246,6 +246,7 @@ export function NewChat() {
 	const [sessionRuntime, setSessionRuntime] = useState<SessionRuntimeId>("opencode")
 	const [cliModel, setCliModel] = useState<string>("")
 	const [cliEffort, setCliEffort] = useState<string>("")
+	const [cliSandbox, setCliSandbox] = useState<AgentSandbox>("read-only")
 	// Runtime descriptors come from the agent-host core: install state,
 	// capabilities, and each CLI's own model catalog (never hardcoded here).
 	const [cliRuntimes, setCliRuntimes] = useState<AgentRuntimeDescriptor[]>([])
@@ -617,7 +618,7 @@ export function NewChat() {
 				const sessionId = createCliSession({
 					directory: selectedDirectory,
 					runtimeId: sessionRuntime,
-					sandbox: "read-only",
+					sandbox: cliSandbox,
 					model: cliModel || undefined,
 					effort: cliEffort || undefined,
 				})
@@ -656,6 +657,7 @@ export function NewChat() {
 			sendPrompt,
 			cliModel,
 			cliEffort,
+			cliSandbox,
 		],
 	)
 
@@ -863,6 +865,24 @@ export function NewChat() {
 													{m.slug === "" ? t("runtimePicker.defaultModel") : m.label}
 												</NativeSelectOption>
 											))}
+										</NativeSelect>
+									)}
+									{isCliRuntime(sessionRuntime) && (
+										<NativeSelect
+											aria-label={t("runtimePicker.sandbox")}
+											size="sm"
+											value={cliSandbox}
+											onChange={(e) => setCliSandbox(e.target.value as AgentSandbox)}
+										>
+											<NativeSelectOption value="read-only">
+												{t("runtimePicker.sandboxReadOnly")}
+											</NativeSelectOption>
+											<NativeSelectOption value="workspace-write">
+												{t("runtimePicker.sandboxWorkspaceWrite")}
+											</NativeSelectOption>
+											<NativeSelectOption value="danger-full-access">
+												{t("runtimePicker.sandboxFullAccess")}
+											</NativeSelectOption>
 										</NativeSelect>
 									)}
 									{isCliRuntime(sessionRuntime) && cliEfforts.length > 0 && (

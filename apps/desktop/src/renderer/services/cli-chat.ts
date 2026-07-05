@@ -184,6 +184,16 @@ export async function runCliTurn(
 		(f) => f.mediaType?.startsWith("image/") && f.url.startsWith("data:"),
 	)
 
+	// First prompt names the session (like OpenCode's auto-titling).
+	const entry = appStore.get(sessionFamily(sessionId))
+	if (entry && /session$/.test(entry.session.title ?? "")) {
+		const title = text.trim().replace(/\s+/g, " ").slice(0, 60) || entry.session.title
+		appStore.set(upsertSessionAtom, {
+			session: { ...entry.session, title },
+			directory: entry.directory,
+		})
+	}
+
 	const ts = Date.now()
 	// User message + text part.
 	const userId = `cli-user-${ts}`
