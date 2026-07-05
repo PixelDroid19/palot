@@ -6,6 +6,7 @@ import {
 	groupIntoTurns,
 	mergeSessionParts,
 } from "../atoms/derived/session-chat"
+import { isCliSession } from "../atoms/cli-sessions"
 import { messagesFamily, setMessagesAtom } from "../atoms/messages"
 import { isMockModeAtom } from "../atoms/mock-mode"
 import { partsFamily } from "../atoms/parts"
@@ -72,6 +73,12 @@ export function useSessionChat(
 	// One-time fetch to hydrate the store when session changes
 	const fetchAndHydrate = useCallback(
 		async (sid: string) => {
+			// CLI-backed sessions have no OpenCode server history; their transcript
+			// lives entirely in the atoms, so skip the REST hydrate.
+			if (isCliSession(sid)) {
+				setLoading(false)
+				return
+			}
 			// Only show the loading spinner if the session has no cached data yet.
 			// When switching back to a previously-visited session the existing messages
 			// remain visible while the background refresh runs, avoiding a jarring flash.

@@ -1,11 +1,13 @@
 import { useAtomValue } from "jotai"
 import { useCallback } from "react"
+import { isCliSession } from "../atoms/cli-sessions"
 import { connectionAtom } from "../atoms/connection"
 import { upsertMessageAtom } from "../atoms/messages"
 import { upsertPartAtom } from "../atoms/parts"
 import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
+import { cancelCliTurn, runCliTurn } from "../services/cli-chat"
 import type {
 	FileAttachment,
 	FilePart,
@@ -35,6 +37,10 @@ export function useServerConnection() {
  */
 export function useAgentActions() {
 	const abort = useCallback(async (directory: string, sessionId: string) => {
+		if (isCliSession(sessionId)) {
+			cancelCliTurn(sessionId)
+			return
+		}
 		const client = getProjectClient(directory)
 		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("abort", { sessionId })
@@ -67,6 +73,12 @@ export function useAgentActions() {
 				variant: options?.variant,
 				hasFiles: !!(options?.files && options.files.length > 0),
 			})
+
+			// CLI-backed sessions run through the agent runtime, not the OpenCode client.
+			if (isCliSession(sessionId)) {
+				await runCliTurn(sessionId, text)
+				return
+			}
 
 			const client = getProjectClient(directory)
 			if (!client) {
