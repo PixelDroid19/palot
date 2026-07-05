@@ -11,21 +11,69 @@ describe("claude adapter", () => {
 		expect(updates).toEqual([{ kind: "thread", threadId: "sess-1" }])
 	})
 
-	test("streams assistant text blocks as deltas and tool use as tools", () => {
+	test("assistant events surface tool_use (text streams via stream_event)", () => {
 		const updates = parseClaudeLine(
 			JSON.stringify({
 				type: "assistant",
 				message: {
 					content: [
 						{ type: "text", text: "Working on it" },
-						{ type: "tool_use", name: "Bash", input: {} },
+						{ type: "tool_use", id: "toolu_1", name: "Bash", input: { command: "ls -la" } },
 					],
 				},
 			}),
 		)
 		expect(updates).toEqual([
-			{ kind: "message-delta", text: "Working on it" },
-			{ kind: "tool", name: "Bash" },
+			{ kind: "tool", id: "toolu_1", name: "Bash", detail: "ls -la", status: "running" },
+		])
+	})
+
+	test("stream_event deltas become message/reasoning deltas", () => {
+		const text = parseClaudeLine(
+			JSON.stringify({
+				type: "stream_event",
+				event: { type: "content_block_delta", delta: { type: "text_delta", text: "hola" } },
+			}),
+		)
+		expect(text).toEqual([{ kind: "message-delta", text: "hola" }])
+		const thinking = parseClaudeLine(
+			JSON.stringify({
+				type: "stream_event",
+				event: { type: "content_block_delta", delta: { type: "thinking_delta", thinking: "hmm" } },
+			}),
+		)
+		expect(thinking).toEqual([{ kind: "reasoning-delta", text: "hmm" }])
+	})
+
+	test("subagent (parent_tool_use_id) and housekeeping events are skipped", () => {
+		expect(
+			parseClaudeLine(
+				JSON.stringify({
+					type: "stream_event",
+					parent_tool_use_id: "toolu_9",
+					event: { type: "content_block_delta", delta: { type: "text_delta", text: "nested" } },
+				}),
+			),
+		).toEqual([])
+		expect(parseClaudeLine(JSON.stringify({ type: "rate_limit_event" }))).toEqual([])
+		expect(
+			parseClaudeLine(JSON.stringify({ type: "system", subtype: "status", session_id: "s" })),
+		).toEqual([])
+	})
+
+	test("tool results close out the matching tool by id", () => {
+		const updates = parseClaudeLine(
+			JSON.stringify({
+				type: "user",
+				message: {
+					content: [
+						{ type: "tool_result", tool_use_id: "toolu_1", content: [{ type: "text", text: "ok" }] },
+					],
+				},
+			}),
+		)
+		expect(updates).toEqual([
+			{ kind: "tool", id: "toolu_1", name: "tool", status: "completed", output: "ok" },
 		])
 	})
 
@@ -73,9 +121,24 @@ describe("claude adapter", () => {
 		})
 		expect(stdin).toBe("do the thing")
 		expect(args).toContain("stream-json")
+		expect(args).toContain("--include-partial-messages")
 		expect(args).toContain("--resume")
-		expect(args).toContain("--dangerously-skip-permissions")
+		// workspace-write maps to acceptEdits, not full permission bypass.
+		expect(args).toContain("acceptEdits")
+		expect(args).not.toContain("--dangerously-skip-permissions")
 		expect(args).not.toContain("do the thing")
+	})
+
+	test("sandbox maps to permission modes", () => {
+		const readOnly = claudeAdapter.buildCommand({ prompt: "x", cwd: "/w", sandbox: "read-only" })
+		expect(readOnly.args).not.toContain("--permission-mode")
+		expect(readOnly.args).not.toContain("--dangerously-skip-permissions")
+		const full = claudeAdapter.buildCommand({
+			prompt: "x",
+			cwd: "/w",
+			sandbox: "danger-full-access",
+		})
+		expect(full.args).toContain("--dangerously-skip-permissions")
 	})
 
 	test("buildCommand injects the bridge as an MCP server", () => {
@@ -110,8 +173,62 @@ describe("codex adapter", () => {
 		const result = reduceAgentUpdates(updates)
 		expect(result.threadId).toBe("t-1")
 		expect(result.message).toBe("answer")
-		expect(updates).toContainEqual({ kind: "tool", name: "shell", detail: "ls" })
+		expect(updates).toContainEqual({
+			kind: "tool",
+			id: undefined,
+			name: "shell",
+			detail: "ls",
+			status: "completed",
+			output: undefined,
+		})
 		expect(result.usage?.inputTokens).toBe(7)
+	})
+
+	test("item lifecycle: started shows a running tool, completed carries output", () => {
+		const started = parseCodexLine(
+			JSON.stringify({
+				type: "item.started",
+				item: { id: "item_1", type: "command_execution", command: "ls", status: "in_progress" },
+			}),
+		)
+		expect(started).toEqual([
+			{ kind: "tool", id: "item_1", name: "shell", detail: "ls", status: "running", output: undefined },
+		])
+		const completed = parseCodexLine(
+			JSON.stringify({
+				type: "item.completed",
+				item: {
+					id: "item_1",
+					type: "command_execution",
+					command: "ls",
+					exit_code: 0,
+					aggregated_output: "a.txt",
+					status: "completed",
+				},
+			}),
+		)
+		expect(completed).toEqual([
+			{ kind: "tool", id: "item_1", name: "shell", detail: "ls", status: "completed", output: "a.txt" },
+		])
+	})
+
+	test("file changes, mcp calls and web searches render as tools", () => {
+		const updates = [
+			{ type: "item.completed", item: { type: "file_change", changes: [{ path: "src/a.ts" }] } },
+			{ type: "item.completed", item: { type: "mcp_tool_call", server: "palot", tool: "delegate" } },
+			{ type: "item.completed", item: { type: "web_search", query: "bun test" } },
+		].flatMap((l) => parseCodexLine(JSON.stringify(l)))
+		expect(updates.map((u) => (u.kind === "tool" ? u.name : u.kind))).toEqual([
+			"edit",
+			"palot.delegate",
+			"web_search",
+		])
+	})
+
+	test("turn.failed becomes a notice", () => {
+		expect(
+			parseCodexLine(JSON.stringify({ type: "turn.failed", error: { message: "boom" } })),
+		).toEqual([{ kind: "notice", text: "boom" }])
 	})
 
 	test("buildCommand sends prompt on stdin via '-'", () => {

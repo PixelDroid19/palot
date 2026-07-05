@@ -273,8 +273,34 @@ export async function runCliTurn(
 	let messageText = ""
 	let reasoningText = ""
 	let streamedDeltas = false
+	const notices: string[] = []
+	/** Tool-part state, keyed by the adapter's tool id (or a running counter). */
+	const toolParts = new Map<string, { partId: string; name: string; start: number }>()
+	let toolSeq = 0
 	const runId = crypto.randomUUID()
 	activeRuns.set(sessionId, runId)
+
+	const writeText = () => {
+		appStore.set(upsertPartAtom, {
+			id: textPartId,
+			sessionID: sessionId,
+			messageID: asstId,
+			type: "text",
+			text: messageText.replace(/^\s+/, ""),
+		} as TextPart)
+		bump(sessionId)
+	}
+	const writeReasoning = (end?: number) => {
+		appStore.set(upsertPartAtom, {
+			id: reasoningPartId,
+			sessionID: sessionId,
+			messageID: asstId,
+			type: "reasoning",
+			text: reasoningText.replace(/^\s+/, ""),
+			time: end ? { start: ts, end } : { start: ts },
+		} as ReasoningPart)
+		bump(sessionId)
+	}
 
 	const unsubscribe = window.palot.agentSubagent.onUpdate((rid, update: AgentUpdate) => {
 		if (rid !== runId) return
@@ -282,38 +308,60 @@ export async function runCliTurn(
 			// Streaming: text arrives in chunks as the CLI produces it.
 			streamedDeltas = true
 			messageText += update.text
-			appStore.set(upsertPartAtom, {
-				id: textPartId,
-				sessionID: sessionId,
-				messageID: asstId,
-				type: "text",
-				text: messageText,
-			} as TextPart)
-			bump(sessionId)
+			writeText()
 		} else if (update.kind === "message" && update.text) {
 			// A complete message supersedes streamed deltas (it's the same answer,
 			// authoritative); separate complete messages accumulate.
-			messageText = streamedDeltas || !messageText ? update.text : `${messageText}\n${update.text}`
+			messageText =
+				streamedDeltas || !messageText ? update.text : `${messageText}\n\n${update.text}`
 			streamedDeltas = false
-			appStore.set(upsertPartAtom, {
-				id: textPartId,
-				sessionID: sessionId,
-				messageID: asstId,
-				type: "text",
-				text: messageText,
-			} as TextPart)
-			bump(sessionId)
+			writeText()
+		} else if (update.kind === "reasoning-delta" && update.text) {
+			reasoningText += update.text
+			writeReasoning()
 		} else if (update.kind === "reasoning" && update.text) {
-			reasoningText = reasoningText ? `${reasoningText}\n${update.text}` : update.text
+			// A complete reasoning block (e.g. one Codex summary section).
+			reasoningText = reasoningText ? `${reasoningText}\n\n${update.text}` : update.text
+			writeReasoning()
+		} else if (update.kind === "tool") {
+			// Render tool invocations with the same tool cards as OpenCode turns.
+			const key = update.id ?? `seq-${toolSeq++}`
+			let entry = toolParts.get(key)
+			if (!entry) {
+				entry = { partId: `${asstId}-tool-${toolParts.size}`, name: update.name, start: Date.now() }
+				toolParts.set(key, entry)
+			}
+			if (update.name && update.name !== "tool") entry.name = update.name
+			const running = update.status === "running"
+			const input = update.detail ? { detail: update.detail } : {}
 			appStore.set(upsertPartAtom, {
-				id: reasoningPartId,
+				id: entry.partId,
 				sessionID: sessionId,
 				messageID: asstId,
-				type: "reasoning",
-				text: reasoningText,
-				time: { start: ts },
-			} as ReasoningPart)
+				type: "tool",
+				callID: key,
+				tool: entry.name,
+				state: running
+					? { status: "running", input, title: update.detail, time: { start: entry.start } }
+					: update.status === "error"
+						? {
+								status: "error",
+								input,
+								error: update.output || "Tool failed",
+								time: { start: entry.start, end: Date.now() },
+							}
+						: {
+								status: "completed",
+								input,
+								output: update.output ?? "",
+								title: update.detail || entry.name,
+								metadata: {},
+								time: { start: entry.start, end: Date.now() },
+							},
+			} as Part)
 			bump(sessionId)
+		} else if (update.kind === "notice" && update.text) {
+			notices.push(update.text)
 		}
 	})
 
@@ -331,25 +379,19 @@ export async function runCliTurn(
 				? images.map((f) => ({ dataUrl: f.url, filename: f.filename }))
 				: undefined,
 		})
-		// Finalize the assistant text (result.message is the authoritative answer).
-		const finalText = result.message || messageText || "(no output)"
+		// Finalize the assistant text (result.message is the authoritative answer;
+		// notices — e.g. a CLI-reported error — are the fallback when it's empty).
+		const noticeText = [...notices, ...result.notices].join("\n\n")
+		const finalText =
+			result.message || messageText.replace(/^\s+/, "") || (noticeText && `⚠ ${noticeText}`)
 		appStore.set(upsertPartAtom, {
 			id: textPartId,
 			sessionID: sessionId,
 			messageID: asstId,
 			type: "text",
-			text: finalText,
+			text: finalText || "(no output)",
 		} as TextPart)
-		if (reasoningText) {
-			appStore.set(upsertPartAtom, {
-				id: reasoningPartId,
-				sessionID: sessionId,
-				messageID: asstId,
-				type: "reasoning",
-				text: reasoningText,
-				time: { start: ts, end: Date.now() },
-			} as ReasoningPart)
-		}
+		if (reasoningText) writeReasoning(Date.now())
 		appStore.set(upsertMessageAtom, {
 			id: asstId,
 			sessionID: sessionId,
@@ -373,7 +415,7 @@ export async function runCliTurn(
 			sessionID: sessionId,
 			messageID: asstId,
 			type: "text",
-			text: messageText || `⚠ ${message}`,
+			text: messageText.replace(/^\s+/, "") || `⚠ ${message}`,
 		} as TextPart)
 		appStore.set(setSessionErrorAtom, {
 			sessionId,

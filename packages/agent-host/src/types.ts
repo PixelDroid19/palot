@@ -28,9 +28,22 @@ export type AgentUpdate =
 	| { kind: "message"; text: string }
 	/** An incremental chunk of the in-progress answer (streaming). */
 	| { kind: "message-delta"; text: string }
+	/** A complete reasoning block (e.g. one Codex reasoning summary). */
 	| { kind: "reasoning"; text: string }
-	/** A tool/command the agent invoked, for progress display. */
-	| { kind: "tool"; name: string; detail?: string }
+	/** An incremental chunk of in-progress reasoning (streaming thinking). */
+	| { kind: "reasoning-delta"; text: string }
+	/**
+	 * A tool/command the agent invoked. `id` correlates a start with its
+	 * completion; `status` defaults to a one-shot "completed" notification.
+	 */
+	| {
+			kind: "tool"
+			name: string
+			detail?: string
+			id?: string
+			status?: "running" | "completed" | "error"
+			output?: string
+	  }
 	| { kind: "notice"; text: string }
 	| { kind: "usage"; usage: AgentUsage }
 	| { kind: "unknown"; raw: unknown }
@@ -188,7 +201,13 @@ export function reduceAgentUpdates(updates: Iterable<AgentUpdate>): AgentRunResu
 		}
 	}
 
-	return { message: messages.length ? messages.join("\n\n") : deltas, threadId, usage, notices }
+	// Deltas may start with a synthetic paragraph break (block separators).
+	return {
+		message: messages.length ? messages.join("\n\n") : deltas.trim(),
+		threadId,
+		usage,
+		notices,
+	}
 }
 
 // Shared parsing helpers for adapters.

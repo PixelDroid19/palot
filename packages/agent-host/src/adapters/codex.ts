@@ -13,9 +13,10 @@ import {
 
 /**
  * Codex (`codex exec --json`) adapter. Emits a JSONL event stream:
- *   thread.started · turn.started · item.completed{agent_message|reasoning|
- *   command_execution|error} · turn.completed{usage}
- * Unknown event/item types are surfaced generically so a version bump can't
+ *   thread.started · turn.started · item.started/item.updated/item.completed
+ *   {agent_message|reasoning|command_execution|file_change|mcp_tool_call|
+ *    web_search|todo_list|error} · turn.completed{usage} · turn.failed{error}
+ * Unknown event types are surfaced generically so a version bump can't
  * silently break the runner. The prompt is delivered on stdin (`-`).
  */
 
@@ -25,6 +26,67 @@ function parseUsage(raw: Record<string, unknown>) {
 		cachedInputTokens: readNumber(raw.cached_input_tokens),
 		outputTokens: readNumber(raw.output_tokens),
 		reasoningOutputTokens: readNumber(raw.reasoning_output_tokens),
+	}
+}
+
+const TOOL_OUTPUT_MAX_CHARS = 4_000
+
+/** Normalize one thread item into a tool/message/reasoning update. */
+function parseItem(
+	item: Record<string, unknown>,
+	phase: "started" | "updated" | "completed",
+	raw: unknown,
+): AgentUpdate[] {
+	const id = readString(item.id) || undefined
+	const status =
+		phase === "completed"
+			? item.status === "failed" || readNumber(item.exit_code) !== 0
+				? ("error" as const)
+				: ("completed" as const)
+			: ("running" as const)
+	switch (item.type) {
+		case "agent_message":
+			// Only the completed item is authoritative; started/updated echoes of a
+			// growing message would duplicate text.
+			return phase === "completed" ? [{ kind: "message", text: readString(item.text) }] : []
+		case "reasoning":
+			return phase === "completed" ? [{ kind: "reasoning", text: readString(item.text) }] : []
+		case "command_execution":
+			return [
+				{
+					kind: "tool",
+					id,
+					name: "shell",
+					detail: readString(item.command),
+					status,
+					output:
+						phase === "completed"
+							? readString(item.aggregated_output).slice(0, TOOL_OUTPUT_MAX_CHARS) || undefined
+							: undefined,
+				},
+			]
+		case "file_change": {
+			const changes = Array.isArray(item.changes) ? item.changes : []
+			const paths = changes
+				.map((c) => readString(asRecord(c)?.path))
+				.filter(Boolean)
+				.join(", ")
+			return [{ kind: "tool", id, name: "edit", detail: paths || undefined, status }]
+		}
+		case "mcp_tool_call": {
+			const server = readString(item.server)
+			const tool = readString(item.tool)
+			return [{ kind: "tool", id, name: server && tool ? `${server}.${tool}` : "mcp", status }]
+		}
+		case "web_search":
+			return [{ kind: "tool", id, name: "web_search", detail: readString(item.query), status }]
+		case "todo_list":
+			// Plan bookkeeping — not worth a tool card per update.
+			return []
+		case "error":
+			return [{ kind: "notice", text: readString(item.message) }]
+		default:
+			return phase === "completed" ? [{ kind: "unknown", raw }] : []
 	}
 }
 
@@ -53,21 +115,17 @@ export function parseCodexLine(line: string): AgentUpdate[] {
 				? [{ kind: "usage", usage: parseUsage(usage) }]
 				: [{ kind: "unknown", raw: parsed }]
 		}
+		case "turn.failed": {
+			const error = asRecord(event.error)
+			return [{ kind: "notice", text: readString(error?.message) || "Codex turn failed" }]
+		}
+		case "item.started":
+		case "item.updated":
 		case "item.completed": {
 			const item = asRecord(event.item)
 			if (!item) return [{ kind: "unknown", raw: parsed }]
-			switch (item.type) {
-				case "agent_message":
-					return [{ kind: "message", text: readString(item.text) }]
-				case "reasoning":
-					return [{ kind: "reasoning", text: readString(item.text) }]
-				case "command_execution":
-					return [{ kind: "tool", name: "shell", detail: readString(item.command) }]
-				case "error":
-					return [{ kind: "notice", text: readString(item.message) }]
-				default:
-					return [{ kind: "unknown", raw: parsed }]
-			}
+			const phase = event.type.slice("item.".length) as "started" | "updated" | "completed"
+			return parseItem(item, phase, parsed)
 		}
 		default:
 			return [{ kind: "unknown", raw: parsed }]
