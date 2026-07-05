@@ -66,6 +66,8 @@ Palot spawns and manages the OpenCode server automatically, streams responses in
 
 ### Usage & Extensions
 
+- **CLI Agents (multi-CLI)** -- Palot is not tied to OpenCode. Have multi-turn, persistent conversations with other coding-agent CLIs (Codex, Claude Code) from the "CLI Agents" sidebar workspace, or pick a runtime right on the New Session screen. Each turn resumes the CLI's own session so context carries across the conversation, and conversations survive reloads.
+
 - **Usage statistics** -- A dashboard (Settings -> Usage) that aggregates cost and token usage (input, output, reasoning, cache read/write) across every project and session, with a cache-hit rate, a 30-day cost chart, and per-model and per-project breakdowns.
 
 - **Plugin management** -- View, add, and remove OpenCode plugins (npm packages or local paths) from Settings -> Plugins. Changes are written to the global OpenCode config.

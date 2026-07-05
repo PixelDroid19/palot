@@ -13,6 +13,7 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`packages/configconv`**: Universal agent config converter library (`@palot/configconv`) -- converts between Claude Code, OpenCode, and Cursor formats
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
 - **`packages/cli-registry`**: Detects installed coding-agent CLIs (`@palot/cli-registry`) -- OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI; reports version and auth state via a host-injected, testable detection layer
+- **Agent runtimes** (`apps/desktop/src/main/agents/`): Palot is not tied to OpenCode. Each coding-agent CLI is an `AgentAdapter` (builds a headless command, parses output into normalized updates); a generic runner spawns/streams/cancels and resumes the CLI's own session for multi-turn context. Surfaced as the "CLI Agents" sidebar workspace and a runtime picker on New Session. OpenCode remains the built-in runtime for its rich SDK-backed chat.
 - **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`)
 - **`apps/server`**: Bun + Hono backend -- used only in browser-mode dev (`dev:web`), NOT bundled with Electron
 
