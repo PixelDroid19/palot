@@ -101,7 +101,7 @@ export const claudeAdapter: AgentAdapter = {
 	id: "claude",
 	displayName: "Claude Code",
 	binary: "claude",
-	capabilities: { imageInput: false, reasoningEffort: false, resume: true },
+	capabilities: { imageInput: true, reasoningEffort: false, resume: true },
 	listModels: async () => CLAUDE_MODELS,
 	buildCommand: (opts) => {
 		// Claude runs in the process cwd (set by the runner); it has no -C flag.
@@ -131,7 +131,14 @@ export const claudeAdapter: AgentAdapter = {
 			}
 			args.push("--mcp-config", JSON.stringify(mcpConfig))
 		}
-		return { args, stdin: opts.prompt }
+		// Claude's print mode has no image flag, but its Read tool (allowed by
+		// default headlessly) renders image files — so attachments are passed as
+		// file paths the model is told to read.
+		let prompt = opts.prompt
+		if (opts.images?.length) {
+			prompt += `\n\nThe user attached the following image file(s). Read them with the Read tool before answering:\n${opts.images.map((p) => `- ${p}`).join("\n")}`
+		}
+		return { args, stdin: prompt }
 	},
 	parseLine: parseClaudeLine,
 }
