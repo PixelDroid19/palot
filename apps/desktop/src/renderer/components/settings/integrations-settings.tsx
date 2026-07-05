@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import QRCode from "qrcode"
 import { useCallback, useEffect, useState } from "react"
+import { CodexSubagentPanel } from "./codex-subagent-panel"
 import type {
 	AgentCliDetection,
 	MigrationProvider,
@@ -641,6 +642,7 @@ export function IntegrationsSettings() {
 			</SettingsSection>
 
 			<AgentClisPanel />
+			<CodexSubagentPanel />
 			<SkillSyncPanel />
 			<RemoteAccessPanel />
 		</div>
