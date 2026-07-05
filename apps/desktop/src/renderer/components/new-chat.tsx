@@ -59,6 +59,7 @@ import type { FileAttachment } from "../lib/types"
 import {
 	CLI_RUNTIME_IDS,
 	isCliRuntime,
+	runtimeEfforts,
 	runtimeModels,
 	SESSION_RUNTIMES,
 	type SessionRuntimeId,
@@ -244,6 +245,7 @@ export function NewChat() {
 	// Session runtime: OpenCode (built-in) or a detected coding-agent CLI.
 	const [sessionRuntime, setSessionRuntime] = useState<SessionRuntimeId>("opencode")
 	const [cliModel, setCliModel] = useState<string>("")
+	const [cliEffort, setCliEffort] = useState<string>("")
 	const [cliRuntimeIds, setCliRuntimeIds] = useState<AgentRuntimeId[]>([])
 	useEffect(() => {
 		if (typeof window === "undefined" || !("palot" in window)) return
@@ -612,6 +614,7 @@ export function NewChat() {
 					runtimeId: sessionRuntime,
 					sandbox: "read-only",
 					model: cliModel || undefined,
+					effort: cliEffort || undefined,
 				})
 				clearDraft()
 				// Fire the first turn (writes the user message into the atoms
@@ -647,6 +650,7 @@ export function NewChat() {
 			navigateToSession,
 			sendPrompt,
 			cliModel,
+			cliEffort,
 		],
 	)
 
@@ -828,6 +832,7 @@ export function NewChat() {
 											onChange={(e) => {
 												setSessionRuntime(e.target.value as SessionRuntimeId)
 												setCliModel("")
+												setCliEffort("")
 											}}
 										>
 											{SESSION_RUNTIMES.filter(
@@ -849,6 +854,20 @@ export function NewChat() {
 											{runtimeModels(sessionRuntime).map((m) => (
 												<NativeSelectOption key={m.slug} value={m.slug}>
 													{m.label}
+												</NativeSelectOption>
+											))}
+										</NativeSelect>
+									)}
+									{isCliRuntime(sessionRuntime) && runtimeEfforts(sessionRuntime).length > 0 && (
+										<NativeSelect
+											aria-label="Reasoning effort"
+											size="sm"
+											value={cliEffort}
+											onChange={(e) => setCliEffort(e.target.value)}
+										>
+											{runtimeEfforts(sessionRuntime).map((ef) => (
+												<NativeSelectOption key={ef.value} value={ef.value}>
+													{ef.label}
 												</NativeSelectOption>
 											))}
 										</NativeSelect>

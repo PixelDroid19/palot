@@ -261,42 +261,13 @@ export type WebhookTarget = "feishu" | "wechat" | "generic"
 /** A detected coding-agent CLI (re-exported from @palot/cli-registry). */
 export type AgentCliDetection = import("@palot/cli-registry").CliDetection
 
-/** Coding-agent runtimes Palot can drive headlessly. */
-export type AgentRuntimeId = "codex" | "claude"
-
-export type AgentSandbox = "read-only" | "workspace-write" | "danger-full-access"
-
-export interface AgentRunOptions {
-	prompt: string
-	cwd: string
-	sandbox?: AgentSandbox
-	model?: string
-	/** Resume a prior conversation by thread/session id to keep multi-turn context. */
-	resumeId?: string
-}
-
-export interface AgentUsage {
-	inputTokens: number
-	cachedInputTokens: number
-	outputTokens: number
-	reasoningOutputTokens: number
-}
-
-export interface AgentRunResult {
-	message: string
-	threadId: string | null
-	usage: AgentUsage | null
-	notices: string[]
-}
-
-/** A normalized streamed update from a running agent subagent. */
-export type AgentUpdate =
-	| { kind: "thread"; threadId: string }
-	| { kind: "message"; text: string }
-	| { kind: "reasoning"; text: string }
-	| { kind: "notice"; text: string }
-	| { kind: "usage"; usage: AgentUsage }
-	| { kind: "unknown"; raw: unknown }
+/** Agent platform types (re-exported from @palot/agent-host, the core). */
+export type AgentRuntimeId = import("@palot/agent-host").AgentRuntimeId
+export type AgentSandbox = import("@palot/agent-host").AgentSandbox
+export type AgentRunOptions = import("@palot/agent-host").AgentRunOptions
+export type AgentUsage = import("@palot/agent-host").AgentUsage
+export type AgentRunResult = import("@palot/agent-host").AgentRunResult
+export type AgentUpdate = import("@palot/agent-host").AgentUpdate
 
 export interface AppSettings {
 	notifications: NotificationSettings
@@ -661,7 +632,7 @@ export interface PalotAPI {
 		run: (
 			runId: string,
 			runtimeId: AgentRuntimeId,
-			opts: AgentRunOptions,
+			opts: AgentRunOptions & { sessionKey?: string },
 		) => Promise<AgentRunResult>
 		/** Cancel a running subagent. Returns true if a matching run was killed. */
 		cancel: (runId: string) => Promise<boolean>

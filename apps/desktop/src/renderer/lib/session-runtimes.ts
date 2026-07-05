@@ -18,15 +18,32 @@ export interface RuntimeModel {
 	label: string
 }
 
+export interface RuntimeEffort {
+	/** Value passed to the CLI's reasoning-effort flag; "" = the CLI's default. */
+	value: string
+	label: string
+}
+
 export interface SessionRuntimeMeta {
 	id: SessionRuntimeId
 	label: string
 	builtIn: boolean
 	/** Selectable models for a CLI runtime (first is the default choice). */
 	models?: RuntimeModel[]
+	/** Selectable reasoning-effort levels (first is the default choice). */
+	efforts?: RuntimeEffort[]
 }
 
 const DEFAULT_MODEL: RuntimeModel = { slug: "", label: "Default" }
+
+// Codex reasoning-effort levels (from `model_reasoning_effort`).
+const CODEX_EFFORTS: RuntimeEffort[] = [
+	{ value: "", label: "Effort: Default" },
+	{ value: "low", label: "Effort: Low" },
+	{ value: "medium", label: "Effort: Medium" },
+	{ value: "high", label: "Effort: High" },
+	{ value: "xhigh", label: "Effort: Extra High" },
+]
 
 export const SESSION_RUNTIMES: readonly SessionRuntimeMeta[] = [
 	{ id: "opencode", label: "OpenCode", builtIn: true },
@@ -41,6 +58,7 @@ export const SESSION_RUNTIMES: readonly SessionRuntimeMeta[] = [
 			{ slug: "gpt-5.3-codex", label: "GPT-5.3 Codex" },
 			{ slug: "gpt-5.2-codex", label: "GPT-5.2 Codex" },
 		],
+		efforts: CODEX_EFFORTS,
 	},
 	{
 		id: "claude",
@@ -66,4 +84,8 @@ export function isCliRuntime(id: SessionRuntimeId): id is AgentRuntimeId {
 
 export function runtimeModels(id: SessionRuntimeId): RuntimeModel[] {
 	return SESSION_RUNTIMES.find((r) => r.id === id)?.models ?? []
+}
+
+export function runtimeEfforts(id: SessionRuntimeId): RuntimeEffort[] {
+	return SESSION_RUNTIMES.find((r) => r.id === id)?.efforts ?? []
 }

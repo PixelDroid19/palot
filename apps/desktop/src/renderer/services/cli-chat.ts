@@ -22,7 +22,7 @@ import type { AssistantMessage, ReasoningPart, Session, TextPart, UserMessage } 
 
 const log = createLogger("cli-chat")
 
-const RUNTIME_LABELS: Record<AgentRuntimeId, string> = {
+const RUNTIME_LABELS: Record<string, string> = {
 	codex: "Codex",
 	claude: "Claude Code",
 }
@@ -46,11 +46,12 @@ export function createCliSession(args: {
 	runtimeId: AgentRuntimeId
 	sandbox: AgentSandbox
 	model?: string
+	effort?: string
 }): string {
 	const sessionId = crypto.randomUUID()
 	const session: Session = {
 		id: sessionId,
-		title: `${RUNTIME_LABELS[args.runtimeId]} session`,
+		title: `${RUNTIME_LABELS[args.runtimeId] ?? args.runtimeId} session`,
 		directory: args.directory,
 		time: { created: Date.now() },
 	} as Session
@@ -60,6 +61,7 @@ export function createCliSession(args: {
 		cwd: args.directory,
 		sandbox: args.sandbox,
 		model: args.model || undefined,
+		effort: args.effort || undefined,
 		threadId: null,
 	})
 	log.info("Created CLI session", { sessionId, runtime: args.runtimeId })
@@ -113,13 +115,29 @@ export async function runCliTurn(sessionId: string, text: string): Promise<void>
 
 	let messageText = ""
 	let reasoningText = ""
+	let streamedDeltas = false
 	const runId = crypto.randomUUID()
 	activeRuns.set(sessionId, runId)
 
 	const unsubscribe = window.palot.agentSubagent.onUpdate((rid, update: AgentUpdate) => {
 		if (rid !== runId) return
-		if (update.kind === "message" && update.text) {
-			messageText = messageText ? `${messageText}\n${update.text}` : update.text
+		if (update.kind === "message-delta" && update.text) {
+			// Streaming: text arrives in chunks as the CLI produces it.
+			streamedDeltas = true
+			messageText += update.text
+			appStore.set(upsertPartAtom, {
+				id: textPartId,
+				sessionID: sessionId,
+				messageID: asstId,
+				type: "text",
+				text: messageText,
+			} as TextPart)
+			bump(sessionId)
+		} else if (update.kind === "message" && update.text) {
+			// A complete message supersedes streamed deltas (it's the same answer,
+			// authoritative); separate complete messages accumulate.
+			messageText = streamedDeltas || !messageText ? update.text : `${messageText}\n${update.text}`
+			streamedDeltas = false
 			appStore.set(upsertPartAtom, {
 				id: textPartId,
 				sessionID: sessionId,
@@ -148,7 +166,10 @@ export async function runCliTurn(sessionId: string, text: string): Promise<void>
 			cwd: meta.cwd || ".",
 			sandbox: meta.sandbox,
 			model: meta.model,
+			reasoningEffort: meta.effort,
 			resumeId: meta.threadId ?? undefined,
+			// Serializes turns of this chat session in the host.
+			sessionKey: sessionId,
 		})
 		// Finalize the assistant text (result.message is the authoritative answer).
 		const finalText = result.message || messageText || "(no output)"

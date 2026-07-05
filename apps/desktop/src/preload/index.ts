@@ -179,13 +179,16 @@ contextBridge.exposeInMainWorld("palot", {
 	agentSubagent: {
 		run: (
 			runId: string,
-			runtimeId: "codex" | "claude",
+			runtimeId: string,
 			opts: {
 				prompt: string
 				cwd: string
 				sandbox?: "read-only" | "workspace-write" | "danger-full-access"
 				model?: string
+				reasoningEffort?: string
 				resumeId?: string
+				/** Serializes turns of the same chat session in the host. */
+				sessionKey?: string
 			},
 		) => ipcRenderer.invoke("agent-subagent:run", runId, runtimeId, opts),
 		cancel: (runId: string) => ipcRenderer.invoke("agent-subagent:cancel", runId),

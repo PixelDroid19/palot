@@ -23,6 +23,7 @@
         "@fontsource/ibm-plex-mono": "^5.2.7",
         "@libsql/client": "^0.17.0",
         "@opencode-ai/sdk": "^1.2.1",
+        "@palot/agent-host": "workspace:*",
         "@palot/cli-registry": "workspace:*",
         "@palot/configconv": "workspace:*",
         "@palot/ui": "workspace:*",
@@ -86,6 +87,17 @@
       },
       "devDependencies": {
         "@types/bun": "^1.2.14",
+        "typescript": "^5.8.3",
+      },
+    },
+    "packages/agent-host": {
+      "name": "@palot/agent-host",
+      "version": "0.1.0",
+      "dependencies": {
+        "@palot/cli-registry": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
         "typescript": "^5.8.3",
       },
     },
@@ -622,6 +634,8 @@
     "@opencode-ai/sdk": ["@opencode-ai/sdk@1.2.1", "", {}, "sha512-K5e15mIXTyAykBw0GX+8O28IJHlPMw1jI/m3SDu+hgUHjmg2refqLPqyuqv8hE2nRcuGi8HajhpDJjkO7H2S0A=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
+
+    "@palot/agent-host": ["@palot/agent-host@workspace:packages/agent-host"],
 
     "@palot/cli-registry": ["@palot/cli-registry@workspace:packages/cli-registry"],
 
