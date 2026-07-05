@@ -88,20 +88,23 @@ export function parseClaudeLine(line: string): AgentUpdate[] {
 /**
  * Claude Code has no on-disk model catalog; it accepts stable aliases that
  * always point at the latest model of each family (per `claude --help`).
+ * Reasoning effort is a session-level flag (`--effort low…max`) available on
+ * every model.
  */
+const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 const CLAUDE_MODELS: AgentModelInfo[] = [
-	{ slug: "", label: "Default", efforts: [] },
-	{ slug: "fable", label: "Fable", efforts: [] },
-	{ slug: "opus", label: "Opus", efforts: [] },
-	{ slug: "sonnet", label: "Sonnet", efforts: [] },
-	{ slug: "haiku", label: "Haiku", efforts: [] },
+	{ slug: "", label: "Default", efforts: CLAUDE_EFFORTS },
+	{ slug: "fable", label: "Fable", efforts: CLAUDE_EFFORTS },
+	{ slug: "opus", label: "Opus", efforts: CLAUDE_EFFORTS },
+	{ slug: "sonnet", label: "Sonnet", efforts: CLAUDE_EFFORTS },
+	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS },
 ]
 
 export const claudeAdapter: AgentAdapter = {
 	id: "claude",
 	displayName: "Claude Code",
 	binary: "claude",
-	capabilities: { imageInput: true, reasoningEffort: false, resume: true },
+	capabilities: { imageInput: true, reasoningEffort: true, resume: true },
 	listModels: async () => CLAUDE_MODELS,
 	buildCommand: (opts) => {
 		// Claude runs in the process cwd (set by the runner); it has no -C flag.
@@ -109,6 +112,7 @@ export const claudeAdapter: AgentAdapter = {
 		// Resume a prior conversation by session id to keep multi-turn context.
 		if (opts.resumeId) args.push("--resume", opts.resumeId)
 		if (opts.model) args.push("--model", opts.model)
+		if (opts.reasoningEffort) args.push("--effort", opts.reasoningEffort)
 		// Only loosen permissions when the user opts out of read-only.
 		if (opts.sandbox && opts.sandbox !== "read-only") {
 			args.push("--dangerously-skip-permissions")

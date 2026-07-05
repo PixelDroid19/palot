@@ -26,8 +26,13 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 
 	if (!meta || !descriptor) return null
 
-	const models = descriptor.models
-	const efforts = models.find((m) => m.slug === (meta.model ?? ""))?.efforts ?? []
+	// Sessions persisted before a catalog change may reference a slug that is
+	// no longer listed; keep it selectable so the select reflects reality.
+	const currentSlug = meta.model ?? ""
+	const models = descriptor.models.some((m) => m.slug === currentSlug)
+		? descriptor.models
+		: [...descriptor.models, { slug: currentSlug, label: currentSlug, efforts: [] }]
+	const efforts = models.find((m) => m.slug === currentSlug)?.efforts ?? []
 
 	const apply = (patch: { model?: string; effort?: string; sandbox?: AgentSandbox }) => {
 		patchCliMeta(sessionId, {
@@ -44,7 +49,7 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 				<NativeSelect
 					aria-label={t("runtimePicker.model")}
 					size="sm"
-					value={meta.model ?? ""}
+					value={currentSlug}
 					onChange={(e) => apply({ model: e.target.value, effort: "" })}
 				>
 					{models.map((m) => (
