@@ -30,6 +30,7 @@ import {
 } from "lucide-react"
 import { memo, useCallback, useDeferredValue, useMemo, useRef, useState } from "react"
 import { useDisplayMode } from "../../hooks/use-agents"
+import { useTranslation } from "../../i18n/use-translation"
 import type { ChatMessageEntry, ChatTurn as ChatTurnType } from "../../hooks/use-session-chat"
 import {
 	computeTurnCost,
@@ -611,6 +612,7 @@ export const ChatTurnComponent = memo(
 		const [stepsExpanded, setStepsExpanded] = useState(false)
 		const [copied, setCopied] = useState(false)
 		const displayMode = useDisplayMode()
+		const { t } = useTranslation()
 		const turnRef = useRef<HTMLDivElement>(null)
 
 		const isSynthetic = useMemo(() => isSyntheticMessage(turn.userMessage), [turn.userMessage])
@@ -773,7 +775,7 @@ export const ChatTurnComponent = memo(
 							{(isQueued || isQueuedLast) && (
 								<span className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground/60">
 									<ListOrderedIcon className="size-3" />
-									Queued
+									{t("queuedMessage.queued")}
 									{onSendNow && (
 										<button
 											type="button"
@@ -782,7 +784,7 @@ export const ChatTurnComponent = memo(
 											className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary disabled:opacity-50"
 										>
 											<SendIcon className="size-2.5" />
-											{sendingNow ? "Sending..." : "Send now"}
+											{sendingNow ? t("queuedMessage.sending") : t("queuedMessage.sendNow")}
 										</button>
 									)}
 									{onCancelQueued && (
@@ -793,7 +795,7 @@ export const ChatTurnComponent = memo(
 											className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
 										>
 											<XIcon className="size-2.5" />
-											{cancelling ? "Cancelling..." : "Cancel"}
+											{cancelling ? t("queuedMessage.cancelling") : t("queuedMessage.cancel")}
 										</button>
 									)}
 								</span>
