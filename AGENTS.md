@@ -12,6 +12,7 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`packages/ui`**: Shared shadcn/ui component library (`@palot/ui`)
 - **`packages/configconv`**: Universal agent config converter library (`@palot/configconv`) -- converts between Claude Code, OpenCode, and Cursor formats
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
+- **`packages/cli-registry`**: Detects installed coding-agent CLIs (`@palot/cli-registry`) -- OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI; reports version and auth state via a host-injected, testable detection layer
 - **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`)
 - **`apps/server`**: Bun + Hono backend -- used only in browser-mode dev (`dev:web`), NOT bundled with Electron
 
@@ -40,7 +41,8 @@ generic knowledge.
 - **Lint/format fix**: `bun run lint:fix` or `bunx biome check --write .` (from root)
 - **Type check all**: `bun run check-types` (from root, via Turborepo)
 - **Type check desktop**: `cd apps/desktop && bun run check-types` (uses `tsgo`)
-- **Run all tests**: `cd packages/configconv && bun test`
+- **Run all tests**: `bun run test` (from root, via Turborepo -- runs every package's `test` task)
+- **Run one package's tests**: `cd packages/configconv && bun test` (or `packages/cli-registry`)
 - **Run single test file**: `cd packages/configconv && bun test test/converter/config.test.ts`
 - **Run tests by name**: `cd packages/configconv && bun test --grep "converts model"`
 - **Rebuild server types**: `cd apps/server && bun run build:types` (required after adding server routes)

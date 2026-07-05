@@ -209,6 +209,7 @@ packages/
   ui/            Shared shadcn/ui component library (@palot/ui)
   configconv/    Universal agent config converter (Claude Code, Cursor, OpenCode)
   configconv-cli/ CLI wrapper for the config converter
+  cli-registry/  Detects installed coding-agent CLIs (@palot/cli-registry)
 ```
 
 The desktop app has three runtime contexts:
@@ -258,7 +259,8 @@ bun run lint:fix         # Lint and auto-fix
 bun run check-types      # Type-check all packages
 
 # Testing
-cd packages/configconv && bun test   # Run tests
+bun run test                         # Run all package tests (Turborepo)
+cd packages/configconv && bun test   # Run a single package's tests
 
 # Versioning
 bun changeset            # Add a changeset
