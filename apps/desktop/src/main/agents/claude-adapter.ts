@@ -67,6 +67,8 @@ export const claudeAdapter: AgentAdapter = {
 	buildArgs: (opts) => {
 		// Claude runs in the process cwd (set by the runner); it has no -C flag.
 		const args = ["-p", "--output-format", "json"]
+		// Resume a prior conversation by session id to keep multi-turn context.
+		if (opts.resumeId) args.push("--resume", opts.resumeId)
 		if (opts.model) args.push("--model", opts.model)
 		// Only loosen permissions when the user opts out of read-only.
 		if (opts.sandbox && opts.sandbox !== "read-only") {

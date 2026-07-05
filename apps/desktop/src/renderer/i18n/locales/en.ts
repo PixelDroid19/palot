@@ -31,4 +31,18 @@ export const en = {
 		failed: "Subagent failed: {{error}}",
 		empty: "No output yet. Enter a task and run the subagent.",
 	},
+	subagentChat: {
+		title: "CLI Agents",
+		description:
+			"Have a multi-turn conversation with a coding-agent CLI. Palot keeps the session so context carries across turns — no OpenCode session required.",
+		noneInstalled: "No supported agent CLI is installed. Install Codex or Claude Code to start.",
+		you: "You",
+		thinking: "Thinking…",
+		send: "Send",
+		stop: "Stop",
+		newConversation: "New conversation",
+		inputPlaceholder: "Message {{agent}}…",
+		emptyState: "Start a conversation with {{agent}}. It runs headless and remembers this session across turns.",
+		contextKept: "Session kept · context carries across turns",
+	},
 } as const

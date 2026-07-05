@@ -64,4 +64,11 @@ describe("claudeAdapter.buildArgs", () => {
 		const args = claudeAdapter.buildArgs({ prompt: "p", cwd: "/r", model: "claude-opus-4-8" })
 		expect(args[args.indexOf("--model") + 1]).toBe("claude-opus-4-8")
 	})
+
+	test("resume passes --resume with the session id", () => {
+		const args = claudeAdapter.buildArgs({ prompt: "next", cwd: "/r", resumeId: "sess-abc" })
+		expect(args[args.indexOf("--resume") + 1]).toBe("sess-abc")
+		expect(args).toContain("-p")
+		expect(args[args.length - 1]).toBe("next")
+	})
 })

@@ -38,6 +38,11 @@ export interface AgentRunOptions {
 	sandbox?: AgentSandbox
 	/** Optional model override. */
 	model?: string
+	/**
+	 * Resume an existing conversation by its thread/session id (from a prior
+	 * run's result) to keep multi-turn context. Omit to start a fresh session.
+	 */
+	resumeId?: string
 }
 
 export interface AgentRunResult {

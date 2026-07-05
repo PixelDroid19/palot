@@ -72,4 +72,14 @@ describe("codexAdapter.buildArgs", () => {
 		expect(args[args.indexOf("-m") + 1]).toBe("gpt-5-codex")
 		expect(args[args.length - 1]).toBe("p")
 	})
+
+	test("resume uses the exec resume subcommand with the session id", () => {
+		const args = codexAdapter.buildArgs({ prompt: "next", cwd: "/r", resumeId: "sess-123" })
+		expect(args.slice(0, 3)).toEqual(["exec", "resume", "sess-123"])
+		expect(args).toContain("--json")
+		expect(args[args.length - 1]).toBe("next")
+		// Fresh-session flags don't belong on a resume.
+		expect(args).not.toContain("-C")
+		expect(args).not.toContain("-s")
+	})
 })

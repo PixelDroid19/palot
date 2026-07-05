@@ -70,6 +70,14 @@ export const codexAdapter: AgentAdapter = {
 	displayName: "Codex",
 	binary: "codex",
 	buildArgs: (opts) => {
+		// Resume keeps multi-turn context; the recorded session carries its own
+		// cwd/sandbox, so those flags are only set when starting fresh.
+		if (opts.resumeId) {
+			const args = ["exec", "resume", opts.resumeId, "--json", "--skip-git-repo-check"]
+			if (opts.model) args.push("-c", `model="${opts.model}"`)
+			args.push(opts.prompt)
+			return args
+		}
 		const args = [
 			"exec",
 			"--json",

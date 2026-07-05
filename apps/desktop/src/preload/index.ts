@@ -185,6 +185,7 @@ contextBridge.exposeInMainWorld("palot", {
 				cwd: string
 				sandbox?: "read-only" | "workspace-write" | "danger-full-access"
 				model?: string
+				resumeId?: string
 			},
 		) => ipcRenderer.invoke("agent-subagent:run", runId, runtimeId, opts),
 		cancel: (runId: string) => ipcRenderer.invoke("agent-subagent:cancel", runId),

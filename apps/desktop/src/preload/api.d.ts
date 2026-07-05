@@ -271,6 +271,8 @@ export interface AgentRunOptions {
 	cwd: string
 	sandbox?: AgentSandbox
 	model?: string
+	/** Resume a prior conversation by thread/session id to keep multi-turn context. */
+	resumeId?: string
 }
 
 export interface AgentUsage {
