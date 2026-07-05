@@ -31,6 +31,7 @@ import {
 	XIcon,
 } from "lucide-react"
 import {
+	Component,
 	memo,
 	type ReactNode,
 	startTransition,
@@ -687,6 +688,39 @@ const FileListItem = memo(function FileListItem({
 // Per-file diff section
 // ============================================================
 
+/**
+ * Contains a crash in @pierre/diffs to the single offending file instead of
+ * unmounting the whole session view (#129: malformed payloads throw inside
+ * LineDiff.tokenize).
+ */
+class DiffErrorBoundary extends Component<
+	{ file: string; children: ReactNode },
+	{ error: string | null }
+> {
+	state = { error: null as string | null }
+
+	static getDerivedStateFromError(err: unknown) {
+		return { error: err instanceof Error ? err.message : String(err) }
+	}
+
+	override componentDidUpdate(prev: { file: string }) {
+		// A different file (or refreshed diff) gets a fresh chance to render.
+		if (prev.file !== this.props.file && this.state.error) this.setState({ error: null })
+	}
+
+	override render() {
+		if (this.state.error) {
+			return (
+				<div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
+					<AlertTriangleIcon className="size-4 shrink-0" />
+					<span>Could not render this diff: {this.state.error}</span>
+				</div>
+			)
+		}
+		return this.props.children
+	}
+}
+
 interface FileDiffSectionProps {
 	diff: FileDiff
 	diffStyle: DiffStyle
@@ -722,12 +756,14 @@ const FileDiffSection = memo(function FileDiffSection({
 		[diffStyle],
 	)
 
+	// The SDK types promise strings, but added/deleted files can arrive with a
+	// missing side at runtime; @pierre/diffs crashes on undefined (#129).
 	const oldFile = useMemo(
-		() => ({ name: diff.file, contents: diff.before }),
+		() => ({ name: diff.file, contents: diff.before ?? "" }),
 		[diff.file, diff.before],
 	)
 	const newFile = useMemo(
-		() => ({ name: diff.file, contents: diff.after }),
+		() => ({ name: diff.file, contents: diff.after ?? "" }),
 		[diff.file, diff.after],
 	)
 
@@ -763,12 +799,14 @@ const FileDiffSection = memo(function FileDiffSection({
 			// syntax highlighting from the background -- no manual queue needed.
 			body = (
 				<div className="overflow-x-auto">
-					<MultiFileDiff
-						options={options}
-						oldFile={oldFile}
-						newFile={newFile}
-						renderHoverUtility={renderHoverUtility}
-					/>
+					<DiffErrorBoundary file={diff.file}>
+						<MultiFileDiff
+							options={options}
+							oldFile={oldFile}
+							newFile={newFile}
+							renderHoverUtility={renderHoverUtility}
+						/>
+					</DiffErrorBoundary>
 				</div>
 			)
 		}
