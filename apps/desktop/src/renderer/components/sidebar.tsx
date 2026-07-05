@@ -41,6 +41,7 @@ import {
 } from "lucide-react"
 import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { activeServerConfigAtom } from "../atoms/connection"
+import { unreadSessionsAtom } from "../atoms/unread"
 import { agentFamily, projectSessionIdsFamily, sandboxMappingsAtom } from "../atoms/derived/agents"
 import { automationsEnabledAtom } from "../atoms/feature-flags"
 import { projectPaginationFamily } from "../atoms/sessions"
@@ -626,6 +627,8 @@ const SessionItem = memo(function SessionItem({
 	const statusColor = STATUS_COLOR[agent.status]
 	const isWorktree = !!agent.worktreePath
 	const lastActive = useLiveLastActive(agent)
+	// New-activity dot: set when the session finishes while unfocused (#128).
+	const isUnread = useAtomValue(unreadSessionsAtom).has(agent.id) && !isSelected
 
 	const [isEditing, setIsEditing] = useState(false)
 	const [editValue, setEditValue] = useState(agent.name)
@@ -713,6 +716,12 @@ const SessionItem = memo(function SessionItem({
 					</div>
 				)}
 
+				{!isEditing && isUnread && (
+					<span
+						aria-label="New activity"
+						className="size-1.5 shrink-0 rounded-full bg-primary"
+					/>
+				)}
 				{!isEditing && (
 					<span className="shrink-0 text-xs tabular-nums text-muted-foreground">{lastActive}</span>
 				)}

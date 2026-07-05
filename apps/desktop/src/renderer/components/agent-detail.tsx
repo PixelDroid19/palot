@@ -28,6 +28,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
 import { reviewPanelOpenAtom, reviewPanelSettingsAtom, sessionDiffStatsFamily } from "../atoms/ui"
 import { activeServerConfigAtom } from "../atoms/connection"
+import { appStore } from "../atoms/store"
+import { clearSessionUnreadAtom, viewedSessionAtom } from "../atoms/unread"
 import type {
 	ConfigData,
 	ModelRef,
@@ -161,6 +163,17 @@ export function AgentDetail({
 		document.addEventListener("keydown", handleKeyDown)
 		return () => document.removeEventListener("keydown", handleKeyDown)
 	}, [setReviewPanelOpen, setReviewSettings, reviewPanelOpen])
+
+	// Track the viewed session and clear its unread mark (#128).
+	useEffect(() => {
+		appStore.set(viewedSessionAtom, agent.sessionId)
+		appStore.set(clearSessionUnreadAtom, agent.sessionId)
+		return () => {
+			if (appStore.get(viewedSessionAtom) === agent.sessionId) {
+				appStore.set(viewedSessionAtom, null)
+			}
+		}
+	}, [agent.sessionId])
 
 	// Close review panel when navigating to a session with no diffs
 	const prevSessionIdRef = useRef(agent.sessionId)

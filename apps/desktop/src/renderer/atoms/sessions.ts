@@ -3,6 +3,7 @@ import { atomFamily } from "jotai-family"
 import type { PermissionRequest, QuestionRequest, Session, SessionStatus } from "../lib/types"
 import { messagesFamily } from "./messages"
 import { partsFamily } from "./parts"
+import { markSessionUnreadAtom, viewedSessionAtom } from "./unread"
 
 // ============================================================
 // Constants
@@ -143,6 +144,16 @@ export const setSessionStatusAtom = atom(
 	) => {
 		const entry = get(sessionFamily(args.sessionId))
 		if (!entry) return
+		// Finished working while the user was looking elsewhere → unread (#128).
+		// Works for both OpenCode (SSE) and CLI-backed sessions, since both
+		// funnel status changes through this atom.
+		if (
+			entry.status.type !== "idle" &&
+			args.status.type === "idle" &&
+			get(viewedSessionAtom) !== args.sessionId
+		) {
+			set(markSessionUnreadAtom, args.sessionId)
+		}
 		set(sessionFamily(args.sessionId), { ...entry, status: args.status })
 	},
 )
