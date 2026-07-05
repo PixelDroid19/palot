@@ -241,9 +241,18 @@ export interface SkillSyncResult {
 	error?: string
 }
 
+export type EndpointType = "loopback" | "lan" | "tailscale"
+
+export interface RemoteEndpoint {
+	url: string
+	type: EndpointType
+	label: string
+}
+
 export interface RemoteAccessInfo {
 	url: string | null
 	lanUrls: string[]
+	endpoints: RemoteEndpoint[]
 	port: number | null
 }
 

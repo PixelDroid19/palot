@@ -21,5 +21,8 @@ Close remaining ZCode feature-parity gaps:
 - **SSH remote skill sync** (Settings → Integrations): push/pull user-level
   OpenCode skills to/from a remote host over SSH via rsync.
 - **Remote & mobile access** (Settings → Integrations): surfaces the running
-  OpenCode server's LAN URLs so another device (a laptop's Palot, the web
-  build, or a phone browser) can connect on the same network.
+  OpenCode server's reachable endpoints so another device (a laptop's Palot,
+  the web build, or a phone browser) can connect. Endpoints are typed and
+  ranked (Tailscale → LAN → loopback); Tailscale CGNAT addresses are detected
+  automatically to give a stable address that works from anywhere, and each
+  endpoint renders a scannable QR code for one-tap phone pairing.

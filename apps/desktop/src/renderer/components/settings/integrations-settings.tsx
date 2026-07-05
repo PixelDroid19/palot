@@ -9,8 +9,9 @@ import {
 	SmartphoneIcon,
 	XCircleIcon,
 } from "lucide-react"
+import QRCode from "qrcode"
 import { useCallback, useEffect, useState } from "react"
-import type { RemoteAccessInfo, WebhookTarget } from "../../../preload/api"
+import type { RemoteAccessInfo, RemoteEndpoint, WebhookTarget } from "../../../preload/api"
 import { useSettings } from "../../hooks/use-settings"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
@@ -200,16 +201,53 @@ function SkillSyncPanel() {
 // Remote / mobile access
 // ============================================================
 
+/** Renders a scannable QR code for a URL as a data-URI image (CSP-safe). */
+function QrCode({ url }: { url: string }) {
+	const [src, setSrc] = useState<string | null>(null)
+
+	useEffect(() => {
+		let cancelled = false
+		QRCode.toDataURL(url, { margin: 1, width: 176, errorCorrectionLevel: "M" })
+			.then((dataUrl) => {
+				if (!cancelled) setSrc(dataUrl)
+			})
+			.catch(() => {
+				if (!cancelled) setSrc(null)
+			})
+		return () => {
+			cancelled = true
+		}
+	}, [url])
+
+	if (!src) return <div className="size-44 rounded-md bg-muted" aria-hidden="true" />
+	return (
+		<img
+			src={src}
+			alt={`QR code for ${url}`}
+			className="size-44 rounded-md bg-white p-2"
+			width={176}
+			height={176}
+		/>
+	)
+}
+
 function RemoteAccessPanel() {
 	const [info, setInfo] = useState<RemoteAccessInfo | null>(null)
 	const [loading, setLoading] = useState(false)
 	const [copied, setCopied] = useState<string | null>(null)
+	const [selected, setSelected] = useState<string | null>(null)
 
 	const load = useCallback(async () => {
 		if (!isElectron) return
 		setLoading(true)
 		try {
-			setInfo(await window.palot.getRemoteAccessInfo())
+			const next = await window.palot.getRemoteAccessInfo()
+			setInfo(next)
+			// Default to the best (first) non-loopback endpoint for the QR code.
+			const best = next.endpoints.find((e) => e.type !== "loopback")
+			setSelected((prev) =>
+				prev && next.endpoints.some((e) => e.url === prev) ? prev : (best?.url ?? null),
+			)
 		} finally {
 			setLoading(false)
 		}
@@ -225,10 +263,13 @@ function RemoteAccessPanel() {
 		setTimeout(() => setCopied(null), 1500)
 	}, [])
 
+	const endpoints: RemoteEndpoint[] = info?.endpoints.filter((e) => e.type !== "loopback") ?? []
+	const hasTailscale = endpoints.some((e) => e.type === "tailscale")
+
 	return (
 		<SettingsSection
 			title="Remote & mobile access"
-			description="Connect another device (a laptop's Palot, the web build, or a phone browser) on the same network to this machine's running OpenCode server."
+			description="Connect another device (a laptop's Palot, the web build, or a phone browser) to this machine's running OpenCode server. Scan the QR code from a phone on the same network — or via Tailscale from anywhere."
 		>
 			<div className="flex items-center justify-between px-4 py-3">
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -244,25 +285,65 @@ function RemoteAccessPanel() {
 					Refresh
 				</Button>
 			</div>
-			{info && info.lanUrls.length > 0
-				? info.lanUrls.map((url) => (
-						<div key={url} className="flex items-center justify-between gap-2 px-4 py-3">
-							<span className="truncate font-mono text-sm">{url}</span>
-							<Button variant="ghost" size="sm" onClick={() => copy(url)}>
-								{copied === url ? (
-									<CheckCircle2Icon aria-hidden="true" className="size-4 text-green-500" />
-								) : (
-									<CopyIcon aria-hidden="true" className="size-4" />
-								)}
-							</Button>
+
+			{endpoints.length > 0 ? (
+				<div className="flex flex-col gap-4 px-4 py-3 sm:flex-row sm:items-start">
+					{selected && (
+						<div className="flex flex-col items-center gap-2">
+							<QrCode url={selected} />
+							<span className="text-xs text-muted-foreground">Scan to connect</span>
 						</div>
-					))
-				: info && (
-						<p className="px-4 py-3 text-sm text-muted-foreground">
-							No LAN addresses detected. Make sure the server is running and you're connected to a
-							network.
-						</p>
 					)}
+					<div className="flex min-w-0 flex-1 flex-col gap-1">
+						{endpoints.map((ep) => (
+							<button
+								type="button"
+								key={ep.url}
+								onClick={() => setSelected(ep.url)}
+								className={`flex items-center justify-between gap-2 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted ${
+									selected === ep.url ? "bg-muted" : ""
+								}`}
+							>
+								<span className="flex min-w-0 flex-col">
+									<span className="flex items-center gap-2">
+										<span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+											{ep.label}
+										</span>
+									</span>
+									<span className="truncate font-mono text-sm">{ep.url}</span>
+								</span>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={(e) => {
+										e.stopPropagation()
+										copy(ep.url)
+									}}
+								>
+									{copied === ep.url ? (
+										<CheckCircle2Icon aria-hidden="true" className="size-4 text-green-500" />
+									) : (
+										<CopyIcon aria-hidden="true" className="size-4" />
+									)}
+								</Button>
+							</button>
+						))}
+						{!hasTailscale && (
+							<p className="mt-1 text-xs text-muted-foreground">
+								Tip: install Tailscale to get a stable address that works from anywhere, not just
+								the local network.
+							</p>
+						)}
+					</div>
+				</div>
+			) : (
+				info && (
+					<p className="px-4 py-3 text-sm text-muted-foreground">
+						No reachable addresses detected. Make sure the server is running and you're connected to
+						a network.
+					</p>
+				)
+			)}
 		</SettingsSection>
 	)
 }
