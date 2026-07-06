@@ -42,6 +42,7 @@ export const en = {
 		sandboxReadOnly: "Read-only",
 		sandboxWorkspaceWrite: "Workspace write",
 		sandboxFullAccess: "Full access (agent tools)",
+		loginRequired: "{{name}} — login required",
 	},
 	cliApprovals: {
 		title: "The agent wants to use {{name}}",

@@ -283,6 +283,21 @@ class CodexSession implements AgentSession {
 				this.onUpdate({ kind: "reasoning-delta", text: "\n\n" })
 				return
 			}
+			case "item/commandExecution/outputDelta": {
+				// Live command output; the UI appends chunks to the tool card.
+				const chunk = readString(params.delta) || readString(params.chunk)
+				const itemId = readString(params.itemId)
+				if (chunk && itemId) {
+					this.onUpdate({
+						kind: "tool",
+						id: itemId,
+						name: "shell",
+						status: "running",
+						output: chunk,
+					})
+				}
+				return
+			}
 			case "item/started":
 			case "item/completed": {
 				this.handleItem(method.endsWith("/completed") ? "completed" : "started", params)
@@ -441,6 +456,8 @@ export class CodexProvider implements AgentSessionProvider {
 		})
 		await rpc.request("initialize", {
 			clientInfo: { name: "palot", title: "Palot", version: "1.0.0" },
+			// Experimental API unlocks streaming extras (e.g. command output deltas).
+			capabilities: { experimentalApi: true, requestAttestation: false },
 		})
 		rpc.notify("initialized")
 		this.rpc = rpc

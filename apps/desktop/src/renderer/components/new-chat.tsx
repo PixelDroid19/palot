@@ -250,8 +250,21 @@ export function NewChat() {
 	// Runtime descriptors come from the agent-host core: install state,
 	// capabilities, and each CLI's own model catalog (never hardcoded here).
 	const [cliRuntimes, setCliRuntimes] = useState<AgentRuntimeDescriptor[]>([])
+	// Auth state per runtime from the CLI detection layer, so the picker can
+	// flag CLIs that are installed but not logged in before a run fails.
+	const [cliAuth, setCliAuth] = useState<Record<string, string>>({})
 	useEffect(() => {
 		loadRuntimeDescriptors().then((all) => setCliRuntimes(all.filter((d) => d.installed)))
+		if ("palot" in window) {
+			window.palot.agentClis
+				.detect()
+				.then((detections) => {
+					const auth: Record<string, string> = {}
+					for (const d of detections) auth[d.id] = d.auth
+					setCliAuth(auth)
+				})
+				.catch(() => {})
+		}
 	}, [])
 	const activeCliRuntime = isCliRuntime(sessionRuntime)
 		? cliRuntimes.find((d) => d.id === sessionRuntime)
@@ -845,7 +858,9 @@ export function NewChat() {
 											<NativeSelectOption value="opencode">OpenCode</NativeSelectOption>
 											{cliRuntimes.map((r) => (
 												<NativeSelectOption key={r.id} value={r.id}>
-													{r.displayName}
+													{cliAuth[r.id] === "unauthenticated"
+														? t("runtimePicker.loginRequired", { name: r.displayName })
+														: r.displayName}
 												</NativeSelectOption>
 											))}
 										</NativeSelect>

@@ -41,6 +41,7 @@ export const es: LocaleMessages = {
 		sandboxReadOnly: "Solo lectura",
 		sandboxWorkspaceWrite: "Escritura en el proyecto",
 		sandboxFullAccess: "Acceso total (herramientas de agente)",
+		loginRequired: "{{name}} — requiere iniciar sesión",
 	},
 	cliApprovals: {
 		title: "El agente quiere usar {{name}}",

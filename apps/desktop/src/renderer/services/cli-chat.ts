@@ -315,7 +315,10 @@ export async function runCliTurn(
 	let streamedDeltas = false
 	const notices: string[] = []
 	/** Tool-part state, keyed by the provider's tool id (or a running counter). */
-	const toolParts = new Map<string, { partId: string; name: string; start: number }>()
+	const toolParts = new Map<
+		string,
+		{ partId: string; name: string; start: number; detail?: string; output: string }
+	>()
 	let toolSeq = 0
 	activeTurns.add(sessionId)
 
@@ -367,12 +370,23 @@ export async function runCliTurn(
 			const key = update.id ?? `seq-${toolSeq++}`
 			let entry = toolParts.get(key)
 			if (!entry) {
-				entry = { partId: `${asstId}-tool-${toolParts.size}`, name: update.name, start: Date.now() }
+				entry = {
+					partId: `${asstId}-tool-${toolParts.size}`,
+					name: update.name,
+					start: Date.now(),
+					detail: update.detail,
+					output: "",
+				}
 				toolParts.set(key, entry)
 			}
 			if (update.name && update.name !== "tool") entry.name = update.name
+			if (update.detail) entry.detail = update.detail
 			const running = update.status === "running"
-			const input = update.detail ? { detail: update.detail } : {}
+			// Running updates stream output chunks; the completed update carries
+			// the authoritative full output when the CLI provides one.
+			if (running && update.output) entry.output = (entry.output + update.output).slice(-8_000)
+			else if (update.output) entry.output = update.output
+			const input = entry.detail ? { detail: entry.detail } : {}
 			appStore.set(upsertPartAtom, {
 				id: entry.partId,
 				sessionID: sessionId,
@@ -381,19 +395,25 @@ export async function runCliTurn(
 				callID: key,
 				tool: entry.name,
 				state: running
-					? { status: "running", input, title: update.detail, time: { start: entry.start } }
+					? {
+							status: "running",
+							input,
+							title: entry.detail,
+							metadata: entry.output ? { output: entry.output } : {},
+							time: { start: entry.start },
+						}
 					: update.status === "error"
 						? {
 								status: "error",
 								input,
-								error: update.output || "Tool failed",
+								error: entry.output || "Tool failed",
 								time: { start: entry.start, end: Date.now() },
 							}
 						: {
 								status: "completed",
 								input,
-								output: update.output ?? "",
-								title: update.detail || entry.name,
+								output: entry.output,
+								title: entry.detail || entry.name,
 								metadata: {},
 								time: { start: entry.start, end: Date.now() },
 							},
