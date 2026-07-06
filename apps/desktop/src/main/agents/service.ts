@@ -1,9 +1,9 @@
 /**
- * Desktop wiring for the agent platform. The actual core (adapters, runner,
+ * Desktop wiring for the agent platform. The actual core (providers, sessions,
  * host, bridge, shared context) lives in `@palot/agent-host`; this file only
  * owns the Electron-specific pieces: a lazy singleton, where the MCP proxy
  * script is written, which Node binary CLIs use to launch it, and the
- * run/cancel functions the IPC layer calls.
+ * session functions the IPC layer calls.
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -12,11 +12,11 @@ import {
 	AgentBridge,
 	AgentHost,
 	MCP_PROXY_SOURCE,
-	type AgentRunOptions,
+	type AgentPermissionDecision,
 	type AgentRunResult,
 	type AgentRuntimeDescriptor,
 	type AgentRuntimeId,
-	type AgentUpdate,
+	type AgentSandbox,
 } from "@palot/agent-host"
 import { whichOnPath } from "@palot/cli-registry"
 import { app } from "electron"
@@ -36,7 +36,7 @@ export function getAgentHost(): AgentHost {
 /**
  * Start the inter-agent bridge (idempotent). CLIs launched afterwards get the
  * `palot` MCP server injected, giving them palot_delegate + shared context.
- * A bridge failure only disables cross-agent tools — runs still work.
+ * A bridge failure only disables cross-agent tools — sessions still work.
  */
 async function ensureBridge(): Promise<void> {
 	if (bridgeSingleton?.getInfo()) return
@@ -96,31 +96,82 @@ export function describeAgentRuntimes(): Promise<AgentRuntimeDescriptor[]> {
 	return getAgentHost().describeRuntimes()
 }
 
-/** Run one agent turn, streaming normalized updates. Called from IPC. */
-export async function runAgent(
-	runId: string,
+export interface AgentSessionOpenOptions {
+	cwd: string
+	sandbox?: AgentSandbox
+	model?: string
+	reasoningEffort?: string
+	resumeId?: string
+}
+
+/** Open (or reuse) the persistent session backing a chat. Called from IPC. */
+export async function openAgentSession(
+	sessionId: string,
 	runtimeId: AgentRuntimeId,
-	opts: AgentRunOptions & { sessionKey?: string; imageAttachments?: AgentImageAttachment[] },
-	onUpdate: (update: AgentUpdate) => void,
-): Promise<AgentRunResult> {
+	opts: AgentSessionOpenOptions,
+): Promise<{ threadId: string | null }> {
 	await ensureBridge()
-	const { sessionKey, imageAttachments, ...runOpts } = opts
-	const images = imageAttachments?.length ? writeImageFiles(imageAttachments) : null
-	if (images?.paths.length) runOpts.images = images.paths
+	const session = await getAgentHost().openSession(sessionId, runtimeId, opts)
+	return { threadId: session.threadId }
+}
+
+export interface AgentPromptOptions {
+	text: string
+	model?: string
+	reasoningEffort?: string
+	sandbox?: AgentSandbox
+	imageAttachments?: AgentImageAttachment[]
+}
+
+/** Run one turn on an open session, streaming updates via host events. */
+export async function promptAgent(
+	sessionId: string,
+	opts: AgentPromptOptions,
+): Promise<AgentRunResult> {
+	const images = opts.imageAttachments?.length ? writeImageFiles(opts.imageAttachments) : null
 	try {
-		return await getAgentHost().run(runId, runtimeId, runOpts, { sessionKey, onUpdate })
+		return await getAgentHost().prompt(sessionId, {
+			text: opts.text,
+			model: opts.model,
+			reasoningEffort: opts.reasoningEffort,
+			sandbox: opts.sandbox,
+			images: images?.paths.length ? images.paths : undefined,
+		})
 	} finally {
 		images?.cleanup()
 	}
 }
 
-/** Cancel a running agent turn. Returns true if a matching run was killed. */
-export function cancelAgent(runId: string): boolean {
-	return getAgentHost().cancel(runId)
+/** Inject steering input into the running turn. */
+export function steerAgent(sessionId: string, text: string): Promise<void> {
+	return getAgentHost().steer(sessionId, text)
+}
+
+/** Stop the in-flight turn; the session survives. */
+export function interruptAgent(sessionId: string): Promise<boolean> {
+	return getAgentHost().interrupt(sessionId)
+}
+
+/** Answer a pending tool-approval request. */
+export function respondAgentPermission(
+	sessionId: string,
+	requestId: string,
+	decision: AgentPermissionDecision,
+): boolean {
+	return getAgentHost().respondPermission(sessionId, requestId, decision)
+}
+
+/** Tear down the persistent session (chat deleted / app closing). */
+export function closeAgentSession(sessionId: string): Promise<void> {
+	return getAgentHost().closeSession(sessionId)
 }
 
 export async function stopAgentBridge(): Promise<void> {
+	await getAgentHost()
+		.dispose()
+		.catch(() => {})
 	await bridgeSingleton?.stop()
 	bridgeSingleton = null
 	bridgeStarting = null
+	hostSingleton = null
 }

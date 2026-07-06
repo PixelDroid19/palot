@@ -42,6 +42,12 @@ export const es: LocaleMessages = {
 		sandboxWorkspaceWrite: "Escritura en el proyecto",
 		sandboxFullAccess: "Acceso total (herramientas de agente)",
 	},
+	cliApprovals: {
+		title: "El agente quiere usar {{name}}",
+		allow: "Permitir",
+		allowSession: "Permitir en la sesión",
+		deny: "Denegar",
+	},
 	settings: {
 		language: "Idioma",
 		languageDescription: "Idioma de las partes nuevas de la interfaz",

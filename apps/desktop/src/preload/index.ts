@@ -174,34 +174,51 @@ contextBridge.exposeInMainWorld("palot", {
 		detect: (force?: boolean) => ipcRenderer.invoke("agent-clis:detect", force),
 	},
 
-	// --- Agent subagents (multi-CLI: Codex, Claude Code, …) ---
+	// --- Agent sessions (multi-CLI: Codex, Claude Code, …) ---
 
-	agentSubagent: {
-		run: (
-			runId: string,
+	agentSession: {
+		/** Open (or reuse) the persistent session backing a chat. */
+		open: (
+			sessionId: string,
 			runtimeId: string,
 			opts: {
-				prompt: string
 				cwd: string
 				sandbox?: "read-only" | "workspace-write" | "danger-full-access"
 				model?: string
 				reasoningEffort?: string
 				resumeId?: string
-				/** Serializes turns of the same chat session in the host. */
-				sessionKey?: string
+			},
+		) => ipcRenderer.invoke("agent-session:open", sessionId, runtimeId, opts),
+		/** Run one turn; resolves with the reduced result when it completes. */
+		prompt: (
+			sessionId: string,
+			opts: {
+				text: string
+				model?: string
+				reasoningEffort?: string
+				sandbox?: "read-only" | "workspace-write" | "danger-full-access"
 				/** Image attachments as data URLs (written to temp files in main). */
 				imageAttachments?: { dataUrl: string; filename?: string }[]
 			},
-		) => ipcRenderer.invoke("agent-subagent:run", runId, runtimeId, opts),
-		cancel: (runId: string) => ipcRenderer.invoke("agent-subagent:cancel", runId),
+		) => ipcRenderer.invoke("agent-session:prompt", sessionId, opts),
+		/** Inject steering input into the running turn. */
+		steer: (sessionId: string, text: string) =>
+			ipcRenderer.invoke("agent-session:steer", sessionId, text),
+		/** Stop the in-flight turn; the session survives. */
+		interrupt: (sessionId: string) => ipcRenderer.invoke("agent-session:interrupt", sessionId),
+		/** Answer a pending tool-approval request. */
+		respondPermission: (sessionId: string, requestId: string, decision: string) =>
+			ipcRenderer.invoke("agent-session:respond-permission", sessionId, requestId, decision),
+		/** Tear down the persistent session. */
+		close: (sessionId: string) => ipcRenderer.invoke("agent-session:close", sessionId),
 		/** Runtime descriptors: install state, capabilities, model catalog. */
-		describeRuntimes: () => ipcRenderer.invoke("agent-subagent:runtimes"),
-		onUpdate: (callback: (runId: string, update: unknown) => void) => {
-			const listener = (_event: unknown, runId: string, update: unknown) =>
-				callback(runId, update)
-			ipcRenderer.on("agent-subagent:update", listener)
+		describeRuntimes: () => ipcRenderer.invoke("agent-session:runtimes"),
+		onUpdate: (callback: (sessionId: string, update: unknown) => void) => {
+			const listener = (_event: unknown, sessionId: string, update: unknown) =>
+				callback(sessionId, update)
+			ipcRenderer.on("agent-session:update", listener)
 			return () => {
-				ipcRenderer.removeListener("agent-subagent:update", listener)
+				ipcRenderer.removeListener("agent-session:update", listener)
 			}
 		},
 	},

@@ -1,136 +1,120 @@
 import { describe, expect, test } from "bun:test"
 import { AgentHost } from "../src/host"
-import type { AgentAdapter } from "../src/types"
+import type { AgentUpdate } from "../src/types"
+import { FakeProvider } from "./fake-provider"
 
-/**
- * A fake adapter backed by the system shell, so host behavior (queueing,
- * serialization, cancellation, events) is tested against real processes
- * without any AI CLI installed.
- */
-function shellAdapter(id: string, script: (prompt: string) => string): AgentAdapter {
-	return {
-		id,
-		displayName: id,
-		binary: "sh",
-		capabilities: { imageInput: false, reasoningEffort: false, resume: false },
-		listModels: async () => [],
-		buildCommand: (opts) => ({ args: ["-c", script(opts.prompt)] }),
-		parseLine: (line) => (line.trim() ? [{ kind: "message", text: line.trim() }] : []),
-	}
-}
-
-function makeHost(adapters: AgentAdapter[], maxConcurrentRuns = 8): AgentHost {
-	const host = new AgentHost({
-		builtinAdapters: false,
-		maxConcurrentRuns,
-		resolveBinary: async () => "/bin/sh",
-	})
-	for (const a of adapters) host.adapters.register(a)
+function makeHost(providers: FakeProvider[]): AgentHost {
+	const host = new AgentHost({ builtinProviders: false, resolveBinary: async () => "/bin/sh" })
+	for (const p of providers) host.registerProvider(p)
 	return host
 }
 
-describe("AgentHost", () => {
-	test("runs a turn and returns the reduced result", async () => {
-		const host = makeHost([shellAdapter("echo", () => "echo hello")])
-		const result = await host.run("r1", "echo", { prompt: "hi", cwd: "/tmp" })
-		expect(result.message).toBe("hello")
+describe("AgentHost sessions", () => {
+	test("opens a session, runs turns, keeps the same underlying session", async () => {
+		const provider = new FakeProvider("fake")
+		const host = makeHost([provider])
+		await host.openSession("s1", "fake", { cwd: "/tmp" })
+		const first = await host.prompt("s1", { text: "hola" })
+		const second = await host.prompt("s1", { text: "otra" })
+		expect(first.message).toBe("echo:hola")
+		expect(second.message).toBe("echo:otra")
+		expect(provider.sessions).toHaveLength(1)
+		expect(provider.sessions[0]?.turns).toHaveLength(2)
+	})
+
+	test("emits session updates and turn lifecycle events", async () => {
+		const provider = new FakeProvider("fake")
+		const host = makeHost([provider])
+		const updates: AgentUpdate[] = []
+		const lifecycle: string[] = []
+		host.events.on("session:update", (e) => updates.push(e.update))
+		host.events.on("turn:start", () => lifecycle.push("start"))
+		host.events.on("turn:end", () => lifecycle.push("end"))
+		await host.openSession("s1", "fake", { cwd: "/tmp" })
+		await host.prompt("s1", { text: "hola" })
+		expect(lifecycle).toEqual(["start", "end"])
+		expect(updates.some((u) => u.kind === "thread")).toBe(true)
+		expect(updates.some((u) => u.kind === "message")).toBe(true)
+	})
+
+	test("permission requests round-trip through the host", async () => {
+		const provider = new FakeProvider("fake", { askPermission: true })
+		const host = makeHost([provider])
+		host.events.on("session:update", (e) => {
+			if (e.update.kind === "permission") {
+				host.respondPermission("s1", e.update.request.requestId, "acceptForSession")
+			}
+		})
+		await host.openSession("s1", "fake", { cwd: "/tmp" })
+		await host.prompt("s1", { text: "do it" })
+		expect(provider.sessions[0]?.lastDecision).toBe("acceptForSession")
+	})
+
+	test("interrupt stops the running turn but keeps the session usable", async () => {
+		const provider = new FakeProvider("fake", { delayMs: 100 })
+		const host = makeHost([provider])
+		await host.openSession("s1", "fake", { cwd: "/tmp" })
+		const turn = host.prompt("s1", { text: "long task" })
+		await new Promise((r) => setTimeout(r, 10))
+		expect(await host.interrupt("s1")).toBe(true)
+		const result = await turn
+		expect(result.message).toBe("(interrupted)")
+		const next = await host.prompt("s1", { text: "again" })
+		expect(next.message).toBe("echo:again")
+	})
+
+	test("steer feeds input into the running turn", async () => {
+		const provider = new FakeProvider("fake", { delayMs: 60 })
+		const host = makeHost([provider])
+		await host.openSession("s1", "fake", { cwd: "/tmp" })
+		const turn = host.prompt("s1", { text: "task" })
+		await new Promise((r) => setTimeout(r, 10))
+		await host.steer("s1", "also do X")
+		await turn
+		expect(provider.sessions[0]?.steered).toEqual(["also do X"])
+	})
+
+	test("closeSession tears the session down", async () => {
+		const provider = new FakeProvider("fake")
+		const host = makeHost([provider])
+		await host.openSession("s1", "fake", { cwd: "/tmp" })
+		await host.closeSession("s1")
+		expect(provider.sessions[0]?.closedCount).toBe(1)
+		expect(host.getSession("s1")).toBeNull()
+		await expect(host.prompt("s1", { text: "x" })).rejects.toThrow("No open session")
 	})
 
 	test("rejects unknown runtimes and empty prompts", async () => {
-		const host = makeHost([])
-		await expect(host.run("r", "nope", { prompt: "x", cwd: "/tmp" })).rejects.toThrow(
+		const host = makeHost([new FakeProvider("fake")])
+		await expect(host.openSession("s1", "nope", { cwd: "/tmp" })).rejects.toThrow(
 			"Unknown agent runtime",
 		)
-		await expect(host.run("r", "nope", { prompt: "  ", cwd: "/tmp" })).rejects.toThrow(
-			"prompt is required",
-		)
+		await host.openSession("s2", "fake", { cwd: "/tmp" })
+		await expect(host.prompt("s2", { text: "  " })).rejects.toThrow("required")
 	})
 
-	test("serializes runs on the same sessionKey, parallelizes across sessions", async () => {
-		const host = makeHost([
-			shellAdapter("slow", () => "sleep 0.15; echo done"),
-			shellAdapter("fast", () => "echo quick"),
-		])
-		const order: string[] = []
-		const first = host
-			.run("a", "slow", { prompt: "x", cwd: "/tmp" }, { sessionKey: "s1" })
-			.then(() => order.push("first"))
-		const second = host
-			.run("b", "fast", { prompt: "x", cwd: "/tmp" }, { sessionKey: "s1" })
-			.then(() => order.push("second"))
-		const other = host
-			.run("c", "fast", { prompt: "x", cwd: "/tmp" }, { sessionKey: "s2" })
-			.then(() => order.push("other"))
-		await Promise.all([first, second, other])
-		// Same session: strict order. Different session: finishes before the slow one.
-		expect(order.indexOf("first")).toBeLessThan(order.indexOf("second"))
-		expect(order.indexOf("other")).toBeLessThan(order.indexOf("first"))
+	test("describeRuntimes exposes capabilities and models", async () => {
+		const host = makeHost([new FakeProvider("fake")])
+		const descriptors = await host.describeRuntimes()
+		expect(descriptors).toHaveLength(1)
+		expect(descriptors[0]?.installed).toBe(true)
+		expect(descriptors[0]?.capabilities.permissions).toBe(true)
+		expect(descriptors[0]?.models[0]?.efforts).toEqual(["low", "high"])
 	})
 
-	test("caps global concurrency", async () => {
-		const host = makeHost(
-			[shellAdapter("sleepy", () => "sleep 0.1; echo ok")],
-			2,
-		)
-		const started = Date.now()
-		await Promise.all(
-			["1", "2", "3", "4"].map((n) =>
-				host.run(`r${n}`, "sleepy", { prompt: "x", cwd: "/tmp" }),
-			),
-		)
-		// 4 runs, 2 at a time, 100ms each → at least ~200ms.
-		expect(Date.now() - started).toBeGreaterThanOrEqual(180)
+	test("delegate runs an ephemeral session and closes it", async () => {
+		const provider = new FakeProvider("fake")
+		const host = makeHost([provider])
+		const result = await host.delegate({ runtimeId: "fake", prompt: "ping", cwd: "/tmp" })
+		expect(result.message).toBe("echo:ping")
+		expect(provider.sessions).toHaveLength(1)
+		expect(provider.sessions[0]?.closedCount).toBe(1)
 	})
 
-	test("cancel kills a running process", async () => {
-		const host = makeHost([shellAdapter("hang", () => "sleep 30")])
-		const pending = host.run("kill-me", "hang", { prompt: "x", cwd: "/tmp" })
-		await new Promise((r) => setTimeout(r, 100))
-		expect(host.cancel("kill-me")).toBe(true)
-		await expect(pending).rejects.toThrow("cancelled")
-	})
-
-	test("cancel aborts a run still queued behind the same session", async () => {
-		const host = makeHost([
-			shellAdapter("slow", () => "sleep 0.3; echo done"),
-			shellAdapter("fast", () => "echo quick"),
-		])
-		const first = host.run("s1-a", "slow", { prompt: "x", cwd: "/tmp" }, { sessionKey: "s" })
-		const queued = host.run("s1-b", "fast", { prompt: "x", cwd: "/tmp" }, { sessionKey: "s" })
-		await new Promise((r) => setTimeout(r, 50))
-		expect(host.cancel("s1-b")).toBe(true)
-		expect(host.cancel("no-such-run")).toBe(false)
-		await expect(queued).rejects.toThrow("cancelled")
-		await expect(first).resolves.toMatchObject({ message: "done" })
-	})
-
-	test("timeout rejects with a diagnosable error", async () => {
-		const host = makeHost([shellAdapter("hang", () => "sleep 30")])
-		await expect(
-			host.run("t", "hang", { prompt: "x", cwd: "/tmp", timeoutMs: 150 }),
-		).rejects.toThrow("timed out")
-	})
-
-	test("non-zero exit surfaces stderr", async () => {
-		const host = makeHost([shellAdapter("fail", () => "echo bad >&2; exit 3")])
-		await expect(host.run("f", "fail", { prompt: "x", cwd: "/tmp" })).rejects.toThrow("bad")
-	})
-
-	test("emits run lifecycle events", async () => {
-		const host = makeHost([shellAdapter("echo", () => "echo hey")])
-		const events: string[] = []
-		host.events.on("run:start", () => events.push("start"))
-		host.events.on("run:update", ({ update }) => events.push(update.kind))
-		host.events.on("run:end", ({ ok }) => events.push(`end:${ok}`))
-		await host.run("e", "echo", { prompt: "x", cwd: "/tmp" })
-		expect(events[0]).toBe("start")
-		expect(events).toContain("message")
-		expect(events[events.length - 1]).toBe("end:true")
-	})
-
-	test("delegate runs a one-shot task on another runtime", async () => {
-		const host = makeHost([shellAdapter("peer", () => "echo delegated-result")])
-		const result = await host.delegate({ runtimeId: "peer", prompt: "go", cwd: "/tmp" })
-		expect(result.message).toBe("delegated-result")
+	test("delegate auto-declines permission requests", async () => {
+		const provider = new FakeProvider("fake", { askPermission: true })
+		const host = makeHost([provider])
+		await host.delegate({ runtimeId: "fake", prompt: "risky", cwd: "/tmp" })
+		expect(provider.sessions[0]?.lastDecision).toBe("decline")
 	})
 })

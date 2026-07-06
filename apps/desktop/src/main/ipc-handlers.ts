@@ -37,8 +37,19 @@ import { getDiscoveredServers } from "./mdns-scanner"
 import { readModelState, updateModelRecent } from "./model-state"
 import { dismissNotification, updateBadgeCount } from "./notifications"
 import { detectAgentClis } from "./agent-clis"
-import type { AgentRunOptions, AgentRuntimeId } from "@palot/agent-host"
-import { cancelAgent, describeAgentRuntimes, runAgent } from "./agents/service"
+import type { AgentPermissionDecision, AgentRuntimeId } from "@palot/agent-host"
+import {
+	type AgentPromptOptions,
+	type AgentSessionOpenOptions,
+	closeAgentSession,
+	describeAgentRuntimes,
+	getAgentHost,
+	interruptAgent,
+	openAgentSession,
+	promptAgent,
+	respondAgentPermission,
+	steerAgent,
+} from "./agents/service"
 import { getRemoteAccessInfo } from "./remote-access"
 import { type SkillSyncDirection, syncSkills } from "./skill-sync"
 import { type WebhookTarget, testWebhook } from "./webhooks"
@@ -358,29 +369,42 @@ export function registerIpcHandlers(): void {
 
 	ipcMain.handle("agent-clis:detect", (_event, force?: boolean) => detectAgentClis(force))
 
-	// --- Agent subagents (delegate a task to a headless CLI agent) ---
+	// --- Agent sessions (persistent CLI-backed conversations) ---
+
+	// Session updates fan out to every window; the renderer filters by id.
+	getAgentHost().events.on("session:update", ({ sessionId, update }) => {
+		for (const win of BrowserWindow.getAllWindows()) {
+			if (!win.webContents.isDestroyed()) {
+				win.webContents.send("agent-session:update", sessionId, update)
+			}
+		}
+	})
 
 	ipcMain.handle(
-		"agent-subagent:run",
-		(
-			event,
-			runId: string,
-			runtimeId: AgentRuntimeId,
-			opts: AgentRunOptions & {
-				sessionKey?: string
-				imageAttachments?: { dataUrl: string; filename?: string }[]
-			},
-		) =>
-			runAgent(runId, runtimeId, opts, (update) => {
-				if (!event.sender.isDestroyed()) {
-					event.sender.send("agent-subagent:update", runId, update)
-				}
-			}),
+		"agent-session:open",
+		(_event, sessionId: string, runtimeId: AgentRuntimeId, opts: AgentSessionOpenOptions) =>
+			openAgentSession(sessionId, runtimeId, opts),
 	)
-	ipcMain.handle("agent-subagent:cancel", (_event, runId: string) => cancelAgent(runId))
+	ipcMain.handle("agent-session:prompt", (_event, sessionId: string, opts: AgentPromptOptions) =>
+		promptAgent(sessionId, opts),
+	)
+	ipcMain.handle("agent-session:steer", (_event, sessionId: string, text: string) =>
+		steerAgent(sessionId, text),
+	)
+	ipcMain.handle("agent-session:interrupt", (_event, sessionId: string) =>
+		interruptAgent(sessionId),
+	)
+	ipcMain.handle(
+		"agent-session:respond-permission",
+		(_event, sessionId: string, requestId: string, decision: AgentPermissionDecision) =>
+			respondAgentPermission(sessionId, requestId, decision),
+	)
+	ipcMain.handle("agent-session:close", (_event, sessionId: string) =>
+		closeAgentSession(sessionId),
+	)
 	// Runtime descriptors: install state, capabilities, and each CLI's own
 	// model catalog — the UI never hardcodes model lists.
-	ipcMain.handle("agent-subagent:runtimes", () => describeAgentRuntimes())
+	ipcMain.handle("agent-session:runtimes", () => describeAgentRuntimes())
 
 	// --- Open in external app ---
 

@@ -29,7 +29,7 @@ export function loadRuntimeDescriptors(): Promise<AgentRuntimeDescriptor[]> {
 		return Promise.resolve(descriptorCache.value)
 	}
 	if (!isElectron) return Promise.resolve([])
-	inflight ??= window.palot.agentSubagent
+	inflight ??= window.palot.agentSession
 		.describeRuntimes()
 		.then((descriptors) => {
 			descriptorCache = { at: Date.now(), value: descriptors }

@@ -264,8 +264,9 @@ export type AgentCliDetection = import("@palot/cli-registry").CliDetection
 /** Agent platform types (re-exported from @palot/agent-host, the core). */
 export type AgentRuntimeId = import("@palot/agent-host").AgentRuntimeId
 export type AgentSandbox = import("@palot/agent-host").AgentSandbox
-export type AgentRunOptions = import("@palot/agent-host").AgentRunOptions
 export type AgentUsage = import("@palot/agent-host").AgentUsage
+export type AgentPermissionDecision = import("@palot/agent-host").AgentPermissionDecision
+export type AgentPermissionRequest = import("@palot/agent-host").AgentPermissionRequest
 export type AgentRunResult = import("@palot/agent-host").AgentRunResult
 export type AgentUpdate = import("@palot/agent-host").AgentUpdate
 export type AgentModelInfo = import("@palot/agent-host").AgentModelInfo
@@ -633,23 +634,47 @@ export interface PalotAPI {
 		detect: (force?: boolean) => Promise<AgentCliDetection[]>
 	}
 
-	// Agent subagents (multi-CLI)
-	agentSubagent: {
-		/** Run a headless agent (Codex, Claude Code, …) for a delegated task. */
-		run: (
-			runId: string,
+	// Agent sessions (multi-CLI: Codex, Claude Code, …)
+	agentSession: {
+		/** Open (or reuse) the persistent session backing a chat. */
+		open: (
+			sessionId: string,
 			runtimeId: AgentRuntimeId,
-			opts: AgentRunOptions & {
-				sessionKey?: string
+			opts: {
+				cwd: string
+				sandbox?: AgentSandbox
+				model?: string
+				reasoningEffort?: string
+				resumeId?: string
+			},
+		) => Promise<{ threadId: string | null }>
+		/** Run one turn; resolves with the reduced result when it completes. */
+		prompt: (
+			sessionId: string,
+			opts: {
+				text: string
+				model?: string
+				reasoningEffort?: string
+				sandbox?: AgentSandbox
 				imageAttachments?: { dataUrl: string; filename?: string }[]
 			},
 		) => Promise<AgentRunResult>
+		/** Inject steering input into the running turn. */
+		steer: (sessionId: string, text: string) => Promise<void>
+		/** Stop the in-flight turn; the session survives. */
+		interrupt: (sessionId: string) => Promise<boolean>
+		/** Answer a pending tool-approval request. */
+		respondPermission: (
+			sessionId: string,
+			requestId: string,
+			decision: AgentPermissionDecision,
+		) => Promise<boolean>
+		/** Tear down the persistent session. */
+		close: (sessionId: string) => Promise<void>
 		/** Runtime descriptors: install state, capabilities, model catalog. */
 		describeRuntimes: () => Promise<AgentRuntimeDescriptor[]>
-		/** Cancel a running subagent. Returns true if a matching run was killed. */
-		cancel: (runId: string) => Promise<boolean>
-		/** Subscribe to streamed updates for any run. Returns an unsubscribe function. */
-		onUpdate: (callback: (runId: string, update: AgentUpdate) => void) => () => void
+		/** Subscribe to streamed updates for any session. Returns an unsubscribe function. */
+		onUpdate: (callback: (sessionId: string, update: AgentUpdate) => void) => () => void
 	}
 
 	// Onboarding

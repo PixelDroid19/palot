@@ -6,17 +6,10 @@ import { spawn } from "node:child_process"
 import { AgentBridge } from "../src/bridge"
 import { AgentHost } from "../src/host"
 import { MCP_PROXY_SOURCE } from "../src/mcp-proxy"
-import type { AgentAdapter, BridgeInfo } from "../src/types"
+import type { BridgeInfo } from "../src/types"
+import { FakeProvider } from "./fake-provider"
 
-const echoAdapter: AgentAdapter = {
-	id: "echo",
-	displayName: "Echo",
-	binary: "sh",
-	capabilities: { imageInput: false, reasoningEffort: false, resume: false },
-	listModels: async () => [],
-	buildCommand: (opts) => ({ args: ["-c", `echo "answer:${opts.prompt}"`] }),
-	parseLine: (line) => (line.trim() ? [{ kind: "message", text: line.trim() }] : []),
-}
+const echoProvider = new FakeProvider("echo", { reply: (input) => `answer:${input.text}` })
 
 let host: AgentHost
 let bridge: AgentBridge
@@ -27,8 +20,8 @@ beforeAll(async () => {
 	const dir = mkdtempSync(join(tmpdir(), "palot-bridge-"))
 	proxyPath = join(dir, "palot-mcp.cjs")
 	writeFileSync(proxyPath, MCP_PROXY_SOURCE)
-	host = new AgentHost({ builtinAdapters: false, resolveBinary: async () => "/bin/sh" })
-	host.adapters.register(echoAdapter)
+	host = new AgentHost({ builtinProviders: false, resolveBinary: async () => "/bin/sh" })
+	host.registerProvider(echoProvider)
 	bridge = new AgentBridge(host, { proxyScriptPath: proxyPath, nodeBinary: process.execPath })
 	info = await bridge.start()
 })

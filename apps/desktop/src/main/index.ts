@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url"
 import { app, BrowserWindow, Menu, session, shell } from "electron"
 import { initAutomations, shutdownAutomations } from "./automation"
 import { initCredentialStore } from "./credential-store"
+import { stopAgentBridge } from "./agents/service"
 import { getOpaqueWindowsPref, registerIpcHandlers } from "./ipc-handlers"
 import { installLiquidGlass, resolveWindowChrome } from "./liquid-glass"
 import { createLogger } from "./logger"
@@ -314,5 +315,7 @@ if (!gotLock) {
 		stopMdnsScanner()
 		stopServer()
 		stopAutoUpdater()
+		// Tear down CLI agent sessions/processes (app-server, SDK children).
+		void stopAgentBridge()
 	})
 }

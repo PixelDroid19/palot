@@ -8,7 +8,7 @@
  * localStorage by services/cli-chat.ts (restored at startup by the app shell).
  */
 import { atom } from "jotai"
-import type { AgentRuntimeId, AgentSandbox } from "../../preload/api"
+import type { AgentPermissionRequest, AgentRuntimeId, AgentSandbox } from "../../preload/api"
 import { appStore } from "./store"
 
 export interface CliSessionMeta {
@@ -24,6 +24,23 @@ export interface CliSessionMeta {
 }
 
 export const cliSessionsAtom = atom<Record<string, CliSessionMeta>>({})
+
+/** Tool-approval requests the agent is blocked on, per session. */
+export const cliPermissionsAtom = atom<Record<string, AgentPermissionRequest[]>>({})
+
+export function pushCliPermission(sessionId: string, request: AgentPermissionRequest): void {
+	const current = appStore.get(cliPermissionsAtom)
+	appStore.set(cliPermissionsAtom, {
+		...current,
+		[sessionId]: [...(current[sessionId] ?? []), request],
+	})
+}
+
+export function removeCliPermission(sessionId: string, requestId: string): void {
+	const current = appStore.get(cliPermissionsAtom)
+	const remaining = (current[sessionId] ?? []).filter((r) => r.requestId !== requestId)
+	appStore.set(cliPermissionsAtom, { ...current, [sessionId]: remaining })
+}
 
 /** True if the given session is backed by a CLI runtime. */
 export function isCliSession(sessionId: string): boolean {

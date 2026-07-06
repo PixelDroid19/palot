@@ -90,6 +90,7 @@ import {
 	type PromptMention,
 	reconcileMentions,
 } from "./prompt-mentions"
+import { CliApprovalBar } from "./cli-approval-bar"
 import { CliSessionToolbar } from "./cli-toolbar"
 import { PromptToolbar, StatusBar } from "./prompt-toolbar"
 import { SessionTaskList } from "./session-task-list"
@@ -1402,6 +1403,7 @@ function ChatInputSection({
 									onSelect={handleMentionSelect}
 									onClose={handleMentionClose}
 								/>
+								{isCli && <CliApprovalBar sessionId={agent.sessionId} />}
 								<PromptInput
 									className="rounded-xl"
 									accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"

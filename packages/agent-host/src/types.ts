@@ -3,9 +3,9 @@
  *
  * The core is deliberately tiny: it only knows about agents (adapters),
  * sessions, runs, events, and shared context. Everything provider-specific
- * lives in an {@link AgentAdapter}; everything app-specific (IPC, UI, storage)
+ * lives in an {@link AgentSessionProvider}; everything app-specific (IPC, UI, storage)
  * lives outside this package. New CLIs — including third-party ones — are
- * added by registering an adapter, never by modifying the core.
+ * added by registering a provider, never by modifying the core.
  */
 
 /**
@@ -19,6 +19,26 @@ export interface AgentUsage {
 	cachedInputTokens: number
 	outputTokens: number
 	reasoningOutputTokens: number
+}
+
+/** How a permission request may be answered. */
+export type AgentPermissionDecision = "accept" | "acceptForSession" | "decline"
+
+/**
+ * A tool/command approval the agent is waiting on. The run blocks until the
+ * embedder answers via `AgentSession.respondPermission(requestId, decision)`.
+ */
+export interface AgentPermissionRequest {
+	requestId: string
+	/** What kind of action needs approval (e.g. "command", "file-change", "tool"). */
+	action: string
+	/** Tool/command being requested, for display. */
+	name: string
+	detail?: string
+	/** Optional explanatory reason from the CLI (e.g. needs network access). */
+	reason?: string
+	/** Decisions the CLI supports for this request. */
+	decisions: AgentPermissionDecision[]
 }
 
 /** A normalized, UI-friendly update derived from a CLI's raw output. */
@@ -46,6 +66,10 @@ export type AgentUpdate =
 	  }
 	| { kind: "notice"; text: string }
 	| { kind: "usage"; usage: AgentUsage }
+	/** The agent requests approval; answer via `respondPermission`. */
+	| { kind: "permission"; request: AgentPermissionRequest }
+	/** A pending permission request was answered or cancelled. */
+	| { kind: "permission-resolved"; requestId: string; decision: AgentPermissionDecision | null }
 	| { kind: "unknown"; raw: unknown }
 
 export type AgentSandbox = "read-only" | "workspace-write" | "danger-full-access"
@@ -68,6 +92,12 @@ export interface AgentRuntimeCapabilities {
 	reasoningEffort: boolean
 	/** Can resume its own sessions for multi-turn context. */
 	resume: boolean
+	/** Surfaces tool-approval requests that the user answers interactively. */
+	permissions: boolean
+	/** Can interrupt an in-flight turn without losing the session. */
+	interrupt: boolean
+	/** Accepts steering input while a turn is running. */
+	steering: boolean
 }
 
 /** Full description of a runtime for pickers and settings UIs. */
@@ -100,32 +130,6 @@ export interface BridgeInfo {
 	proxyEnv?: Record<string, string>
 }
 
-export interface AgentRunOptions {
-	/** The task/instructions for the agent. */
-	prompt: string
-	/** Working root the agent operates in. */
-	cwd: string
-	/** Sandbox / permission posture. Adapters map this to their own flags. */
-	sandbox?: AgentSandbox
-	/** Optional model override. */
-	model?: string
-	/** Optional reasoning-effort override (adapter maps it to its own flag). */
-	reasoningEffort?: string
-	/**
-	 * Resume an existing conversation by its thread/session id (from a prior
-	 * run's result) to keep multi-turn context. Omit to start a fresh session.
-	 */
-	resumeId?: string
-	/** Absolute paths of image files to attach to the prompt. */
-	images?: string[]
-	/** Inter-agent bridge to expose to the CLI (adapters may ignore it). */
-	bridge?: BridgeInfo
-	/** Hard wall-clock limit for the run. Default: 10 minutes. */
-	timeoutMs?: number
-	/** Extra environment variables for the spawned process. */
-	env?: Record<string, string>
-}
-
 export interface AgentRunResult {
 	/** The agent's answer (joined message text). */
 	message: string
@@ -135,82 +139,89 @@ export interface AgentRunResult {
 	notices: string[]
 }
 
+/** Options for opening a persistent agent session. */
+export interface AgentSessionOptions {
+	/** Working root the agent operates in. */
+	cwd: string
+	/** Sandbox / permission posture. Providers map this to their native policy. */
+	sandbox?: AgentSandbox
+	/** Initial model (per-turn overrides win). */
+	model?: string
+	/** Initial reasoning effort (per-turn overrides win). */
+	reasoningEffort?: string
+	/** Resume the CLI's own thread/session by id. */
+	resumeId?: string
+	/** Inter-agent bridge to expose to the CLI (providers may ignore it). */
+	bridge?: BridgeInfo
+	/** Extra environment variables for the CLI process. */
+	env?: Record<string, string>
+}
+
+/** One user turn sent into a session. */
+export interface AgentTurnInput {
+	text: string
+	/** Absolute paths of image files to attach. */
+	images?: string[]
+	/** Model override for this turn and subsequent turns. */
+	model?: string
+	/** Reasoning-effort override for this turn and subsequent turns. */
+	reasoningEffort?: string
+	/** Sandbox override for this turn and subsequent turns. */
+	sandbox?: AgentSandbox
+}
+
 /**
- * Declarative description of how to drive one coding-agent CLI. Adapters hold
- * no process state: `buildCommand` and `parseLine` are pure, which keeps them
- * unit-testable against each CLI's real output.
+ * A live conversation with one CLI agent. The underlying process/thread stays
+ * alive across turns, so context, caches and tool state persist. All updates
+ * stream through the `onUpdate` callback supplied at open time.
  */
-export interface AgentAdapter {
+export interface AgentSession {
+	/** The CLI's own thread/session id once known (usable as `resumeId`). */
+	readonly threadId: string | null
+	/** True while a turn is executing. */
+	readonly busy: boolean
+	/**
+	 * Run one turn. Resolves when the turn completes (or is interrupted) with
+	 * the reduced result. Rejects on transport/session failure.
+	 */
+	send(input: AgentTurnInput): Promise<AgentRunResult>
+	/** Inject steering input into the running turn (capability `steering`). */
+	steer(text: string): Promise<void>
+	/** Stop the in-flight turn; the session remains usable. */
+	interrupt(): Promise<void>
+	/** Answer a pending permission request. */
+	respondPermission(requestId: string, decision: AgentPermissionDecision): void
+	/** Tear down the session and its process resources. */
+	close(): Promise<void>
+}
+
+/**
+ * How one coding-agent CLI is driven. Providers own real process state (a
+ * shared app-server, per-session SDK queries, …) — nothing is spawned per
+ * turn; that is what makes streaming, permissions and interrupts work the way
+ * the CLI's own UI does.
+ */
+export interface AgentSessionProvider {
 	id: AgentRuntimeId
 	displayName: string
-	/** Executable name to resolve on PATH. */
+	/** Executable name to resolve on PATH (install detection). */
 	binary: string
 	capabilities: AgentRuntimeCapabilities
 	/**
-	 * Discover the models this CLI can run — from the CLI's own catalog when it
-	 * publishes one (e.g. Codex's models cache), otherwise a maintained static
-	 * list. Never throws; returns the fallback on any error. The first entry
-	 * should be the "default" choice.
+	 * Discover the models this CLI can run from the CLI's own source of truth.
+	 * Never throws; returns a fallback on any error. First entry = default.
 	 */
-	listModels: () => Promise<AgentModelInfo[]>
-	/**
-	 * Build the non-interactive invocation for a run. When `stdin` is returned,
-	 * the runner writes it to the process and closes the pipe — preferred for
-	 * prompts, since argv has platform length limits and quoting hazards.
-	 */
-	buildCommand: (opts: AgentRunOptions) => { args: string[]; stdin?: string }
-	/**
-	 * Parse one line of stdout into zero or more normalized updates (a single
-	 * line may carry both a message and usage). Returns `[]` for blank or
-	 * unmeaningful lines. Must never throw.
-	 */
-	parseLine: (line: string) => AgentUpdate[]
+	listModels(): Promise<AgentModelInfo[]>
+	/** Open a persistent session. */
+	openSession(
+		opts: AgentSessionOptions,
+		onUpdate: (update: AgentUpdate) => void,
+	): Promise<AgentSession>
+	/** Release provider-wide resources (shared processes). */
+	dispose(): Promise<void>
 }
 
-/**
- * Fold a stream of updates into a final result. Multiple messages are joined
- * with blank lines; deltas only count when no complete message arrived; the
- * last usage/thread wins.
- */
-export function reduceAgentUpdates(updates: Iterable<AgentUpdate>): AgentRunResult {
-	const messages: string[] = []
-	const notices: string[] = []
-	let deltas = ""
-	let threadId: string | null = null
-	let usage: AgentUsage | null = null
-
-	for (const update of updates) {
-		switch (update.kind) {
-			case "thread":
-				threadId = update.threadId || threadId
-				break
-			case "message":
-				if (update.text) messages.push(update.text)
-				break
-			case "message-delta":
-				deltas += update.text
-				break
-			case "notice":
-				if (update.text) notices.push(update.text)
-				break
-			case "usage":
-				usage = update.usage
-				break
-			default:
-				break
-		}
-	}
-
-	// Deltas may start with a synthetic paragraph break (block separators).
-	return {
-		message: messages.length ? messages.join("\n\n") : deltas.trim(),
-		threadId,
-		usage,
-		notices,
-	}
-}
-
-// Shared parsing helpers for adapters.
+// Shared parsing helpers for providers.
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
 	return value != null && typeof value === "object" && !Array.isArray(value)

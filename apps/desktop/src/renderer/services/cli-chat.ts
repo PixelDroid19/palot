@@ -6,8 +6,20 @@
  * agent runtime layer in the main process, resuming the CLI's own session for
  * multi-turn context.
  */
-import type { AgentRuntimeId, AgentSandbox, AgentUpdate } from "../../preload/api"
-import { type CliSessionMeta, getCliMeta, patchCliMeta, setCliMeta } from "../atoms/cli-sessions"
+import type {
+	AgentPermissionDecision,
+	AgentRuntimeId,
+	AgentSandbox,
+	AgentUpdate,
+} from "../../preload/api"
+import {
+	type CliSessionMeta,
+	getCliMeta,
+	patchCliMeta,
+	pushCliPermission,
+	removeCliPermission,
+	setCliMeta,
+} from "../atoms/cli-sessions"
 import { messagesFamily, upsertMessageAtom } from "../atoms/messages"
 import { partsFamily, upsertPartAtom } from "../atoms/parts"
 import {
@@ -39,8 +51,8 @@ const RUNTIME_LABELS: Record<string, string> = {
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 
-/** Maps an active session to its in-flight run id, so a turn can be cancelled. */
-const activeRuns = new Map<string, string>()
+/** Sessions with an in-flight turn (interrupt/steer targets). */
+const activeTurns = new Set<string>()
 
 // ============================================================
 // Persistence — CLI transcripts survive reloads (localStorage)
@@ -151,6 +163,7 @@ export function forgetCliSession(sessionId: string): void {
 	localStorage.removeItem(SESSION_KEY_PREFIX + sessionId)
 	const ids = readIndex().filter((id) => id !== sessionId)
 	localStorage.setItem(INDEX_KEY, JSON.stringify(ids))
+	if (isElectron) void window.palot.agentSession.close(sessionId)
 }
 
 /** Force the active session's chat view to recompute (mirrors the SSE path). */
@@ -202,6 +215,33 @@ export async function runCliTurn(
 ): Promise<void> {
 	const meta = getCliMeta(sessionId)
 	if (!meta || !isElectron) return
+
+	// A message sent while a turn is running steers the live turn instead of
+	// starting a new one (the agent folds it into its current work).
+	if (activeTurns.has(sessionId)) {
+		const steerTs = Date.now()
+		const steerId = `cli-${steerTs}-0u`
+		appStore.set(upsertMessageAtom, {
+			id: steerId,
+			sessionID: sessionId,
+			role: "user",
+			time: { created: steerTs },
+			agent: meta.runtimeId,
+			model: { providerID: "cli", modelID: meta.runtimeId },
+		} as UserMessage)
+		appStore.set(upsertPartAtom, {
+			id: `${steerId}-text`,
+			sessionID: sessionId,
+			messageID: steerId,
+			type: "text",
+			text,
+		} as TextPart)
+		bump(sessionId)
+		await window.palot.agentSession.steer(sessionId, text).catch((err) => {
+			log.warn("Steering failed", { sessionId }, err)
+		})
+		return
+	}
 
 	// Only image attachments are forwarded (as data URLs; the main process
 	// writes them to temp files the CLI can read).
@@ -274,11 +314,10 @@ export async function runCliTurn(
 	let reasoningText = ""
 	let streamedDeltas = false
 	const notices: string[] = []
-	/** Tool-part state, keyed by the adapter's tool id (or a running counter). */
+	/** Tool-part state, keyed by the provider's tool id (or a running counter). */
 	const toolParts = new Map<string, { partId: string; name: string; start: number }>()
 	let toolSeq = 0
-	const runId = crypto.randomUUID()
-	activeRuns.set(sessionId, runId)
+	activeTurns.add(sessionId)
 
 	const writeText = () => {
 		appStore.set(upsertPartAtom, {
@@ -302,8 +341,8 @@ export async function runCliTurn(
 		bump(sessionId)
 	}
 
-	const unsubscribe = window.palot.agentSubagent.onUpdate((rid, update: AgentUpdate) => {
-		if (rid !== runId) return
+	const unsubscribe = window.palot.agentSession.onUpdate((sid, update: AgentUpdate) => {
+		if (sid !== sessionId) return
 		if (update.kind === "message-delta" && update.text) {
 			// Streaming: text arrives in chunks as the CLI produces it.
 			streamedDeltas = true
@@ -362,19 +401,31 @@ export async function runCliTurn(
 			bump(sessionId)
 		} else if (update.kind === "notice" && update.text) {
 			notices.push(update.text)
+		} else if (update.kind === "permission") {
+			// The agent is blocked on approval; surface it for the approval bar.
+			pushCliPermission(sessionId, update.request)
+			bump(sessionId)
+		} else if (update.kind === "permission-resolved") {
+			removeCliPermission(sessionId, update.requestId)
+			bump(sessionId)
 		}
 	})
 
 	try {
-		const result = await window.palot.agentSubagent.run(runId, meta.runtimeId, {
-			prompt: text,
+		// The persistent session is opened once and reused for every turn —
+		// context, caches and tool state live in the CLI's own process.
+		await window.palot.agentSession.open(sessionId, meta.runtimeId, {
 			cwd: meta.cwd || ".",
 			sandbox: meta.sandbox,
 			model: meta.model,
 			reasoningEffort: meta.effort,
 			resumeId: meta.threadId ?? undefined,
-			// Serializes turns of this chat session in the host.
-			sessionKey: sessionId,
+		})
+		const result = await window.palot.agentSession.prompt(sessionId, {
+			text,
+			model: meta.model ?? "",
+			reasoningEffort: meta.effort,
+			sandbox: meta.sandbox,
 			imageAttachments: images.length
 				? images.map((f) => ({ dataUrl: f.url, filename: f.filename }))
 				: undefined,
@@ -424,15 +475,32 @@ export async function runCliTurn(
 		log.error("CLI turn failed", { sessionId }, err)
 	} finally {
 		unsubscribe()
-		activeRuns.delete(sessionId)
+		activeTurns.delete(sessionId)
 		appStore.set(setSessionStatusAtom, { sessionId, status: { type: "idle" } })
 		bump(sessionId)
 		persistCliSession(sessionId)
 	}
 }
 
-/** Cancel the in-flight turn for a CLI session (best-effort). */
+/** Interrupt the in-flight turn for a CLI session; the session survives. */
 export function cancelCliTurn(sessionId: string): void {
-	const runId = activeRuns.get(sessionId)
-	if (isElectron && runId) window.palot.agentSubagent.cancel(runId)
+	if (isElectron && activeTurns.has(sessionId)) {
+		void window.palot.agentSession.interrupt(sessionId)
+	}
+}
+
+/** True while a turn is executing for this session. */
+export function isCliTurnActive(sessionId: string): boolean {
+	return activeTurns.has(sessionId)
+}
+
+/** Answer a pending tool-approval request. */
+export function respondCliPermission(
+	sessionId: string,
+	requestId: string,
+	decision: AgentPermissionDecision,
+): void {
+	if (!isElectron) return
+	removeCliPermission(sessionId, requestId)
+	void window.palot.agentSession.respondPermission(sessionId, requestId, decision)
 }

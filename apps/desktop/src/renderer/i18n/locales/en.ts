@@ -43,6 +43,12 @@ export const en = {
 		sandboxWorkspaceWrite: "Workspace write",
 		sandboxFullAccess: "Full access (agent tools)",
 	},
+	cliApprovals: {
+		title: "The agent wants to use {{name}}",
+		allow: "Allow",
+		allowSession: "Allow for session",
+		deny: "Deny",
+	},
 	settings: {
 		language: "Language",
 		languageDescription: "Language for newly-built parts of the interface",

@@ -1,83 +1,80 @@
 /**
  * AgentHost — the core of the platform. It owns:
  *
- *  - the adapter registry (which runtimes exist)
- *  - run lifecycle (spawn, stream, cancel, timeout)
- *  - per-session serialization (turns on one session never interleave) and a
- *    global concurrency cap (many sessions run in parallel, bounded)
- *  - the event bus every run publishes through
+ *  - the provider registry (which runtimes exist and how they're driven)
+ *  - persistent sessions (open, prompt, steer, interrupt, permissions, close)
+ *  - the event bus every session publishes through
  *  - the shared context store
- *  - delegation: any run can ask another runtime to do work (this is what the
- *    bridge's `palot_delegate` tool calls into)
+ *  - delegation: any run can ask another runtime to do work through an
+ *    ephemeral session (this is what the bridge's `palot_delegate` calls)
  *
  * The host knows nothing about Electron, IPC, or UI — embedders subscribe to
- * events and call `run`/`cancel`. That keeps the core portable (desktop app
- * today, a standalone CLI or server tomorrow).
+ * events and drive sessions. That keeps the core portable (desktop app today,
+ * a standalone CLI or server tomorrow).
  */
 import { whichOnPath } from "@palot/cli-registry"
-import { BUILTIN_ADAPTERS } from "./adapters/index"
 import { SharedContextStore } from "./context"
 import { EventBus } from "./events"
-import { AdapterRegistry } from "./registry"
-import { type RunHandle, spawnAgentRun } from "./runner"
+import { ClaudeProvider } from "./providers/claude"
+import { CodexProvider } from "./providers/codex"
 import type {
-	AgentAdapter,
-	AgentRunOptions,
+	AgentPermissionDecision,
 	AgentRunResult,
 	AgentRuntimeDescriptor,
 	AgentRuntimeId,
+	AgentSession,
+	AgentSessionOptions,
+	AgentSessionProvider,
+	AgentTurnInput,
 	AgentUpdate,
 	BridgeInfo,
 } from "./types"
 
 const RUNTIME_CACHE_TTL_MS = 60_000
+const DELEGATE_TIMEOUT_MS = 5 * 60 * 1000
 
 export interface HostEvents extends Record<string, unknown> {
-	"run:start": { runId: string; runtimeId: AgentRuntimeId }
-	"run:update": { runId: string; runtimeId: AgentRuntimeId; update: AgentUpdate }
-	"run:end": { runId: string; runtimeId: AgentRuntimeId; ok: boolean; error?: string }
+	"session:update": { sessionId: string; runtimeId: AgentRuntimeId; update: AgentUpdate }
+	"turn:start": { sessionId: string; runtimeId: AgentRuntimeId }
+	"turn:end": { sessionId: string; runtimeId: AgentRuntimeId; ok: boolean; error?: string }
 }
 
 export interface AgentHostOptions {
-	/** Max CLI processes running at once across all sessions. Default 8. */
-	maxConcurrentRuns?: number
-	/** Skip registering the built-in adapters (tests / custom embedders). */
-	builtinAdapters?: boolean
-	/** Resolve an adapter's binary to an absolute path. Default: PATH lookup. */
-	resolveBinary?: (adapter: AgentAdapter) => Promise<string | null>
-	/** Provide bridge info to inject into runs (set by the bridge server). */
+	/** Skip registering the built-in providers (tests / custom embedders). */
+	builtinProviders?: boolean
+	/** Resolve a provider's binary to an absolute path. Default: PATH lookup. */
+	resolveBinary?: (binary: string) => Promise<string | null>
+	/** Provide bridge info to inject into sessions (set by the bridge server). */
 	bridgeInfo?: () => BridgeInfo | null
 }
 
-interface QueueEntry {
-	task: () => Promise<void>
+interface SessionEntry {
+	session: AgentSession
+	runtimeId: AgentRuntimeId
 }
 
 export class AgentHost {
-	readonly adapters = new AdapterRegistry()
 	readonly context = new SharedContextStore()
 	readonly events = new EventBus<HostEvents>()
 
-	private active = new Map<string, RunHandle>()
-	/** Runs accepted but not yet spawned (waiting on session chain / cap). */
-	private pending = new Set<string>()
+	private providers = new Map<AgentRuntimeId, AgentSessionProvider>()
+	private sessions = new Map<string, SessionEntry>()
 	private runtimeCache: { at: number; value: AgentRuntimeDescriptor[] } | null = null
-	/** Runs cancelled before they reached the spawn stage (queued/waiting). */
-	private cancelledEarly = new Set<string>()
-	private sessionChains = new Map<string, Promise<void>>()
-	private queue: QueueEntry[] = []
-	private running = 0
-	private readonly maxConcurrent: number
-	private readonly resolveBinary: (adapter: AgentAdapter) => Promise<string | null>
+	private readonly resolveBinary: (binary: string) => Promise<string | null>
 	private bridgeInfo: () => BridgeInfo | null
 
 	constructor(options: AgentHostOptions = {}) {
-		this.maxConcurrent = options.maxConcurrentRuns ?? 8
-		this.resolveBinary = options.resolveBinary ?? ((adapter) => whichOnPath(adapter.binary))
+		this.resolveBinary = options.resolveBinary ?? ((binary) => whichOnPath(binary))
 		this.bridgeInfo = options.bridgeInfo ?? (() => null)
-		if (options.builtinAdapters !== false) {
-			for (const adapter of BUILTIN_ADAPTERS) this.adapters.register(adapter)
+		if (options.builtinProviders !== false) {
+			this.registerProvider(new CodexProvider(() => this.resolveBinary("codex")))
+			this.registerProvider(new ClaudeProvider(() => this.resolveBinary("claude")))
 		}
+	}
+
+	registerProvider(provider: AgentSessionProvider): void {
+		this.providers.set(provider.id, provider)
+		this.runtimeCache = null
 	}
 
 	/** Late-bind the bridge (it needs the host first, then the host needs it). */
@@ -85,92 +82,14 @@ export class AgentHost {
 		this.bridgeInfo = provider
 	}
 
-	/**
-	 * Run one agent turn. `sessionKey` serializes turns: two runs with the same
-	 * key never execute concurrently (a chat session is a sessionKey; delegated
-	 * one-shot runs pass a unique key). Updates stream via the event bus and the
-	 * optional `onUpdate`.
-	 */
-	async run(
-		runId: string,
-		runtimeId: AgentRuntimeId,
-		opts: AgentRunOptions,
-		extra: { sessionKey?: string; onUpdate?: (update: AgentUpdate) => void } = {},
-	): Promise<AgentRunResult> {
-		if (!opts.prompt.trim()) throw new Error("A task prompt is required")
-		const adapter = this.adapters.get(runtimeId)
-		if (!adapter) throw new Error(`Unknown agent runtime: ${runtimeId}`)
-
-		this.pending.add(runId)
-		const sessionKey = extra.sessionKey ?? runId
-		const previous = this.sessionChains.get(sessionKey) ?? Promise.resolve()
-
-		let release: () => void = () => {}
-		const chained = new Promise<void>((r) => {
-			release = r
-		})
-		this.sessionChains.set(sessionKey, chained)
-
-		try {
-			await previous
-			return await this.schedule(() => this.execute(runId, adapter, opts, extra.onUpdate))
-		} finally {
-			release()
-			this.pending.delete(runId)
-			this.cancelledEarly.delete(runId)
-			if (this.sessionChains.get(sessionKey) === chained) {
-				this.sessionChains.delete(sessionKey)
-			}
-		}
-	}
-
-	/**
-	 * Delegate a one-shot task to another runtime — the primitive behind
-	 * cross-agent capability sharing (Claude asking Codex for an image, Codex
-	 * asking Claude to reason). Delegations run read-only-by-default in the
-	 * caller's cwd unless the caller widens the sandbox.
-	 */
-	async delegate(args: {
-		runtimeId: AgentRuntimeId
-		prompt: string
-		cwd: string
-		sandbox?: AgentRunOptions["sandbox"]
-		model?: string
-		timeoutMs?: number
-	}): Promise<AgentRunResult> {
-		const runId = `delegate-${Math.random().toString(36).slice(2)}`
-		return this.run(runId, args.runtimeId, {
-			prompt: args.prompt,
-			cwd: args.cwd,
-			sandbox: args.sandbox ?? "read-only",
-			model: args.model,
-			timeoutMs: args.timeoutMs,
-		})
-	}
-
-	/** Cancel a running or still-queued run. Returns true if a run was found. */
-	cancel(runId: string): boolean {
-		const handle = this.active.get(runId)
-		if (handle) {
-			handle.cancel()
-			return true
-		}
-		// Not spawned yet (waiting on the session chain or the concurrency cap):
-		// mark it so execute() aborts before starting the process.
-		if (!this.pending.has(runId)) return false
-		this.cancelledEarly.add(runId)
-		return true
-	}
-
 	listRuntimes(): { id: AgentRuntimeId; displayName: string }[] {
-		return this.adapters.list().map((a) => ({ id: a.id, displayName: a.displayName }))
+		return [...this.providers.values()].map((p) => ({ id: p.id, displayName: p.displayName }))
 	}
 
 	/**
 	 * Full runtime descriptors (install state, capabilities, model catalog) for
-	 * pickers. Model catalogs come from each CLI's own source of truth, so the
-	 * app never hardcodes model lists. Cached briefly — CLIs don't change
-	 * mid-session, but a fresh install should show up without a restart.
+	 * pickers. Model catalogs come from each CLI's own source of truth. Cached
+	 * briefly — a fresh install should show up without a restart.
 	 */
 	async describeRuntimes(): Promise<AgentRuntimeDescriptor[]> {
 		const now = Date.now()
@@ -178,16 +97,16 @@ export class AgentHost {
 			return this.runtimeCache.value
 		}
 		const descriptors = await Promise.all(
-			this.adapters.list().map(async (adapter): Promise<AgentRuntimeDescriptor> => {
+			[...this.providers.values()].map(async (provider): Promise<AgentRuntimeDescriptor> => {
 				const [binary, models] = await Promise.all([
-					this.resolveBinary(adapter).catch(() => null),
-					adapter.listModels().catch(() => []),
+					this.resolveBinary(provider.binary).catch(() => null),
+					provider.listModels().catch(() => []),
 				])
 				return {
-					id: adapter.id,
-					displayName: adapter.displayName,
+					id: provider.id,
+					displayName: provider.displayName,
 					installed: !!binary,
-					capabilities: adapter.capabilities,
+					capabilities: provider.capabilities,
 					models,
 				}
 			}),
@@ -196,62 +115,131 @@ export class AgentHost {
 		return descriptors
 	}
 
-	// --- internals ---
-
-	private schedule<T>(task: () => Promise<T>): Promise<T> {
-		return new Promise<T>((resolve, reject) => {
-			this.queue.push({
-				task: () => task().then(resolve, reject),
-			})
-			this.pump()
-		})
+	/** Open (or return) the persistent session behind `sessionId`. */
+	async openSession(
+		sessionId: string,
+		runtimeId: AgentRuntimeId,
+		opts: Omit<AgentSessionOptions, "bridge">,
+	): Promise<AgentSession> {
+		const existing = this.sessions.get(sessionId)
+		if (existing) return existing.session
+		const provider = this.providers.get(runtimeId)
+		if (!provider) throw new Error(`Unknown agent runtime: ${runtimeId}`)
+		const session = await provider.openSession(
+			{ ...opts, bridge: this.bridgeInfo() ?? undefined },
+			(update) => this.events.emit("session:update", { sessionId, runtimeId, update }),
+		)
+		this.sessions.set(sessionId, { session, runtimeId })
+		return session
 	}
 
-	private pump(): void {
-		while (this.running < this.maxConcurrent && this.queue.length > 0) {
-			const entry = this.queue.shift()
-			if (!entry) break
-			this.running++
-			entry.task().finally(() => {
-				this.running--
-				this.pump()
-			})
-		}
+	getSession(sessionId: string): AgentSession | null {
+		return this.sessions.get(sessionId)?.session ?? null
 	}
 
-	private async execute(
-		runId: string,
-		adapter: AgentAdapter,
-		opts: AgentRunOptions,
-		onUpdate?: (update: AgentUpdate) => void,
-	): Promise<AgentRunResult> {
-		if (this.cancelledEarly.delete(runId)) {
-			throw new Error(`${adapter.displayName} run was cancelled`)
-		}
-		const binary = await this.resolveBinary(adapter)
-		if (!binary) throw new Error(`${adapter.displayName} CLI is not installed`)
-
-		const bridge = opts.bridge ?? this.bridgeInfo() ?? undefined
-		const handle = spawnAgentRun(adapter, binary, { ...opts, bridge }, (update) => {
-			this.events.emit("run:update", { runId, runtimeId: adapter.id, update })
-			onUpdate?.(update)
-		})
-		this.active.set(runId, handle)
-		this.events.emit("run:start", { runId, runtimeId: adapter.id })
+	/** Run one turn on an open session, emitting turn lifecycle events. */
+	async prompt(sessionId: string, input: AgentTurnInput): Promise<AgentRunResult> {
+		const entry = this.sessions.get(sessionId)
+		if (!entry) throw new Error(`No open session: ${sessionId}`)
+		if (!input.text.trim()) throw new Error("A task prompt is required")
+		this.events.emit("turn:start", { sessionId, runtimeId: entry.runtimeId })
 		try {
-			const result = await handle.result
-			this.events.emit("run:end", { runId, runtimeId: adapter.id, ok: true })
+			const result = await entry.session.send(input)
+			this.events.emit("turn:end", { sessionId, runtimeId: entry.runtimeId, ok: true })
 			return result
 		} catch (err) {
-			this.events.emit("run:end", {
-				runId,
-				runtimeId: adapter.id,
+			this.events.emit("turn:end", {
+				sessionId,
+				runtimeId: entry.runtimeId,
 				ok: false,
 				error: err instanceof Error ? err.message : String(err),
 			})
 			throw err
-		} finally {
-			this.active.delete(runId)
 		}
+	}
+
+	async steer(sessionId: string, text: string): Promise<void> {
+		const entry = this.sessions.get(sessionId)
+		if (!entry) throw new Error(`No open session: ${sessionId}`)
+		await entry.session.steer(text)
+	}
+
+	async interrupt(sessionId: string): Promise<boolean> {
+		const entry = this.sessions.get(sessionId)
+		if (!entry) return false
+		await entry.session.interrupt()
+		return true
+	}
+
+	respondPermission(
+		sessionId: string,
+		requestId: string,
+		decision: AgentPermissionDecision,
+	): boolean {
+		const entry = this.sessions.get(sessionId)
+		if (!entry) return false
+		entry.session.respondPermission(requestId, decision)
+		return true
+	}
+
+	async closeSession(sessionId: string): Promise<void> {
+		const entry = this.sessions.get(sessionId)
+		if (!entry) return
+		this.sessions.delete(sessionId)
+		await entry.session.close().catch(() => {})
+	}
+
+	/**
+	 * Delegate a one-shot task to another runtime — the primitive behind
+	 * cross-agent capability sharing. Runs in an ephemeral session that is
+	 * closed when the turn finishes.
+	 */
+	async delegate(args: {
+		runtimeId: AgentRuntimeId
+		prompt: string
+		cwd: string
+		sandbox?: AgentSessionOptions["sandbox"]
+		model?: string
+		timeoutMs?: number
+	}): Promise<AgentRunResult> {
+		const provider = this.providers.get(args.runtimeId)
+		if (!provider) throw new Error(`Unknown agent runtime: ${args.runtimeId}`)
+		let sessionRef: AgentSession | null = null
+		const session = await provider.openSession(
+			{ cwd: args.cwd, sandbox: args.sandbox ?? "read-only", model: args.model },
+			(update) => {
+				// Delegated one-shot runs auto-decline approvals: there is no user
+				// attached, and read-only work shouldn't need escalation.
+				if (update.kind === "permission") {
+					sessionRef?.respondPermission(update.request.requestId, "decline")
+				}
+			},
+		)
+		sessionRef = session
+		const timeoutMs = args.timeoutMs ?? DELEGATE_TIMEOUT_MS
+		try {
+			return await Promise.race([
+				session.send({ text: args.prompt }),
+				new Promise<never>((_, reject) => {
+					const timer = setTimeout(async () => {
+						await session.interrupt().catch(() => {})
+						reject(
+							new Error(
+								`${provider.displayName} delegate timed out after ${Math.round(timeoutMs / 1000)}s`,
+							),
+						)
+					}, timeoutMs)
+					timer.unref?.()
+				}),
+			])
+		} finally {
+			await session.close().catch(() => {})
+		}
+	}
+
+	/** Tear down all sessions and provider processes. */
+	async dispose(): Promise<void> {
+		await Promise.all([...this.sessions.keys()].map((id) => this.closeSession(id)))
+		await Promise.all([...this.providers.values()].map((p) => p.dispose().catch(() => {})))
 	}
 }
