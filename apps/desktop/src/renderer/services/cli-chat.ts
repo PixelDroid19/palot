@@ -527,10 +527,13 @@ export async function runCliTurn(
 			if (update.name && update.name !== "tool") entry.name = update.name
 			if (update.detail) entry.detail = update.detail
 			const running = update.status === "running"
-			// Running updates stream output chunks; the completed update carries
-			// the authoritative full output when the CLI provides one.
-			if (running && update.output) entry.output = (entry.output + update.output).slice(-8_000)
-			else if (update.output) entry.output = update.output
+			// Shell output streams as append-only chunks; everything else (plan
+			// snapshots, completed results) replaces the output wholesale.
+			if (running && update.output && update.name === "shell") {
+				entry.output = (entry.output + update.output).slice(-8_000)
+			} else if (update.output) {
+				entry.output = update.output
+			}
 			const input = entry.detail ? { detail: entry.detail } : {}
 			appStore.set(upsertPartAtom, {
 				id: entry.partId,

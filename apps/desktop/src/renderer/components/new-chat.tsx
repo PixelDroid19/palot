@@ -243,7 +243,14 @@ export function NewChat() {
 	const { t } = useTranslation()
 
 	// Session runtime: OpenCode (built-in) or a detected coding-agent CLI.
-	const [sessionRuntime, setSessionRuntime] = useState<SessionRuntimeId>("opencode")
+	// The last choice is remembered — no runtime is privileged over another.
+	const [sessionRuntime, setSessionRuntimeState] = useState<SessionRuntimeId>(
+		() => localStorage.getItem("palot:lastSessionRuntime") || "opencode",
+	)
+	const setSessionRuntime = (id: SessionRuntimeId) => {
+		setSessionRuntimeState(id)
+		localStorage.setItem("palot:lastSessionRuntime", id)
+	}
 	const [cliModel, setCliModel] = useState<string>("")
 	const [cliEffort, setCliEffort] = useState<string>("")
 	const [cliSandbox, setCliSandbox] = useState<AgentSandbox>("read-only")
@@ -254,7 +261,16 @@ export function NewChat() {
 	// flag CLIs that are installed but not logged in before a run fails.
 	const [cliAuth, setCliAuth] = useState<Record<string, string>>({})
 	useEffect(() => {
-		loadRuntimeDescriptors().then((all) => setCliRuntimes(all.filter((d) => d.installed)))
+		loadRuntimeDescriptors().then((all) => {
+			const installed = all.filter((d) => d.installed)
+			setCliRuntimes(installed)
+			// The remembered runtime may have been uninstalled since last use.
+			setSessionRuntimeState((current) =>
+				current !== "opencode" && !installed.some((d) => d.id === current)
+					? "opencode"
+					: current,
+			)
+		})
 		if ("palot" in window) {
 			window.palot.agentClis
 				.detect()

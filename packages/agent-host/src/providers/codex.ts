@@ -303,6 +303,29 @@ class CodexSession implements AgentSession {
 				this.handleItem(method.endsWith("/completed") ? "completed" : "started", params)
 				return
 			}
+			case "turn/plan/updated": {
+				// The agent's todo/plan — rendered as an updating tool card.
+				const steps = Array.isArray(params.plan) ? params.plan : []
+				const lines = steps
+					.map((s) => {
+						const step = asRecord(s)
+						const status = readString(step?.status)
+						const mark = status === "completed" ? "[x]" : status === "inProgress" ? "[~]" : "[ ]"
+						return `${mark} ${readString(step?.step)}`
+					})
+					.filter((line) => line.length > 4)
+				if (!lines.length) return
+				const done = steps.every((s) => asRecord(s)?.status === "completed")
+				this.onUpdate({
+					kind: "tool",
+					id: `plan-${this.currentTurnId ?? "turn"}`,
+					name: "plan",
+					detail: readString(params.explanation) || undefined,
+					status: done ? "completed" : "running",
+					output: lines.join("\n"),
+				})
+				return
+			}
 			case "thread/tokenUsage/updated": {
 				const total = asRecord(asRecord(params.tokenUsage)?.total)
 				if (total && this.turn) {
