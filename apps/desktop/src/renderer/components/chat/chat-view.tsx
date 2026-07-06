@@ -38,7 +38,7 @@ import {
 	useRef,
 	useState,
 } from "react"
-import { isCliSession } from "../../atoms/cli-sessions"
+import { cliSessionsAtom } from "../../atoms/cli-sessions"
 import { messagesFamily, removeMessageAtom } from "../../atoms/messages"
 import { projectModelsAtom, setProjectModelAtom } from "../../atoms/preferences"
 import type { SessionSetupPhase } from "../../atoms/sessions"
@@ -91,7 +91,7 @@ import {
 	reconcileMentions,
 } from "./prompt-mentions"
 import { CliApprovalBar } from "./cli-approval-bar"
-import { CliSessionToolbar } from "./cli-toolbar"
+import { CliSessionToolbar, SessionRuntimeSwitch } from "./cli-toolbar"
 import { PromptToolbar, StatusBar } from "./prompt-toolbar"
 import { SessionTaskList } from "./session-task-list"
 import { SkillPickerDialog } from "./skill-picker-dialog"
@@ -814,8 +814,9 @@ function ChatInputSection({
 	onForkFromTurn,
 }: ChatInputSectionProps) {
 	const [sending, setSending] = useState(false)
-	// CLI-backed sessions use their own model; hide the OpenCode agent/model picker.
-	const isCli = isCliSession(agent.sessionId)
+	// CLI-backed sessions use their own model; hide the OpenCode agent/model
+	// picker. Reactive so a mid-session runtime switch swaps the toolbar live.
+	const isCli = !!useAtomValue(cliSessionsAtom)[agent.sessionId]
 
 	// Tree-scoped interactive requests — bubbles up from sub-agent sessions.
 	// These replace the direct `agent.permissions` / `agent.questions` arrays
@@ -1448,6 +1449,7 @@ function ChatInputSection({
 											{!isCli && (
 												<>
 													<AttachButton disabled={!isConnected} />
+													<SessionRuntimeSwitch sessionId={agent.sessionId} current="opencode" />
 													<PromptToolbar
 														agents={openCodeAgents ?? []}
 														selectedAgent={selectedAgent}

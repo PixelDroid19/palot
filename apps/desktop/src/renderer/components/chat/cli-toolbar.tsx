@@ -5,25 +5,89 @@
  * Codex and Claude accept model overrides when resuming a session.
  */
 import { NativeSelect, NativeSelectOption } from "@palot/ui/components/native-select"
+import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import { useEffect, useState } from "react"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import { cliSessionsAtom, patchCliMeta } from "../../atoms/cli-sessions"
+import { useAgentActions } from "../../hooks/use-server"
 import { useTranslation } from "../../i18n/use-translation"
 import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
-import { persistCliSession } from "../../services/cli-chat"
+import {
+	persistCliSession,
+	switchCliRuntime,
+	switchCliSessionToOpenCode,
+} from "../../services/cli-chat"
+
+/**
+ * Runtime switcher available in EVERY chat (OpenCode or CLI-backed): one
+ * conversation can move between OpenCode, Codex and Claude Code mid-session.
+ * The transcript stays and the history is handed off to the new runtime, so
+ * context survives the switch.
+ */
+export function SessionRuntimeSwitch({
+	sessionId,
+	current,
+}: {
+	sessionId: string
+	current: string
+}) {
+	const { t } = useTranslation()
+	const navigate = useNavigate()
+	const params = useParams({ strict: false }) as { projectSlug?: string }
+	const { createSession } = useAgentActions()
+	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
+	useEffect(() => {
+		loadRuntimeDescriptors().then((all) => setRuntimes(all.filter((d) => d.installed)))
+	}, [])
+	if (runtimes.length === 0) return null
+
+	const switchTo = async (target: string) => {
+		if (target === current) return
+		if (target === "opencode") {
+			const newId = await switchCliSessionToOpenCode(sessionId, (directory, title) =>
+				createSession(directory, title),
+			)
+			if (newId && params.projectSlug) {
+				navigate({
+					to: "/project/$projectSlug/session/$sessionId",
+					params: { projectSlug: params.projectSlug, sessionId: newId },
+				})
+			}
+			return
+		}
+		await switchCliRuntime(sessionId, target)
+	}
+
+	return (
+		<NativeSelect
+			aria-label={t("runtimePicker.runtime")}
+			size="sm"
+			value={current}
+			onChange={(e) => void switchTo(e.target.value)}
+		>
+			<NativeSelectOption value="opencode">OpenCode</NativeSelectOption>
+			{runtimes.map((r) => (
+				<NativeSelectOption key={r.id} value={r.id}>
+					{r.displayName}
+				</NativeSelectOption>
+			))}
+		</NativeSelect>
+	)
+}
 
 export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 	const { t } = useTranslation()
 	const meta = useAtomValue(cliSessionsAtom)[sessionId]
-	const [descriptor, setDescriptor] = useState<AgentRuntimeDescriptor | undefined>()
+	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
 
 	const runtimeId = meta?.runtimeId
 	useEffect(() => {
 		if (!runtimeId) return
-		loadRuntimeDescriptors().then((all) => setDescriptor(all.find((d) => d.id === runtimeId)))
+		loadRuntimeDescriptors().then((all) => setRuntimes(all.filter((d) => d.installed)))
 	}, [runtimeId])
 
+	const descriptor = runtimes.find((d) => d.id === runtimeId)
 	if (!meta || !descriptor) return null
 
 	// Sessions persisted before a catalog change may reference a slug that is
@@ -45,6 +109,7 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 
 	return (
 		<div className="flex items-center gap-1.5">
+			<SessionRuntimeSwitch sessionId={sessionId} current={meta.runtimeId} />
 			{models.length > 0 && (
 				<NativeSelect
 					aria-label={t("runtimePicker.model")}

@@ -23,6 +23,7 @@ import {
 import { messagesFamily, upsertMessageAtom } from "../atoms/messages"
 import { partsFamily, upsertPartAtom } from "../atoms/parts"
 import {
+	removeSessionAtom,
 	sessionFamily,
 	setSessionErrorAtom,
 	setSessionStatusAtom,
@@ -171,6 +172,138 @@ function bump(sessionId: string) {
 	appStore.set(streamingVersionFamily(sessionId), (v) => v + 1)
 }
 
+// ============================================================
+// Runtime switching — one conversation, any CLI
+// ============================================================
+
+const HANDOFF_MAX_CHARS = 12_000
+
+/**
+ * Render the conversation so far as a plain-text transcript, for handing a
+ * session's context to a different runtime. Most recent turns win the budget.
+ */
+export function buildConversationHandoff(sessionId: string): string {
+	const messages = appStore.get(messagesFamily(sessionId))
+	const turns: string[] = []
+	for (const message of messages) {
+		const parts = appStore.get(partsFamily(message.id))
+		const text = parts
+			.filter((p): p is TextPart => p.type === "text")
+			.map((p) => p.text)
+			.join("\n")
+			.trim()
+		if (!text) continue
+		turns.push(`${message.role === "user" ? "User" : "Assistant"}: ${text}`)
+	}
+	let transcript = ""
+	for (let i = turns.length - 1; i >= 0; i--) {
+		const candidate = `${turns[i]}\n\n${transcript}`
+		if (candidate.length > HANDOFF_MAX_CHARS) break
+		transcript = candidate
+	}
+	return transcript.trim()
+}
+
+/**
+ * Switch a conversation to a different CLI runtime mid-session. The backing
+ * session of the old runtime is closed; the next prompt opens the new one and
+ * carries the conversation history, so no context is lost. Also converts an
+ * OpenCode-backed session into a CLI session (`cwd` required then).
+ */
+export async function switchCliRuntime(
+	sessionId: string,
+	runtimeId: AgentRuntimeId,
+	fallbackCwd?: string,
+): Promise<void> {
+	const meta = getCliMeta(sessionId)
+	if (meta?.runtimeId === runtimeId) return
+	const hasHistory = appStore.get(messagesFamily(sessionId)).length > 0
+	if (meta) {
+		if (isElectron) {
+			cancelCliTurn(sessionId)
+			void window.palot.agentSession.close(sessionId)
+		}
+		patchCliMeta(sessionId, {
+			runtimeId,
+			model: undefined,
+			effort: undefined,
+			threadId: null,
+			handoff: hasHistory,
+		})
+	} else {
+		// Converting an OpenCode session: same chat, prompts now route to the CLI.
+		const entry = appStore.get(sessionFamily(sessionId))
+		setCliMeta(sessionId, {
+			runtimeId,
+			cwd: entry?.directory ?? fallbackCwd ?? ".",
+			sandbox: "read-only",
+			threadId: null,
+			handoff: hasHistory,
+		})
+	}
+	persistCliSession(sessionId)
+	log.info("Switched session runtime", { sessionId, runtimeId })
+}
+
+/** Pending history handoffs for sessions switching TO OpenCode. */
+const opencodeHandoffs = new Map<string, string>()
+
+/** Consume (once) the history block for an OpenCode prompt after a switch. */
+export function consumeOpencodeHandoff(sessionId: string): string | null {
+	const handoff = opencodeHandoffs.get(sessionId)
+	if (handoff) opencodeHandoffs.delete(sessionId)
+	return handoff ?? null
+}
+
+/**
+ * Switch a CLI-backed conversation to OpenCode. OpenCode sessions live on the
+ * server with server-assigned ids, so the transcript is migrated to a fresh
+ * server session and the history rides along with the first prompt. Returns
+ * the new session id the caller should navigate to.
+ */
+export async function switchCliSessionToOpenCode(
+	sessionId: string,
+	createServerSession: (directory: string, title?: string) => Promise<Session | undefined>,
+): Promise<string | null> {
+	const meta = getCliMeta(sessionId)
+	const entry = appStore.get(sessionFamily(sessionId))
+	if (!meta || !entry) return null
+
+	cancelCliTurn(sessionId)
+	if (isElectron) void window.palot.agentSession.close(sessionId)
+
+	const created = await createServerSession(entry.directory, entry.session.title)
+	if (!created) return null
+
+	// Copy the local transcript so the conversation is visible in the new
+	// session (display only — the server learns the history via the handoff).
+	for (const message of appStore.get(messagesFamily(sessionId))) {
+		const newMessageId = `${message.id}-oc`
+		appStore.set(upsertMessageAtom, { ...message, id: newMessageId, sessionID: created.id })
+		for (const part of appStore.get(partsFamily(message.id))) {
+			appStore.set(upsertPartAtom, {
+				...part,
+				id: `${part.id}-oc`,
+				messageID: newMessageId,
+				sessionID: created.id,
+			} as Part)
+		}
+	}
+
+	const history = buildConversationHandoff(sessionId)
+	if (history) {
+		opencodeHandoffs.set(
+			created.id,
+			`Context: this conversation continues from another coding agent. History so far:\n\n<conversation-history>\n${history}\n</conversation-history>\n\nContinue seamlessly.`,
+		)
+	}
+
+	forgetCliSession(sessionId)
+	appStore.set(removeSessionAtom, sessionId)
+	log.info("Switched CLI session to OpenCode", { from: sessionId, to: created.id })
+	return created.id
+}
+
 /**
  * Create a CLI-backed session and register it. Returns the new session id.
  * The session appears in the sidebar and opens in the standard chat view.
@@ -241,6 +374,18 @@ export async function runCliTurn(
 			log.warn("Steering failed", { sessionId }, err)
 		})
 		return
+	}
+
+	// Runtime handoff: the runtime changed mid-conversation, so the first
+	// prompt to the new CLI carries the transcript. Built before the new user
+	// message is written; only `text` is displayed.
+	let promptText = text
+	if (meta.handoff) {
+		const history = buildConversationHandoff(sessionId)
+		if (history) {
+			promptText = `You are taking over an ongoing conversation from another coding agent. Conversation so far:\n\n<conversation-history>\n${history}\n</conversation-history>\n\nContinue seamlessly. The user's next message follows.\n\n${text}`
+		}
+		patchCliMeta(sessionId, { handoff: false })
 	}
 
 	// Only image attachments are forwarded (as data URLs; the main process
@@ -442,7 +587,7 @@ export async function runCliTurn(
 			resumeId: meta.threadId ?? undefined,
 		})
 		const result = await window.palot.agentSession.prompt(sessionId, {
-			text,
+			text: promptText,
 			model: meta.model ?? "",
 			reasoningEffort: meta.effort,
 			sandbox: meta.sandbox,

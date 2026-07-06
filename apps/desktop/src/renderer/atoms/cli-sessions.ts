@@ -21,6 +21,12 @@ export interface CliSessionMeta {
 	effort?: string
 	/** The CLI's own session id, used to resume for multi-turn context. */
 	threadId: string | null
+	/**
+	 * Set when the runtime changed mid-conversation (or an OpenCode session was
+	 * converted): the next prompt carries the conversation history so the new
+	 * CLI continues with full context.
+	 */
+	handoff?: boolean
 }
 
 export const cliSessionsAtom = atom<Record<string, CliSessionMeta>>({})

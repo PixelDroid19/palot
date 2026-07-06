@@ -7,7 +7,13 @@ import { upsertPartAtom } from "../atoms/parts"
 import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
-import { cancelCliTurn, forgetCliSession, persistCliSession, runCliTurn } from "../services/cli-chat"
+import {
+	cancelCliTurn,
+	consumeOpencodeHandoff,
+	forgetCliSession,
+	persistCliSession,
+	runCliTurn,
+} from "../services/cli-chat"
 import type {
 	FileAttachment,
 	FilePart,
@@ -129,8 +135,11 @@ export function useAgentActions() {
 				appStore.set(upsertPartAtom, optimisticFilePart)
 			}
 
-			// Build parts array for the API call
+			// Build parts array for the API call. A runtime switch (CLI → OpenCode)
+			// leaves a one-shot history block that rides with the first prompt.
 			const parts: Array<{ type: "text"; text: string } | FilePartInput> = [{ type: "text", text }]
+			const handoff = consumeOpencodeHandoff(sessionId)
+			if (handoff) parts.unshift({ type: "text", text: handoff })
 			for (const file of files) {
 				parts.push({
 					type: "file",
