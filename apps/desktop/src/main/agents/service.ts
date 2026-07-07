@@ -161,6 +161,15 @@ export function respondAgentPermission(
 	return getAgentHost().respondPermission(sessionId, requestId, decision)
 }
 
+/** Answer a pending structured question (Claude's AskUserQuestion tool). */
+export function answerAgentQuestion(
+	sessionId: string,
+	requestId: string,
+	answers: Record<string, string>,
+): boolean {
+	return getAgentHost().answerQuestion(sessionId, requestId, answers)
+}
+
 /** Tear down the persistent session (chat deleted / app closing). */
 export function closeAgentSession(sessionId: string): Promise<void> {
 	return getAgentHost().closeSession(sessionId)

@@ -182,6 +182,13 @@ export class AgentHost {
 		return true
 	}
 
+	answerQuestion(sessionId: string, requestId: string, answers: Record<string, string>): boolean {
+		const entry = this.sessions.get(sessionId)
+		if (!entry) return false
+		entry.session.answerQuestion(requestId, answers)
+		return true
+	}
+
 	async closeSession(sessionId: string): Promise<void> {
 		const entry = this.sessions.get(sessionId)
 		if (!entry) return

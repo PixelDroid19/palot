@@ -209,6 +209,9 @@ contextBridge.exposeInMainWorld("palot", {
 		/** Answer a pending tool-approval request. */
 		respondPermission: (sessionId: string, requestId: string, decision: string) =>
 			ipcRenderer.invoke("agent-session:respond-permission", sessionId, requestId, decision),
+		/** Answer a pending structured question (Claude's AskUserQuestion). */
+		answerQuestion: (sessionId: string, requestId: string, answers: Record<string, string>) =>
+			ipcRenderer.invoke("agent-session:answer-question", sessionId, requestId, answers),
 		/** Tear down the persistent session. */
 		close: (sessionId: string) => ipcRenderer.invoke("agent-session:close", sessionId),
 		/** Runtime descriptors: install state, capabilities, model catalog. */

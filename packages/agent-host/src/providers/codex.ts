@@ -208,6 +208,9 @@ class CodexSession implements AgentSession {
 		this.onUpdate({ kind: "permission-resolved", requestId, decision })
 	}
 
+	// Codex has no structured-question tool; approvals cover its interaction.
+	answerQuestion(): void {}
+
 	async close(): Promise<void> {
 		this.closed = true
 		this.cancelPendingPermissions()

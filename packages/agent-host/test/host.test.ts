@@ -50,6 +50,19 @@ describe("AgentHost sessions", () => {
 		expect(provider.sessions[0]?.lastDecision).toBe("acceptForSession")
 	})
 
+	test("structured questions round-trip through the host", async () => {
+		const provider = new FakeProvider("fake", { askQuestion: true })
+		const host = makeHost([provider])
+		host.events.on("session:update", (e) => {
+			if (e.update.kind === "question") {
+				host.answerQuestion("s1", e.update.request.requestId, { "Pick one:": "B" })
+			}
+		})
+		await host.openSession("s1", "fake", { cwd: "/tmp" })
+		await host.prompt("s1", { text: "ask me" })
+		expect(provider.sessions[0]?.lastAnswers).toEqual({ "Pick one:": "B" })
+	})
+
 	test("interrupt stops the running turn but keeps the session usable", async () => {
 		const provider = new FakeProvider("fake", { delayMs: 100 })
 		const host = makeHost([provider])

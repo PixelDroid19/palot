@@ -8,7 +8,12 @@
  * localStorage by services/cli-chat.ts (restored at startup by the app shell).
  */
 import { atom } from "jotai"
-import type { AgentPermissionRequest, AgentRuntimeId, AgentSandbox } from "../../preload/api"
+import type {
+	AgentPermissionRequest,
+	AgentQuestionRequest,
+	AgentRuntimeId,
+	AgentSandbox,
+} from "../../preload/api"
 import { appStore } from "./store"
 
 export interface CliSessionMeta {
@@ -46,6 +51,23 @@ export function removeCliPermission(sessionId: string, requestId: string): void 
 	const current = appStore.get(cliPermissionsAtom)
 	const remaining = (current[sessionId] ?? []).filter((r) => r.requestId !== requestId)
 	appStore.set(cliPermissionsAtom, { ...current, [sessionId]: remaining })
+}
+
+/** Structured questions (AskUserQuestion) the agent is waiting on, per session. */
+export const cliQuestionsAtom = atom<Record<string, AgentQuestionRequest[]>>({})
+
+export function pushCliQuestion(sessionId: string, request: AgentQuestionRequest): void {
+	const current = appStore.get(cliQuestionsAtom)
+	appStore.set(cliQuestionsAtom, {
+		...current,
+		[sessionId]: [...(current[sessionId] ?? []), request],
+	})
+}
+
+export function removeCliQuestion(sessionId: string, requestId: string): void {
+	const current = appStore.get(cliQuestionsAtom)
+	const remaining = (current[sessionId] ?? []).filter((r) => r.requestId !== requestId)
+	appStore.set(cliQuestionsAtom, { ...current, [sessionId]: remaining })
 }
 
 /** True if the given session is backed by a CLI runtime. */

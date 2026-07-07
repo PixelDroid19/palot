@@ -267,6 +267,7 @@ export type AgentSandbox = import("@palot/agent-host").AgentSandbox
 export type AgentUsage = import("@palot/agent-host").AgentUsage
 export type AgentPermissionDecision = import("@palot/agent-host").AgentPermissionDecision
 export type AgentPermissionRequest = import("@palot/agent-host").AgentPermissionRequest
+export type AgentQuestionRequest = import("@palot/agent-host").AgentQuestionRequest
 export type AgentRunResult = import("@palot/agent-host").AgentRunResult
 export type AgentUpdate = import("@palot/agent-host").AgentUpdate
 export type AgentModelInfo = import("@palot/agent-host").AgentModelInfo
@@ -668,6 +669,12 @@ export interface PalotAPI {
 			sessionId: string,
 			requestId: string,
 			decision: AgentPermissionDecision,
+		) => Promise<boolean>
+		/** Answer a pending structured question (Claude's AskUserQuestion). */
+		answerQuestion: (
+			sessionId: string,
+			requestId: string,
+			answers: Record<string, string>,
 		) => Promise<boolean>
 		/** Tear down the persistent session. */
 		close: (sessionId: string) => Promise<void>

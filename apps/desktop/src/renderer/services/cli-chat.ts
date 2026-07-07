@@ -17,7 +17,9 @@ import {
 	getCliMeta,
 	patchCliMeta,
 	pushCliPermission,
+	pushCliQuestion,
 	removeCliPermission,
+	removeCliQuestion,
 	setCliMeta,
 } from "../atoms/cli-sessions"
 import { messagesFamily, upsertMessageAtom } from "../atoms/messages"
@@ -576,6 +578,12 @@ export async function runCliTurn(
 		} else if (update.kind === "permission-resolved") {
 			removeCliPermission(sessionId, update.requestId)
 			bump(sessionId)
+		} else if (update.kind === "question") {
+			pushCliQuestion(sessionId, update.request)
+			bump(sessionId)
+		} else if (update.kind === "question-resolved") {
+			removeCliQuestion(sessionId, update.requestId)
+			bump(sessionId)
 		}
 	})
 
@@ -671,4 +679,15 @@ export function respondCliPermission(
 	if (!isElectron) return
 	removeCliPermission(sessionId, requestId)
 	void window.palot.agentSession.respondPermission(sessionId, requestId, decision)
+}
+
+/** Answer a pending structured question (AskUserQuestion). */
+export function answerCliQuestion(
+	sessionId: string,
+	requestId: string,
+	answers: Record<string, string>,
+): void {
+	if (!isElectron) return
+	removeCliQuestion(sessionId, requestId)
+	void window.palot.agentSession.answerQuestion(sessionId, requestId, answers)
 }

@@ -41,6 +41,7 @@ import type { AgentPermissionDecision, AgentRuntimeId } from "@palot/agent-host"
 import {
 	type AgentPromptOptions,
 	type AgentSessionOpenOptions,
+	answerAgentQuestion,
 	closeAgentSession,
 	describeAgentRuntimes,
 	getAgentHost,
@@ -398,6 +399,11 @@ export function registerIpcHandlers(): void {
 		"agent-session:respond-permission",
 		(_event, sessionId: string, requestId: string, decision: AgentPermissionDecision) =>
 			respondAgentPermission(sessionId, requestId, decision),
+	)
+	ipcMain.handle(
+		"agent-session:answer-question",
+		(_event, sessionId: string, requestId: string, answers: Record<string, string>) =>
+			answerAgentQuestion(sessionId, requestId, answers),
 	)
 	ipcMain.handle("agent-session:close", (_event, sessionId: string) =>
 		closeAgentSession(sessionId),

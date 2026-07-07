@@ -136,6 +136,10 @@ class ClaudeSession implements AgentSession {
 	>()
 	/** Tools the user allowed "for this session" (prefix rules like `Bash`). */
 	private sessionAllowedTools = new Set<string>()
+	private pendingQuestions = new Map<
+		string,
+		{ resolve: (answers: Record<string, string>) => void }
+	>()
 	private closed = false
 	private loop: Promise<void> | null = null
 	/** Set while an interrupt is in flight so its error result resolves softly. */
@@ -158,6 +162,13 @@ class ClaudeSession implements AgentSession {
 		const canUseTool: CanUseTool = async (toolName, input, { suggestions: _s, ...rest }) => {
 			void rest
 			if (this.closed) return { behavior: "deny", message: "Session closed" }
+			// AskUserQuestion is not an approval — it's a structured question whose
+			// answer is fed back through the tool's `answers` field. Surface it as a
+			// question and splice the user's choices into updatedInput.
+			if (toolName === "AskUserQuestion") {
+				const answers = await this.requestQuestion(asRecord(input))
+				return { behavior: "allow", updatedInput: { ...asRecord(input), answers } }
+			}
 			if (this.sessionAllowedTools.has(toolName)) {
 				return { behavior: "allow", updatedInput: input }
 			}
@@ -242,6 +253,7 @@ class ClaudeSession implements AgentSession {
 			this.busy = false
 			this.turn = null
 			this.cancelPendingPermissions()
+			this.cancelPendingQuestions()
 			pending?.reject(err instanceof Error ? err : new Error(message))
 			if (!this.closed && !pending) {
 				this.onUpdate({ kind: "notice", text: `Claude session error: ${message}` })
@@ -270,6 +282,7 @@ class ClaudeSession implements AgentSession {
 		this.busy = false
 		this.turn = null
 		this.cancelPendingPermissions()
+		this.cancelPendingQuestions()
 		this.onUpdate({
 			kind: "notice",
 			text: "This conversation's session expired. Send your message again to continue in a fresh session.",
@@ -348,9 +361,18 @@ class ClaudeSession implements AgentSession {
 		this.onUpdate({ kind: "permission-resolved", requestId, decision })
 	}
 
+	answerQuestion(requestId: string, answers: Record<string, string>): void {
+		const pending = this.pendingQuestions.get(requestId)
+		if (!pending) return
+		this.pendingQuestions.delete(requestId)
+		pending.resolve(answers)
+		this.onUpdate({ kind: "question-resolved", requestId })
+	}
+
 	async close(): Promise<void> {
 		this.closed = true
 		this.cancelPendingPermissions()
+		this.cancelPendingQuestions()
 		this.queue.close()
 		const q = this.q
 		this.q = null
@@ -396,6 +418,40 @@ class ClaudeSession implements AgentSession {
 			this.onUpdate({ kind: "permission-resolved", requestId, decision: null })
 		}
 		this.pendingPermissions.clear()
+	}
+
+	/** Surface a structured AskUserQuestion; resolves with the chosen answers. */
+	private requestQuestion(input: Record<string, unknown> | null): Promise<Record<string, string>> {
+		const rawQuestions = Array.isArray(input?.questions) ? input.questions : []
+		const questions = rawQuestions.map((q) => {
+			const record = asRecord(q)
+			const options = Array.isArray(record?.options) ? record.options : []
+			return {
+				question: readString(record?.question),
+				header: readString(record?.header) || undefined,
+				multiSelect: record?.multiSelect === true,
+				options: options.map((o) => {
+					const opt = asRecord(o)
+					return {
+						label: readString(opt?.label),
+						description: readString(opt?.description) || undefined,
+					}
+				}),
+			}
+		})
+		const requestId = `ask-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+		return new Promise((resolve) => {
+			this.pendingQuestions.set(requestId, { resolve })
+			this.onUpdate({ kind: "question", request: { requestId, questions } })
+		})
+	}
+
+	private cancelPendingQuestions(): void {
+		for (const [requestId, pending] of this.pendingQuestions) {
+			pending.resolve({})
+			this.onUpdate({ kind: "question-resolved", requestId })
+		}
+		this.pendingQuestions.clear()
 	}
 
 	private handleMessage(message: Record<string, unknown>): void {
@@ -480,6 +536,7 @@ class ClaudeSession implements AgentSession {
 				this.busy = false
 				this.turn = null
 				this.cancelPendingPermissions()
+				this.cancelPendingQuestions()
 				const usageRecord = asRecord(message.usage)
 				const usage: AgentUsage | null = usageRecord
 					? {

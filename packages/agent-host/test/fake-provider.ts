@@ -13,6 +13,8 @@ export interface FakeBehavior {
 	reply?: (input: AgentTurnInput, turnIndex: number) => string
 	/** Ask for permission before answering; the reply reflects the decision. */
 	askPermission?: boolean
+	/** Ask a structured question before answering; the reply echoes the answer. */
+	askQuestion?: boolean
 	/** Delay before resolving a turn (lets tests interrupt). */
 	delayMs?: number
 }
@@ -24,7 +26,9 @@ export class FakeSession implements AgentSession {
 	steered: string[] = []
 	closedCount = 0
 	lastDecision: AgentPermissionDecision | null = null
+	lastAnswers: Record<string, string> | null = null
 	private pendingPermission: ((d: AgentPermissionDecision) => void) | null = null
+	private pendingQuestion: ((a: Record<string, string>) => void) | null = null
 	private interruptFlag = false
 
 	constructor(
@@ -58,6 +62,25 @@ export class FakeSession implements AgentSession {
 				})
 				this.lastDecision = decision
 			}
+			if (this.behavior.askQuestion) {
+				const answers = await new Promise<Record<string, string>>((resolve) => {
+					this.pendingQuestion = resolve
+					this.onUpdate({
+						kind: "question",
+						request: {
+							requestId: "q-1",
+							questions: [
+								{
+									question: "Pick one:",
+									multiSelect: false,
+									options: [{ label: "A" }, { label: "B" }],
+								},
+							],
+						},
+					})
+				})
+				this.lastAnswers = answers
+			}
 			if (this.behavior.delayMs) {
 				await new Promise((r) => setTimeout(r, this.behavior.delayMs))
 			}
@@ -84,6 +107,11 @@ export class FakeSession implements AgentSession {
 	respondPermission(_requestId: string, decision: AgentPermissionDecision): void {
 		this.pendingPermission?.(decision)
 		this.pendingPermission = null
+	}
+
+	answerQuestion(_requestId: string, answers: Record<string, string>): void {
+		this.pendingQuestion?.(answers)
+		this.pendingQuestion = null
 	}
 
 	async close(): Promise<void> {

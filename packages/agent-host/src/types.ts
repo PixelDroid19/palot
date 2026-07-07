@@ -70,7 +70,39 @@ export type AgentUpdate =
 	| { kind: "permission"; request: AgentPermissionRequest }
 	/** A pending permission request was answered or cancelled. */
 	| { kind: "permission-resolved"; requestId: string; decision: AgentPermissionDecision | null }
+	/** The agent asks the user a structured question; answer via `answerQuestion`. */
+	| { kind: "question"; request: AgentQuestionRequest }
+	/** A pending question was answered or cancelled. */
+	| { kind: "question-resolved"; requestId: string }
 	| { kind: "unknown"; raw: unknown }
+
+/** One choice in a question the agent asks the user. */
+export interface AgentQuestionOption {
+	label: string
+	description?: string
+}
+
+/** A single question within an {@link AgentQuestionRequest}. */
+export interface AgentQuestion {
+	/** The full question text (also the key answers are returned under). */
+	question: string
+	/** Short chip label for the question (≤12 chars). */
+	header?: string
+	/** Whether more than one option may be selected. */
+	multiSelect: boolean
+	options: AgentQuestionOption[]
+}
+
+/**
+ * A structured multiple-choice question the agent poses (Claude's
+ * AskUserQuestion tool). The run blocks until answered via
+ * `AgentSession.answerQuestion(requestId, answers)`, where `answers` maps each
+ * question's text to the chosen option label(s).
+ */
+export interface AgentQuestionRequest {
+	requestId: string
+	questions: AgentQuestion[]
+}
 
 export type AgentSandbox = "read-only" | "workspace-write" | "danger-full-access"
 
@@ -191,6 +223,12 @@ export interface AgentSession {
 	interrupt(): Promise<void>
 	/** Answer a pending permission request. */
 	respondPermission(requestId: string, decision: AgentPermissionDecision): void
+	/**
+	 * Answer a pending structured question. `answers` maps each question's text
+	 * to the chosen option label(s) (comma-joined for multi-select). Providers
+	 * that don't surface questions may leave this a no-op.
+	 */
+	answerQuestion(requestId: string, answers: Record<string, string>): void
 	/** Tear down the session and its process resources. */
 	close(): Promise<void>
 }

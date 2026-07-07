@@ -91,6 +91,7 @@ import {
 	reconcileMentions,
 } from "./prompt-mentions"
 import { CliApprovalBar } from "./cli-approval-bar"
+import { CliQuestionBar } from "./cli-question-bar"
 import { CliSessionToolbar, SessionRuntimeSwitch } from "./cli-toolbar"
 import { PromptToolbar, StatusBar } from "./prompt-toolbar"
 import { SessionTaskList } from "./session-task-list"
@@ -1405,6 +1406,7 @@ function ChatInputSection({
 									onClose={handleMentionClose}
 								/>
 								{isCli && <CliApprovalBar sessionId={agent.sessionId} />}
+								{isCli && <CliQuestionBar sessionId={agent.sessionId} />}
 								<PromptInput
 									className="rounded-xl"
 									accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"
