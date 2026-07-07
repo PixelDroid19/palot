@@ -18,6 +18,9 @@ export const viewedSessionIdAtom = atom<string | null>(null)
 /** Whether the review panel is open (resets to closed on app start) */
 export const reviewPanelOpenAtom = atom(false)
 
+/** Whether the embedded terminal panel is open (resets on app start). */
+export const terminalPanelOpenAtom = atom(false)
+
 /**
  * File path to highlight in the review panel.
  * Set by external components (e.g. edit tool card "View diff" button).

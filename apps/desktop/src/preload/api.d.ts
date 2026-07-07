@@ -684,6 +684,16 @@ export interface PalotAPI {
 		onUpdate: (callback: (sessionId: string, update: AgentUpdate) => void) => () => void
 	}
 
+	// Embedded terminal (real PTY opened in the chat's directory)
+	terminal: {
+		create: (id: string, cwd: string, size: { cols: number; rows: number }) => Promise<void>
+		input: (id: string, data: string) => Promise<void>
+		resize: (id: string, cols: number, rows: number) => Promise<void>
+		kill: (id: string) => Promise<void>
+		onData: (callback: (id: string, data: string) => void) => () => void
+		onExit: (callback: (id: string, code: number) => void) => () => void
+	}
+
 	// Onboarding
 	// Automations
 	automation: {

@@ -226,6 +226,27 @@ contextBridge.exposeInMainWorld("palot", {
 		},
 	},
 
+	// --- Embedded terminal (real PTY in the chat's directory) ---
+
+	terminal: {
+		create: (id: string, cwd: string, size: { cols: number; rows: number }) =>
+			ipcRenderer.invoke("terminal:create", id, cwd, size),
+		input: (id: string, data: string) => ipcRenderer.invoke("terminal:input", id, data),
+		resize: (id: string, cols: number, rows: number) =>
+			ipcRenderer.invoke("terminal:resize", id, cols, rows),
+		kill: (id: string) => ipcRenderer.invoke("terminal:kill", id),
+		onData: (callback: (id: string, data: string) => void) => {
+			const listener = (_e: unknown, id: string, data: string) => callback(id, data)
+			ipcRenderer.on("terminal:data", listener)
+			return () => ipcRenderer.removeListener("terminal:data", listener)
+		},
+		onExit: (callback: (id: string, code: number) => void) => {
+			const listener = (_e: unknown, id: string, code: number) => callback(id, code)
+			ipcRenderer.on("terminal:exit", listener)
+			return () => ipcRenderer.removeListener("terminal:exit", listener)
+		},
+	},
+
 	// --- Open in external app ---
 
 	openIn: {

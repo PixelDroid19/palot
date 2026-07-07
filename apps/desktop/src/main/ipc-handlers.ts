@@ -13,6 +13,7 @@ import {
 	updateAutomation,
 } from "./automation"
 import type { CreateAutomationInput, UpdateAutomationInput } from "./automation/types"
+import { terminalManager } from "./terminal"
 import { installCli, isCliInstalled, uninstallCli } from "./cli-install"
 import { deleteCredential, getCredential, storeCredential } from "./credential-store"
 import {
@@ -411,6 +412,30 @@ export function registerIpcHandlers(): void {
 	// Runtime descriptors: install state, capabilities, and each CLI's own
 	// model catalog — the UI never hardcodes model lists.
 	ipcMain.handle("agent-session:runtimes", () => describeAgentRuntimes())
+
+	// --- Embedded terminal (real PTY, opened in the chat's directory) ---
+
+	ipcMain.handle(
+		"terminal:create",
+		(event, id: string, cwd: string, size: { cols: number; rows: number }) => {
+			const sender = event.sender
+			terminalManager.create(id, cwd, size, {
+				onData: (data) => {
+					if (!sender.isDestroyed()) sender.send("terminal:data", id, data)
+				},
+				onExit: (code) => {
+					if (!sender.isDestroyed()) sender.send("terminal:exit", id, code)
+				},
+			})
+		},
+	)
+	ipcMain.handle("terminal:input", (_event, id: string, data: string) =>
+		terminalManager.write(id, data),
+	)
+	ipcMain.handle("terminal:resize", (_event, id: string, cols: number, rows: number) =>
+		terminalManager.resize(id, cols, rows),
+	)
+	ipcMain.handle("terminal:kill", (_event, id: string) => terminalManager.kill(id))
 
 	// --- Open in external app ---
 

@@ -26,7 +26,12 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
-import { reviewPanelOpenAtom, reviewPanelSettingsAtom, sessionDiffStatsFamily } from "../atoms/ui"
+import {
+	reviewPanelOpenAtom,
+	reviewPanelSettingsAtom,
+	sessionDiffStatsFamily,
+	terminalPanelOpenAtom,
+} from "../atoms/ui"
 import { activeServerConfigAtom } from "../atoms/connection"
 import { appStore } from "../atoms/store"
 import { clearSessionUnreadAtom, viewedSessionAtom } from "../atoms/unread"
@@ -44,6 +49,7 @@ import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backen
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
 import { PalotWordmark } from "./palot-wordmark"
+import { TerminalPanel } from "./chat/terminal-panel"
 import { ReviewPanel } from "./review/review-panel"
 import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
@@ -145,6 +151,7 @@ export function AgentDetail({
 	// Review panel state
 	const [reviewPanelOpen, setReviewPanelOpen] = useAtom(reviewPanelOpenAtom)
 	const [reviewSettings, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
+	const [terminalPanelOpen, setTerminalPanelOpen] = useAtom(terminalPanelOpenAtom)
 
 	// Keyboard shortcut: Cmd+Shift+D to toggle review panel
 	useEffect(() => {
@@ -159,10 +166,15 @@ export function AgentDetail({
 					setReviewSettings((prev) => ({ ...prev, expanded: !prev.expanded }))
 				}
 			}
+			// Cmd/Ctrl+J toggles the embedded terminal (common terminal shortcut).
+			if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === "j") {
+				e.preventDefault()
+				setTerminalPanelOpen((prev) => !prev)
+			}
 		}
 		document.addEventListener("keydown", handleKeyDown)
 		return () => document.removeEventListener("keydown", handleKeyDown)
-	}, [setReviewPanelOpen, setReviewSettings, reviewPanelOpen])
+	}, [setReviewPanelOpen, setReviewSettings, reviewPanelOpen, setTerminalPanelOpen])
 
 	// Track the viewed session and clear its unread mark (#128).
 	useEffect(() => {
@@ -229,6 +241,8 @@ export function AgentDetail({
 				projectSlug={projectSlug}
 				reviewPanelOpen={reviewPanelOpen}
 				onToggleReviewPanel={() => setReviewPanelOpen((prev) => !prev)}
+				terminalPanelOpen={terminalPanelOpen}
+				onToggleTerminalPanel={() => setTerminalPanelOpen((prev) => !prev)}
 			/>,
 		)
 
@@ -246,6 +260,8 @@ export function AgentDetail({
 		setAppBarContent,
 		reviewPanelOpen,
 		setReviewPanelOpen,
+		terminalPanelOpen,
+		setTerminalPanelOpen,
 	])
 
 	const chatContent = (
@@ -308,8 +324,22 @@ export function AgentDetail({
 
 	return (
 		<div className="flex h-full">
-			{/* Chat panel -- takes remaining space */}
-			<div className="min-w-0 flex-1 flex flex-col">{chatContent}</div>
+			{/* Chat + terminal column */}
+			<div className="min-w-0 flex-1 flex flex-col">
+				<div className="min-h-0 flex-1 flex flex-col">{chatContent}</div>
+				{/* Terminal dock -- opens a real shell in the chat's directory */}
+				<div
+					className="shrink-0 overflow-hidden border-t border-border transition-[height] duration-200 ease-in-out"
+					style={{ height: terminalPanelOpen ? "40%" : 0 }}
+				>
+					{terminalPanelOpen && (
+						<TerminalPanel
+							sessionId={agent.sessionId}
+							cwd={agent.worktreePath ?? agent.directory}
+						/>
+					)}
+				</div>
+			</div>
 
 			{/* Review panel -- slides in/out from right */}
 			<div
@@ -342,6 +372,8 @@ function SessionAppBarContent({
 	projectSlug,
 	reviewPanelOpen,
 	onToggleReviewPanel,
+	terminalPanelOpen,
+	onToggleTerminalPanel,
 }: {
 	agent: Agent
 	isEditingTitle: boolean
@@ -355,6 +387,8 @@ function SessionAppBarContent({
 	projectSlug?: string
 	reviewPanelOpen: boolean
 	onToggleReviewPanel: () => void
+	terminalPanelOpen: boolean
+	onToggleTerminalPanel: () => void
 }) {
 	const navigate = useNavigate()
 	const diffStats = useAtomValue(sessionDiffStatsFamily(agent.sessionId))
@@ -462,6 +496,29 @@ function SessionAppBarContent({
 					</TooltipTrigger>
 					<TooltipContent>
 						{reviewPanelOpen ? "Hide changes panel" : "Show changes panel"} (Cmd+Shift+D)
+					</TooltipContent>
+				</Tooltip>
+
+				{/* Embedded terminal toggle */}
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<button
+								type="button"
+								onClick={onToggleTerminalPanel}
+								className={cn(
+									"flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
+									terminalPanelOpen
+										? "bg-muted text-foreground"
+										: "text-muted-foreground hover:bg-muted hover:text-foreground",
+								)}
+							/>
+						}
+					>
+						<TerminalIcon className="size-3.5" />
+					</TooltipTrigger>
+					<TooltipContent>
+						{terminalPanelOpen ? "Hide terminal" : "Open terminal in project"} (Cmd+J)
 					</TooltipContent>
 				</Tooltip>
 

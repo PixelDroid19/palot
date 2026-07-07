@@ -10,6 +10,13 @@ files:
   # Native N-API addon for macOS liquid glass / vibrancy effects.
   # Must be included because externalizeDepsPlugin keeps it external.
   - "node_modules/electron-liquid-glass/**/*"
+  # node-pty backs the embedded terminal; externalized (native), so ship it.
+  - "node_modules/node-pty/**/*"
+
+# node-pty's prebuilt binary + spawn-helper must stay outside the asar so the
+# OS can exec them (posix_spawn can't run a helper packed inside app.asar).
+asarUnpack:
+  - "node_modules/node-pty/**/*"
 
 # Bundle the CLI launcher script into the app package.
 # macOS: Contents/Resources/bin/palot
