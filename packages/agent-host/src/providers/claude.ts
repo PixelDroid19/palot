@@ -140,6 +140,8 @@ class ClaudeSession implements AgentSession {
 	private loop: Promise<void> | null = null
 	/** Set while an interrupt is in flight so its error result resolves softly. */
 	private interrupted = false
+	/** Whether the current query emitted its `system/init` (successful startup). */
+	private sawInit = false
 
 	constructor(
 		private readonly opts: AgentSessionOptions,
@@ -201,6 +203,7 @@ class ClaudeSession implements AgentSession {
 	/** (Re)create the SDK query and start pumping its messages. */
 	private ensureQuery(): void {
 		if (this.q) return
+		this.sawInit = false
 		this.queue = new InputQueue()
 		this.q = query({ prompt: this.queue, options: this.buildOptions() })
 		this.loop = this.pump(this.q)
@@ -209,6 +212,9 @@ class ClaudeSession implements AgentSession {
 	private async pump(q: Query): Promise<void> {
 		try {
 			for await (const message of q) {
+				// Stop feeding the session once a newer query has taken over (the
+				// old query may keep emitting after a stale-resume retry).
+				if (this.q !== q) break
 				this.handleMessage(message as unknown as Record<string, unknown>)
 			}
 			// Iterator ended (session closed by CLI or restart).
@@ -225,19 +231,56 @@ class ClaudeSession implements AgentSession {
 				})
 			}
 		} catch (err) {
-			if (this.q === q) this.q = null
+			// A newer query already took over this session (e.g. a stale-resume
+			// retry). This is the old query winding down — it must not touch the
+			// active turn or emit errors for work the new query now owns.
+			if (this.q !== q) return
+			this.q = null
+			const message = err instanceof Error ? err.message : String(err)
 			const pending = this.turn
+			if (pending && this.tryRecoverStaleResume(message, pending)) return
 			this.busy = false
 			this.turn = null
 			this.cancelPendingPermissions()
-			pending?.reject(err instanceof Error ? err : new Error(String(err)))
+			pending?.reject(err instanceof Error ? err : new Error(message))
 			if (!this.closed && !pending) {
-				this.onUpdate({
-					kind: "notice",
-					text: `Claude session error: ${err instanceof Error ? err.message : String(err)}`,
-				})
+				this.onUpdate({ kind: "notice", text: `Claude session error: ${message}` })
 			}
 		}
+	}
+
+	/**
+	 * A stale/expired resume id makes the SDK fail at startup with "No
+	 * conversation found with session ID …", which would otherwise brick the
+	 * thread — every future turn re-resumes the same dead id and fails again.
+	 * Detect it (query errors before `system/init` with nothing streamed, or an
+	 * explicit "no conversation found"), drop the resume anchor, and resolve the
+	 * turn with an actionable notice. The next prompt opens a clean session, so
+	 * the thread stays usable instead of going permanently read-only.
+	 * Returns true when handled (the caller must stop failing the turn).
+	 */
+	private tryRecoverStaleResume(errorText: string, pending: PendingTurn): boolean {
+		if (!this.threadId) return false
+		const looksLikeStaleResume =
+			(!this.sawInit && !pending.message) || /no conversation found|session id/i.test(errorText)
+		if (!looksLikeStaleResume) return false
+		// Clear the dead anchor and force a fresh query on the next send.
+		this.threadId = null
+		this.q = null
+		this.busy = false
+		this.turn = null
+		this.cancelPendingPermissions()
+		this.onUpdate({
+			kind: "notice",
+			text: "This conversation's session expired. Send your message again to continue in a fresh session.",
+		})
+		pending.resolve({
+			message: pending.message.replace(/^\s+/, ""),
+			threadId: null,
+			usage: pending.usage,
+			notices: [...pending.notices, "Session expired — resend to continue."],
+		})
+		return true
 	}
 
 	async send(input: AgentTurnInput): Promise<AgentRunResult> {
@@ -268,15 +311,16 @@ class ClaudeSession implements AgentSession {
 			})
 		}
 
+		const userMessage = {
+			type: "user",
+			message: { role: "user", content: content as never },
+			parent_tool_use_id: null,
+		} as SDKUserMessage
 		this.busy = true
 		const done = new Promise<AgentRunResult>((resolve, reject) => {
 			this.turn = { resolve, reject, message: "", usage: null, notices: [] }
 		})
-		this.queue.push({
-			type: "user",
-			message: { role: "user", content: content as never },
-			parent_tool_use_id: null,
-		} as SDKUserMessage)
+		this.queue.push(userMessage)
 		return done
 	}
 
@@ -360,6 +404,7 @@ class ClaudeSession implements AgentSession {
 		switch (message.type) {
 			case "system": {
 				if (message.subtype === "init") {
+					this.sawInit = true
 					const sessionId = readString(message.session_id)
 					if (sessionId) {
 						this.threadId = sessionId
@@ -463,6 +508,8 @@ class ClaudeSession implements AgentSession {
 						})
 						return
 					}
+					const errText = `${readString(message.result)} ${readString(message.subtype)}`
+					if (this.tryRecoverStaleResume(errText, pending)) return
 					pending.reject(new Error(readString(message.result) || "Claude reported an error"))
 					return
 				}
