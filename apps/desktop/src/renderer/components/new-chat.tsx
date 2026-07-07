@@ -220,6 +220,33 @@ function DraftSync({ setDraft }: { setDraft: (text: string) => void }) {
 	return null
 }
 
+/** Per-runtime CLI defaults (model/effort/sandbox), remembered across sessions. */
+interface CliRuntimePrefs {
+	model: string
+	effort: string
+	sandbox: AgentSandbox
+}
+const CLI_PREFS_KEY = "palot:cliRuntimePrefs"
+
+function loadCliPrefs(runtimeId: string): CliRuntimePrefs | null {
+	try {
+		const all = JSON.parse(localStorage.getItem(CLI_PREFS_KEY) || "{}")
+		return all[runtimeId] ?? null
+	} catch {
+		return null
+	}
+}
+
+function saveCliPrefs(runtimeId: string, prefs: CliRuntimePrefs): void {
+	try {
+		const all = JSON.parse(localStorage.getItem(CLI_PREFS_KEY) || "{}")
+		all[runtimeId] = prefs
+		localStorage.setItem(CLI_PREFS_KEY, JSON.stringify(all))
+	} catch {
+		// Non-fatal: preferences are a convenience, not required state.
+	}
+}
+
 export function NewChat() {
 	const { projectSlug } = useParams({ strict: false })
 	const projects = useProjectList()
@@ -251,9 +278,17 @@ export function NewChat() {
 		setSessionRuntimeState(id)
 		localStorage.setItem("palot:lastSessionRuntime", id)
 	}
-	const [cliModel, setCliModel] = useState<string>("")
-	const [cliEffort, setCliEffort] = useState<string>("")
-	const [cliSandbox, setCliSandbox] = useState<AgentSandbox>("read-only")
+	const initialPrefs = loadCliPrefs(sessionRuntime)
+	const [cliModel, setCliModel] = useState<string>(initialPrefs?.model ?? "")
+	const [cliEffort, setCliEffort] = useState<string>(initialPrefs?.effort ?? "")
+	const [cliSandbox, setCliSandbox] = useState<AgentSandbox>(initialPrefs?.sandbox ?? "read-only")
+	// Persist the CLI defaults per runtime so the picker restores them next time.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed by runtime
+	useEffect(() => {
+		if (isCliRuntime(sessionRuntime)) {
+			saveCliPrefs(sessionRuntime, { model: cliModel, effort: cliEffort, sandbox: cliSandbox })
+		}
+	}, [cliModel, cliEffort, cliSandbox, sessionRuntime])
 	// Runtime descriptors come from the agent-host core: install state,
 	// capabilities, and each CLI's own model catalog (never hardcoded here).
 	const [cliRuntimes, setCliRuntimes] = useState<AgentRuntimeDescriptor[]>([])
@@ -866,9 +901,13 @@ export function NewChat() {
 											size="sm"
 											value={sessionRuntime}
 											onChange={(e) => {
-												setSessionRuntime(e.target.value as SessionRuntimeId)
-												setCliModel("")
-												setCliEffort("")
+												const next = e.target.value as SessionRuntimeId
+												setSessionRuntime(next)
+												// Restore this runtime's remembered defaults (if any).
+												const prefs = loadCliPrefs(next)
+												setCliModel(prefs?.model ?? "")
+												setCliEffort(prefs?.effort ?? "")
+												setCliSandbox(prefs?.sandbox ?? "read-only")
 											}}
 										>
 											<NativeSelectOption value="opencode">OpenCode</NativeSelectOption>
