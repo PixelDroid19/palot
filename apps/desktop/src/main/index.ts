@@ -204,6 +204,21 @@ async function createWindow(): Promise<BrowserWindow> {
 		win.show()
 	})
 
+	// Safety net: if the first paint never arrives (slow load, compositor
+	// hiccup), show the window anyway after 4s rather than leaving the user
+	// staring at nothing. Without this a stalled renderer reads as "won't open".
+	const showFallback = setTimeout(() => {
+		if (!win.isDestroyed() && !win.isVisible()) win.show()
+	}, 4_000)
+	win.once("ready-to-show", () => clearTimeout(showFallback))
+
+	// A crashed renderer paints a blank/gray window and never recovers on its
+	// own; reload once so a transient GPU/JS failure doesn't strand the app.
+	win.webContents.on("render-process-gone", (_event, details) => {
+		if (details.reason === "clean-exit" || win.isDestroyed()) return
+		win.webContents.reloadIgnoringCache()
+	})
+
 	// Install liquid glass effect after window creation (tier 1 only)
 	if (chrome.tier === "liquid-glass") {
 		await installLiquidGlass(win, isOpaque)
