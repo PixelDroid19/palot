@@ -52,6 +52,8 @@ const TOOL_RESULT_MAX_CHARS = 4_000
 
 function permissionMode(sandbox: AgentSandbox | undefined): PermissionMode {
 	switch (sandbox) {
+		case "plan":
+			return "plan"
 		case "danger-full-access":
 			return "bypassPermissions"
 		case "workspace-write":

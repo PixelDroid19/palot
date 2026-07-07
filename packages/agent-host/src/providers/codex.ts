@@ -47,6 +47,15 @@ function approvalPolicy(sandbox: AgentSandbox | undefined): string {
 	return sandbox === "danger-full-access" ? "never" : "on-request"
 }
 
+/**
+ * Codex's sandbox flag only knows read-only/workspace-write/full. Codex has no
+ * native plan mode, so `plan` maps to read-only — the agent can explore and
+ * draft a plan but any write requires approval, matching plan-mode intent.
+ */
+function codexSandbox(sandbox: AgentSandbox | undefined): string {
+	return sandbox && sandbox !== "plan" ? sandbox : "read-only"
+}
+
 function toolNameForItem(itemType: string): string {
 	switch (itemType) {
 		case "commandExecution":
@@ -135,7 +144,7 @@ class CodexSession implements AgentSession {
 			: undefined
 		const params = {
 			cwd: this.opts.cwd,
-			sandbox: this.opts.sandbox ?? "read-only",
+			sandbox: codexSandbox(this.opts.sandbox),
 			approvalPolicy: approvalPolicy(this.opts.sandbox),
 			...(this.opts.model ? { model: this.opts.model } : {}),
 			...(config ? { config } : {}),

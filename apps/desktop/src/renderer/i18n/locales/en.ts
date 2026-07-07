@@ -39,6 +39,7 @@ export const en = {
 		effortDefault: "Effort: Default",
 		effortLevel: "Effort: {{level}}",
 		sandbox: "Sandbox",
+		sandboxPlan: "Plan (read-only)",
 		sandboxReadOnly: "Read-only",
 		sandboxWorkspaceWrite: "Workspace write",
 		sandboxFullAccess: "Full access (agent tools)",

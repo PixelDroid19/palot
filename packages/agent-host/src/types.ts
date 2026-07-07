@@ -104,7 +104,14 @@ export interface AgentQuestionRequest {
 	questions: AgentQuestion[]
 }
 
-export type AgentSandbox = "read-only" | "workspace-write" | "danger-full-access"
+/**
+ * Permission posture for a session. `plan` is a read-only planning mode: the
+ * agent may explore and propose a plan but must not write or run
+ * side-effecting actions until the user approves it (Claude's native plan
+ * mode). It always wins over a more permissive level, so a plan turn can never
+ * leak writes.
+ */
+export type AgentSandbox = "plan" | "read-only" | "workspace-write" | "danger-full-access"
 
 /** A model a runtime can run, discovered from the CLI's own catalog. */
 export interface AgentModelInfo {

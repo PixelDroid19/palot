@@ -38,6 +38,7 @@ export const es: LocaleMessages = {
 		effortDefault: "Esfuerzo: Por defecto",
 		effortLevel: "Esfuerzo: {{level}}",
 		sandbox: "Sandbox",
+		sandboxPlan: "Plan (solo lectura)",
 		sandboxReadOnly: "Solo lectura",
 		sandboxWorkspaceWrite: "Escritura en el proyecto",
 		sandboxFullAccess: "Acceso total (herramientas de agente)",

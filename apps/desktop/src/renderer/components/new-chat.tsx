@@ -905,6 +905,9 @@ export function NewChat() {
 											value={cliSandbox}
 											onChange={(e) => setCliSandbox(e.target.value as AgentSandbox)}
 										>
+											<NativeSelectOption value="plan">
+												{t("runtimePicker.sandboxPlan")}
+											</NativeSelectOption>
 											<NativeSelectOption value="read-only">
 												{t("runtimePicker.sandboxReadOnly")}
 											</NativeSelectOption>

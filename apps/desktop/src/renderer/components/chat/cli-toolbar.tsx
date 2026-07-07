@@ -130,6 +130,7 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 				value={meta.sandbox}
 				onChange={(e) => apply({ sandbox: e.target.value as AgentSandbox })}
 			>
+				<NativeSelectOption value="plan">{t("runtimePicker.sandboxPlan")}</NativeSelectOption>
 				<NativeSelectOption value="read-only">
 					{t("runtimePicker.sandboxReadOnly")}
 				</NativeSelectOption>
