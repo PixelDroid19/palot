@@ -16,12 +16,16 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`packages/agent-host`**: The multi-agent core (`@palot/agent-host`) -- provider-agnostic `AgentHost` (adapter registry, run lifecycle, per-session serialization, event bus, shared context) plus the `AgentBridge` (loopback HTTP + stdio MCP proxy) that gives every running CLI `palot_delegate`/`palot_context_*` tools so agents can use each other's capabilities. Adapters for Claude Code (stream-json) and Codex (jsonl) live here; a new CLI registers an adapter, never touches the core. `apps/desktop/src/main/agents/service.ts` is only the Electron wiring. Caveat: sandboxed `codex exec` auto-cancels MCP tool calls (openai/codex#24135), so Codex only gets the bridge in full-access runs. OpenCode remains the built-in runtime for its rich SDK-backed chat.
 - **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`)
 - **`apps/server`**: Bun + Hono backend -- used only in browser-mode dev (`dev:web`), NOT bundled with Electron
+- **`apps/server` also exports**: the `@palot/server` package for shared client/types used by desktop and server-facing flows
+- **CLI runtime boundary**: runtime orchestration lives in `apps/desktop/src/main/agents/` plus `packages/agent-host` (provider adapters, runner lifecycle, queued run cancellation, context handoff, persistence behavior)
 
 ### Desktop App Layout (`apps/desktop/src/`)
 
 - **`main/`** -- Electron main process (Node.js): window management, IPC handlers, OpenCode server lifecycle, filesystem reads
+- **`main/agents/`** -- CLI runtime orchestration and process/session lifecycle for non-OpenCode runtimes (Claude/Codex/etc.)
 - **`preload/`** -- Electron preload bridge: exposes `window.palot` API via `contextBridge`
 - **`renderer/`** -- React app (browser context): components, hooks, services, atoms (Jotai)
+- **`shared/`** -- Cross-process shared constants/types used by main and renderer setup
 
 ## Skills
 
@@ -36,16 +40,19 @@ generic knowledge.
 ## Commands
 
 - **Electron dev**: `cd apps/desktop && bun run dev` (electron-vite, renderer on port 1420)
-- **Browser-only dev**: `cd apps/desktop && bun run dev:web` (Vite only, needs `apps/server` running)
+- **Electron dev (root)**: `bun run dev:desktop`
+- **Electron dev (Wayland)**: `bun run dev:desktop:wayland`
+- **Browser-only dev**: `bun run dev:web` (Vite only, needs `apps/server` running)
 - **Backend server** (browser mode only): `cd apps/server && bun run dev` (port 3100)
 - **Lint check**: `bun run lint` (from root)
 - **Lint/format fix**: `bun run lint:fix` or `bunx biome check --write .` (from root)
+- **Run lint in package**: `cd <package-dir> && bun run lint`
 - **Type check all**: `bun run check-types` (from root, via Turborepo)
 - **Type check desktop**: `cd apps/desktop && bun run check-types` (uses `tsgo`)
 - **Run all tests**: `bun run test` (from root, via Turborepo -- runs every package's `test` task)
-- **Run one package's tests**: `cd packages/configconv && bun test` (or `packages/cli-registry`)
+- **Run one package's tests**: `cd packages/agent-host && bun test` (or `packages/cli-registry`, `packages/configconv`)
 - **Run single test file**: `cd packages/configconv && bun test test/converter/config.test.ts`
-- **Run tests by name**: `cd packages/configconv && bun test --grep "converts model"`
+- **Run tests by name**: `cd packages/configconv && bun test --grep "converts model"` (applies to `agent-host` and `cli-registry` too)
 - **Rebuild server types**: `cd apps/server && bun run build:types` (required after adding server routes)
 - **Add UI component**: `cd packages/ui && bunx shadcn@latest add <component>`
 - **Package**: `cd apps/desktop && bun run package` (or `package:linux`, `package:mac`, `package:win`, `package:all`)
@@ -55,10 +62,10 @@ generic knowledge.
 
 ## Code Style
 
-### Formatting (enforced by Biome 2.3.14)
+### Formatting (enforced by Biome 2.4.2)
 
 - Tabs for indentation (width 2), line width 100, LF line endings
-- Double quotes, no semicolons, trailing commas everywhere
+- Double quotes, semicolons as needed, trailing commas everywhere
 - Arrow functions always use parentheses: `(x) => x`
 - Run `bunx biome check --write .` from root to auto-fix
 
@@ -117,6 +124,13 @@ generic knowledge.
 ### Accessibility
 
 - Always add `aria-hidden="true"` to decorative inline SVGs
+
+### Current runtime realities (post-Damien changes)
+
+- CLI Agents is the first-class, multi-conversation workspace (`subagents-page`, `agent-detail`, `cli-sessions` atoms), not a side-panel prototype.
+- CLI sessions persist across app reloads and support mid-session runtime switching with explicit context handoff.
+- Streaming tool/tooling output, queued-message cancellation, approval gates, and model/effort/sandbox controls are normal paths.
+- Terminal-in-chat integration (`terminal.ts`, `terminal-panel`) is now part of runtime workflows.
 
 ## Critical Footguns
 
@@ -189,8 +203,9 @@ Palot follows the XDG Base Directory Specification (same convention as OpenCode)
 ## Testing
 
 - **Framework**: Bun's built-in test runner (`bun:test`) -- no vitest/jest/playwright
-- **Tests exist only in `packages/configconv`** -- desktop app, server, and UI have no tests
-- Tests are NOT run in CI (only lint, type-check, and build are)
-- Run all: `cd packages/configconv && bun test`
+- **Tests exist in**: `packages/agent-host`, `packages/cli-registry`, and `packages/configconv` (desktop app, server, and UI still have no tests)
+- CI runs `bun run test`
+- Run all: `bun run test` (from root)
+- Run all in one package: `cd packages/configconv && bun test`
 - Run one file: `cd packages/configconv && bun test test/converter/mcp.test.ts`
 - Run by name: `cd packages/configconv && bun test --grep "pattern"`
