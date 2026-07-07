@@ -174,6 +174,32 @@ function bump(sessionId: string) {
 	appStore.set(streamingVersionFamily(sessionId), (v) => v + 1)
 }
 
+/**
+ * Model/provider errors sometimes arrive as a raw JSON blob (e.g.
+ * `{"type":"error","error":{"type":"rate_limit_error","message":"…"}}`), which
+ * reads as broken text in the chat (t3code #3747). Extract the human message
+ * when the text is JSON; otherwise return it unchanged.
+ */
+function humanizeError(text: string): string {
+	const trimmed = text.trim()
+	if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return text
+	try {
+		const parsed = JSON.parse(trimmed)
+		const msg =
+			parsed?.error?.message ??
+			parsed?.error?.error?.message ??
+			parsed?.message ??
+			(typeof parsed?.error === "string" ? parsed.error : null)
+		if (typeof msg === "string" && msg) {
+			const type = parsed?.error?.type ?? parsed?.type
+			return type && type !== "error" ? `${msg} (${type})` : msg
+		}
+	} catch {
+		// Not JSON after all — fall through to the original text.
+	}
+	return text
+}
+
 // ============================================================
 // Runtime switching — one conversation, any CLI
 // ============================================================
@@ -608,7 +634,7 @@ export async function runCliTurn(
 		})
 		// Finalize the assistant text (result.message is the authoritative answer;
 		// notices — e.g. a CLI-reported error — are the fallback when it's empty).
-		const noticeText = [...notices, ...result.notices].join("\n\n")
+		const noticeText = [...notices, ...result.notices].map(humanizeError).join("\n\n")
 		const finalText =
 			result.message || messageText.replace(/^\s+/, "") || (noticeText && `⚠ ${noticeText}`)
 		appStore.set(upsertPartAtom, {
@@ -636,7 +662,7 @@ export async function runCliTurn(
 		} as AssistantMessage)
 		if (result.threadId) patchCliMeta(sessionId, { threadId: result.threadId })
 	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err)
+		const message = humanizeError(err instanceof Error ? err.message : String(err))
 		appStore.set(upsertPartAtom, {
 			id: textPartId,
 			sessionID: sessionId,
