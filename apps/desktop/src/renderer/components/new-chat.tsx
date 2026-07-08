@@ -72,9 +72,11 @@ import { CliOptionSelect } from "./chat/cli-toolbar"
 import { PromptAttachmentPreview } from "./chat/prompt-attachments"
 import { StatusBar } from "./chat/prompt-toolbar"
 import {
-	type RuntimeConfigToolbarProps,
-	RuntimeConfigToolbar,
-} from "./chat/runtime-config-toolbar"
+	buildCliNewChatRuntimeConfig,
+	buildOpenCodeNewChatRuntimeConfig,
+	type NewChatRuntimeConfig,
+} from "./chat/runtime-config-state"
+import { RuntimeConfigToolbar } from "./chat/runtime-config-toolbar"
 import { PalotWordmark } from "./palot-wordmark"
 
 // ============================================================
@@ -234,21 +236,6 @@ interface CliRuntimePrefs {
 	effort: string
 	sandbox: AgentSandbox
 }
-
-type NewChatRuntimeConfig =
-	| {
-			kind: "cli"
-			runtimeId: Exclude<SessionRuntimeId, "opencode">
-			toolbarProps: RuntimeConfigToolbarProps
-			model?: string
-			effort?: string
-			sandbox: AgentSandbox
-	  }
-	| {
-			kind: "opencode"
-			toolbarProps: RuntimeConfigToolbarProps
-			worktreeMode: "local" | "worktree"
-	  }
 
 const CLI_PREFS_KEY = "palot:cliRuntimePrefs"
 
@@ -531,48 +518,40 @@ export function NewChat() {
 
 	const runtimeConfig = useMemo<NewChatRuntimeConfig | null>(() => {
 		if (activeCliRuntime) {
-			return {
-				kind: "cli",
+			return buildCliNewChatRuntimeConfig({
 				runtimeId: activeCliRuntime.id,
-				toolbarProps: {
-					kind: "cli",
-					models: cliModels,
-					modelValue: resolvedCliModel ?? "",
-					onModelChange: (value: string) => {
-						setCliModel(value)
-						setCliEffort("")
-					},
-					sandboxValue: cliSandbox,
-					onSandboxChange: setCliSandbox,
-					efforts: cliEfforts,
-					effortValue: cliEffort,
-					onEffortChange: setCliEffort,
+				models: cliModels,
+				modelValue: resolvedCliModel ?? "",
+				onModelChange: (value: string) => {
+					setCliModel(value)
+					setCliEffort("")
 				},
+				sandboxValue: cliSandbox,
+				onSandboxChange: setCliSandbox,
+				efforts: cliEfforts,
+				effortValue: cliEffort,
+				onEffortChange: setCliEffort,
 				model: resolvedCliModel,
 				effort: resolvedCliEffort,
 				sandbox: cliSandbox,
-			}
+			})
 		}
 
 		if (sessionRuntime === "opencode") {
-			return {
-				kind: "opencode",
-				toolbarProps: {
-					kind: "opencode",
-					agents: openCodeAgents ?? [],
-					selectedAgent,
-					defaultAgent: config?.defaultAgent,
-					onSelectAgent: setSelectedAgent,
-					providers,
-					effectiveModel,
-					hasModelOverride: !!selectedModel,
-					onSelectModel: handleModelSelect,
-					recentModels,
-					selectedVariant,
-					onSelectVariant: setSelectedVariant,
-				},
+			return buildOpenCodeNewChatRuntimeConfig({
+				agents: openCodeAgents ?? [],
+				selectedAgent,
+				defaultAgent: config?.defaultAgent,
+				onSelectAgent: setSelectedAgent,
+				providers,
+				effectiveModel,
+				hasModelOverride: !!selectedModel,
+				onSelectModel: handleModelSelect,
+				recentModels,
+				selectedVariant,
+				onSelectVariant: setSelectedVariant,
 				worktreeMode,
-			}
+			})
 		}
 
 		return null

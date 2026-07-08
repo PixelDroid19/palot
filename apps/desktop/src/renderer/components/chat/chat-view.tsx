@@ -95,9 +95,11 @@ import { CliQuestionBar } from "./cli-question-bar"
 import { SessionRuntimeSwitch } from "./cli-toolbar"
 import { StatusBar } from "./prompt-toolbar"
 import {
-	type RuntimeConfigToolbarProps,
-	RuntimeConfigToolbar,
-} from "./runtime-config-toolbar"
+	buildCliChatRuntimeConfig,
+	buildOpenCodeChatRuntimeConfig,
+	type ChatRuntimeConfig,
+} from "./runtime-config-state"
+import { RuntimeConfigToolbar } from "./runtime-config-toolbar"
 import { SessionTaskList } from "./session-task-list"
 import { SkillPickerDialog } from "./skill-picker-dialog"
 import { SlashCommandPopover, type SlashCommandPopoverHandle } from "./slash-command-popover"
@@ -818,29 +820,6 @@ function ChatInputSection({
 	reviewPanelOpen,
 	onForkFromTurn,
 }: ChatInputSectionProps) {
-	type ChatRuntimeConfig =
-		| {
-				kind: "cli-session"
-				runtimeSwitchCurrent: string
-				toolbarProps: RuntimeConfigToolbarProps
-		  }
-		| {
-				kind: "opencode"
-				runtimeSwitchCurrent: "opencode"
-				toolbarProps: RuntimeConfigToolbarProps
-				projectModel:
-					| {
-							directory: string
-							model: ModelRef & { variant?: string; agent?: string }
-					  }
-					| null
-				sendOptions: {
-					model?: ModelRef
-					agentName?: string
-					variant?: string
-				}
-		  }
-
 	const [sending, setSending] = useState(false)
 	// CLI-backed sessions use their own model; hide the OpenCode agent/model
 	// picker. Reactive so a mid-session runtime switch swaps the toolbar live.
@@ -1015,32 +994,23 @@ function ChatInputSection({
 	const chatRuntimeConfig = useMemo<ChatRuntimeConfig>(
 		() =>
 			isCli
-				? {
-						kind: "cli-session",
-						runtimeSwitchCurrent: cliMeta?.runtimeId ?? "opencode",
-						toolbarProps: {
-							kind: "cli-session",
-							sessionId: agent.sessionId,
-						},
-				  }
-				: {
-						kind: "opencode",
-						runtimeSwitchCurrent: "opencode",
-						toolbarProps: {
-							kind: "opencode",
-							agents: openCodeAgents ?? [],
-							selectedAgent,
-							defaultAgent: config?.defaultAgent,
-							onSelectAgent: setSelectedAgent,
-							providers: providers ?? null,
-							effectiveModel,
-							hasModelOverride: !!selectedModel,
-							onSelectModel: handleModelSelect,
-							recentModels,
-							selectedVariant,
-							onSelectVariant: setSelectedVariant,
-							disabled: !isConnected,
-						},
+				? buildCliChatRuntimeConfig({
+						sessionId: agent.sessionId,
+						runtimeId: cliMeta?.runtimeId ?? "opencode",
+					})
+				: buildOpenCodeChatRuntimeConfig({
+						agents: openCodeAgents ?? [],
+						selectedAgent,
+						defaultAgent: config?.defaultAgent,
+						onSelectAgent: setSelectedAgent,
+						providers: providers ?? null,
+						effectiveModel,
+						hasModelOverride: !!selectedModel,
+						onSelectModel: handleModelSelect,
+						recentModels,
+						selectedVariant,
+						onSelectVariant: setSelectedVariant,
+						disabled: !isConnected,
 						projectModel:
 							effectiveModel && agent.directory
 								? {
@@ -1057,7 +1027,7 @@ function ChatInputSection({
 							agentName: selectedAgent || undefined,
 							variant: selectedVariant,
 						},
-				  },
+					}),
 		[
 			agent.directory,
 			agent.sessionId,
