@@ -1,15 +1,4 @@
 import {
-	SearchableListPopover,
-	SearchableListPopoverContent,
-	SearchableListPopoverEmpty,
-	SearchableListPopoverGroup,
-	SearchableListPopoverItem,
-	SearchableListPopoverList,
-	SearchableListPopoverSearch,
-	SearchableListPopoverTrigger,
-	useSearchableListPopoverSearch,
-} from "@palot/ui/components/searchable-list-popover"
-import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -20,15 +9,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/to
 import { cn } from "@palot/ui/lib/utils"
 import { useAtomValue } from "jotai"
 import {
-	CheckIcon,
-	ChevronDownIcon,
 	GitBranchIcon,
 	ListIcon,
 	MaximizeIcon,
 	MonitorIcon,
 	SparklesIcon,
 } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo } from "react"
 import { messagesFamily } from "../../atoms/messages"
 import type { DisplayMode } from "../../atoms/preferences"
 import { useDisplayMode, useSetDisplayMode } from "../../hooks/use-agents"
@@ -48,15 +35,15 @@ import {
 	shortModelName,
 } from "../../lib/session-metrics"
 import { ProviderIcon } from "../settings/provider-icon"
+import {
+	SearchableOptionSelect,
+	type SearchableOptionSelectItem,
+} from "./searchable-option-select"
 import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
 // ============================================================
 // Shared toolbar trigger styles
 // ============================================================
-
-/** Base classes shared by ALL toolbar triggers (Popover + Select). */
-const TOOLBAR_TRIGGER_BASE_CN =
-	"flex h-7 items-center gap-1 rounded-md border-none bg-transparent px-2 text-xs shadow-none transition-colors"
 
 /**
  * Classes for SelectTrigger overrides. Uses `!` modifier to beat the base
@@ -165,19 +152,6 @@ function flattenModels(providers: SdkProvider[]): ModelOption[] {
 	return models
 }
 
-function groupByProvider(models: ModelOption[]): Map<string, ModelOption[]> {
-	const groups = new Map<string, ModelOption[]>()
-	for (const model of models) {
-		const existing = groups.get(model.providerName)
-		if (existing) {
-			existing.push(model)
-		} else {
-			groups.set(model.providerName, [model])
-		}
-	}
-	return groups
-}
-
 interface ModelSelectorProps {
 	providers: ProvidersData | null
 	/** The resolved effective model (after agent/config/default resolution) */
@@ -210,27 +184,34 @@ export function ModelSelector({
 			.filter((m): m is ModelOption => m != null)
 	}, [recentModels, models])
 
-	const activeValue = effectiveModel
-		? `${effectiveModel.providerID}/${effectiveModel.modelID}`
-		: null
+	const activeValue = effectiveModel ? `${effectiveModel.providerID}/${effectiveModel.modelID}` : null
 
-	const activeModel = useMemo(
-		() => models.find((m) => m.value === activeValue) ?? null,
-		[models, activeValue],
-	)
+	const activeModel = useMemo(() => models.find((m) => m.value === activeValue) ?? null, [models, activeValue])
 
-	const [open, setOpen] = useState(false)
-
-	const handleSelect = useCallback(
-		(value: string) => {
-			const ref = parseModelRef(value)
-			if (ref) {
-				onSelectModel(ref)
-			}
-			setOpen(false)
-		},
-		[onSelectModel],
-	)
+	const items = useMemo<SearchableOptionSelectItem[]>(() => {
+		const allModels = models.map((model) => ({
+			value: model.value,
+			label: model.displayName,
+			group: model.providerName,
+			description: model.providerName,
+			searchTerms: [model.providerName, model.modelID, model.displayName],
+			badge: model.reasoning ? "reasoning" : undefined,
+			leading: <ProviderIcon id={model.providerID} name={model.providerName} size="xs" />,
+		}))
+		if (lastUsedModels.length === 0) return allModels
+		return [
+			...lastUsedModels.map((model) => ({
+				value: model.value,
+				label: model.displayName,
+				group: "Last used",
+				description: model.providerName,
+				searchTerms: [model.providerName, model.modelID, model.displayName],
+				badge: model.reasoning ? "reasoning" : undefined,
+				leading: <ProviderIcon id={model.providerID} name={model.providerName} size="xs" />,
+			})),
+			...allModels,
+		]
+	}, [lastUsedModels, models])
 
 	if (!providers || models.length === 0) {
 		return (
@@ -242,133 +223,31 @@ export function ModelSelector({
 	}
 
 	return (
-		<SearchableListPopover open={open} onOpenChange={setOpen}>
-			<SearchableListPopoverTrigger
-				className={cn(
-					TOOLBAR_TRIGGER_BASE_CN,
-					"hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50",
-				)}
-				disabled={disabled}
-			>
-				{activeModel ? (
+		<SearchableOptionSelect
+			ariaLabel="Model"
+			items={items}
+			value={activeValue}
+			onValueChange={(value) => {
+				const ref = parseModelRef(value)
+				if (ref) {
+					onSelectModel(ref)
+				}
+			}}
+			placeholder="Select model..."
+			searchPlaceholder="Search models..."
+			emptyLabel="No models found"
+			disabled={disabled}
+			renderTriggerValue={(item) =>
+				item && activeModel ? (
 					<>
 						<ProviderIcon id={activeModel.providerID} name={activeModel.providerName} size="xs" />
-						<span>{activeModel.displayName}</span>
+						<span>{item.label}</span>
 					</>
 				) : (
 					<span className="text-muted-foreground">Select model...</span>
-				)}
-				<ChevronDownIcon className="size-4 shrink-0 text-muted-foreground pointer-events-none" />
-			</SearchableListPopoverTrigger>
-			<SearchableListPopoverContent side="top" align="start">
-				<SearchableListPopoverSearch placeholder="Search models..." />
-				<ModelSelectorList
-					models={models}
-					lastUsedModels={lastUsedModels}
-					activeValue={activeValue}
-					onSelect={handleSelect}
-				/>
-			</SearchableListPopoverContent>
-		</SearchableListPopover>
-	)
-}
-
-/** Inner list component — reads search from context */
-function ModelSelectorList({
-	models,
-	lastUsedModels,
-	activeValue,
-	onSelect,
-}: {
-	models: ModelOption[]
-	lastUsedModels: ModelOption[]
-	activeValue: string | null
-	onSelect: (value: string) => void
-}) {
-	const search = useSearchableListPopoverSearch()
-
-	const filteredModels = useMemo(() => {
-		if (!search) return models
-		const q = search.toLowerCase()
-		return models.filter(
-			(m) =>
-				m.displayName.toLowerCase().includes(q) ||
-				m.providerName.toLowerCase().includes(q) ||
-				m.modelID.toLowerCase().includes(q),
-		)
-	}, [models, search])
-
-	const grouped = useMemo(() => groupByProvider(filteredModels), [filteredModels])
-
-	return (
-		<SearchableListPopoverList>
-			{filteredModels.length === 0 ? (
-				<SearchableListPopoverEmpty>No models found</SearchableListPopoverEmpty>
-			) : (
-				<>
-					{/* Last used group — only shown when not searching */}
-					{!search && lastUsedModels.length > 0 && (
-						<SearchableListPopoverGroup label="Last used">
-							{lastUsedModels.map((model) => (
-								<SearchableListPopoverItem
-									key={`recent-${model.value}`}
-									onSelect={() => onSelect(model.value)}
-								>
-									<div className="min-w-0 flex-1">
-										<div className="truncate">{model.displayName}</div>
-										<div className="truncate text-[10px] text-muted-foreground/40">
-											{model.providerName}
-										</div>
-									</div>
-									{model.reasoning && (
-										<span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground/60">
-											reasoning
-										</span>
-									)}
-									{model.value === activeValue && (
-										<CheckIcon className="size-3.5 shrink-0 text-primary" />
-									)}
-								</SearchableListPopoverItem>
-							))}
-						</SearchableListPopoverGroup>
-					)}
-
-					{/* Provider-grouped models */}
-					{Array.from(grouped.entries()).map(([providerName, providerModels]) => {
-						// Get the provider ID from the first model in the group to look up the icon
-						const providerId = providerModels[0]?.providerID
-						return (
-							<SearchableListPopoverGroup
-								key={providerName}
-								label={
-									<>
-										{providerId && <ProviderIcon id={providerId} name={providerName} size="xs" />}
-										<span>{providerName}</span>
-									</>
-								}
-							>
-								{providerModels.map((model) => (
-									<SearchableListPopoverItem
-										key={model.value}
-										onSelect={() => onSelect(model.value)}
-									>
-										<span className="min-w-0 flex-1 truncate">{model.displayName}</span>
-										{model.reasoning && (
-											<span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground/60">
-												reasoning
-											</span>
-										)}
-										{model.value === activeValue && (
-											<CheckIcon className="size-3.5 shrink-0 text-primary" />
-										)}
-									</SearchableListPopoverItem>
-								))}
-							</SearchableListPopoverGroup>
-						)
-					})}
-				</>
-			)}
-		</SearchableListPopoverList>
+				)
+			}
+		/>
 	)
 }
 

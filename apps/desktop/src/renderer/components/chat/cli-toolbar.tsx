@@ -4,30 +4,19 @@
  * turn via the session's CLI meta. Mid-session switching works because both
  * Codex and Claude accept model overrides when resuming a session.
  */
-import {
-	SearchableListPopover,
-	SearchableListPopoverContent,
-	SearchableListPopoverEmpty,
-	SearchableListPopoverGroup,
-	SearchableListPopoverItem,
-	SearchableListPopoverList,
-	SearchableListPopoverSearch,
-	SearchableListPopoverTrigger,
-	useSearchableListPopoverSearch,
-} from "@palot/ui/components/searchable-list-popover"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@palot/ui/components/select"
 import { cn } from "@palot/ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
-import { CheckIcon, ChevronDownIcon } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import { useTranslation } from "../../i18n/use-translation"
 import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
 import { switchRuntimeSession } from "../../services/runtime-session-launch"
+import {
+	SearchableOptionSelect,
+	type SearchableOptionSelectItem,
+} from "./searchable-option-select"
 import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
-
-const TOOLBAR_TRIGGER_BASE_CN =
-	"flex h-7 items-center gap-1 rounded-md border-none bg-transparent px-2 text-xs shadow-none transition-colors"
 
 const TOOLBAR_TRIGGER_CN =
 	"h-7! gap-1 border-none bg-transparent! hover:bg-muted! px-2! py-0! text-xs shadow-none transition-colors"
@@ -99,74 +88,30 @@ export function CliModelSelect({
 	value: string
 	onValueChange: (value: string) => void
 }) {
-	const active = useMemo(() => models.find((model) => model.slug === value) ?? null, [models, value])
-	const [open, setOpen] = useState(false)
-	const handleSelect = useCallback(
-		(next: string) => {
-			onValueChange(next)
-			setOpen(false)
-		},
-		[onValueChange],
+	const items = useMemo<SearchableOptionSelectItem[]>(
+		() =>
+			models.map((model) => ({
+				value: model.slug,
+				label: model.label,
+				group: "Models",
+				description: model.slug === model.label ? undefined : model.slug,
+				searchTerms: [model.slug, model.label],
+			})),
+		[models],
 	)
 
 	if (models.length === 0) return null
 
 	return (
-		<SearchableListPopover open={open} onOpenChange={setOpen}>
-			<SearchableListPopoverTrigger
-				aria-label="Model"
-				className={cn(
-					TOOLBAR_TRIGGER_BASE_CN,
-					"hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50",
-				)}
-			>
-				<span className="truncate">{active?.label ?? "Select model..."}</span>
-				<ChevronDownIcon className="size-4 shrink-0 text-muted-foreground pointer-events-none" />
-			</SearchableListPopoverTrigger>
-			<SearchableListPopoverContent side="top" align="start">
-				<SearchableListPopoverSearch placeholder="Search models..." />
-				<CliModelSelectList models={models} activeValue={active?.slug ?? null} onSelect={handleSelect} />
-			</SearchableListPopoverContent>
-		</SearchableListPopover>
-	)
-}
-
-function CliModelSelectList({
-	models,
-	activeValue,
-	onSelect,
-}: {
-	models: AgentRuntimeDescriptor["models"]
-	activeValue: string | null
-	onSelect: (value: string) => void
-}) {
-	const search = useSearchableListPopoverSearch()
-	const filtered = useMemo(() => {
-		if (!search) return models
-		const q = search.toLowerCase()
-		return models.filter(
-			(model) =>
-				model.label.toLowerCase().includes(q) || model.slug.toLowerCase().includes(q),
-		)
-	}, [models, search])
-
-	return (
-		<SearchableListPopoverList>
-			{filtered.length === 0 ? (
-				<SearchableListPopoverEmpty>No models found</SearchableListPopoverEmpty>
-			) : (
-				<SearchableListPopoverGroup label="Models">
-					{filtered.map((model) => (
-						<SearchableListPopoverItem key={model.slug} onSelect={() => onSelect(model.slug)}>
-							<span className="min-w-0 flex-1 truncate">{model.label}</span>
-							{model.slug === activeValue && (
-								<CheckIcon className="size-3.5 shrink-0 text-primary" />
-							)}
-						</SearchableListPopoverItem>
-					))}
-				</SearchableListPopoverGroup>
-			)}
-		</SearchableListPopoverList>
+		<SearchableOptionSelect
+			ariaLabel="Model"
+			items={items}
+			value={value}
+			onValueChange={onValueChange}
+			placeholder="Select model..."
+			searchPlaceholder="Search models..."
+			emptyLabel="No models found"
+		/>
 	)
 }
 
