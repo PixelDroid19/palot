@@ -1,12 +1,12 @@
 /**
- * Session runtimes Palot can start a conversation with. OpenCode is the
- * built-in runtime; the others are coding-agent CLIs that render in the same
- * chat view via a CLI-backed session.
+ * Session runtimes Palot can start a conversation with. Every runtime renders
+ * through the same chat surfaces; some runtimes happen to execute through the
+ * OpenCode SDK and others through the generic agent-host bridge.
  *
  * CLI model catalogs are NOT hardcoded here: they come from the agent-host
- * core (`describeRuntimes`), which reads each CLI's own source of truth (e.g.
- * Codex's models cache). This module keeps a small cache the UI reads
- * synchronously after `loadRuntimeDescriptors()` resolves.
+ * core (`describeRuntimes`), which reads each runtime's own source of truth.
+ * This module keeps a small cache the UI reads synchronously after
+ * `loadRuntimeDescriptors()` resolves.
  */
 import type { AgentRuntimeDescriptor, AgentRuntimeId } from "../../preload/api"
 

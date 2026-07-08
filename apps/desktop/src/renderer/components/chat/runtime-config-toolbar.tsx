@@ -34,7 +34,7 @@ interface CliSessionRuntimeConfigToolbarProps {
 	sessionId: string
 }
 
-type RuntimeConfigToolbarProps =
+export type RuntimeConfigToolbarProps =
 	| CliRuntimeConfigToolbarProps
 	| CliSessionRuntimeConfigToolbarProps
 	| OpenCodeRuntimeConfigToolbarProps
