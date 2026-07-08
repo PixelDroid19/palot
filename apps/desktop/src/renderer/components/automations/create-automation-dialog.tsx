@@ -44,7 +44,7 @@ import {
 	useModelState,
 	useOpenCodeAgents,
 	useProviders,
-} from "../../hooks/use-opencode-data"
+} from "../../hooks/use-managed-runtime-data"
 import {
 	createAutomation,
 	deleteAutomation,
@@ -52,10 +52,10 @@ import {
 	runAutomationNow,
 	updateAutomation,
 } from "../../services/backend"
-import type { ModelRef } from "../../hooks/use-opencode-data"
+import type { ModelRef } from "../../hooks/use-managed-runtime-data"
 import { AgentSelector, ModelSelector, VariantSelector } from "../chat/prompt-toolbar"
 import { SchedulePicker } from "./schedule-picker"
-import { getModelVariants } from "../../hooks/use-opencode-data"
+import { getModelVariants } from "../../hooks/use-managed-runtime-data"
 
 interface CreateAutomationDialogProps {
 	open: boolean

@@ -3,7 +3,7 @@ import type { PersistedModelRef } from "../atoms/preferences"
 import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
 import { cliSessionsAtom, getCliMeta, patchCliMeta, type CliSessionMeta } from "../atoms/cli-sessions"
 import { appStore } from "../atoms/store"
-import type { ModelRef } from "../hooks/use-opencode-data"
+import type { ModelRef } from "../hooks/use-managed-runtime-data"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
 	isManagedRuntimeId,

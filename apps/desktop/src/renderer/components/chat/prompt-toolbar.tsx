@@ -26,8 +26,8 @@ import type {
 	SdkAgent,
 	SdkProvider,
 	VcsData,
-} from "../../hooks/use-opencode-data"
-import { getModelVariants, parseModelRef } from "../../hooks/use-opencode-data"
+} from "../../hooks/use-managed-runtime-data"
+import { getModelVariants, parseModelRef } from "../../hooks/use-managed-runtime-data"
 import {
 	computeContextUsage,
 	formatPercentage,

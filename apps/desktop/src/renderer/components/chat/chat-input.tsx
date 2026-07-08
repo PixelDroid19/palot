@@ -12,12 +12,12 @@ import {
 import { PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useDraftActions, useDraftSnapshot } from "../../hooks/use-draft"
-import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-opencode-data"
+import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-managed-runtime-data"
 import {
 	getModelInputCapabilities,
 	resolveEffectiveModel,
 	useModelState,
-} from "../../hooks/use-opencode-data"
+} from "../../hooks/use-managed-runtime-data"
 
 import {
 	OPENCODE_SESSION_RUNTIME_CAPABILITIES,

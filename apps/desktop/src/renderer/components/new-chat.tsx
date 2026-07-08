@@ -27,7 +27,7 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useAgents, useProjectList } from "../hooks/use-agents"
 import { NEW_CHAT_DRAFT_KEY, useDraftActions, useDraftSnapshot } from "../hooks/use-draft"
-import type { ModelRef } from "../hooks/use-opencode-data"
+import type { ModelRef } from "../hooks/use-managed-runtime-data"
 import {
 	getModelInputCapabilities,
 	getModelVariants,
@@ -37,7 +37,7 @@ import {
 	useOpenCodeAgents,
 	useProviders,
 	useVcs,
-} from "../hooks/use-opencode-data"
+} from "../hooks/use-managed-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../preload/api"
 import type { FileAttachment } from "../lib/types"

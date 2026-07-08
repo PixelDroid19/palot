@@ -53,13 +53,13 @@ import type {
 	ProvidersData,
 	SdkAgent,
 	VcsData,
-} from "../../hooks/use-opencode-data"
+} from "../../hooks/use-managed-runtime-data"
 import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
 	useModelState,
-} from "../../hooks/use-opencode-data"
+} from "../../hooks/use-managed-runtime-data"
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
 import {

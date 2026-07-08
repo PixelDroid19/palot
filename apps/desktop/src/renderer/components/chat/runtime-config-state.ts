@@ -1,5 +1,5 @@
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
-import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-opencode-data"
+import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-managed-runtime-data"
 import type {
 	ManagedRuntimePromptOptions,
 	ManagedRuntimeSelection,
