@@ -13,8 +13,11 @@ import {
 	UndoIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
-import type { AgentCliDetection, OpenCodeCheckResult } from "../../../preload/api"
 import { onboardingStateAtom } from "../../atoms/onboarding"
+import {
+	loadRuntimeSetupStatuses,
+	type RuntimeSetupStatus,
+} from "../../services/runtime-setup-status"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 
@@ -49,20 +52,14 @@ export function SetupSettings() {
 // ============================================================
 
 function RuntimeStatusSection() {
-	const [clis, setClis] = useState<AgentCliDetection[] | null>(null)
-	const [openCodeResult, setOpenCodeResult] = useState<OpenCodeCheckResult | null>(null)
+	const [runtimes, setRuntimes] = useState<RuntimeSetupStatus[] | null>(null)
 	const [loading, setLoading] = useState(false)
 
 	const load = useCallback(async (force = false) => {
 		if (!isElectron) return
 		setLoading(true)
 		try {
-			const [detections, opencode] = await Promise.all([
-				window.palot.agentClis.detect(force),
-				window.palot.onboarding.checkOpenCode(),
-			])
-			setClis(detections)
-			setOpenCodeResult(opencode)
+			setRuntimes(await loadRuntimeSetupStatuses(force))
 		} finally {
 			setLoading(false)
 		}
@@ -71,8 +68,6 @@ function RuntimeStatusSection() {
 	useEffect(() => {
 		load()
 	}, [load])
-
-	const runtimes = clis ?? []
 
 	return (
 		<SettingsSection
@@ -85,37 +80,26 @@ function RuntimeStatusSection() {
 					Rescan
 				</Button>
 			</div>
-			{runtimes.map((cli) => {
-				const isOpenCode = cli.id === "opencode"
-				const description = isOpenCode
-					? (openCodeResult?.path ?? cli.binaryPath ?? "Checking...")
-					: cli.installed
-						? (cli.binaryPath ?? "")
-						: cli.installHint
-				const version = isOpenCode ? openCodeResult?.version : cli.version
-				const showCompatible = isOpenCode ? openCodeResult?.compatible : cli.installed
-				const isInstalled = isOpenCode ? (openCodeResult?.installed ?? cli.installed) : cli.installed
-				const warning = isOpenCode && openCodeResult && !openCodeResult.compatible
-					? openCodeResult.message
-					: null
-
+			{(runtimes ?? []).map((runtime) => {
 				return (
-					<div key={cli.id}>
+					<div key={runtime.id}>
 						<SettingsRow
-							label={cli.displayName}
-							description={description}
+							label={runtime.displayName}
+							description={runtime.description}
 						>
 							<div className="flex items-center gap-2">
-								{loading && !clis ? (
+								{loading && !runtimes ? (
 									<Spinner className="size-3.5" />
-								) : isInstalled ? (
+								) : runtime.installed ? (
 									<>
-										{version && (
+										{runtime.version && (
 											<span className="text-sm text-muted-foreground">
-												{version && /^\d+\.\d+/.test(version) ? `v${version}` : version}
+												{/^\d+\.\d+/.test(runtime.version)
+													? `v${runtime.version}`
+													: runtime.version}
 											</span>
 										)}
-										{showCompatible ? (
+										{runtime.compatible ? (
 											<CheckCircle2Icon className="size-4 text-emerald-500" />
 										) : (
 											<AlertCircleIcon className="size-4 text-amber-500" />
@@ -126,7 +110,9 @@ function RuntimeStatusSection() {
 								)}
 							</div>
 						</SettingsRow>
-						{warning && <div className="px-4 py-2 text-xs text-amber-500">{warning}</div>}
+						{runtime.warning && (
+							<div className="px-4 py-2 text-xs text-amber-500">{runtime.warning}</div>
+						)}
 					</div>
 				)
 			})}
