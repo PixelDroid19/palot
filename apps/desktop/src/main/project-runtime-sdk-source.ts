@@ -13,15 +13,16 @@ const DEFAULT_READY_PATH = "/session"
 const DEFAULT_READY_TIMEOUT_MS = 15_000
 const DEFAULT_AUTH_USERNAME = "opencode"
 
-export interface ManagedRuntimeServerProcess {
+export interface ProjectRuntimeServerProcess {
 	url: string
 	process: ChildProcess
 	binary: string
 }
 
-export interface OpenCodeServerProcess extends ManagedRuntimeServerProcess {}
+export type ManagedRuntimeServerProcess = ProjectRuntimeServerProcess
+export interface OpenCodeServerProcess extends ProjectRuntimeServerProcess {}
 
-export interface StartManagedRuntimeServerOptions {
+export interface StartProjectRuntimeServerOptions {
 	hostname: string
 	port: number
 	password?: string | null
@@ -31,26 +32,29 @@ export interface StartManagedRuntimeServerOptions {
 	timeoutMs?: number
 }
 
-export interface StartOpenCodeServerOptions extends StartManagedRuntimeServerOptions {}
+export type StartManagedRuntimeServerOptions = StartProjectRuntimeServerOptions
+export interface StartOpenCodeServerOptions extends StartProjectRuntimeServerOptions {}
 
-export function getManagedRuntimeBinDir(): string {
+export function getProjectRuntimeBinDir(): string {
 	return path.join(homedir(), ".opencode", "bin")
 }
 
-export const getOpenCodeBinDir = getManagedRuntimeBinDir
+export const getManagedRuntimeBinDir = getProjectRuntimeBinDir
+export const getOpenCodeBinDir = getProjectRuntimeBinDir
 
-export function getManagedRuntimeAugmentedPath(basePath = process.env.PATH ?? ""): string {
+export function getProjectRuntimeAugmentedPath(basePath = process.env.PATH ?? ""): string {
 	const sep = process.platform === "win32" ? ";" : ":"
-	const binDir = getManagedRuntimeBinDir()
+	const binDir = getProjectRuntimeBinDir()
 	const segments = basePath.split(sep).filter(Boolean)
 	if (segments.includes(binDir)) return basePath
 	return basePath ? `${binDir}${sep}${basePath}` : binDir
 }
 
-export const getOpenCodeAugmentedPath = getManagedRuntimeAugmentedPath
+export const getManagedRuntimeAugmentedPath = getProjectRuntimeAugmentedPath
+export const getOpenCodeAugmentedPath = getProjectRuntimeAugmentedPath
 
-export async function resolveManagedRuntimeBinary(
-	augmentedPath = getManagedRuntimeAugmentedPath(),
+export async function resolveProjectRuntimeBinary(
+	augmentedPath = getProjectRuntimeAugmentedPath(),
 ): Promise<string> {
 	return (
 		(await whichOnPath("opencode", augmentedPath)) ??
@@ -59,23 +63,25 @@ export async function resolveManagedRuntimeBinary(
 	)
 }
 
-export const resolveOpenCodeBinary = resolveManagedRuntimeBinary
+export const resolveManagedRuntimeBinary = resolveProjectRuntimeBinary
+export const resolveOpenCodeBinary = resolveProjectRuntimeBinary
 
-export function buildManagedRuntimeAuthHeader(
+export function buildProjectRuntimeAuthHeader(
 	password: string,
 	username = DEFAULT_AUTH_USERNAME,
 ): string {
 	return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`
 }
 
-export const buildOpenCodeAuthHeader = buildManagedRuntimeAuthHeader
+export const buildManagedRuntimeAuthHeader = buildProjectRuntimeAuthHeader
+export const buildOpenCodeAuthHeader = buildProjectRuntimeAuthHeader
 
 function createHeaders(authHeader?: string | null): Record<string, string> | undefined {
 	if (!authHeader) return undefined
 	return { Authorization: authHeader }
 }
 
-export function createMainProcessManagedRuntimeClient(args: {
+export function createMainProcessProjectRuntimeClient(args: {
 	baseUrl: string
 	directory?: string
 	authHeader?: string | null
@@ -87,9 +93,10 @@ export function createMainProcessManagedRuntimeClient(args: {
 	})
 }
 
-export const createMainProcessOpenCodeClient = createMainProcessManagedRuntimeClient
+export const createMainProcessManagedRuntimeClient = createMainProcessProjectRuntimeClient
+export const createMainProcessOpenCodeClient = createMainProcessProjectRuntimeClient
 
-export async function probeManagedRuntimeServer(
+export async function probeProjectRuntimeServer(
 	url: string,
 	args: {
 		authHeader?: string | null
@@ -115,9 +122,10 @@ export async function probeManagedRuntimeServer(
 	return false
 }
 
-export const probeOpenCodeServer = probeManagedRuntimeServer
+export const probeManagedRuntimeServer = probeProjectRuntimeServer
+export const probeOpenCodeServer = probeProjectRuntimeServer
 
-export async function waitForManagedRuntimeServer(
+export async function waitForProjectRuntimeServer(
 	url: string,
 	args: {
 		authHeader?: string | null
@@ -157,16 +165,17 @@ export async function waitForManagedRuntimeServer(
 		await sleep(pollMs)
 	}
 
-	throw new Error(`Managed runtime at ${url} did not become ready within ${timeoutMs}ms`)
+	throw new Error(`Project runtime at ${url} did not become ready within ${timeoutMs}ms`)
 }
 
-export const waitForOpenCodeServer = waitForManagedRuntimeServer
+export const waitForManagedRuntimeServer = waitForProjectRuntimeServer
+export const waitForOpenCodeServer = waitForProjectRuntimeServer
 
-export async function startManagedRuntimeServerProcess(
-	options: StartManagedRuntimeServerOptions,
-): Promise<ManagedRuntimeServerProcess> {
-	const augmentedPath = getManagedRuntimeAugmentedPath()
-	const binary = await resolveManagedRuntimeBinary(augmentedPath)
+export async function startProjectRuntimeServerProcess(
+	options: StartProjectRuntimeServerOptions,
+): Promise<ProjectRuntimeServerProcess> {
+	const augmentedPath = getProjectRuntimeAugmentedPath()
+	const binary = await resolveProjectRuntimeBinary(augmentedPath)
 	const args = ["serve", `--hostname=${options.hostname}`, `--port=${options.port}`]
 
 	if (options.password) {
@@ -219,8 +228,8 @@ export async function startManagedRuntimeServerProcess(
 
 		proc.once("error", onError)
 		proc.once("exit", onExit)
-		void waitForManagedRuntimeServer(url, {
-			authHeader: options.password ? buildManagedRuntimeAuthHeader(options.password) : null,
+		void waitForProjectRuntimeServer(url, {
+			authHeader: options.password ? buildProjectRuntimeAuthHeader(options.password) : null,
 			timeoutMs: options.timeoutMs,
 		}).then(
 			() => {
@@ -237,4 +246,5 @@ export async function startManagedRuntimeServerProcess(
 	return { url, process: proc, binary }
 }
 
-export const startOpenCodeServerProcess = startManagedRuntimeServerProcess
+export const startManagedRuntimeServerProcess = startProjectRuntimeServerProcess
+export const startOpenCodeServerProcess = startProjectRuntimeServerProcess

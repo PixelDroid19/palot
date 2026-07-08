@@ -6,9 +6,9 @@ import { getCredential } from "./credential-store"
 import { findFreePort } from "./find-free-port"
 import { createLogger } from "./logger"
 import {
-	buildManagedRuntimeAuthHeader,
-	probeManagedRuntimeServer,
-	startManagedRuntimeServerProcess,
+	buildProjectRuntimeAuthHeader,
+	probeProjectRuntimeServer,
+	startProjectRuntimeServerProcess,
 } from "./project-runtime-sdk"
 import { startNotificationWatcher, stopNotificationWatcher } from "./notification-watcher"
 import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./process-owner"
@@ -22,13 +22,14 @@ const log = createLogger("opencode-manager")
 // Types
 // ============================================================
 
-export interface ManagedRuntimeServer {
+export interface ProjectRuntimeServer {
 	url: string
 	pid: number | null
 	managed: boolean
 }
 
-export interface OpenCodeServer extends ManagedRuntimeServer {}
+export type ManagedRuntimeServer = ProjectRuntimeServer
+export interface OpenCodeServer extends ProjectRuntimeServer {}
 
 /** Result of detecting an existing server on the target port. */
 type DetectionResult =
@@ -62,14 +63,14 @@ function getLocalServerConfig(): LocalServerConfig {
 }
 
 /**
- * Ensures the single managed runtime server is running.
+ * Ensures the single project runtime server is running.
  * Starts it if not already running. Returns the server info.
  *
  * Performs ownership checks to prevent connecting to a server owned by a
  * different OS user. If a conflict is detected, prompts the user with a
  * dialog offering to start on a different port or connect anyway.
  */
-export async function ensureManagedRuntimeServer(): Promise<ManagedRuntimeServer> {
+export async function ensureProjectRuntimeServer(): Promise<ProjectRuntimeServer> {
 	if (singleServer) {
 		log.debug("Server already running", {
 			url: singleServer.server.url,
@@ -80,14 +81,14 @@ export async function ensureManagedRuntimeServer(): Promise<ManagedRuntimeServer
 
 	// Ensure the full shell environment is available before spawning the server.
 	// startEnvResolution() fires early in app startup; by the time the renderer
-	// triggers ensureManagedRuntimeServer() the promise is usually already resolved.
+	// triggers ensureProjectRuntimeServer() the promise is usually already resolved.
 	await waitForEnv()
 
 	const config = getLocalServerConfig()
 	const hostname = config.hostname || DEFAULT_HOSTNAME
 	const port = config.port || DEFAULT_PORT
 	const localPassword = config.hasPassword ? getCredential("local") : null
-	const authHeader = localPassword ? buildManagedRuntimeAuthHeader(localPassword) : null
+	const authHeader = localPassword ? buildProjectRuntimeAuthHeader(localPassword) : null
 
 	// --- Fast-path: check our own lockfile first ---
 	const lockfile = readLockfile()
@@ -123,54 +124,59 @@ export async function ensureManagedRuntimeServer(): Promise<ManagedRuntimeServer
 	return spawnServer(hostname, port, config, localPassword, authHeader)
 }
 
-export const ensureServer = ensureManagedRuntimeServer
+export const ensureManagedRuntimeServer = ensureProjectRuntimeServer
+export const ensureServer = ensureProjectRuntimeServer
 
 /**
  * Gets the single server URL, or null if not running.
  */
-export function getManagedRuntimeUrl(): string | null {
+export function getProjectRuntimeUrl(): string | null {
 	return singleServer?.server.url ?? null
 }
 
-export const getServerUrl = getManagedRuntimeUrl
+export const getManagedRuntimeUrl = getProjectRuntimeUrl
+export const getServerUrl = getProjectRuntimeUrl
 
-export function getManagedRuntimeAuthHeader(): string | null {
+export function getProjectRuntimeAuthHeader(): string | null {
 	return singleServer?.authHeader ?? null
 }
 
-export const getServerAuthHeader = getManagedRuntimeAuthHeader
+export const getManagedRuntimeAuthHeader = getProjectRuntimeAuthHeader
+export const getServerAuthHeader = getProjectRuntimeAuthHeader
 
 /**
  * Stops the single server if we manage it and removes the lockfile.
  */
-export function stopManagedRuntimeServer(): boolean {
+export function stopProjectRuntimeServer(): boolean {
 	stopNotificationWatcher()
 	if (!singleServer?.process) {
-		log.debug("No managed server to stop")
+		log.debug("No project runtime server to stop")
 		singleServer = null
 		removeLockfile()
 		return false
 	}
-	log.info("Stopping managed server", { pid: singleServer.process.pid })
+	log.info("Stopping project runtime server", { pid: singleServer.process.pid })
 	singleServer.process.kill()
 	singleServer = null
 	removeLockfile()
 	return true
 }
 
-export const stopServer = stopManagedRuntimeServer
+export const stopManagedRuntimeServer = stopProjectRuntimeServer
+export const stopServer = stopProjectRuntimeServer
 
 /**
- * Restarts the managed server (stop + start). Used when local server
+ * Restarts the project runtime server (stop + start). Used when local server
  * settings (hostname, port, password) change.
  */
-export async function restartManagedRuntimeServer(): Promise<ManagedRuntimeServer> {
+export async function restartProjectRuntimeServer(): Promise<ProjectRuntimeServer> {
 	log.info("Restarting server due to settings change")
-	stopManagedRuntimeServer()
-	return ensureManagedRuntimeServer()
+	stopProjectRuntimeServer()
+	return ensureProjectRuntimeServer()
 }
 
-export const restartServer = restartManagedRuntimeServer
+export const restartManagedRuntimeServer = restartProjectRuntimeServer
+export const restartServer = restartProjectRuntimeServer
 
 // ============================================================
 // Internal -- lockfile handling
@@ -360,7 +366,7 @@ async function spawnServer(
 		mdns: !!config.mdns,
 	})
 
-	const started = await startManagedRuntimeServerProcess({
+	const started = await startProjectRuntimeServerProcess({
 		hostname,
 		port,
 		password,
@@ -426,5 +432,5 @@ async function probeServer(
 	authHeader: string | null,
 	okStatuses?: number[],
 ): Promise<boolean> {
-	return probeManagedRuntimeServer(url, { authHeader, okStatuses })
+	return probeProjectRuntimeServer(url, { authHeader, okStatuses })
 }
