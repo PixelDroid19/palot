@@ -63,6 +63,7 @@ import {
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
 import {
+	cliRuntimeMeta,
 	persistRuntimeSelection,
 	sessionRuntimeCapabilities,
 	type RuntimePromptOptions,
@@ -832,8 +833,8 @@ function ChatInputSection({
 	// picker. Reactive so a mid-session runtime switch swaps the toolbar live.
 	const runtimeState = useSessionRuntimeState(agent.sessionId, agent.directory)
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
-	const cliMeta = runtimeState.runtime === "cli" ? runtimeState.meta : null
-	const isCli = runtimeState.runtime === "cli"
+	const cliMeta = cliRuntimeMeta(runtimeState)
+	const isCli = cliMeta != null
 
 	// Tree-scoped interactive requests — bubbles up from sub-agent sessions.
 	// These replace the direct `agent.permissions` / `agent.questions` arrays

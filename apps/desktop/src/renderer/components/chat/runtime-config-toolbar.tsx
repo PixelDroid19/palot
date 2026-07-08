@@ -7,6 +7,7 @@ import {
 	resolveRuntimeModel,
 } from "../../lib/runtime-model-selection"
 import {
+	cliRuntimeMeta,
 	patchSessionRuntimeState,
 	useSessionRuntimeState,
 } from "../../lib/runtime-session-config"
@@ -80,7 +81,7 @@ export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
 
 function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
 	const runtimeState = useSessionRuntimeState(sessionId)
-	const meta = runtimeState.runtime === "cli" ? runtimeState.meta : null
+	const meta = cliRuntimeMeta(runtimeState)
 	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
 
 	const runtimeId = meta?.runtimeId

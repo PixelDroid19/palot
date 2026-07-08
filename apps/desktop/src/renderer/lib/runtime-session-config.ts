@@ -92,6 +92,16 @@ export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapab
 		: CLI_SESSION_RUNTIME_CAPABILITIES
 }
 
+export function isCliRuntimeState(
+	state: Pick<SessionRuntimeState, "runtime">,
+): state is Extract<SessionRuntimeState, { runtime: "cli" }> {
+	return state.runtime === "cli"
+}
+
+export function cliRuntimeMeta(state: SessionRuntimeState): CliSessionMeta | null {
+	return isCliRuntimeState(state) ? state.meta : null
+}
+
 export function resolvePromptRuntime(
 	state: Pick<SessionRuntimeState, "runtime"> | null | undefined,
 	options?: RuntimePromptOptions,

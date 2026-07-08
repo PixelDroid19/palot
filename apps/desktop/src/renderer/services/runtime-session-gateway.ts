@@ -5,6 +5,7 @@ import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/se
 import { appStore } from "../atoms/store"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import {
+	isCliRuntimeState,
 	readSessionRuntimeState,
 	resolveOpenCodePromptOptions,
 	resolvePromptRuntime,
@@ -51,7 +52,7 @@ function shouldUseCliRuntime(
 }
 
 function isCliSession(sessionId: string): boolean {
-	return readSessionRuntimeState(sessionId).runtime === "cli"
+	return isCliRuntimeState(readSessionRuntimeState(sessionId))
 }
 
 async function createOpenCodeSession(
