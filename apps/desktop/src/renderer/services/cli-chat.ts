@@ -12,6 +12,7 @@ import type {
 	AgentSandbox,
 	AgentUpdate,
 } from "../../preload/api"
+import { createUuidV7 } from "../../shared/uuid"
 import {
 	type CliSessionMeta,
 	getCliMeta,
@@ -353,7 +354,7 @@ export function createCliSession(args: {
 	model?: string
 	effort?: string
 }): string {
-	const sessionId = crypto.randomUUID()
+	const sessionId = createUuidV7()
 	const session: Session = {
 		id: sessionId,
 		title: `${RUNTIME_LABELS[args.runtimeId] ?? args.runtimeId} session`,

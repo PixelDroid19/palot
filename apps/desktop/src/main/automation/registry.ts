@@ -6,9 +6,9 @@
  * with atomic writes and validation.
  */
 
-import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+import { createUuidV7 } from "../../shared/uuid"
 import { createLogger } from "../logger"
 import { getConfigDir } from "./paths"
 import type { AutomationConfig, CreateAutomationInput, UpdateAutomationInput } from "./types"
@@ -52,7 +52,7 @@ function generateId(name: string): string {
 		const candidate = `${base}-${i}`
 		if (!existing.has(candidate)) return candidate
 	}
-	return `${base}-${crypto.randomUUID().slice(0, 8)}`
+	return `${base}-${createUuidV7().slice(-8)}`
 }
 
 function isValidId(id: string): boolean {

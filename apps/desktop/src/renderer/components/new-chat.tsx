@@ -30,6 +30,7 @@ import {
 	MonitorIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { createUuidV7 } from "../../shared/uuid"
 import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
 import {
 	removeSessionAtom,
@@ -607,7 +608,7 @@ export function NewChat() {
 			const sessionSlug = randomWorktreeName()
 
 			// Create a stub session so the chat view can render immediately.
-			const stubId = crypto.randomUUID()
+			const stubId = createUuidV7()
 			const now = Date.now()
 			appStore.set(upsertSessionAtom, {
 				session: {

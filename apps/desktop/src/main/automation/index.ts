@@ -5,9 +5,9 @@
  * Exports the public API consumed by IPC handlers.
  */
 
-import crypto from "node:crypto"
 import { eq, sql } from "drizzle-orm"
 import { BrowserWindow } from "electron"
+import { createUuidV7 } from "../../shared/uuid"
 import { createLogger } from "../logger"
 import { closeDb, ensureDb, getDb } from "./database"
 import { executeRun } from "./executor"
@@ -335,7 +335,7 @@ async function executeAutomation(id: string, opts: ExecuteOptions = {}): Promise
 			timeoutSec: config.execution.timeout,
 		})
 		for (const workspace of targets) {
-			const runId = crypto.randomUUID()
+			const runId = createUuidV7()
 			const now = Date.now()
 
 			await db
