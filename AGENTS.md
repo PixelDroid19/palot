@@ -18,6 +18,8 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`apps/server`**: Bun + Hono backend -- used only in browser-mode dev (`dev:web`), NOT bundled with Electron
 - **`apps/server` also exports**: the `@palot/server` package for shared client/types used by desktop and server-facing flows
 - **CLI runtime boundary**: runtime orchestration lives in `apps/desktop/src/main/agents/` plus `packages/agent-host` (provider adapters, runner lifecycle, queued run cancellation, context handoff, persistence behavior)
+- **OpenCode runtime boundary**: `apps/desktop/src/main/opencode-runtime.ts` owns CLI discovery, auth header construction, readiness probes, and server startup. `opencode-manager.ts`, tray, automation, and notification flows should reuse it rather than rebuilding OpenCode client/bootstrap logic.
+- **Migration boundary**: `packages/configconv` is the single source of truth for Claude/Cursor/OpenCode migration. Skills now migrate as linked directories (`linkedDirs`), not as copied markdown stubs.
 
 ### Desktop App Layout (`apps/desktop/src/`)
 
@@ -48,6 +50,7 @@ generic knowledge.
 - **Lint/format fix**: `bun run lint:fix` or `bunx biome check --write .` (from root)
 - **Run lint in package**: `cd <package-dir> && bun run lint`
 - **Type check all**: `bun run check-types` (from root, via Turborepo)
+- **Build all**: `bun run build` (from root, via Turborepo)
 - **Type check desktop**: `cd apps/desktop && bun run check-types` (uses `tsgo`)
 - **Run all tests**: `bun run test` (from root, via Turborepo -- runs every package's `test` task)
 - **Run one package's tests**: `cd packages/agent-host && bun test` (or `packages/cli-registry`, `packages/configconv`)
@@ -131,6 +134,7 @@ generic knowledge.
 - CLI sessions persist across app reloads and support mid-session runtime switching with explicit context handoff.
 - Streaming tool/tooling output, queued-message cancellation, approval gates, and model/effort/sandbox controls are normal paths.
 - Terminal-in-chat integration (`terminal.ts`, `terminal-panel`) is now part of runtime workflows.
+- Onboarding is no longer install-only; it owns typed migration previews/execution for Claude Code, Cursor, and OpenCode, including skill-directory migration.
 
 ## Critical Footguns
 
@@ -180,6 +184,10 @@ import type { PermissionRuleset, Session } from "@opencode-ai/sdk/v2/client"
 
 Always pass the resolved model to `promptAsync`. The server has no single "current model" concept.
 
+### OpenCode local password attach
+
+If a same-user OpenCode server is already listening on the configured local port and requires a password, Palot now refuses to attach with missing/stale local credentials. Save the local credential or stop the existing server; do not paper over this by silently connecting unauthenticated.
+
 ### Server type regeneration (browser mode only)
 
 When adding routes to `apps/server`, run `cd apps/server && bun run build:types` to regenerate `.d.ts` files. Without this, new routes won't have type inference in the frontend RPC client.
@@ -203,9 +211,11 @@ Palot follows the XDG Base Directory Specification (same convention as OpenCode)
 ## Testing
 
 - **Framework**: Bun's built-in test runner (`bun:test`) -- no vitest/jest/playwright
-- **Tests exist in**: `packages/agent-host`, `packages/cli-registry`, and `packages/configconv` (desktop app, server, and UI still have no tests)
+- **Tests exist in**: `apps/desktop`, `packages/agent-host`, `packages/cli-registry`, and `packages/configconv`
 - CI runs `bun run test`
+- For product-level validation, use the root stack: `bun run check-types`, `bun run test`, `bun run lint`, `bun run build`
 - Run all: `bun run test` (from root)
+- Run desktop tests: `cd apps/desktop && bun test test/`
 - Run all in one package: `cd packages/configconv && bun test`
 - Run one file: `cd packages/configconv && bun test test/converter/mcp.test.ts`
 - Run by name: `cd packages/configconv && bun test --grep "pattern"`
