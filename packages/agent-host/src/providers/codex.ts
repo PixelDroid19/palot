@@ -40,6 +40,31 @@ const CODEX_FALLBACK_MODELS: AgentModelInfo[] = [
 ]
 
 /**
+ * When Palot is launched from inside another Codex-managed environment (for
+ * example this repo being driven from Codex Desktop), the child Codex runtime
+ * must NOT inherit the parent session markers. Otherwise the nested Codex
+ * process can try to reuse the parent's thread/skill context and probe stale
+ * skill roots before recovering.
+ *
+ * Keep user-level configuration such as CODEX_HOME intact; strip only the
+ * transient variables that tie the child to the parent session.
+ */
+export function buildCodexProcessEnv(extraEnv?: Record<string, string>): NodeJS.ProcessEnv {
+	const env: NodeJS.ProcessEnv = { ...process.env, ...extraEnv }
+	for (const key of Object.keys(env)) {
+		if (
+			key === "CODEX_CI" ||
+			key === "CODEX_SHELL" ||
+			key === "CODEX_THREAD_ID" ||
+			key.startsWith("CODEX_INTERNAL_")
+		) {
+			delete env[key]
+		}
+	}
+	return env
+}
+
+/**
  * Approval routing per sandbox level. Codex escalates outside-sandbox actions
  * as approval requests; full access never asks.
  */
@@ -463,7 +488,10 @@ export class CodexProvider implements AgentSessionProvider {
 	private async start(): Promise<JsonRpcConnection> {
 		const binary = await this.resolveBinary()
 		if (!binary) throw new Error("Codex CLI is not installed")
-		const child = spawn(binary, ["app-server"], { stdio: ["pipe", "pipe", "pipe"] })
+		const child = spawn(binary, ["app-server"], {
+			stdio: ["pipe", "pipe", "pipe"],
+			env: buildCodexProcessEnv(),
+		})
 		const rpc = new JsonRpcConnection(child)
 		rpc.onNotification((method, params) => {
 			const record = asRecord(params) ?? {}
