@@ -62,4 +62,35 @@ describe("JsonRpcConnection", () => {
 		child.kill("SIGKILL")
 		await expect(pending).rejects.toThrow()
 	})
+
+	test("process-exit errors keep the useful stderr and drop warning noise", async () => {
+		const source = `
+process.stderr.write("2026-07-08T00:00:00Z  WARN codex_core_plugins::manifest: noisy warning\\n")
+process.stderr.write("warning: Skill descriptions were shortened\\n")
+process.stderr.write("ERROR: real failure\\n")
+setTimeout(() => process.exit(1), 10)
+`
+		const child = spawn(process.execPath, ["-e", source], { stdio: ["pipe", "pipe", "pipe"] })
+		const rpc = new JsonRpcConnection(child)
+		try {
+			await rpc.request("never-answered")
+			throw new Error("request unexpectedly resolved")
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err)
+			expect(message).toContain("ERROR: real failure")
+			expect(message).not.toContain("WARN codex_core_plugins")
+			expect(message).not.toContain("Skill descriptions were shortened")
+		}
+	})
+
+	test("process-exit errors fall back to the exit code when stderr is warning-only", async () => {
+		const source = `
+process.stderr.write("2026-07-08T00:00:00Z  WARN codex_core_plugins::manifest: noisy warning\\n")
+process.stderr.write("warning: Skill descriptions were shortened\\n")
+setTimeout(() => process.exit(1), 10)
+`
+		const child = spawn(process.execPath, ["-e", source], { stdio: ["pipe", "pipe", "pipe"] })
+		const rpc = new JsonRpcConnection(child)
+		await expect(rpc.request("never-answered")).rejects.toThrow("process exited with code 1")
+	})
 })

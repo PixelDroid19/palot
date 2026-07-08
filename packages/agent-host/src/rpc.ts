@@ -13,6 +13,20 @@ export interface RpcError extends Error {
 
 type Json = Record<string, unknown>
 
+function isWarningLine(line: string): boolean {
+	return /\bWARN\b/.test(line) || /^warning:/i.test(line)
+}
+
+function summarizeStderr(stderrTail: string): string {
+	const lines = stderrTail
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter(Boolean)
+	if (!lines.length) return ""
+	const useful = lines.filter((line) => !isWarningLine(line))
+	return useful.join("\n")
+}
+
 export class JsonRpcConnection {
 	private nextId = 1
 	private pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>()
@@ -32,13 +46,12 @@ export class JsonRpcConnection {
 		})
 		const fail = (err: Error | null) => this.handleClosed(err)
 		child.on("error", (err) => fail(err))
-		child.on("close", (code) =>
+		child.on("close", (code) => {
+			const stderr = summarizeStderr(this.stderrTail)
 			fail(
-				code === 0 || this.closed
-					? null
-					: new Error(this.stderrTail.trim() || `process exited with code ${code}`),
-			),
-		)
+				code === 0 || this.closed ? null : new Error(stderr || `process exited with code ${code}`),
+			)
+		})
 	}
 
 	/** Register a handler for server→client notifications. */
