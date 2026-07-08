@@ -35,16 +35,16 @@ contextBridge.exposeInMainWorld("palot", {
 	getChromeTier: () => ipcRenderer.invoke("chrome-tier:get"),
 
 	/** Ensures the managed runtime server is running. Spawns it if not. */
-	ensureManagedRuntime: () => ipcRenderer.invoke("opencode:ensure"),
+	ensureManagedRuntime: () => ipcRenderer.invoke("project-runtime:ensure"),
 
 	/** Gets the URL of the running server, or null. */
-	getServerUrl: () => ipcRenderer.invoke("opencode:url"),
+	getServerUrl: () => ipcRenderer.invoke("project-runtime:url"),
 
 	/** Stops the managed runtime server. */
-	stopManagedRuntime: () => ipcRenderer.invoke("opencode:stop"),
+	stopManagedRuntime: () => ipcRenderer.invoke("project-runtime:stop"),
 
 	/** Restarts the managed runtime server (stops and re-starts with current settings). */
-	restartManagedRuntime: () => ipcRenderer.invoke("opencode:restart"),
+	restartManagedRuntime: () => ipcRenderer.invoke("project-runtime:restart"),
 
 	// --- Credential storage (safeStorage-backed) ---
 
@@ -368,9 +368,9 @@ contextBridge.exposeInMainWorld("palot", {
 
 	onboarding: {
 		/** Check if the managed runtime CLI is installed and compatible. */
-		checkManagedRuntime: () => ipcRenderer.invoke("onboarding:check-opencode"),
+		checkManagedRuntime: () => ipcRenderer.invoke("onboarding:check-project-runtime"),
 		/** Install the managed runtime CLI via the official install script. */
-		installManagedRuntime: () => ipcRenderer.invoke("onboarding:install-opencode"),
+		installManagedRuntime: () => ipcRenderer.invoke("onboarding:install-project-runtime"),
 		/** Subscribe to install output lines (streamed from the install script). */
 		onInstallOutput: (callback: (text: string) => void) => {
 			const listener = (_event: unknown, text: string) => callback(text)

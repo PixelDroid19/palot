@@ -204,17 +204,30 @@ export function registerIpcHandlers(): void {
 		"opencode:ensure",
 		withLogging("opencode:ensure", async () => await ensureManagedRuntimeServer()),
 	)
+	ipcMain.handle(
+		"project-runtime:ensure",
+		withLogging("project-runtime:ensure", async () => await ensureManagedRuntimeServer()),
+	)
 
 	ipcMain.handle("opencode:url", () => getManagedRuntimeUrl())
+	ipcMain.handle("project-runtime:url", () => getManagedRuntimeUrl())
 
 	ipcMain.handle(
 		"opencode:stop",
 		withLogging("opencode:stop", () => stopManagedRuntimeServer()),
 	)
+	ipcMain.handle(
+		"project-runtime:stop",
+		withLogging("project-runtime:stop", () => stopManagedRuntimeServer()),
+	)
 
 	ipcMain.handle(
 		"opencode:restart",
 		withLogging("opencode:restart", async () => await restartManagedRuntimeServer()),
+	)
+	ipcMain.handle(
+		"project-runtime:restart",
+		withLogging("project-runtime:restart", async () => await restartManagedRuntimeServer()),
 	)
 
 	// --- Model state ---
@@ -592,10 +605,24 @@ export function registerIpcHandlers(): void {
 		"onboarding:check-opencode",
 		withLogging("onboarding:check-opencode", async () => await checkManagedRuntimeInstallation()),
 	)
+	ipcMain.handle(
+		"onboarding:check-project-runtime",
+		withLogging(
+			"onboarding:check-project-runtime",
+			async () => await checkManagedRuntimeInstallation(),
+		),
+	)
 
 	ipcMain.handle(
 		"onboarding:install-opencode",
 		withLogging("onboarding:install-opencode", async () => await installManagedRuntime()),
+	)
+	ipcMain.handle(
+		"onboarding:install-project-runtime",
+		withLogging(
+			"onboarding:install-project-runtime",
+			async () => await installManagedRuntime(),
+		),
 	)
 
 	ipcMain.handle(
