@@ -24,7 +24,7 @@ import {
 	disposeAllInstances,
 	getSession,
 	getSessionStatuses,
-	listProjects,
+	listRuntimeProjects,
 	listSessions,
 	subscribeToGlobalEvents,
 } from "./project-runtime"
@@ -178,7 +178,7 @@ export async function loadAllProjects() {
 		return []
 	}
 	try {
-		const projects = await listProjects(client)
+		const projects = await listRuntimeProjects(client)
 		log.info("Loaded projects from API", { count: projects.length })
 		return projects
 	} catch (err) {

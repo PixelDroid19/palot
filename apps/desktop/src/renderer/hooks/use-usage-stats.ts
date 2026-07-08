@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { computeSessionCost, computeSessionTokens } from "../lib/session-metrics"
 import type { Message } from "../lib/types"
 import { getBaseClient, getProjectClient } from "../services/connection-manager"
-import { listProjects, listSessions } from "../services/project-runtime"
+import { listRuntimeProjects, listSessions } from "../services/project-runtime"
 
 // ============================================================
 // Types
@@ -122,7 +122,7 @@ async function aggregate(signal: AbortSignal): Promise<UsageStats> {
 	const baseClient = getBaseClient()
 	if (!baseClient) throw new Error("Not connected to OpenCode server")
 
-	const projects = await listProjects(baseClient)
+	const projects = await listRuntimeProjects(baseClient)
 	if (signal.aborted) return EMPTY_STATS
 
 	const totalTokens: UsageTokens = { ...EMPTY_TOKENS }

@@ -22,7 +22,7 @@ import type {
 	TextPart,
 	UserMessage,
 } from "../lib/types"
-import { requireProjectRuntimeSessionClient } from "./project-runtime-client"
+import { requireRuntimeSessionClient } from "./project-runtime-client"
 import {
 	createCliRuntimeSessionState,
 	switchCliRuntimeSession,
@@ -49,11 +49,11 @@ function sessionUsesCliRuntime(sessionId: string): boolean {
 	return isCliRuntimeState(readSessionRuntimeState(sessionId))
 }
 
-async function createProjectRuntimeSession(
+async function createConfigurableRuntimeSession(
 	directory: string,
 	title?: string,
 ): Promise<Session | undefined> {
-	const client = requireProjectRuntimeSessionClient(directory)
+	const client = requireRuntimeSessionClient(directory)
 	const result = await client.session.create({ title })
 	const session = result.data as Session | undefined
 	if (session) {
@@ -62,13 +62,13 @@ async function createProjectRuntimeSession(
 	return session
 }
 
-async function promptProjectRuntimeSession(
+async function promptConfigurableRuntimeSession(
 	directory: string,
 	sessionId: string,
 	text: string,
 	options?: RuntimePromptOptions,
 ): Promise<void> {
-	const client = requireProjectRuntimeSessionClient(directory)
+	const client = requireRuntimeSessionClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
 	const projectOptions = resolveConfiguredPromptOptions(
 		readSessionRuntimeState(sessionId),
@@ -185,20 +185,20 @@ interface SessionRuntimeGateway {
 	): Promise<Session>
 }
 
-const projectRuntimeSessionGateway: SessionRuntimeGateway & {
+const configurableRuntimeSessionGateway: SessionRuntimeGateway & {
 	createSession: (directory: string, title?: string) => Promise<Session | undefined>
 } = {
-	createSession: createProjectRuntimeSession,
+	createSession: createConfigurableRuntimeSession,
 	async promptSession(
 		directory: string,
 		sessionId: string,
 		text: string,
 		options?: RuntimePromptOptions,
 	): Promise<void> {
-		await promptProjectRuntimeSession(directory, sessionId, text, options)
+		await promptConfigurableRuntimeSession(directory, sessionId, text, options)
 	},
 	async abortSession(directory: string, sessionId: string): Promise<void> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		await client.session.abort({ sessionID: sessionId })
 	},
 	async renameSession(
@@ -206,11 +206,11 @@ const projectRuntimeSessionGateway: SessionRuntimeGateway & {
 		sessionId: string,
 		title: string,
 	): Promise<void> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		await client.session.update({ sessionID: sessionId, title })
 	},
 	async deleteSession(directory: string, sessionId: string): Promise<void> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		await client.session.delete({ sessionID: sessionId })
 	},
 	async revertSession(
@@ -218,7 +218,7 @@ const projectRuntimeSessionGateway: SessionRuntimeGateway & {
 		sessionId: string,
 		messageId: string,
 	): Promise<void> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		const entry = appStore.get(sessionFamily(sessionId))
 		if (entry?.status?.type === "busy") {
 			await client.session.abort({ sessionID: sessionId })
@@ -226,7 +226,7 @@ const projectRuntimeSessionGateway: SessionRuntimeGateway & {
 		await client.session.revert({ sessionID: sessionId, messageID: messageId })
 	},
 	async unrevertSession(directory: string, sessionId: string): Promise<void> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		await client.session.unrevert({ sessionID: sessionId })
 	},
 	async executeCommand(
@@ -235,7 +235,7 @@ const projectRuntimeSessionGateway: SessionRuntimeGateway & {
 		command: string,
 		args: string,
 	): Promise<void> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		await client.session.command({
 			sessionID: sessionId,
 			command,
@@ -247,7 +247,7 @@ const projectRuntimeSessionGateway: SessionRuntimeGateway & {
 		sessionId: string,
 		model?: { providerID: string; modelID: string },
 	): Promise<void> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		await client.session.summarize({
 			sessionID: sessionId,
 			providerID: model?.providerID,
@@ -260,7 +260,7 @@ const projectRuntimeSessionGateway: SessionRuntimeGateway & {
 		messageId: string,
 		partId: string,
 	): Promise<void> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		await client.part.delete({ sessionID: sessionId, messageID: messageId, partID: partId })
 	},
 	async forkSession(
@@ -268,7 +268,7 @@ const projectRuntimeSessionGateway: SessionRuntimeGateway & {
 		sessionId: string,
 		messageId?: string,
 	): Promise<Session> {
-		const client = requireProjectRuntimeSessionClient(directory)
+		const client = requireRuntimeSessionClient(directory)
 		const result = await client.session.fork({
 			sessionID: sessionId,
 			messageID: messageId,
@@ -324,7 +324,7 @@ const cliRuntimeSessionGateway: SessionRuntimeGateway = {
 function runtimeGatewayForSession(sessionId: string): SessionRuntimeGateway {
 	return sessionUsesCliRuntime(sessionId)
 		? cliRuntimeSessionGateway
-		: projectRuntimeSessionGateway
+		: configurableRuntimeSessionGateway
 }
 
 function runtimeGatewayForPrompt(
@@ -333,7 +333,7 @@ function runtimeGatewayForPrompt(
 ): SessionRuntimeGateway {
 	return shouldUseCliRuntime(sessionId, options)
 		? cliRuntimeSessionGateway
-		: projectRuntimeSessionGateway
+		: configurableRuntimeSessionGateway
 }
 
 export const runtimeSessionGateway = {
@@ -355,7 +355,7 @@ export const runtimeSessionGateway = {
 			}
 		}
 
-		const session = await projectRuntimeSessionGateway.createSession(args.directory, args.title)
+		const session = await configurableRuntimeSessionGateway.createSession(args.directory, args.title)
 		if (!session) return null
 		return {
 			runtimeId: DEFAULT_SESSION_RUNTIME_ID,
@@ -371,7 +371,7 @@ export const runtimeSessionGateway = {
 		if (!isCliRuntime(targetRuntime)) {
 			return switchCliSessionIntoProjectRuntime(
 				sessionId,
-				projectRuntimeSessionGateway.createSession,
+				configurableRuntimeSessionGateway.createSession,
 			)
 		}
 
