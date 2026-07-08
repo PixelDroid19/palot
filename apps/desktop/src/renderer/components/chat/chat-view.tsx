@@ -64,6 +64,7 @@ import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
 import {
 	persistRuntimeSelection,
+	sessionRuntimeCapabilities,
 	type RuntimePromptOptions,
 	useSessionRuntimeState,
 } from "../../lib/runtime-session-config"
@@ -830,6 +831,7 @@ function ChatInputSection({
 	// CLI-backed sessions use their own model; hide the OpenCode agent/model
 	// picker. Reactive so a mid-session runtime switch swaps the toolbar live.
 	const runtimeState = useSessionRuntimeState(agent.sessionId, agent.directory)
+	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
 	const cliMeta = runtimeState.runtime === "cli" ? runtimeState.meta : null
 	const isCli = runtimeState.runtime === "cli"
 
@@ -1078,7 +1080,7 @@ function ChatInputSection({
 					return true
 				case "compact":
 				case "summarize":
-					if (runtimeState.runtime === "opencode" && agent.directory && effectiveModel) {
+					if (runtimeCapabilities.supportsSessionSummarize && agent.directory && effectiveModel) {
 						try {
 							await summarizeRuntimeSession(agent.directory, agent.sessionId, {
 								providerID: effectiveModel.providerID,
@@ -1093,7 +1095,7 @@ function ChatInputSection({
 					break
 			}
 
-			if (runtimeState.runtime === "opencode" && agent.directory) {
+			if (runtimeCapabilities.supportsServerSlashCommands && agent.directory) {
 				try {
 					await executeRuntimeCommand(agent.directory, agent.sessionId, cmdName, cmdArgs)
 					return true
@@ -1104,7 +1106,7 @@ function ChatInputSection({
 
 			return false
 		},
-		[agent, onUndo, onRedo, effectiveModel, runtimeState.runtime],
+		[agent, onUndo, onRedo, effectiveModel, runtimeCapabilities],
 	)
 
 	const handleSend = useCallback(
@@ -1434,6 +1436,7 @@ function ChatInputSection({
 								open={slashOpen}
 								enabled={isConnected}
 								directory={agent.directory}
+								capabilities={runtimeCapabilities}
 								onSelect={handleSlashSelect}
 								onSkillsOpen={handleSkillsOpen}
 								onFork={handleForkViaSlash}

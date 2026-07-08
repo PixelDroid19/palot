@@ -36,6 +36,7 @@ import {
 	useState,
 } from "react"
 import { useServerCommands } from "../../hooks/use-opencode-data"
+import type { SessionRuntimeCapabilities } from "../../lib/runtime-session-config"
 
 // ============================================================
 // Types
@@ -68,6 +69,8 @@ interface SlashCommandPopoverProps {
 	enabled: boolean
 	/** Directory for fetching server commands */
 	directory: string | null
+	/** Runtime-specific feature support */
+	capabilities: SessionRuntimeCapabilities
 	/** Callback when a command is selected */
 	onSelect: (command: string) => void
 	/** Called when the /skills entry is selected — opens the skills picker */
@@ -119,6 +122,23 @@ const CLIENT_COMMANDS: SlashCommand[] = [
 	},
 ]
 
+function supportsClientCommand(
+	command: SlashCommand,
+	capabilities: SessionRuntimeCapabilities,
+): boolean {
+	switch (command.name) {
+		case "undo":
+		case "redo":
+			return capabilities.supportsSessionRevert
+		case "compact":
+			return capabilities.supportsSessionSummarize
+		case "fork":
+			return capabilities.supportsFork
+		default:
+			return true
+	}
+}
+
 function getCommandIcon(name: string): LucideIcon {
 	switch (name) {
 		case "init":
@@ -140,14 +160,16 @@ function getCommandIcon(name: string): LucideIcon {
 
 export const SlashCommandPopover = memo(
 	forwardRef<SlashCommandPopoverHandle, SlashCommandPopoverProps>(function SlashCommandPopover(
-		{ query, open, directory, onSelect, onSkillsOpen, onFork, onClose },
+		{ query, open, directory, capabilities, onSelect, onSkillsOpen, onFork, onClose },
 		ref,
 	) {
 		const [activeIndex, setActiveIndex] = useState(0)
 		const listRef = useRef<HTMLDivElement>(null)
 
 		// --- Server commands (skills excluded, matching TUI pattern) ---
-		const rawServerCommands = useServerCommands(directory)
+		const rawServerCommands = useServerCommands(
+			capabilities.supportsServerSlashCommands ? directory : null,
+		)
 		const serverCommands = useMemo<SlashCommand[]>(
 			() =>
 				rawServerCommands
@@ -163,7 +185,13 @@ export const SlashCommandPopover = memo(
 		)
 
 		// --- Merge: server commands first, then built-in (matching TUI ordering) ---
-		const allCommands = useMemo(() => [...serverCommands, ...CLIENT_COMMANDS], [serverCommands])
+		const allCommands = useMemo(
+			() => [
+				...serverCommands,
+				...CLIENT_COMMANDS.filter((command) => supportsClientCommand(command, capabilities)),
+			],
+			[capabilities, serverCommands],
+		)
 
 		// --- Fuzzy filter ---
 		const flatList = useMemo<SlashCommand[]>(() => {

@@ -4,7 +4,10 @@ import { messagesFamily } from "../atoms/messages"
 import { partsFamily } from "../atoms/parts"
 import { sessionFamily } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
-import { useSessionRuntimeState } from "../lib/runtime-session-config"
+import {
+	sessionRuntimeCapabilities,
+	useSessionRuntimeState,
+} from "../lib/runtime-session-config"
 import type { Session, TextPart } from "../lib/types"
 import {
 	executeRuntimeCommand,
@@ -89,6 +92,7 @@ export function useSessionRevert(
 ): UseSessionRevertResult {
 	const entry = useAtomValue(sessionFamily(sessionId ?? ""))
 	const runtimeState = useSessionRuntimeState(sessionId ?? "", directory)
+	const capabilities = sessionRuntimeCapabilities(runtimeState)
 	const session = entry?.session
 	const messages = useAtomValue(messagesFamily(sessionId ?? ""))
 
@@ -96,16 +100,16 @@ export function useSessionRevert(
 	const revertInfo = session?.revert
 
 	const canUndo = useMemo(() => {
-		if (runtimeState.runtime !== "opencode") return false
+		if (!capabilities.supportsSessionRevert) return false
 		if (!directory || !sessionId || !messages || messages.length === 0) return false
 		const target = findUndoTarget(sessionId, revertInfo?.messageID)
 		return target !== null
-	}, [runtimeState.runtime, directory, sessionId, messages, revertInfo])
+	}, [capabilities.supportsSessionRevert, directory, sessionId, messages, revertInfo])
 
-	const canRedo = runtimeState.runtime === "opencode" && isReverted
+	const canRedo = capabilities.supportsSessionRevert && isReverted
 
 	const undo = useCallback(async (): Promise<string | undefined> => {
-		if (runtimeState.runtime !== "opencode") return undefined
+		if (!capabilities.supportsSessionRevert) return undefined
 		if (!directory || !sessionId) return undefined
 
 		const targetId = findUndoTarget(sessionId, revertInfo?.messageID)
@@ -114,10 +118,10 @@ export function useSessionRevert(
 		const userText = getUserMessageText(targetId)
 		await revertRuntimeSession(directory, sessionId, targetId)
 		return userText
-	}, [runtimeState.runtime, directory, sessionId, revertInfo])
+	}, [capabilities.supportsSessionRevert, directory, sessionId, revertInfo])
 
 	const redo = useCallback(async () => {
-		if (runtimeState.runtime !== "opencode") return
+		if (!capabilities.supportsSessionRevert) return
 		if (!directory || !sessionId || !revertInfo) return
 
 		const nextTarget = findRedoTarget(sessionId, revertInfo.messageID)
@@ -126,15 +130,15 @@ export function useSessionRevert(
 		} else {
 			await unrevertRuntimeSession(directory, sessionId)
 		}
-	}, [runtimeState.runtime, directory, sessionId, revertInfo])
+	}, [capabilities.supportsSessionRevert, directory, sessionId, revertInfo])
 
 	const revertToMessage = useCallback(
 		async (messageId: string) => {
-			if (runtimeState.runtime !== "opencode") return
+			if (!capabilities.supportsSessionRevert) return
 			if (!directory || !sessionId) return
 			await revertRuntimeSession(directory, sessionId, messageId)
 		},
-		[runtimeState.runtime, directory, sessionId],
+		[capabilities.supportsSessionRevert, directory, sessionId],
 	)
 
 	return { isReverted, revertInfo, canUndo, canRedo, undo, redo, revertToMessage }
@@ -153,7 +157,10 @@ export function useCommands(
 ): AppCommand[] {
 	const { canUndo, canRedo, undo, redo } = useSessionRevert(directory, sessionId)
 	const runtimeState = useSessionRuntimeState(sessionId ?? "", directory)
-	const serverCommands = useServerCommands(directory)
+	const capabilities = sessionRuntimeCapabilities(runtimeState)
+	const serverCommands = useServerCommands(
+		capabilities.supportsServerSlashCommands ? directory : null,
+	)
 	const entry = useAtomValue(sessionFamily(sessionId ?? ""))
 	const sessionStatus = entry?.status
 	const isIdle = sessionStatus?.type === "idle" || !sessionStatus
@@ -192,7 +199,7 @@ export function useCommands(
 			name: "compact",
 			label: "Compact",
 			description: "Summarize the conversation to save context",
-			enabled: runtimeState.runtime === "opencode" && !!directory && !!sessionId && isIdle,
+			enabled: capabilities.supportsSessionSummarize && !!directory && !!sessionId && isIdle,
 			source: "client",
 			execute: async () => {
 				if (!directory || !sessionId) return
@@ -218,7 +225,7 @@ export function useCommands(
 			name: cmd.name,
 			label: cmd.name.charAt(0).toUpperCase() + cmd.name.slice(1),
 			description: cmd.description ?? `Run /${cmd.name}`,
-			enabled: runtimeState.runtime === "opencode" && !!directory && !!sessionId && isIdle,
+			enabled: capabilities.supportsServerSlashCommands && !!directory && !!sessionId && isIdle,
 			source: "server" as const,
 			execute: async () => {
 				if (!directory || !sessionId) return
@@ -226,7 +233,7 @@ export function useCommands(
 			},
 		}))
 		return [...clientCommands, ...serverCmds]
-	}, [clientCommands, runtimeState.runtime, serverCommands, directory, sessionId, isIdle])
+	}, [capabilities.supportsServerSlashCommands, clientCommands, serverCommands, directory, sessionId, isIdle])
 
 	return allCommands
 }

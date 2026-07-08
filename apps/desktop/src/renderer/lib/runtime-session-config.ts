@@ -52,6 +52,35 @@ export type SessionRuntimeState =
 			modelPreference: PersistedModelRef | null
 	  }
 
+export interface SessionRuntimeCapabilities {
+	supportsSessionRevert: boolean
+	supportsSessionSummarize: boolean
+	supportsServerSlashCommands: boolean
+	supportsFork: boolean
+}
+
+export const OPENCODE_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
+	supportsSessionRevert: true,
+	supportsSessionSummarize: true,
+	supportsServerSlashCommands: true,
+	supportsFork: true,
+}
+
+export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
+	supportsSessionRevert: false,
+	supportsSessionSummarize: false,
+	supportsServerSlashCommands: false,
+	supportsFork: false,
+}
+
+export function sessionRuntimeCapabilities(
+	state: Pick<SessionRuntimeState, "runtime">,
+): SessionRuntimeCapabilities {
+	return state.runtime === "opencode"
+		? OPENCODE_SESSION_RUNTIME_CAPABILITIES
+		: CLI_SESSION_RUNTIME_CAPABILITIES
+}
+
 export function readProjectRuntimePreference(
 	directory: string | null | undefined,
 ): PersistedModelRef | null {
