@@ -31,7 +31,7 @@ export const OPENCODE_COMPAT = {
 // Types
 // ============================================================
 
-export interface OpenCodeCheckResult {
+export interface ManagedRuntimeCheckResult {
 	installed: boolean
 	version: string | null
 	path: string | null
@@ -40,7 +40,7 @@ export interface OpenCodeCheckResult {
 	message: string | null
 }
 
-export type ManagedRuntimeCheckResult = OpenCodeCheckResult
+export interface OpenCodeCheckResult extends ManagedRuntimeCheckResult {}
 
 // ============================================================
 // Binary detection
@@ -111,7 +111,7 @@ async function detectOpenCode(): Promise<{ version: string | null; path: string 
  * Check whether OpenCode is installed and compatible with this version of Palot.
  * Runs the binary to get its version, then compares against the compatibility range.
  */
-export async function checkOpenCode(): Promise<OpenCodeCheckResult> {
+export async function checkManagedRuntime(): Promise<ManagedRuntimeCheckResult> {
 	log.info("Checking OpenCode installation...")
 
 	const { version, path: binaryPath } = await detectOpenCode()
@@ -195,4 +195,4 @@ export async function checkOpenCode(): Promise<OpenCodeCheckResult> {
 	}
 }
 
-export const checkManagedRuntime = checkOpenCode
+export const checkOpenCode = checkManagedRuntime

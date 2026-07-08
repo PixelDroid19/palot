@@ -13,15 +13,15 @@ const DEFAULT_READY_PATH = "/session"
 const DEFAULT_READY_TIMEOUT_MS = 15_000
 const DEFAULT_AUTH_USERNAME = "opencode"
 
-export interface OpenCodeServerProcess {
+export interface ManagedRuntimeServerProcess {
 	url: string
 	process: ChildProcess
 	binary: string
 }
 
-export type ManagedRuntimeServerProcess = OpenCodeServerProcess
+export interface OpenCodeServerProcess extends ManagedRuntimeServerProcess {}
 
-export interface StartOpenCodeServerOptions {
+export interface StartManagedRuntimeServerOptions {
 	hostname: string
 	port: number
 	password?: string | null
@@ -31,26 +31,26 @@ export interface StartOpenCodeServerOptions {
 	timeoutMs?: number
 }
 
-export type StartManagedRuntimeServerOptions = StartOpenCodeServerOptions
+export interface StartOpenCodeServerOptions extends StartManagedRuntimeServerOptions {}
 
-export function getOpenCodeBinDir(): string {
+export function getManagedRuntimeBinDir(): string {
 	return path.join(homedir(), ".opencode", "bin")
 }
 
-export const getManagedRuntimeBinDir = getOpenCodeBinDir
+export const getOpenCodeBinDir = getManagedRuntimeBinDir
 
-export function getOpenCodeAugmentedPath(basePath = process.env.PATH ?? ""): string {
+export function getManagedRuntimeAugmentedPath(basePath = process.env.PATH ?? ""): string {
 	const sep = process.platform === "win32" ? ";" : ":"
-	const binDir = getOpenCodeBinDir()
+	const binDir = getManagedRuntimeBinDir()
 	const segments = basePath.split(sep).filter(Boolean)
 	if (segments.includes(binDir)) return basePath
 	return basePath ? `${binDir}${sep}${basePath}` : binDir
 }
 
-export const getManagedRuntimeAugmentedPath = getOpenCodeAugmentedPath
+export const getOpenCodeAugmentedPath = getManagedRuntimeAugmentedPath
 
-export async function resolveOpenCodeBinary(
-	augmentedPath = getOpenCodeAugmentedPath(),
+export async function resolveManagedRuntimeBinary(
+	augmentedPath = getManagedRuntimeAugmentedPath(),
 ): Promise<string> {
 	return (
 		(await whichOnPath("opencode", augmentedPath)) ??
@@ -59,23 +59,23 @@ export async function resolveOpenCodeBinary(
 	)
 }
 
-export const resolveManagedRuntimeBinary = resolveOpenCodeBinary
+export const resolveOpenCodeBinary = resolveManagedRuntimeBinary
 
-export function buildOpenCodeAuthHeader(
+export function buildManagedRuntimeAuthHeader(
 	password: string,
 	username = DEFAULT_AUTH_USERNAME,
 ): string {
 	return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`
 }
 
-export const buildManagedRuntimeAuthHeader = buildOpenCodeAuthHeader
+export const buildOpenCodeAuthHeader = buildManagedRuntimeAuthHeader
 
 function createHeaders(authHeader?: string | null): Record<string, string> | undefined {
 	if (!authHeader) return undefined
 	return { Authorization: authHeader }
 }
 
-export function createMainProcessOpenCodeClient(args: {
+export function createMainProcessManagedRuntimeClient(args: {
 	baseUrl: string
 	directory?: string
 	authHeader?: string | null
@@ -87,9 +87,9 @@ export function createMainProcessOpenCodeClient(args: {
 	})
 }
 
-export const createMainProcessManagedRuntimeClient = createMainProcessOpenCodeClient
+export const createMainProcessOpenCodeClient = createMainProcessManagedRuntimeClient
 
-export async function probeOpenCodeServer(
+export async function probeManagedRuntimeServer(
 	url: string,
 	args: {
 		authHeader?: string | null
@@ -115,9 +115,9 @@ export async function probeOpenCodeServer(
 	return false
 }
 
-export const probeManagedRuntimeServer = probeOpenCodeServer
+export const probeOpenCodeServer = probeManagedRuntimeServer
 
-export async function waitForOpenCodeServer(
+export async function waitForManagedRuntimeServer(
 	url: string,
 	args: {
 		authHeader?: string | null
@@ -160,13 +160,13 @@ export async function waitForOpenCodeServer(
 	throw new Error(`OpenCode runtime at ${url} did not become ready within ${timeoutMs}ms`)
 }
 
-export const waitForManagedRuntimeServer = waitForOpenCodeServer
+export const waitForOpenCodeServer = waitForManagedRuntimeServer
 
-export async function startOpenCodeServerProcess(
-	options: StartOpenCodeServerOptions,
-): Promise<OpenCodeServerProcess> {
-	const augmentedPath = getOpenCodeAugmentedPath()
-	const binary = await resolveOpenCodeBinary(augmentedPath)
+export async function startManagedRuntimeServerProcess(
+	options: StartManagedRuntimeServerOptions,
+): Promise<ManagedRuntimeServerProcess> {
+	const augmentedPath = getManagedRuntimeAugmentedPath()
+	const binary = await resolveManagedRuntimeBinary(augmentedPath)
 	const args = ["serve", `--hostname=${options.hostname}`, `--port=${options.port}`]
 
 	if (options.password) {
@@ -220,7 +220,7 @@ export async function startOpenCodeServerProcess(
 		proc.once("error", onError)
 		proc.once("exit", onExit)
 		void waitForOpenCodeServer(url, {
-			authHeader: options.password ? buildOpenCodeAuthHeader(options.password) : null,
+			authHeader: options.password ? buildManagedRuntimeAuthHeader(options.password) : null,
 			timeoutMs: options.timeoutMs,
 		}).then(
 			() => {
@@ -237,4 +237,4 @@ export async function startOpenCodeServerProcess(
 	return { url, process: proc, binary }
 }
 
-export const startManagedRuntimeServerProcess = startOpenCodeServerProcess
+export const startOpenCodeServerProcess = startManagedRuntimeServerProcess

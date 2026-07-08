@@ -7,13 +7,13 @@ import type { ConversionCategory } from "@palot/configconv"
  * The renderer accesses these via `window.palot`.
  */
 
-export interface OpenCodeServerInfo {
+export interface ManagedRuntimeServerInfo {
 	url: string
 	pid: number | null
 	managed: boolean
 }
 
-export type ManagedRuntimeServerInfo = OpenCodeServerInfo
+export interface OpenCodeServerInfo extends ManagedRuntimeServerInfo {}
 
 export interface ModelRef {
 	providerID: string

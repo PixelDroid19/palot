@@ -155,11 +155,11 @@ const PROVIDER_LABELS: Record<MigrationProvider, string> = {
 // OpenCode check (delegates to compatibility module)
 // ============================================================
 
-export async function checkOpenCodeInstallation(): Promise<ManagedRuntimeCheckResult> {
+export async function checkManagedRuntimeInstallation(): Promise<ManagedRuntimeCheckResult> {
 	return checkManagedRuntime()
 }
 
-export const checkManagedRuntimeInstallation = checkOpenCodeInstallation
+export const checkOpenCodeInstallation = checkManagedRuntimeInstallation
 
 // ============================================================
 // OpenCode install
@@ -172,7 +172,7 @@ let installProcess: ChildProcess | null = null
  * Streams output lines to the renderer via the "onboarding:install-output" channel.
  * Returns when the install process exits.
  */
-export async function installOpenCode(): Promise<{ success: boolean; error?: string }> {
+export async function installManagedRuntime(): Promise<{ success: boolean; error?: string }> {
 	if (installProcess) {
 		return { success: false, error: "Installation already in progress" }
 	}
@@ -311,7 +311,7 @@ export async function installOpenCode(): Promise<{ success: boolean; error?: str
 	}
 }
 
-export const installManagedRuntime = installOpenCode
+export const installOpenCode = installManagedRuntime
 
 // ============================================================
 // Multi-provider detection (lightweight, no configconv import)

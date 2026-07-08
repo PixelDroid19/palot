@@ -22,13 +22,13 @@ const log = createLogger("opencode-manager")
 // Types
 // ============================================================
 
-export interface OpenCodeServer {
+export interface ManagedRuntimeServer {
 	url: string
 	pid: number | null
 	managed: boolean
 }
 
-export type ManagedRuntimeServer = OpenCodeServer
+export interface OpenCodeServer extends ManagedRuntimeServer {}
 
 /** Result of detecting an existing server on the target port. */
 type DetectionResult =
@@ -69,7 +69,7 @@ function getLocalServerConfig(): LocalServerConfig {
  * different OS user. If a conflict is detected, prompts the user with a
  * dialog offering to start on a different port or connect anyway.
  */
-export async function ensureServer(): Promise<OpenCodeServer> {
+export async function ensureManagedRuntimeServer(): Promise<ManagedRuntimeServer> {
 	if (singleServer) {
 		log.debug("Server already running", {
 			url: singleServer.server.url,
@@ -123,27 +123,27 @@ export async function ensureServer(): Promise<OpenCodeServer> {
 	return spawnServer(hostname, port, config, localPassword, authHeader)
 }
 
-export const ensureManagedRuntimeServer = ensureServer
+export const ensureServer = ensureManagedRuntimeServer
 
 /**
  * Gets the single server URL, or null if not running.
  */
-export function getServerUrl(): string | null {
+export function getManagedRuntimeUrl(): string | null {
 	return singleServer?.server.url ?? null
 }
 
-export const getManagedRuntimeUrl = getServerUrl
+export const getServerUrl = getManagedRuntimeUrl
 
-export function getServerAuthHeader(): string | null {
+export function getManagedRuntimeAuthHeader(): string | null {
 	return singleServer?.authHeader ?? null
 }
 
-export const getManagedRuntimeAuthHeader = getServerAuthHeader
+export const getServerAuthHeader = getManagedRuntimeAuthHeader
 
 /**
  * Stops the single server if we manage it and removes the lockfile.
  */
-export function stopServer(): boolean {
+export function stopManagedRuntimeServer(): boolean {
 	stopNotificationWatcher()
 	if (!singleServer?.process) {
 		log.debug("No managed server to stop")
@@ -158,19 +158,19 @@ export function stopServer(): boolean {
 	return true
 }
 
-export const stopManagedRuntimeServer = stopServer
+export const stopServer = stopManagedRuntimeServer
 
 /**
  * Restarts the managed server (stop + start). Used when local server
  * settings (hostname, port, password) change.
  */
-export async function restartServer(): Promise<OpenCodeServer> {
+export async function restartManagedRuntimeServer(): Promise<ManagedRuntimeServer> {
 	log.info("Restarting server due to settings change")
-	stopServer()
-	return ensureServer()
+	stopManagedRuntimeServer()
+	return ensureManagedRuntimeServer()
 }
 
-export const restartManagedRuntimeServer = restartServer
+export const restartServer = restartManagedRuntimeServer
 
 // ============================================================
 // Internal -- lockfile handling
