@@ -30,27 +30,6 @@ import {
 	readString,
 } from "../types"
 
-const CODEX_FALLBACK_MODELS: AgentModelInfo[] = [
-	{
-		slug: "gpt-5.5",
-		label: "GPT-5.5",
-		efforts: ["low", "medium", "high", "xhigh"],
-		defaultEffort: "medium",
-	},
-	{
-		slug: "gpt-5.4",
-		label: "GPT-5.4",
-		efforts: ["low", "medium", "high", "xhigh"],
-		defaultEffort: "medium",
-	},
-	{
-		slug: "gpt-5.4-mini",
-		label: "GPT-5.4-Mini",
-		efforts: ["low", "medium", "high", "xhigh"],
-		defaultEffort: "medium",
-	},
-]
-
 /**
  * When Palot is launched from inside another Codex-managed environment (for
  * example this repo being driven from Codex Desktop), the child Codex runtime
@@ -567,10 +546,9 @@ export class CodexProvider implements AgentSessionProvider {
 					defaultEffort: readString(model.defaultReasoningEffort) || undefined,
 				})
 			}
-			if (!models.length) return CODEX_FALLBACK_MODELS
 			return models
 		} catch {
-			return CODEX_FALLBACK_MODELS
+			return []
 		}
 	}
 

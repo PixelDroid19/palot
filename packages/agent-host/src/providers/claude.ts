@@ -39,14 +39,6 @@ import {
 	readString,
 } from "../types"
 
-const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
-const CLAUDE_FALLBACK_MODELS: AgentModelInfo[] = [
-	{ slug: "sonnet", label: "Sonnet", efforts: CLAUDE_EFFORTS },
-	{ slug: "opus", label: "Opus", efforts: CLAUDE_EFFORTS },
-	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS },
-	{ slug: "fable", label: "Fable", efforts: CLAUDE_EFFORTS },
-]
-
 const TOOL_RESULT_MAX_CHARS = 4_000
 
 function permissionMode(sandbox: AgentSandbox | undefined): PermissionMode {
@@ -604,7 +596,7 @@ export class ClaudeProvider implements AgentSessionProvider {
 	constructor(private readonly resolveBinary: () => Promise<string | null>) {}
 
 	async listModels(): Promise<AgentModelInfo[]> {
-		return CLAUDE_FALLBACK_MODELS
+		return []
 	}
 
 	async openSession(
