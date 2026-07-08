@@ -177,6 +177,103 @@ describe("claudeCodeToCanonical", () => {
 		expect(result.global.extraSettings?.outputStyle).toBe("Explanatory")
 	})
 
+	test("applies project MCP enabled/disabled state", () => {
+		const scan = emptyCCScan()
+		scan.projects.push({
+			path: "/test/project",
+			agents: [],
+			commands: [],
+			skills: [],
+			projectMcpServers: {},
+			disabledMcpServers: ["old-server"],
+			enabledMcpServers: ["new-server"],
+			mcpJson: {
+				mcpServers: {
+					"old-server": {
+						command: "node",
+						args: ["-e", "console.log('old')"],
+					},
+					"new-server": {
+						command: "node",
+						args: ["-e", "console.log('new')"],
+					},
+				},
+			},
+		})
+
+		const result = claudeCodeToCanonical(scan)
+
+		expect(result.projects[0].mcpServers["old-server"].enabled).toBe(false)
+		expect(result.projects[0].mcpServers["new-server"].enabled).toBe(true)
+	})
+
+	test("captures project hooks in extra settings", () => {
+		const scan = emptyCCScan()
+		scan.projects.push({
+			path: "/test/project",
+			agents: [],
+			commands: [],
+			skills: [],
+			projectMcpServers: {},
+			settingsLocal: {
+				hooks: {
+					PreToolUse: [
+						{
+							matcher: "**/*",
+							hooks: [
+								{
+									type: "command",
+									command: "echo hi",
+								},
+							],
+						},
+					],
+				},
+			},
+		})
+
+		const result = claudeCodeToCanonical(scan)
+
+		expect(result.projects[0].extraSettings?.hooks).toEqual({
+			PreToolUse: [
+				{
+					matcher: "**/*",
+					hooks: [
+						{
+							type: "command",
+							command: "echo hi",
+						},
+					],
+				},
+			],
+		})
+	})
+
+	test("uses allowed tools as permissions when permissions block is missing", () => {
+		const scan = emptyCCScan()
+		scan.projects.push({
+			path: "/test/project",
+			agents: [],
+			commands: [],
+			skills: [],
+			projectMcpServers: {},
+			allowedTools: ["Bash", "Read", "Write(foo)", "Glob"],
+		})
+
+		const result = claudeCodeToCanonical(scan)
+
+		expect(result.projects[0].permissions).toEqual(
+			expect.objectContaining({
+				"*": "ask",
+				bash: "allow",
+				read: "allow",
+				write: {
+					foo: "allow",
+				},
+			}),
+		)
+	})
+
 	test("converts autoUpdatesChannel to autoUpdate boolean", () => {
 		const scan = emptyCCScan()
 		scan.global.settings = { autoUpdatesChannel: "latest" }

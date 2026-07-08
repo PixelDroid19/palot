@@ -214,7 +214,10 @@ describe("canonicalToCursor", () => {
 		const result = canonicalToCursor(scan)
 
 		expect(result.report.warnings.length).toBeGreaterThan(0)
-		expect(result.report.warnings[0]).toContain("credentials")
+		const warning = result.report.warnings[0]
+		expect(
+			typeof warning === "string" ? warning : warning.message,
+		).toContain("credentials")
 	})
 
 	test("converts project MCP to .cursor/mcp.json", () => {

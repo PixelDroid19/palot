@@ -6,7 +6,12 @@
  */
 
 import type { AgentFormat } from "@palot/configconv"
-import { formatName, scanFormat, universalConvert } from "@palot/configconv"
+import {
+	conversionReportMessageToText,
+	formatName,
+	scanFormat,
+	universalConvert,
+} from "@palot/configconv"
 import { defineCommand } from "citty"
 import consola from "consola"
 
@@ -120,14 +125,16 @@ export default defineCommand({
 		if (conversion.report.warnings.length > 0) {
 			consola.warn(`Warnings (${conversion.report.warnings.length}):`)
 			for (const w of conversion.report.warnings) {
-				consola.log(`  ${w}`)
+				consola.log(`  ${conversionReportMessageToText(w)}`)
 			}
 		}
 
 		if (conversion.report.manualActions.length > 0) {
 			consola.box({
 				title: "Manual Actions Required",
-				message: conversion.report.manualActions.map((a, i) => `${i + 1}. ${a}`).join("\n"),
+				message: conversion.report.manualActions
+					.map((a, i) => `${i + 1}. ${conversionReportMessageToText(a)}`)
+					.join("\n"),
 			})
 		}
 

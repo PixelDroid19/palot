@@ -96,9 +96,12 @@ export type {
 	ConversionCategory,
 	ConversionReport,
 	ConversionReportItem,
+	ConversionReportMessage,
+	ConversionReportMessageInput,
 	UniversalConvertOptions,
 } from "./types/canonical"
 export {
+	conversionReportMessageToText,
 	createEmptyReport as createEmptyConversionReport,
 	mergeReports as mergeConversionReports,
 } from "./types/canonical"

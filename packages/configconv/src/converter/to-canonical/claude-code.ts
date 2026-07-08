@@ -112,12 +112,30 @@ function convertProject(
 		}
 	}
 
+	const disabledSet = new Set(project.disabledMcpServers ?? [])
+	const enabledSet = new Set(project.enabledMcpServers ?? [])
+	for (const [name, server] of Object.entries(result.mcpServers)) {
+		if (disabledSet.has(name)) {
+			server.enabled = false
+		} else if (enabledSet.has(name)) {
+			server.enabled = true
+		}
+	}
+
 	// Permissions
 	if (project.settingsLocal?.permissions || project.allowedTools) {
 		result.permissions = convertCCPermissions(
 			project.settingsLocal?.permissions,
 			project.allowedTools,
 		)
+	}
+
+	const extraSettings: Record<string, unknown> = {}
+	if (project.settingsLocal?.hooks) {
+		extraSettings.hooks = project.settingsLocal.hooks
+	}
+	if (Object.keys(extraSettings).length > 0) {
+		result.extraSettings = extraSettings
 	}
 
 	// Rules (CLAUDE.md)

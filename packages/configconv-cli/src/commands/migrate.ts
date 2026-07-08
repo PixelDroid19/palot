@@ -7,6 +7,7 @@
 
 import type { AgentFormat } from "@palot/configconv"
 import {
+	conversionReportMessageToText,
 	convertCursorHistory,
 	formatName,
 	scanFormat,
@@ -202,7 +203,7 @@ export default defineCommand({
 			consola.log("")
 			consola.warn(`Warnings (${conversion.report.warnings.length}):`)
 			for (const w of conversion.report.warnings) {
-				consola.log(`  ${w}`)
+				consola.log(`  ${conversionReportMessageToText(w)}`)
 			}
 		}
 
@@ -210,7 +211,9 @@ export default defineCommand({
 			consola.log("")
 			consola.box({
 				title: "Manual Actions Required",
-				message: conversion.report.manualActions.map((a, i) => `${i + 1}. ${a}`).join("\n"),
+				message: conversion.report.manualActions
+					.map((a, i) => `${i + 1}. ${conversionReportMessageToText(a)}`)
+					.join("\n"),
 			})
 		}
 
@@ -218,7 +221,7 @@ export default defineCommand({
 			consola.log("")
 			consola.error(`Errors (${conversion.report.errors.length}):`)
 			for (const e of conversion.report.errors) {
-				consola.log(`  ${e}`)
+				consola.log(`  ${conversionReportMessageToText(e)}`)
 			}
 		}
 

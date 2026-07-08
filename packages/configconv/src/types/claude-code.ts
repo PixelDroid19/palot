@@ -172,6 +172,7 @@ export interface ClaudeProjectSettings {
 	env?: Record<string, string>
 	model?: string
 	mcpServers?: Record<string, ClaudeMcpServer>
+	hooks?: ClaudeHooks
 }
 
 /**

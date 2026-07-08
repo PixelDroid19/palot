@@ -1,5 +1,5 @@
 export type * from "./canonical"
-export { createEmptyReport, mergeReports } from "./canonical"
+export { conversionReportMessageToText, createEmptyReport, mergeReports } from "./canonical"
 export type * from "./claude-code"
 export type * from "./conversion-result"
 export type * from "./cursor"

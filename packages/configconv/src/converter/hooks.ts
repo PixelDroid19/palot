@@ -97,12 +97,29 @@ function generateCommandHook(
 ): string {
 	const matcherComment = matcher ? ` // Matcher: ${matcher}` : ""
 	const escapedCommand = command.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$")
+	const escapedMatcher = matcher ? JSON.stringify(matcher) : null
 
 	switch (hookType) {
 		case "PreToolUse":
+			if (escapedMatcher) {
+				return `\t\t// PreToolUse hook${matcherComment}
+\t\t"tool.execute.before": async (ctx) => {
+\t\t\ttry {
+\t\t\t\tconst matcherRe = new RegExp(${escapedMatcher})
+\t\t\t\tif (!matcherRe.test(ctx.tool)) return
+\t\t\t} catch (error) {
+\t\t\t\tconsole.error("Invalid PreToolUse matcher:", ${escapedMatcher}, error)
+\t\t\t}
+\t\t\ttry {
+\t\t\t\tawait $\`${escapedCommand}\`
+\t\t\t} catch (e) {
+\t\t\t\tconsole.error("Pre-tool hook failed:", e)
+\t\t\t}
+\t\t},`
+			}
 			return `\t\t// PreToolUse hook${matcherComment}
 \t\t"tool.execute.before": async (ctx) => {
-\t\t\t${matcher ? `if (!/${matcher}/.test(ctx.tool)) return` : "// Runs for all tools"}
+\t\t\t// Runs for all tools
 \t\t\ttry {
 \t\t\t\tawait $\`${escapedCommand}\`
 \t\t\t} catch (e) {
@@ -111,9 +128,25 @@ function generateCommandHook(
 \t\t},`
 
 		case "PostToolUse":
+			if (escapedMatcher) {
+				return `\t\t// PostToolUse hook${matcherComment}
+\t\t"tool.execute.after": async (ctx) => {
+\t\t\ttry {
+\t\t\t\tconst matcherRe = new RegExp(${escapedMatcher})
+\t\t\t\tif (!matcherRe.test(ctx.tool)) return
+\t\t\t} catch (error) {
+\t\t\t\tconsole.error("Invalid PostToolUse matcher:", ${escapedMatcher}, error)
+\t\t\t}
+\t\t\ttry {
+\t\t\t\tawait $\`${escapedCommand}\`
+\t\t\t} catch (e) {
+\t\t\t\tconsole.error("Post-tool hook failed:", e)
+\t\t\t}
+\t\t},`
+			}
 			return `\t\t// PostToolUse hook${matcherComment}
 \t\t"tool.execute.after": async (ctx) => {
-\t\t\t${matcher ? `if (!/${matcher}/.test(ctx.tool)) return` : "// Runs for all tools"}
+\t\t\t// Runs for all tools
 \t\t\ttry {
 \t\t\t\tawait $\`${escapedCommand}\`
 \t\t\t} catch (e) {
