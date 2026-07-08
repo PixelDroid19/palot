@@ -1,6 +1,6 @@
 import type { AgentRuntimeDescriptor, AgentSandbox, SessionRuntimeDescriptor } from "../../../preload/api"
 import { useEffect, useState } from "react"
-import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-managed-runtime-data"
+import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-project-runtime-data"
 import { useTranslation } from "../../i18n/use-translation"
 import {
 	availableRuntimeModels,

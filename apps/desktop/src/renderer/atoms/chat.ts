@@ -1,6 +1,6 @@
 import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
-import type { ModelRef } from "../hooks/use-managed-runtime-data"
+import type { ModelRef } from "../hooks/use-project-runtime-data"
 import { appStore } from "./store"
 
 // ============================================================

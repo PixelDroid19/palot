@@ -18,11 +18,8 @@ import { appStore } from "../atoms/store"
 import { viewedSessionIdAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
-	useManagedRuntimeAgents,
-	useManagedRuntimeConfig,
-	useManagedRuntimeProviders,
-	useManagedRuntimeVcs,
-} from "../hooks/use-managed-runtime-data"
+	useProjectRuntimeSessionData,
+} from "../hooks/use-project-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"
@@ -147,10 +144,14 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const managedRuntimeDataDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
 		? directory
 		: null
-	const { data: providers } = useManagedRuntimeProviders(managedRuntimeDataDirectory)
-	const { data: config } = useManagedRuntimeConfig(managedRuntimeDataDirectory)
-	const { data: vcs } = useManagedRuntimeVcs(directory)
-	const { agents: managedRuntimeAgents } = useManagedRuntimeAgents(managedRuntimeDataDirectory)
+	const projectRuntimeData = useProjectRuntimeSessionData({
+		configDirectory: managedRuntimeDataDirectory,
+		workspaceDirectory: directory,
+	})
+	const { data: providers } = projectRuntimeData.providers
+	const { data: config } = projectRuntimeData.config
+	const { data: vcs } = projectRuntimeData.vcs
+	const { agents: managedRuntimeAgents } = projectRuntimeData.agents
 
 	// Handlers
 	const handleStopAgent = useCallback(

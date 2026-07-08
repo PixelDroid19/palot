@@ -53,13 +53,13 @@ import type {
 	ProvidersData,
 	SdkAgent,
 	VcsData,
-} from "../../hooks/use-managed-runtime-data"
+} from "../../hooks/use-project-runtime-data"
 import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
-	useManagedRuntimeModelState,
-} from "../../hooks/use-managed-runtime-data"
+	useProjectRuntimeModelState,
+} from "../../hooks/use-project-runtime-data"
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
 import {
@@ -955,7 +955,7 @@ function ChatInputSection({
 		}
 	}, [sessionMessages, agent.sessionId, runtimeState.modelPreference])
 
-	const { recentModels, addRecent: addRecentModel } = useManagedRuntimeModelState()
+	const { recentModels, addRecent: addRecentModel } = useProjectRuntimeModelState()
 
 	const activeManagedRuntimeAgent = useMemo(() => {
 		const agentName = selectedAgent ?? config?.defaultAgent

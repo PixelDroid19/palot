@@ -41,7 +41,7 @@ import type {
 	ProvidersData,
 	SdkAgent,
 	VcsData,
-} from "../hooks/use-managed-runtime-data"
+} from "../hooks/use-project-runtime-data"
 import { useServerConnection } from "../hooks/use-server"
 import type { ChatTurn } from "../hooks/use-session-chat"
 import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"

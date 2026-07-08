@@ -4,7 +4,7 @@ import {
 	type ModelRef,
 	type ProvidersData,
 	type SdkAgent,
-} from "../../hooks/use-managed-runtime-data"
+} from "../../hooks/use-project-runtime-data"
 import type {
 	ProjectRuntimePromptOptions,
 	ProjectRuntimeSelection,

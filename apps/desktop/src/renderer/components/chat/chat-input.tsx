@@ -12,12 +12,12 @@ import {
 import { PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useDraftActions, useDraftSnapshot } from "../../hooks/use-draft"
-import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-managed-runtime-data"
+import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-project-runtime-data"
 import {
 	getModelInputCapabilities,
 	resolveEffectiveModel,
-	useManagedRuntimeModelState,
-} from "../../hooks/use-managed-runtime-data"
+	useProjectRuntimeModelState,
+} from "../../hooks/use-project-runtime-data"
 
 import {
 	MANAGED_SESSION_RUNTIME_CAPABILITIES,
@@ -181,7 +181,7 @@ export function ChatInput({
 	const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
 	const [selectedVariant, setSelectedVariant] = useState<string | undefined>(undefined)
 
-	const { recentModels, addRecent: addRecentModel } = useManagedRuntimeModelState()
+	const { recentModels, addRecent: addRecentModel } = useProjectRuntimeModelState()
 
 	// Resolve effective model
 

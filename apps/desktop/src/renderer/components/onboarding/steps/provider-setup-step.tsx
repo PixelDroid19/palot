@@ -18,7 +18,7 @@ import {
 	useAllProviders,
 	useConnectedProviders,
 	useProviderAuthMethods,
-} from "../../../hooks/use-managed-runtime-data"
+} from "../../../hooks/use-project-runtime-data"
 import { useServerConnection } from "../../../hooks/use-server"
 import {
 	compareConnectedFirst,

@@ -52,14 +52,14 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type {
 	ConnectedProviderInfo,
 	SdkProviderAuthMethod as ProviderAuthMethod,
-} from "../../hooks/use-managed-runtime-data"
+} from "../../hooks/use-project-runtime-data"
 import {
 	type CatalogProvider,
 	queryKeys,
 	useAllProviders,
 	useConnectedProviders,
 	useProviderAuthMethods,
-} from "../../hooks/use-managed-runtime-data"
+} from "../../hooks/use-project-runtime-data"
 import { createLogger } from "../../lib/logger"
 import {
 	compareByPopularity,

@@ -21,7 +21,7 @@ import {
 	useState,
 } from "react"
 import { useFileSearch } from "../../hooks/use-file-search"
-import type { SdkAgent } from "../../hooks/use-managed-runtime-data"
+import type { SdkAgent } from "../../hooks/use-project-runtime-data"
 
 // ============================================================
 // Types

@@ -27,17 +27,13 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useAgents, useProjectList } from "../hooks/use-agents"
 import { NEW_CHAT_DRAFT_KEY, useDraftActions, useDraftSnapshot } from "../hooks/use-draft"
-import type { ModelRef } from "../hooks/use-managed-runtime-data"
+import type { ModelRef } from "../hooks/use-project-runtime-data"
 import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
-	useManagedRuntimeAgents,
-	useManagedRuntimeConfig,
-	useManagedRuntimeModelState,
-	useManagedRuntimeProviders,
-	useManagedRuntimeVcs,
-} from "../hooks/use-managed-runtime-data"
+	useProjectRuntimeSessionData,
+} from "../hooks/use-project-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
 import type { AgentSandbox, SessionRuntimeDescriptor } from "../../preload/api"
 import type { FileAttachment } from "../lib/types"
@@ -407,11 +403,15 @@ export function NewChat() {
 	const managedRuntimeConfigDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
 		? (selectedDirectory || null)
 		: null
-	const { data: providers } = useManagedRuntimeProviders(managedRuntimeConfigDirectory)
-	const { data: config } = useManagedRuntimeConfig(managedRuntimeConfigDirectory)
-	const { data: vcs, reload: reloadVcs } = useManagedRuntimeVcs(selectedDirectory || null)
-	const { agents: managedRuntimeAgents } = useManagedRuntimeAgents(managedRuntimeConfigDirectory)
-	const { recentModels, addRecent: addRecentModel } = useManagedRuntimeModelState()
+	const projectRuntimeData = useProjectRuntimeSessionData({
+		configDirectory: managedRuntimeConfigDirectory,
+		workspaceDirectory: selectedDirectory || null,
+	})
+	const { data: providers } = projectRuntimeData.providers
+	const { data: config } = projectRuntimeData.config
+	const { data: vcs, reload: reloadVcs } = projectRuntimeData.vcs
+	const { agents: managedRuntimeAgents } = projectRuntimeData.agents
+	const { recentModels, addRecent: addRecentModel } = projectRuntimeData.modelState
 
 	// Handle model selection — set local state + persist to model.json.
 	// Reset variant when the model changes: the new model may have different
