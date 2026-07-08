@@ -1,6 +1,7 @@
 import type { AgentRuntimeId, AgentSandbox } from "../../preload/api"
 import { upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
+import { isCliRuntime, type SessionRuntimeId } from "../lib/session-runtimes"
 import type { Session } from "../lib/types"
 import {
 	createCliRuntimeSessionState,
@@ -40,13 +41,13 @@ export function createCliRuntimeSession(args: {
 
 export async function switchRuntimeSession(
 	sessionId: string,
-	targetRuntime: string,
+	targetRuntime: SessionRuntimeId,
 	fallbackDirectory?: string,
 ): Promise<string | null> {
-	if (targetRuntime === "opencode") {
+	if (!isCliRuntime(targetRuntime)) {
 		return switchCliSessionIntoOpenCode(sessionId, createOpenCodeSession)
 	}
 
-	await switchCliRuntimeSession(sessionId, targetRuntime as AgentRuntimeId, fallbackDirectory)
+	await switchCliRuntimeSession(sessionId, targetRuntime, fallbackDirectory)
 	return sessionId
 }

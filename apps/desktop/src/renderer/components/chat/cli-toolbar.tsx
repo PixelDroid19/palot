@@ -10,7 +10,7 @@ import { useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import { useTranslation } from "../../i18n/use-translation"
-import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
+import { installedSessionRuntimeOptions, loadRuntimeDescriptors } from "../../lib/session-runtimes"
 import { switchRuntimeSession } from "../../services/runtime-session-launch"
 import {
 	SearchableOptionSelect,
@@ -189,6 +189,7 @@ export function SessionRuntimeSwitch({
 		loadRuntimeDescriptors().then((all) => setRuntimes(all.filter((d) => d.installed)))
 	}, [])
 	if (runtimes.length === 0) return null
+	const runtimeOptions = installedSessionRuntimeOptions(runtimes)
 
 	const switchTo = async (target: string) => {
 		if (target === current) return
@@ -206,10 +207,7 @@ export function SessionRuntimeSwitch({
 			aria-label={t("runtimePicker.runtime")}
 			value={current}
 			onValueChange={(value) => void switchTo(value)}
-			options={[
-				{ value: "opencode", label: "OpenCode" },
-				...runtimes.map((r) => ({ value: r.id, label: r.displayName })),
-			]}
+			options={runtimeOptions}
 		/>
 	)
 }

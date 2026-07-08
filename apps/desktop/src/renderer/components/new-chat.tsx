@@ -58,6 +58,7 @@ import {
 } from "../lib/runtime-session-config"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
+	installedSessionRuntimeOptions,
 	isCliRuntime,
 	loadRuntimeDescriptors,
 	type SessionRuntimeId,
@@ -982,21 +983,19 @@ export function NewChat() {
 												setSessionRuntime(next)
 												// Restore this runtime's remembered defaults (if any).
 												const prefs = loadCliPrefs(next)
-												setCliModel(prefs?.model ?? "")
-												setCliEffort(prefs?.effort ?? "")
-												setCliSandbox(prefs?.sandbox ?? "read-only")
-											}}
-											options={[
-												{ value: "opencode", label: "OpenCode" },
-												...cliRuntimes.map((r) => ({
-													value: r.id,
-													label:
-														cliAuth[r.id] === "unauthenticated"
-															? t("runtimePicker.loginRequired", { name: r.displayName })
-															: r.displayName,
-												})),
-											]}
-										/>
+											setCliModel(prefs?.model ?? "")
+											setCliEffort(prefs?.effort ?? "")
+											setCliSandbox(prefs?.sandbox ?? "read-only")
+										}}
+										options={installedSessionRuntimeOptions(cliRuntimes).map((option) => ({
+											value: option.value,
+											label:
+												isCliRuntime(option.value) &&
+												cliAuth[option.value] === "unauthenticated"
+													? t("runtimePicker.loginRequired", { name: option.label })
+													: option.label,
+										}))}
+									/>
 									)}
 									{vcs && runtimeCapabilities.supportsWorktreeLaunch && runtimeConfig?.kind === "opencode" && (
 										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />

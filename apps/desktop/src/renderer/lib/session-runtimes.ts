@@ -12,6 +12,10 @@ import type { AgentRuntimeDescriptor, AgentRuntimeId } from "../../preload/api"
 
 export type SessionRuntimeId = "opencode" | AgentRuntimeId
 export const DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = "opencode"
+export interface SessionRuntimeOption {
+	value: SessionRuntimeId
+	label: string
+}
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 
@@ -61,4 +65,21 @@ export function isCliRuntime(id: SessionRuntimeId): id is AgentRuntimeId {
 export function runtimeLabel(id: SessionRuntimeId): string {
 	if (id === "opencode") return "OpenCode"
 	return runtimeDescriptor(id)?.displayName ?? id
+}
+
+export function installedSessionRuntimeOptions(
+	descriptors: AgentRuntimeDescriptor[] = runtimeDescriptors(),
+): SessionRuntimeOption[] {
+	return [
+		{
+			value: DEFAULT_SESSION_RUNTIME_ID,
+			label: runtimeLabel(DEFAULT_SESSION_RUNTIME_ID),
+		},
+		...descriptors
+			.filter((descriptor) => descriptor.installed)
+			.map((descriptor) => ({
+				value: descriptor.id,
+				label: descriptor.displayName,
+			})),
+	]
 }
