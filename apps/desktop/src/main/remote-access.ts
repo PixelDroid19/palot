@@ -31,6 +31,29 @@ function hostAddresses(): string[] {
 	return addrs
 }
 
+function serverHostname(url: string): string | null {
+	try {
+		return new URL(url).hostname
+	} catch {
+		return null
+	}
+}
+
+function isLoopbackHost(hostname: string | null): boolean {
+	return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1"
+}
+
+function endpointAddresses(url: string): string[] {
+	const hostname = serverHostname(url)
+	if (!hostname || hostname === "0.0.0.0" || hostname === "::") {
+		return hostAddresses()
+	}
+	if (isLoopbackHost(hostname)) {
+		return []
+	}
+	return [hostname]
+}
+
 /**
  * Describe how to reach the running OpenCode server from another device
  * (a laptop's Palot, the web build, or a phone browser). Endpoints are typed
@@ -43,7 +66,7 @@ export function getRemoteAccessInfo(): RemoteAccessInfo {
 	}
 
 	const port = parsePort(url)
-	const endpoints = buildEndpoints(port, hostAddresses())
+	const endpoints = buildEndpoints(port, endpointAddresses(url))
 	const lanUrls = endpoints.filter((e) => e.type !== "loopback").map((e) => e.url)
 
 	log.info("Remote access info", {

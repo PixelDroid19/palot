@@ -14,6 +14,7 @@ import QRCode from "qrcode"
 import { useCallback, useEffect, useState } from "react"
 import type {
 	AgentCliDetection,
+	MigrationCategory,
 	MigrationProvider,
 	MigrationResult,
 	RemoteAccessInfo,
@@ -356,8 +357,10 @@ function RemoteAccessPanel() {
 			) : (
 				info && (
 					<p className="px-4 py-3 text-sm text-muted-foreground">
-						No reachable addresses detected. Make sure the server is running and you're connected to
-						a network.
+						No reachable remote addresses detected. If your local server is bound to
+						<code className="mx-1">127.0.0.1</code>, change its hostname to
+						<code className="mx-1">0.0.0.0</code> or a LAN IP before trying to connect from another
+						device.
 					</p>
 				)
 			)}
@@ -387,7 +390,7 @@ const MIGRATION_PROVIDER: Partial<Record<AgentCliDetection["id"], MigrationProvi
 
 // The convert step ports every category present in the scan; `categories`
 // primarily gates history import. Passing the full set migrates everything.
-const ALL_MIGRATION_CATEGORIES = [
+const ALL_MIGRATION_CATEGORIES: MigrationCategory[] = [
 	"config",
 	"mcp",
 	"history",
