@@ -13,6 +13,7 @@ import type {
 } from "../../lib/runtime-session-config"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
+	PROJECT_RUNTIME_ID,
 	type SessionRuntimeId,
 } from "../../lib/session-runtimes"
 import type {
@@ -108,7 +109,7 @@ function buildChatRuntimeConfig(args: {
 }
 
 export function buildCliNewChatRuntimeConfig(args: {
-	runtimeId: Exclude<SessionRuntimeId, "opencode">
+	runtimeId: Exclude<SessionRuntimeId, typeof PROJECT_RUNTIME_ID>
 	models: AgentRuntimeDescriptor["models"]
 	modelValue: string
 	onModelChange: (value: string) => void

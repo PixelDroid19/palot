@@ -70,6 +70,7 @@ import {
 	useSessionRuntimeState,
 } from "../../lib/runtime-session-config"
 import { computeTurnWorkTimeSplit, formatWorkDuration } from "../../lib/session-metrics"
+import { DEFAULT_SESSION_RUNTIME_ID } from "../../lib/session-runtimes"
 import type { Agent, FileAttachment, FilePart, QuestionAnswer, TextPart } from "../../lib/types"
 import {
 	executeRuntimeCommand,
@@ -1005,7 +1006,7 @@ function ChatInputSection({
 			isCli
 				? buildCliChatRuntimeConfig({
 						sessionId: agent.sessionId,
-						runtimeId: cliMeta?.runtimeId ?? "opencode",
+						runtimeId: cliMeta?.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
 				  })
 				: buildProjectRuntimeChatRuntimeConfig({
 						agents: managedRuntimeAgents ?? [],

@@ -11,8 +11,9 @@
  */
 import type { AgentRuntimeId, SessionRuntimeDescriptor } from "../../preload/api"
 
-export type SessionRuntimeId = "opencode" | AgentRuntimeId
-export const DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = "opencode"
+export const PROJECT_RUNTIME_ID = "opencode"
+export type SessionRuntimeId = typeof PROJECT_RUNTIME_ID | AgentRuntimeId
+export const DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = PROJECT_RUNTIME_ID
 export interface SessionRuntimeOption {
 	value: SessionRuntimeId
 	label: string
