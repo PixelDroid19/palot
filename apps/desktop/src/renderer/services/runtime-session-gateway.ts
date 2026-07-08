@@ -26,14 +26,14 @@ import { requireManagedRuntimeProjectClient } from "./managed-runtime-client"
 import {
 	createCliRuntimeSessionState,
 	switchCliRuntimeSession,
-	switchCliSessionIntoOpenCode,
+	switchCliSessionIntoManagedRuntime,
 } from "./runtime-cli-session"
 import {
 	forgetCliRuntimeSession,
 	persistCliRuntimeSession,
 } from "./runtime-cli-store"
 import {
-	consumeCliToOpenCodeHandoff,
+	consumeCliToManagedRuntimeHandoff,
 	interruptCliRuntimeTurn,
 	runCliRuntimeTurn,
 } from "./runtime-cli-turns"
@@ -49,7 +49,7 @@ function isCliSession(sessionId: string): boolean {
 	return isCliRuntimeState(readSessionRuntimeState(sessionId))
 }
 
-async function createOpenCodeSession(
+async function createManagedRuntimeSession(
 	directory: string,
 	title?: string,
 ): Promise<Session | undefined> {
@@ -62,7 +62,7 @@ async function createOpenCodeSession(
 	return session
 }
 
-async function promptOpenCodeSession(
+async function promptManagedRuntimeSession(
 	directory: string,
 	sessionId: string,
 	text: string,
@@ -70,15 +70,15 @@ async function promptOpenCodeSession(
 ): Promise<void> {
 	const client = requireManagedRuntimeProjectClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
-	const openCodeOptions = resolveManagedRuntimePromptOptions(readSessionRuntimeState(sessionId), options)
+	const managedOptions = resolveManagedRuntimePromptOptions(readSessionRuntimeState(sessionId), options)
 	const optimisticMessage: UserMessage & { variant?: string } = {
 		id: optimisticId,
 		sessionID: sessionId,
 		role: "user",
 		time: { created: Date.now() },
-		agent: openCodeOptions?.agentName ?? "build",
-		model: openCodeOptions?.model ?? { providerID: "", modelID: "" },
-		variant: openCodeOptions?.variant,
+		agent: managedOptions?.agentName ?? "build",
+		model: managedOptions?.model ?? { providerID: "", modelID: "" },
+		variant: managedOptions?.variant,
 	}
 	appStore.set(upsertMessageAtom, optimisticMessage as UserMessage)
 
@@ -106,7 +106,7 @@ async function promptOpenCodeSession(
 	}
 
 	const parts: Array<{ type: "text"; text: string } | FilePartInput> = [{ type: "text", text }]
-	const handoff = consumeCliToOpenCodeHandoff(sessionId)
+	const handoff = consumeCliToManagedRuntimeHandoff(sessionId)
 	if (handoff) parts.unshift({ type: "text", text: handoff })
 	for (const file of files) {
 		parts.push({
@@ -120,14 +120,14 @@ async function promptOpenCodeSession(
 	await client.session.promptAsync({
 		sessionID: sessionId,
 		parts,
-		model: openCodeOptions?.model
+		model: managedOptions?.model
 			? {
-					providerID: openCodeOptions.model.providerID,
-					modelID: openCodeOptions.model.modelID,
+					providerID: managedOptions.model.providerID,
+					modelID: managedOptions.model.modelID,
 				}
 			: undefined,
-		agent: openCodeOptions?.agentName,
-		variant: openCodeOptions?.variant,
+		agent: managedOptions?.agentName,
+		variant: managedOptions?.variant,
 	})
 }
 
@@ -135,7 +135,7 @@ export type RuntimeSessionCreateRequest =
 	| {
 			directory: string
 			title?: string
-			kind?: "opencode"
+			kind?: "managed"
 	  }
 	| {
 			directory: string
@@ -164,7 +164,7 @@ export const runtimeSessionGateway = {
 			}
 		}
 
-		const session = await createOpenCodeSession(args.directory, args.title)
+		const session = await createManagedRuntimeSession(args.directory, args.title)
 		if (!session) return null
 		return {
 			runtimeId: DEFAULT_SESSION_RUNTIME_ID,
@@ -178,7 +178,7 @@ export const runtimeSessionGateway = {
 		fallbackDirectory?: string,
 	): Promise<string | null> {
 		if (!isCliRuntime(targetRuntime)) {
-			return switchCliSessionIntoOpenCode(sessionId, createOpenCodeSession)
+			return switchCliSessionIntoManagedRuntime(sessionId, createManagedRuntimeSession)
 		}
 
 		await switchCliRuntimeSession(sessionId, targetRuntime, fallbackDirectory)
@@ -195,7 +195,7 @@ export const runtimeSessionGateway = {
 			return
 		}
 
-		await promptOpenCodeSession(directory, sessionId, text, options)
+		await promptManagedRuntimeSession(directory, sessionId, text, options)
 	},
 	async abortSession(directory: string, sessionId: string): Promise<void> {
 		if (isCliSession(sessionId)) {

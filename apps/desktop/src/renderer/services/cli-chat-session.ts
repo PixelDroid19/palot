@@ -85,17 +85,17 @@ export async function switchCliRuntime(
 	log.info("Switched session runtime", { sessionId, runtimeId })
 }
 
-const opencodeHandoffs = new Map<string, string>()
+const managedRuntimeHandoffs = new Map<string, string>()
 
-export function consumeOpencodeHandoff(sessionId: string): string | null {
-	const handoff = opencodeHandoffs.get(sessionId)
-	if (handoff) opencodeHandoffs.delete(sessionId)
+export function consumeManagedRuntimeHandoff(sessionId: string): string | null {
+	const handoff = managedRuntimeHandoffs.get(sessionId)
+	if (handoff) managedRuntimeHandoffs.delete(sessionId)
 	return handoff ?? null
 }
 
-export async function switchCliSessionToOpenCode(
+export async function switchCliSessionToManagedRuntime(
 	sessionId: string,
-	createServerSession: (directory: string, title?: string) => Promise<Session | undefined>,
+	createManagedSession: (directory: string, title?: string) => Promise<Session | undefined>,
 ): Promise<string | null> {
 	const meta = getCliMeta(sessionId)
 	const entry = appStore.get(sessionFamily(sessionId))
@@ -104,7 +104,7 @@ export async function switchCliSessionToOpenCode(
 	cancelCliTurn(sessionId)
 	await closeCliSessionBackend(sessionId)
 
-	const created = await createServerSession(entry.directory, entry.session.title)
+	const created = await createManagedSession(entry.directory, entry.session.title)
 	if (!created) return null
 
 	for (const message of appStore.get(messagesFamily(sessionId))) {
@@ -122,7 +122,7 @@ export async function switchCliSessionToOpenCode(
 
 	const history = buildConversationHandoff(sessionId)
 	if (history) {
-		opencodeHandoffs.set(
+		managedRuntimeHandoffs.set(
 			created.id,
 			`Context: this conversation continues from another coding agent. History so far:\n\n<conversation-history>\n${history}\n</conversation-history>\n\nContinue seamlessly.`,
 		)
@@ -130,7 +130,7 @@ export async function switchCliSessionToOpenCode(
 
 	await forgetCliSession(sessionId)
 	appStore.set(removeSessionAtom, sessionId)
-	log.info("Switched CLI session to OpenCode", { from: sessionId, to: created.id })
+	log.info("Switched CLI session to managed runtime", { from: sessionId, to: created.id })
 	return created.id
 }
 

@@ -1023,7 +1023,7 @@ function ChatInputSection({
 						persistedSelection:
 							effectiveModel && agent.directory
 								? {
-										runtime: "opencode",
+										kind: "managed",
 										directory: agent.directory,
 										model: {
 											...effectiveModel,
@@ -1033,7 +1033,6 @@ function ChatInputSection({
 									}
 								: null,
 						sendOptions: {
-							runtime: "opencode",
 							model: effectiveModel ?? undefined,
 							agentName: selectedAgent || undefined,
 							variant: selectedVariant,

@@ -600,7 +600,7 @@ export function NewChat() {
 	const persistProjectModel = useCallback(() => {
 		if (!effectiveModel || !selectedDirectory) return
 		persistRuntimeSelection({
-			runtime: "opencode",
+			kind: "managed",
 			directory: selectedDirectory,
 			model: {
 				...effectiveModel,
@@ -663,7 +663,6 @@ export function NewChat() {
 					},
 					onNavigate: navigateToSession,
 					promptOptions: {
-						runtime: "opencode",
 						model: effectiveModel ?? undefined,
 						agentName: selectedAgent ?? undefined,
 						variant: selectedVariant,
@@ -886,7 +885,8 @@ export function NewChat() {
 					{/* No projects warning */}
 					{projects.length === 0 && (
 						<p className="mt-2 text-center text-xs text-muted-foreground">
-							No projects found. Check that projects exist in ~/.local/share/opencode/storage/.
+							No managed runtime projects found. Check that OpenCode has indexed projects in
+							~/.local/share/opencode/storage/.
 						</p>
 					)}
 				</div>

@@ -225,7 +225,7 @@ export function ChatInput({
 			try {
 				if (effectiveModel && agent.directory) {
 					persistRuntimeSelection({
-						runtime: "opencode",
+						kind: "managed",
 						directory: agent.directory,
 						model: {
 							...effectiveModel,
@@ -235,7 +235,6 @@ export function ChatInput({
 					})
 				}
 				await onSendMessage(agent, text.trim(), {
-					runtime: "opencode",
 					model: effectiveModel ?? undefined,
 					agentName: selectedAgent || undefined,
 					variant: selectedVariant,

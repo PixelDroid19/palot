@@ -3,7 +3,7 @@ import type { Session } from "../lib/types"
 import {
 	createCliSession,
 	switchCliRuntime,
-	switchCliSessionToOpenCode,
+	switchCliSessionToManagedRuntime,
 } from "./cli-chat"
 
 export function createCliRuntimeSessionState(args: {
@@ -24,9 +24,9 @@ export async function switchCliRuntimeSession(
 	await switchCliRuntime(sessionId, runtimeId, fallbackCwd)
 }
 
-export async function switchCliSessionIntoOpenCode(
+export async function switchCliSessionIntoManagedRuntime(
 	sessionId: string,
-	createServerSession: (directory: string, title?: string) => Promise<Session | undefined>,
+	createManagedSession: (directory: string, title?: string) => Promise<Session | undefined>,
 ): Promise<string | null> {
-	return switchCliSessionToOpenCode(sessionId, createServerSession)
+	return switchCliSessionToManagedRuntime(sessionId, createManagedSession)
 }

@@ -18,7 +18,6 @@ export interface CliPromptOptions {
 }
 
 export interface ManagedRuntimePromptOptions {
-	runtime?: "opencode"
 	model?: ModelRef
 	agentName?: string
 	variant?: string
@@ -28,13 +27,13 @@ export interface ManagedRuntimePromptOptions {
 export type RuntimePromptOptions = CliPromptOptions | ManagedRuntimePromptOptions
 
 export interface ManagedRuntimeSelection {
-	runtime: "opencode"
+	kind: "managed"
 	directory: string
 	model: PersistedModelRef
 }
 
 export interface CliRuntimeSelection {
-	runtime: "cli"
+	kind: "cli"
 	sessionId: string
 	patch: Partial<CliSessionMeta>
 	persist?: boolean
@@ -129,7 +128,7 @@ export function sessionRuntimeCapabilities(
 function isManagedRuntimeSelection(
 	selection: RuntimeSelectionPersistence,
 ): selection is ManagedRuntimeSelection {
-	return isManagedRuntimeId(selection.runtime)
+	return selection.kind === "managed"
 }
 
 export function readProjectRuntimePreference(
