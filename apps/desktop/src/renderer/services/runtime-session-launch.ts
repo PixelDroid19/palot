@@ -1,6 +1,6 @@
 import { removeSessionAtom, setSessionBranchAtom, setSessionSetupPhaseAtom, setSessionWorktreeAtom, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
-import type { OpenCodePromptOptions } from "../lib/runtime-session-config"
+import type { ManagedRuntimePromptOptions } from "../lib/runtime-session-config"
 import type { SessionRuntimeId } from "../lib/session-runtimes"
 import type { FileAttachment } from "../lib/types"
 import { createUuidV7 } from "../../shared/uuid"
@@ -30,7 +30,7 @@ export async function launchManagedRuntimeSession(args: {
 	mode: "local" | "worktree"
 	onFailure: (message: string) => void
 	onNavigate: (sessionId: string) => void
-	promptOptions?: OpenCodePromptOptions
+	promptOptions?: ManagedRuntimePromptOptions
 	promptText: string
 }): Promise<void> {
 	if (args.mode === "worktree") {

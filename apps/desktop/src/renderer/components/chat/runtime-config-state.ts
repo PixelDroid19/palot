@@ -1,8 +1,8 @@
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-opencode-data"
 import type {
-	OpenCodePromptOptions,
-	OpenCodeRuntimeSelection,
+	ManagedRuntimePromptOptions,
+	ManagedRuntimeSelection,
 	RuntimePromptOptions,
 	RuntimeSelectionPersistence,
 } from "../../lib/runtime-session-config"
@@ -19,13 +19,13 @@ export type NewChatRuntimeConfig =
 			sandbox: AgentSandbox
 	  }
 	| {
-			kind: "opencode"
+			kind: "managed"
 			toolbarProps: RuntimeConfigToolbarProps
 			worktreeMode: "local" | "worktree"
 	  }
 
 export interface ChatRuntimeConfig {
-	kind: "cli-session" | "opencode"
+	kind: "cli-session" | "managed"
 	runtimeSwitchCurrent: string
 	toolbarProps: RuntimeConfigToolbarProps
 	persistedSelection: RuntimeSelectionPersistence | null
@@ -66,7 +66,7 @@ export function buildCliNewChatRuntimeConfig(args: {
 	}
 }
 
-export function buildOpenCodeNewChatRuntimeConfig(args: {
+export function buildManagedRuntimeNewChatRuntimeConfig(args: {
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -81,9 +81,9 @@ export function buildOpenCodeNewChatRuntimeConfig(args: {
 	worktreeMode: "local" | "worktree"
 }): NewChatRuntimeConfig {
 	return {
-		kind: "opencode",
+		kind: "managed",
 		toolbarProps: {
-			kind: "opencode",
+			kind: "managed",
 			agents: args.agents,
 			selectedAgent: args.selectedAgent,
 			defaultAgent: args.defaultAgent,
@@ -118,7 +118,7 @@ export function buildCliChatRuntimeConfig(args: {
 	}
 }
 
-export function buildOpenCodeChatRuntimeConfig(args: {
+export function buildManagedRuntimeChatRuntimeConfig(args: {
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -131,14 +131,14 @@ export function buildOpenCodeChatRuntimeConfig(args: {
 	selectedVariant: string | undefined
 	onSelectVariant: (variant: string | undefined) => void
 	disabled?: boolean
-	persistedSelection: OpenCodeRuntimeSelection | null
-	sendOptions: OpenCodePromptOptions
+	persistedSelection: ManagedRuntimeSelection | null
+	sendOptions: ManagedRuntimePromptOptions
 }): ChatRuntimeConfig {
 	return {
-		kind: "opencode",
+		kind: "managed",
 		runtimeSwitchCurrent: "opencode",
 		toolbarProps: {
-			kind: "opencode",
+			kind: "managed",
 			agents: args.agents,
 			selectedAgent: args.selectedAgent,
 			defaultAgent: args.defaultAgent,

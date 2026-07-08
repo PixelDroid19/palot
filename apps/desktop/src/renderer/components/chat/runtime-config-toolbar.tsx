@@ -27,8 +27,8 @@ interface CliRuntimeConfigToolbarProps {
 	onEffortChange: (value: string) => void
 }
 
-interface OpenCodeRuntimeConfigToolbarProps extends PromptToolbarProps {
-	kind: "opencode"
+interface ManagedRuntimeConfigToolbarProps extends PromptToolbarProps {
+	kind: "managed"
 }
 
 interface CliSessionRuntimeConfigToolbarProps {
@@ -39,7 +39,7 @@ interface CliSessionRuntimeConfigToolbarProps {
 export type RuntimeConfigToolbarProps =
 	| CliRuntimeConfigToolbarProps
 	| CliSessionRuntimeConfigToolbarProps
-	| OpenCodeRuntimeConfigToolbarProps
+	| ManagedRuntimeConfigToolbarProps
 
 export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
 	if (props.kind === "cli-session") {

@@ -71,7 +71,7 @@ import { PromptAttachmentPreview } from "./chat/prompt-attachments"
 import { StatusBar } from "./chat/prompt-toolbar"
 import {
 	buildCliNewChatRuntimeConfig,
-	buildOpenCodeNewChatRuntimeConfig,
+	buildManagedRuntimeNewChatRuntimeConfig,
 	type NewChatRuntimeConfig,
 } from "./chat/runtime-config-state"
 import { RuntimeConfigToolbar } from "./chat/runtime-config-toolbar"
@@ -310,7 +310,7 @@ export function NewChat() {
 			setCliRuntimes(installed)
 			// The remembered runtime may have been uninstalled since last use.
 			setSessionRuntimeState((current) =>
-				!runtimeIdCapabilities(current).supportsOpenCodePromptConfig &&
+				!runtimeIdCapabilities(current).supportsManagedPromptConfig &&
 				  !installed.some((d) => d.id === current)
 					? DEFAULT_SESSION_RUNTIME_ID
 					: current,
@@ -403,7 +403,7 @@ export function NewChat() {
 		[projects, selectedDirectory],
 	)
 
-	const openCodeConfigDirectory = runtimeCapabilities.supportsOpenCodePromptConfig
+	const openCodeConfigDirectory = runtimeCapabilities.supportsManagedPromptConfig
 		? (selectedDirectory || null)
 		: null
 	const { data: providers } = useProviders(openCodeConfigDirectory)
@@ -540,8 +540,8 @@ export function NewChat() {
 			})
 		}
 
-		if (runtimeCapabilities.supportsOpenCodePromptConfig) {
-			return buildOpenCodeNewChatRuntimeConfig({
+		if (runtimeCapabilities.supportsManagedPromptConfig) {
+			return buildManagedRuntimeNewChatRuntimeConfig({
 				agents: openCodeAgents ?? [],
 				selectedAgent,
 				defaultAgent: config?.defaultAgent,
@@ -574,7 +574,7 @@ export function NewChat() {
 		selectedAgent,
 		selectedModel,
 		selectedVariant,
-		runtimeCapabilities.supportsOpenCodePromptConfig,
+		runtimeCapabilities.supportsManagedPromptConfig,
 		worktreeMode,
 	])
 
@@ -868,7 +868,7 @@ export function NewChat() {
 										}))}
 									/>
 									)}
-									{vcs && runtimeCapabilities.supportsWorktreeLaunch && runtimeConfig?.kind === "opencode" && (
+									{vcs && runtimeCapabilities.supportsWorktreeLaunch && runtimeConfig?.kind === "managed" && (
 										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
 									)}
 								</div>

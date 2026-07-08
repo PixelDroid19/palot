@@ -7,7 +7,7 @@ import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import {
 	isCliRuntimeState,
 	readSessionRuntimeState,
-	resolveOpenCodePromptOptions,
+	resolveManagedRuntimePromptOptions,
 	resolvePromptRuntime,
 } from "../lib/runtime-session-config"
 import {
@@ -70,7 +70,7 @@ async function promptOpenCodeSession(
 ): Promise<void> {
 	const client = requireManagedRuntimeProjectClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
-	const openCodeOptions = resolveOpenCodePromptOptions(readSessionRuntimeState(sessionId), options)
+	const openCodeOptions = resolveManagedRuntimePromptOptions(readSessionRuntimeState(sessionId), options)
 	const optimisticMessage: UserMessage & { variant?: string } = {
 		id: optimisticId,
 		sessionID: sessionId,

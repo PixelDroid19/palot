@@ -17,7 +17,7 @@ export interface CliPromptOptions {
 	files?: FileAttachment[]
 }
 
-export interface OpenCodePromptOptions {
+export interface ManagedRuntimePromptOptions {
 	runtime?: "opencode"
 	model?: ModelRef
 	agentName?: string
@@ -25,9 +25,9 @@ export interface OpenCodePromptOptions {
 	files?: FileAttachment[]
 }
 
-export type RuntimePromptOptions = CliPromptOptions | OpenCodePromptOptions
+export type RuntimePromptOptions = CliPromptOptions | ManagedRuntimePromptOptions
 
-export interface OpenCodeRuntimeSelection {
+export interface ManagedRuntimeSelection {
 	runtime: "opencode"
 	directory: string
 	model: PersistedModelRef
@@ -40,7 +40,7 @@ export interface CliRuntimeSelection {
 	persist?: boolean
 }
 
-export type RuntimeSelectionPersistence = OpenCodeRuntimeSelection | CliRuntimeSelection
+export type RuntimeSelectionPersistence = ManagedRuntimeSelection | CliRuntimeSelection
 
 export type SessionRuntimeState =
 	| {
@@ -62,7 +62,7 @@ export interface SessionRuntimeCapabilities {
 	supportsSessionSummarize: boolean
 	supportsServerSlashCommands: boolean
 	supportsFork: boolean
-	supportsOpenCodePromptConfig: boolean
+	supportsManagedPromptConfig: boolean
 	supportsWorktreeLaunch: boolean
 	supportsServerHistory: boolean
 }
@@ -72,7 +72,7 @@ export const OPENCODE_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities =
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
 	supportsFork: true,
-	supportsOpenCodePromptConfig: true,
+	supportsManagedPromptConfig: true,
 	supportsWorktreeLaunch: true,
 	supportsServerHistory: true,
 }
@@ -82,7 +82,7 @@ export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 	supportsSessionSummarize: false,
 	supportsServerSlashCommands: false,
 	supportsFork: false,
-	supportsOpenCodePromptConfig: false,
+	supportsManagedPromptConfig: false,
 	supportsWorktreeLaunch: false,
 	supportsServerHistory: false,
 }
@@ -111,13 +111,13 @@ export function resolvePromptRuntime(
 	return state?.runtime ?? "opencode"
 }
 
-export function resolveOpenCodePromptOptions(
+export function resolveManagedRuntimePromptOptions(
 	state: Pick<SessionRuntimeState, "runtime"> | null | undefined,
 	options?: RuntimePromptOptions,
-): OpenCodePromptOptions | null {
+): ManagedRuntimePromptOptions | null {
 	return resolvePromptRuntime(state, options) === "cli"
 		? null
-		: ((options ?? {}) as OpenCodePromptOptions)
+		: ((options ?? {}) as ManagedRuntimePromptOptions)
 }
 
 export function sessionRuntimeCapabilities(
@@ -128,7 +128,7 @@ export function sessionRuntimeCapabilities(
 
 function isManagedRuntimeSelection(
 	selection: RuntimeSelectionPersistence,
-): selection is OpenCodeRuntimeSelection {
+): selection is ManagedRuntimeSelection {
 	return isManagedRuntimeId(selection.runtime)
 }
 
