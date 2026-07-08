@@ -159,6 +159,8 @@ export async function checkOpenCodeInstallation(): Promise<OpenCodeCheckResult> 
 	return checkOpenCode()
 }
 
+export const checkManagedRuntimeInstallation = checkOpenCodeInstallation
+
 // ============================================================
 // OpenCode install
 // ============================================================
@@ -308,6 +310,8 @@ export async function installOpenCode(): Promise<{ success: boolean; error?: str
 		await cleanupInstallFiles()
 	}
 }
+
+export const installManagedRuntime = installOpenCode
 
 // ============================================================
 // Multi-provider detection (lightweight, no configconv import)

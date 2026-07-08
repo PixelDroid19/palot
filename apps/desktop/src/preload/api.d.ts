@@ -309,6 +309,8 @@ export interface OpenCodeCheckResult {
 	message: string | null
 }
 
+export type ManagedRuntimeCheckResult = OpenCodeCheckResult
+
 /** Supported migration source providers. */
 export type MigrationProvider = "claude-code" | "cursor" | "opencode"
 export type MigrationCategory = ConversionCategory | "extra"
@@ -490,9 +492,12 @@ export interface PalotAPI {
 	getChromeTier: () => Promise<WindowChromeTier>
 
 	ensureOpenCode: () => Promise<OpenCodeServerInfo>
+	ensureManagedRuntime: () => Promise<OpenCodeServerInfo>
 	getServerUrl: () => Promise<string | null>
 	stopOpenCode: () => Promise<boolean>
+	stopManagedRuntime: () => Promise<boolean>
 	restartOpenCode: () => Promise<OpenCodeServerInfo>
+	restartManagedRuntime: () => Promise<OpenCodeServerInfo>
 	getModelState: () => Promise<ModelState>
 	updateModelRecent: (model: ModelRef) => Promise<ModelState>
 
@@ -717,7 +722,9 @@ export interface PalotAPI {
 
 	onboarding: {
 		checkOpenCode: () => Promise<OpenCodeCheckResult>
+		checkManagedRuntime: () => Promise<ManagedRuntimeCheckResult>
 		installOpenCode: () => Promise<{ success: boolean; error?: string }>
+		installManagedRuntime: () => Promise<{ success: boolean; error?: string }>
 		onInstallOutput: (callback: (text: string) => void) => () => void
 		/** Quick-detect all supported providers (Claude Code, Cursor, OpenCode). */
 		detectProviders: () => Promise<ProviderDetection[]>

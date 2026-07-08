@@ -16,27 +16,27 @@ export interface RuntimeSetupStatus {
 export async function loadRuntimeSetupStatuses(force = false): Promise<RuntimeSetupStatus[]> {
 	if (!isElectron) return []
 
-	const [detections, openCode] = await Promise.all([
+	const [detections, managedRuntime] = await Promise.all([
 		window.palot.agentClis.detect(force),
-		window.palot.onboarding.checkOpenCode(),
+		window.palot.onboarding.checkManagedRuntime(),
 	])
 
-	return detections.map((cli) => normalizeRuntimeStatus(cli, openCode))
+	return detections.map((cli) => normalizeRuntimeStatus(cli, managedRuntime))
 }
 
 function normalizeRuntimeStatus(
 	cli: AgentCliDetection,
-	openCode: Awaited<ReturnType<typeof window.palot.onboarding.checkOpenCode>>,
+	managedRuntime: Awaited<ReturnType<typeof window.palot.onboarding.checkManagedRuntime>>,
 ): RuntimeSetupStatus {
 	if (isManagedRuntimeId(cli.id)) {
 		return {
 			id: cli.id,
 			displayName: cli.displayName,
-			description: openCode.path ?? cli.binaryPath ?? "Checking...",
-			installed: openCode.installed,
-			version: openCode.version,
-			compatible: openCode.compatible,
-			warning: openCode.compatible ? null : (openCode.message ?? null),
+			description: managedRuntime.path ?? cli.binaryPath ?? "Checking...",
+			installed: managedRuntime.installed,
+			version: managedRuntime.version,
+			compatible: managedRuntime.compatible,
+			warning: managedRuntime.compatible ? null : (managedRuntime.message ?? null),
 		}
 	}
 

@@ -329,7 +329,7 @@ function LocalServerSettings() {
 
 			// Restart the server to apply new settings
 			if (isElectron) {
-				await window.palot.restartOpenCode()
+				await window.palot.restartManagedRuntime()
 			}
 
 			setPassword("")
@@ -363,7 +363,7 @@ function LocalServerSettings() {
 
 		// Restart the server without password
 		if (isElectron) {
-			await window.palot.restartOpenCode()
+			await window.palot.restartManagedRuntime()
 		}
 	}, [settings, updateSettings])
 

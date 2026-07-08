@@ -40,6 +40,8 @@ export interface OpenCodeCheckResult {
 	message: string | null
 }
 
+export type ManagedRuntimeCheckResult = OpenCodeCheckResult
+
 // ============================================================
 // Binary detection
 // ============================================================
@@ -192,3 +194,5 @@ export async function checkOpenCode(): Promise<OpenCodeCheckResult> {
 		message: null,
 	}
 }
+
+export const checkManagedRuntime = checkOpenCode
