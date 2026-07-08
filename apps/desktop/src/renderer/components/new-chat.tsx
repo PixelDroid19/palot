@@ -64,7 +64,7 @@ import { PromptAttachmentPreview } from "./chat/prompt-attachments"
 import { StatusBar } from "./chat/prompt-toolbar"
 import {
 	buildCliNewChatRuntimeConfig,
-	buildManagedRuntimeNewChatRuntimeConfig,
+	buildProjectRuntimeNewChatRuntimeConfig,
 	type NewChatRuntimeConfig,
 } from "./chat/runtime-config-state"
 import { RuntimeConfigToolbar } from "./chat/runtime-config-toolbar"
@@ -537,7 +537,7 @@ export function NewChat() {
 		}
 
 		if (runtimeCapabilities.supportsProjectRuntimeConfig) {
-			return buildManagedRuntimeNewChatRuntimeConfig({
+			return buildProjectRuntimeNewChatRuntimeConfig({
 				agents: managedRuntimeAgents ?? [],
 				selectedAgent,
 				defaultAgent: config?.defaultAgent,
@@ -596,7 +596,7 @@ export function NewChat() {
 	const persistProjectModel = useCallback(() => {
 		if (!effectiveModel || !selectedDirectory) return
 		persistRuntimeSelection({
-			kind: "managed",
+			kind: "project",
 			directory: selectedDirectory,
 			model: {
 				...effectiveModel,

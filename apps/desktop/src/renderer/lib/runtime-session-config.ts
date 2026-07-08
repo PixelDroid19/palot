@@ -27,7 +27,7 @@ export interface ProjectRuntimePromptOptions {
 export type RuntimePromptOptions = CliPromptOptions | ProjectRuntimePromptOptions
 
 export interface ProjectRuntimeSelection {
-	kind: "managed"
+	kind: "project"
 	directory: string
 	model: PersistedModelRef
 }
@@ -142,7 +142,7 @@ export function sessionRuntimeCapabilities(
 function isProjectRuntimeSelection(
 	selection: RuntimeSelectionPersistence,
 ): selection is ProjectRuntimeSelection {
-	return selection.kind === "managed"
+	return selection.kind === "project"
 }
 
 export function readProjectRuntimePreference(

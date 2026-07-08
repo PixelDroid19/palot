@@ -225,7 +225,7 @@ export function ChatInput({
 			try {
 				if (effectiveModel && agent.directory) {
 					persistRuntimeSelection({
-						kind: "managed",
+						kind: "project",
 						directory: agent.directory,
 						model: {
 							...effectiveModel,

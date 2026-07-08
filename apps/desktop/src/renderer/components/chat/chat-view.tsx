@@ -104,7 +104,7 @@ import { SessionRuntimeSwitch } from "./cli-toolbar"
 import { StatusBar } from "./prompt-toolbar"
 import {
 	buildCliChatRuntimeConfig,
-	buildManagedRuntimeChatRuntimeConfig,
+	buildProjectRuntimeChatRuntimeConfig,
 	type ChatRuntimeConfig,
 } from "./runtime-config-state"
 import { RuntimeConfigToolbar } from "./runtime-config-toolbar"
@@ -1006,8 +1006,8 @@ function ChatInputSection({
 				? buildCliChatRuntimeConfig({
 						sessionId: agent.sessionId,
 						runtimeId: cliMeta?.runtimeId ?? "opencode",
-					})
-				: buildManagedRuntimeChatRuntimeConfig({
+				  })
+				: buildProjectRuntimeChatRuntimeConfig({
 						agents: managedRuntimeAgents ?? [],
 						selectedAgent,
 						defaultAgent: config?.defaultAgent,
@@ -1023,7 +1023,7 @@ function ChatInputSection({
 						persistedSelection:
 							effectiveModel && agent.directory
 								? {
-										kind: "managed",
+										kind: "project",
 										directory: agent.directory,
 										model: {
 											...effectiveModel,

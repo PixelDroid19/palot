@@ -11,7 +11,10 @@ import type {
 	RuntimePromptOptions,
 	RuntimeSelectionPersistence,
 } from "../../lib/runtime-session-config"
-import type { SessionRuntimeId } from "../../lib/session-runtimes"
+import {
+	DEFAULT_SESSION_RUNTIME_ID,
+	type SessionRuntimeId,
+} from "../../lib/session-runtimes"
 import type {
 	RuntimeConfigToolbarProps,
 	RuntimeToolbarSections,
@@ -34,14 +37,13 @@ export interface NewChatRuntimeConfig {
 }
 
 export interface ChatRuntimeConfig {
-	kind: "cli-session" | "managed"
 	runtimeSwitchCurrent: string
 	toolbarProps: RuntimeConfigToolbarProps
 	persistedSelection: RuntimeSelectionPersistence | null
 	sendOptions: RuntimePromptOptions
 }
 
-function buildManagedRuntimeToolbarSections(args: {
+function buildProjectRuntimeToolbarSections(args: {
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -91,6 +93,20 @@ function buildManagedRuntimeToolbarSections(args: {
 	}
 }
 
+function buildChatRuntimeConfig(args: {
+	runtimeId: SessionRuntimeId
+	toolbarProps: RuntimeConfigToolbarProps
+	persistedSelection: RuntimeSelectionPersistence | null
+	sendOptions: RuntimePromptOptions
+}): ChatRuntimeConfig {
+	return {
+		runtimeSwitchCurrent: args.runtimeId,
+		toolbarProps: args.toolbarProps,
+		persistedSelection: args.persistedSelection,
+		sendOptions: args.sendOptions,
+	}
+}
+
 export function buildCliNewChatRuntimeConfig(args: {
 	runtimeId: Exclude<SessionRuntimeId, "opencode">
 	models: AgentRuntimeDescriptor["models"]
@@ -137,7 +153,7 @@ export function buildCliNewChatRuntimeConfig(args: {
 	}
 }
 
-export function buildManagedRuntimeNewChatRuntimeConfig(args: {
+export function buildProjectRuntimeNewChatRuntimeConfig(args: {
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -152,9 +168,9 @@ export function buildManagedRuntimeNewChatRuntimeConfig(args: {
 	worktreeMode: "local" | "worktree"
 }): NewChatRuntimeConfig {
 	return {
-		runtimeId: "opencode",
+		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
 		toolbarProps: {
-			sections: buildManagedRuntimeToolbarSections(args),
+			sections: buildProjectRuntimeToolbarSections(args),
 		},
 		launch: {
 			project: {
@@ -173,9 +189,8 @@ export function buildCliChatRuntimeConfig(args: {
 	sessionId: string
 	runtimeId: string
 }): ChatRuntimeConfig {
-	return {
-		kind: "cli-session",
-		runtimeSwitchCurrent: args.runtimeId,
+	return buildChatRuntimeConfig({
+		runtimeId: args.runtimeId,
 		toolbarProps: {
 			sessionId: args.sessionId,
 		},
@@ -183,10 +198,10 @@ export function buildCliChatRuntimeConfig(args: {
 		sendOptions: {
 			runtime: "cli",
 		},
-	}
+	})
 }
 
-export function buildManagedRuntimeChatRuntimeConfig(args: {
+export function buildProjectRuntimeChatRuntimeConfig(args: {
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -202,13 +217,12 @@ export function buildManagedRuntimeChatRuntimeConfig(args: {
 	persistedSelection: ProjectRuntimeSelection | null
 	sendOptions: ProjectRuntimePromptOptions
 }): ChatRuntimeConfig {
-	return {
-		kind: "managed",
-		runtimeSwitchCurrent: "opencode",
+	return buildChatRuntimeConfig({
+		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
 		toolbarProps: {
-			sections: buildManagedRuntimeToolbarSections(args),
+			sections: buildProjectRuntimeToolbarSections(args),
 		},
 		persistedSelection: args.persistedSelection,
 		sendOptions: args.sendOptions,
-	}
+	})
 }
