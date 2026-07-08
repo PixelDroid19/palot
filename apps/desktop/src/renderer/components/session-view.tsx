@@ -141,17 +141,17 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const directory = selectedAgent?.directory ?? null
 	const runtimeState = useSessionRuntimeState(selectedAgent?.sessionId ?? sessionId, directory)
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
-	const managedRuntimeDataDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
+	const projectRuntimeDataDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
 		? directory
 		: null
 	const projectRuntimeData = useProjectRuntimeSessionData({
-		configDirectory: managedRuntimeDataDirectory,
+		configDirectory: projectRuntimeDataDirectory,
 		workspaceDirectory: directory,
 	})
 	const { data: providers } = projectRuntimeData.providers
 	const { data: config } = projectRuntimeData.config
 	const { data: vcs } = projectRuntimeData.vcs
-	const { agents: managedRuntimeAgents } = projectRuntimeData.agents
+	const { agents: projectRuntimeAgents } = projectRuntimeData.agents
 
 	// Handlers
 	const handleStopAgent = useCallback(
@@ -305,7 +305,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			providers={providers}
 			config={config}
 			vcs={vcs}
-			managedRuntimeAgents={managedRuntimeAgents}
+			projectRuntimeAgents={projectRuntimeAgents}
 			canUndo={canUndo}
 			canRedo={canRedo}
 			onUndo={undo}

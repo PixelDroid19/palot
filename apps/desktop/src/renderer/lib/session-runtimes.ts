@@ -1,9 +1,9 @@
 /**
  * Session runtimes Palot can start a conversation with. Every runtime renders
  * through the same chat surfaces; some runtimes happen to execute through the
- * managed runtime SDK and others through the generic agent-host bridge.
+ * project runtime SDK and others through the generic agent-host bridge.
  *
- * Runtime descriptors are sourced in main (`describeRuntimes`): the managed
+ * Runtime descriptors are sourced in main (`describeRuntimes`): the project
  * runtime is described there alongside CLI-backed runtimes, so the renderer
  * does not inject a special OpenCode option by hand anymore. This module keeps
  * a small cache the UI reads synchronously after
@@ -73,12 +73,12 @@ export function installedCliRuntimeDescriptors(
 	return cliRuntimeDescriptors(descriptors).filter((descriptor) => descriptor.installed)
 }
 
-export function isManagedRuntimeId(id: string): id is typeof DEFAULT_SESSION_RUNTIME_ID {
+export function isProjectRuntimeId(id: string): id is typeof DEFAULT_SESSION_RUNTIME_ID {
 	return id === DEFAULT_SESSION_RUNTIME_ID
 }
 
 export function isCliRuntime(id: SessionRuntimeId): id is AgentRuntimeId {
-	return !isManagedRuntimeId(id)
+	return !isProjectRuntimeId(id)
 }
 
 /** Human label for a runtime id (falls back to the id itself). */

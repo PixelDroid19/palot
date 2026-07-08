@@ -395,17 +395,17 @@ export function NewChat() {
 		[projects, selectedDirectory],
 	)
 
-	const managedRuntimeConfigDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
+	const projectRuntimeConfigDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
 		? (selectedDirectory || null)
 		: null
 	const projectRuntimeData = useProjectRuntimeSessionData({
-		configDirectory: managedRuntimeConfigDirectory,
+		configDirectory: projectRuntimeConfigDirectory,
 		workspaceDirectory: selectedDirectory || null,
 	})
 	const { data: providers } = projectRuntimeData.providers
 	const { data: config } = projectRuntimeData.config
 	const { data: vcs, reload: reloadVcs } = projectRuntimeData.vcs
-	const { agents: managedRuntimeAgents } = projectRuntimeData.agents
+	const { agents: projectRuntimeAgents } = projectRuntimeData.agents
 	const { recentModels, addRecent: addRecentModel } = projectRuntimeData.modelState
 
 	// Handle model selection — set local state + persist to model.json.
@@ -474,10 +474,10 @@ export function NewChat() {
 	)
 
 	// Resolve active agent for model resolution
-	const activeManagedRuntimeAgent = useMemo(() => {
+	const activeProjectRuntimeAgent = useMemo(() => {
 		const agentName = selectedAgent ?? config?.defaultAgent
-		return managedRuntimeAgents?.find((a) => a.name === agentName) ?? null
-	}, [selectedAgent, config?.defaultAgent, managedRuntimeAgents])
+		return projectRuntimeAgents?.find((a) => a.name === agentName) ?? null
+	}, [selectedAgent, config?.defaultAgent, projectRuntimeAgents])
 
 	// Resolve effective model — selectedModel is seeded from the persisted project model
 	// on mount/project switch (above), so it already wins at step 1 of the resolution chain.
@@ -485,13 +485,13 @@ export function NewChat() {
 		() =>
 			resolveEffectiveModel(
 				selectedModel,
-				activeManagedRuntimeAgent,
+				activeProjectRuntimeAgent,
 				config?.model,
 				providers?.defaults ?? {},
 				providers?.providers ?? [],
 				recentModels,
 			),
-		[selectedModel, activeManagedRuntimeAgent, config?.model, providers, recentModels],
+		[selectedModel, activeProjectRuntimeAgent, config?.model, providers, recentModels],
 	)
 
 	// Validate variant against the effective model's available variants.
@@ -538,7 +538,7 @@ export function NewChat() {
 
 		if (runtimeCapabilities.supportsProjectRuntimeConfig) {
 			return buildProjectRuntimeNewChatRuntimeConfig({
-				agents: managedRuntimeAgents ?? [],
+				agents: projectRuntimeAgents ?? [],
 				selectedAgent,
 				defaultAgent: config?.defaultAgent,
 				onSelectAgent: setSelectedAgent,
@@ -562,7 +562,7 @@ export function NewChat() {
 		config?.defaultAgent,
 		effectiveModel,
 		handleModelSelect,
-		managedRuntimeAgents,
+		projectRuntimeAgents,
 		providers,
 		recentModels,
 		resolvedCliEffort,
@@ -758,7 +758,7 @@ export function NewChat() {
 								query={mentionQuery}
 								open={mentionOpen}
 								directory={selectedDirectory || null}
-								agents={managedRuntimeAgents ?? []}
+								agents={projectRuntimeAgents ?? []}
 								onSelect={handleMentionSelect}
 								onClose={() => setMentionOpen(false)}
 							/>

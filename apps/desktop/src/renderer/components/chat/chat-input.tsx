@@ -20,7 +20,7 @@ import {
 } from "../../hooks/use-project-runtime-data"
 
 import {
-	MANAGED_SESSION_RUNTIME_CAPABILITIES,
+	PROJECT_SESSION_RUNTIME_CAPABILITIES,
 	persistRuntimeSelection,
 	type RuntimePromptOptions,
 } from "../../lib/runtime-session-config"
@@ -50,7 +50,7 @@ interface ChatInputProps {
 	onStop?: (agent: Agent) => Promise<void>
 	providers?: ProvidersData | null
 	config?: ConfigData | null
-	managedRuntimeAgents?: SdkAgent[]
+	projectRuntimeAgents?: SdkAgent[]
 	onSkillsOpen: () => void
 	onScrollToBottom: (behavior?: "instant" | "smooth") => void
 	handleSlashCommand: (text: string) => Promise<boolean>
@@ -164,7 +164,7 @@ export function ChatInput({
 	onStop,
 	providers,
 	config,
-	managedRuntimeAgents,
+	projectRuntimeAgents,
 	onSkillsOpen,
 	onScrollToBottom,
 	handleSlashCommand,
@@ -187,7 +187,7 @@ export function ChatInput({
 
 	const effectiveModel = resolveEffectiveModel(
 		selectedModel,
-		managedRuntimeAgents?.find((a) => a.name === (selectedAgent ?? config?.defaultAgent)) ?? null,
+		projectRuntimeAgents?.find((a) => a.name === (selectedAgent ?? config?.defaultAgent)) ?? null,
 		config?.model,
 		providers?.defaults ?? {},
 		providers?.providers ?? [],
@@ -322,7 +322,7 @@ export function ChatInput({
 					open={slashOpen}
 					enabled={isConnected}
 					directory={agent.directory}
-					capabilities={MANAGED_SESSION_RUNTIME_CAPABILITIES}
+					capabilities={PROJECT_SESSION_RUNTIME_CAPABILITIES}
 					onSelect={(cmd) => {
 						setSlashOpen(false)
 						// Use the command string directly instead of setText + setTimeout
@@ -350,7 +350,7 @@ export function ChatInput({
 					query={mentionQuery}
 					open={mentionOpen}
 					directory={agent.directory}
-					agents={managedRuntimeAgents ?? []}
+					agents={projectRuntimeAgents ?? []}
 					onSelect={handleMentionSelect}
 					onClose={() => setMentionOpen(false)}
 				/>
@@ -387,7 +387,7 @@ export function ChatInput({
 						<PromptInputTools>
 							<AttachButton disabled={!isConnected} />
 							<PromptToolbar
-								agents={managedRuntimeAgents ?? []}
+								agents={projectRuntimeAgents ?? []}
 								selectedAgent={selectedAgent}
 								defaultAgent={config?.defaultAgent}
 								onSelectAgent={(a) => startTransition(() => setSelectedAgent(a))}

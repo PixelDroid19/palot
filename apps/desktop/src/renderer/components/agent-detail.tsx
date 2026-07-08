@@ -91,8 +91,8 @@ interface AgentDetailProps {
 	config?: ConfigData | null
 	/** VCS data for status bar */
 	vcs?: VcsData | null
-	/** Available OpenCode agents for agent selector */
-	managedRuntimeAgents?: SdkAgent[]
+	/** Available project runtime agents for the agent selector */
+	projectRuntimeAgents?: SdkAgent[]
 	/** Whether undo is available */
 	canUndo?: boolean
 	/** Whether redo is available */
@@ -127,7 +127,7 @@ export function AgentDetail({
 	providers,
 	config,
 	vcs,
-	managedRuntimeAgents,
+	projectRuntimeAgents,
 	chatLoadingEarlier,
 	chatHasEarlier,
 	onLoadEarlier,
@@ -303,7 +303,7 @@ export function AgentDetail({
 					providers={providers}
 					config={config}
 					vcs={vcs}
-					managedRuntimeAgents={managedRuntimeAgents}
+					projectRuntimeAgents={projectRuntimeAgents}
 					onApprove={onApprove}
 					onDeny={onDeny}
 					onReplyQuestion={onReplyQuestion}
