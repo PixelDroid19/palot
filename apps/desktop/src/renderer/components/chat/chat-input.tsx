@@ -16,7 +16,7 @@ import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../hooks/
 import {
 	getModelInputCapabilities,
 	resolveEffectiveModel,
-	useModelState,
+	useManagedRuntimeModelState,
 } from "../../hooks/use-managed-runtime-data"
 
 import {
@@ -181,7 +181,7 @@ export function ChatInput({
 	const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
 	const [selectedVariant, setSelectedVariant] = useState<string | undefined>(undefined)
 
-	const { recentModels, addRecent: addRecentModel } = useModelState()
+	const { recentModels, addRecent: addRecentModel } = useManagedRuntimeModelState()
 
 	// Resolve effective model
 

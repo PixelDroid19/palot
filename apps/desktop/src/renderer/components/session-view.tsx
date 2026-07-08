@@ -17,7 +17,12 @@ import { upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { viewedSessionIdAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
-import { useConfig, useManagedRuntimeAgents, useProviders, useVcs } from "../hooks/use-managed-runtime-data"
+import {
+	useManagedRuntimeAgents,
+	useManagedRuntimeConfig,
+	useManagedRuntimeProviders,
+	useManagedRuntimeVcs,
+} from "../hooks/use-managed-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"
@@ -140,9 +145,9 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const runtimeState = useSessionRuntimeState(selectedAgent?.sessionId ?? sessionId, directory)
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
 	const openCodeDataDirectory = runtimeCapabilities.supportsManagedPromptConfig ? directory : null
-	const { data: providers } = useProviders(openCodeDataDirectory)
-	const { data: config } = useConfig(openCodeDataDirectory)
-	const { data: vcs } = useVcs(directory)
+	const { data: providers } = useManagedRuntimeProviders(openCodeDataDirectory)
+	const { data: config } = useManagedRuntimeConfig(openCodeDataDirectory)
+	const { data: vcs } = useManagedRuntimeVcs(directory)
 	const { agents: openCodeAgents } = useManagedRuntimeAgents(openCodeDataDirectory)
 
 	// Handlers

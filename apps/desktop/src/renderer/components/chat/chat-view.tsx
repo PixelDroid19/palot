@@ -58,7 +58,7 @@ import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
-	useModelState,
+	useManagedRuntimeModelState,
 } from "../../hooks/use-managed-runtime-data"
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
@@ -955,7 +955,7 @@ function ChatInputSection({
 		}
 	}, [sessionMessages, agent.sessionId, runtimeState.modelPreference])
 
-	const { recentModels, addRecent: addRecentModel } = useModelState()
+	const { recentModels, addRecent: addRecentModel } = useManagedRuntimeModelState()
 
 	const activeOpenCodeAgent = useMemo(() => {
 		const agentName = selectedAgent ?? config?.defaultAgent

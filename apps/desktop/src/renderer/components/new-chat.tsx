@@ -32,11 +32,11 @@ import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
-	useConfig,
-	useModelState,
 	useManagedRuntimeAgents,
-	useProviders,
-	useVcs,
+	useManagedRuntimeConfig,
+	useManagedRuntimeModelState,
+	useManagedRuntimeProviders,
+	useManagedRuntimeVcs,
 } from "../hooks/use-managed-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../preload/api"
@@ -406,11 +406,11 @@ export function NewChat() {
 	const openCodeConfigDirectory = runtimeCapabilities.supportsManagedPromptConfig
 		? (selectedDirectory || null)
 		: null
-	const { data: providers } = useProviders(openCodeConfigDirectory)
-	const { data: config } = useConfig(openCodeConfigDirectory)
-	const { data: vcs, reload: reloadVcs } = useVcs(selectedDirectory || null)
+	const { data: providers } = useManagedRuntimeProviders(openCodeConfigDirectory)
+	const { data: config } = useManagedRuntimeConfig(openCodeConfigDirectory)
+	const { data: vcs, reload: reloadVcs } = useManagedRuntimeVcs(selectedDirectory || null)
 	const { agents: openCodeAgents } = useManagedRuntimeAgents(openCodeConfigDirectory)
-	const { recentModels, addRecent: addRecentModel } = useModelState()
+	const { recentModels, addRecent: addRecentModel } = useManagedRuntimeModelState()
 
 	// Handle model selection — set local state + persist to model.json.
 	// Reset variant when the model changes: the new model may have different
