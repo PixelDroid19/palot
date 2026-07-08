@@ -72,7 +72,7 @@ function RuntimeStatusSection() {
 	return (
 		<SettingsSection
 			title="Coding runtimes"
-			description="Palot works with multiple coding runtimes. A managed runtime is bundled locally today through OpenCode; other CLIs are detected on this machine and can be used in runtime flows."
+			description="Palot works with multiple coding runtimes. The project runtime is provided locally through OpenCode today; other CLIs are detected on this machine and can be used in the same runtime flows."
 		>
 			<div className="flex items-center justify-end px-4 pt-3">
 				<Button variant="outline" size="sm" onClick={() => load(true)} disabled={loading} className="gap-1.5">

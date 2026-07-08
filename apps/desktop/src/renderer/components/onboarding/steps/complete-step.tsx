@@ -57,7 +57,7 @@ export function CompleteStep({
 		window.palot.onboarding
 			.detectProviders()
 			.then((detections) => {
-				// Only show providers that were found and aren't the managed runtime itself.
+				// Only show providers that were found and aren't the project runtime itself.
 				setProviders(detections.filter((d) => d.found && !isManagedRuntimeId(d.provider)))
 				setDetecting(false)
 			})
@@ -101,7 +101,7 @@ export function CompleteStep({
 					<h2 className="text-2xl font-semibold text-foreground">You're all set.</h2>
 					<p className="text-sm text-muted-foreground">
 						{managedRuntimeVersion
-							? `Palot is ready (managed runtime: OpenCode ${formatVersion(managedRuntimeVersion)})`
+							? `Palot is ready (project runtime: OpenCode ${formatVersion(managedRuntimeVersion)})`
 							: "Palot is ready to go"}
 						{hasMigrated ? " and your configuration has been migrated." : "."}
 					</p>

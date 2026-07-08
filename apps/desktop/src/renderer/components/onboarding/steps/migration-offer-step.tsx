@@ -2,7 +2,7 @@
  * Multi-provider Migration Offer.
  *
  * Scans the selected provider's configuration and lets the user select which
- * categories to import into the managed runtime format. The user explicitly opted in
+ * categories to import into the project runtime format. The user explicitly opted in
  * (from the complete step), so scanning happens on mount.
  */
 
@@ -125,7 +125,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 					<h2 className="text-xl font-semibold text-foreground">Migrate from {label}</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
 						We detected an existing {label} setup. Palot can import your configuration into the
-						managed runtime format.
+						project runtime format.
 					</p>
 				</div>
 
@@ -229,9 +229,9 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 function getMigrationDescription(provider: MigrationProvider): string {
 	switch (provider) {
 		case "claude-code":
-			return "Model IDs are translated automatically. MCP servers are converted into the managed runtime format. Agent frontmatter is adapted. A backup is created before any changes, and you can undo at any time from Settings."
+			return "Model IDs are translated automatically. MCP servers are converted into the project runtime format. Agent frontmatter is adapted. A backup is created before any changes, and you can undo at any time from Settings."
 		case "cursor":
-			return "MCP servers, rules (.mdc), agents, and commands are converted into the managed runtime format. Cursor-specific features like OAuth and rule modes are adapted where possible. A backup is created before any changes."
+			return "MCP servers, rules (.mdc), agents, and commands are converted into the project runtime format. Cursor-specific features like OAuth and rule modes are adapted where possible. A backup is created before any changes."
 		case "opencode":
 			return "Configuration, agents, commands, and rules are imported. A backup is created before any changes, and you can undo at any time from Settings."
 	}
@@ -314,7 +314,7 @@ function buildClaudeCodeCategories(detection: ProviderDetection): MigrationCateg
 		{
 			id: "rules",
 			label: "Project rules (CLAUDE.md)",
-			description: "Copied as AGENTS.md for the managed runtime",
+			description: "Copied as AGENTS.md for the project runtime",
 			icon: ScrollTextIcon,
 			count: detection.ruleCount,
 			enabled: true,

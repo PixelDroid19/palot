@@ -1,7 +1,7 @@
 /**
  * Onboarding Step 2: Environment Check.
  *
- * Verifies the managed runtime CLI (OpenCode) is installed and compatible. Offers install/update
+ * Verifies the project runtime CLI (OpenCode) is installed and compatible. Offers install/update
  * if needed. When Managed runtime is not found locally, shows any mDNS-discovered
  * servers on the network as an alternative connection path.
  */
@@ -55,7 +55,7 @@ interface EnvironmentCheckStepProps {
 
 export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckStepProps) {
 	const [checks, setChecks] = useState<CheckItem[]>([
-		{ id: "locate", label: "Locating managed runtime CLI", status: "pending" },
+		{ id: "locate", label: "Locating project runtime CLI", status: "pending" },
 		{ id: "version", label: "Checking version compatibility", status: "pending" },
 	])
 	const [managedRuntimeResult, setManagedRuntimeResult] = useState<ManagedRuntimeCheckResult | null>(null)
@@ -94,12 +94,12 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		setAllDone(false)
 		setManagedRuntimeResult(null)
 		setChecks([
-			{ id: "locate", label: "Locating managed runtime CLI", status: "running" },
+			{ id: "locate", label: "Locating project runtime CLI", status: "running" },
 			{ id: "version", label: "Checking version compatibility", status: "pending" },
 		])
 
 		try {
-			// Step 1: Check managed runtime installation
+			// Step 1: Check project runtime installation
 			const result = await window.palot.onboarding.checkProjectRuntime()
 			setManagedRuntimeResult(result)
 
@@ -107,7 +107,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 				updateCheck("locate", {
 					status: "error",
 					label: "Managed runtime CLI not found",
-					detail: "Install the managed runtime CLI to continue",
+					detail: "Install the project runtime CLI to continue",
 				})
 				return
 			}
@@ -340,8 +340,8 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 					>
 						<p className="text-sm text-muted-foreground">
 							{needsUpdate
-								? "Your managed runtime version is too old. Update to continue."
-								: "Palot needs a managed runtime available for local sessions. Install OpenCode to continue."}
+								? "Your project runtime version is too old. Update to continue."
+								: "Palot needs the OpenCode project runtime for local sessions. Install it to continue."}
 						</p>
 						<div className="flex gap-2">
 							<Button size="sm" onClick={handleInstall} className="gap-2">
@@ -372,7 +372,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 							<p className="text-sm font-medium text-foreground">Or connect to a remote server</p>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Connect to a managed runtime running on another machine instead of installing locally
+							Connect to a project runtime running on another machine instead of installing locally
 							locally.
 						</p>
 
