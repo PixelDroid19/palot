@@ -22,7 +22,7 @@ export type {
 	Message,
 	Part,
 	PermissionRequest,
-	Project as ManagedRuntimeProject,
+	Project as ProjectRuntimeProject,
 	QuestionAnswer,
 	QuestionInfo,
 	QuestionOption,
@@ -37,6 +37,8 @@ export type {
 	ToolStateCompleted,
 	UserMessage,
 } from "@opencode-ai/sdk/v2/client"
+
+export type { ProjectRuntimeProject as ManagedRuntimeProject }
 
 /**
  * UI-facing diff model for review surfaces.

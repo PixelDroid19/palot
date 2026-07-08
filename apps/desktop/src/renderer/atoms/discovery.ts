@@ -1,5 +1,5 @@
 import { atom } from "jotai"
-import type { ManagedRuntimeProject } from "../lib/types"
+import type { ProjectRuntimeProject } from "../lib/types"
 
 // ============================================================
 // Types
@@ -39,8 +39,8 @@ export interface DiscoveryState {
 	error: string | null
 	/** Granular startup phase for loading UI */
 	phase: DiscoveryPhase
-	/** Projects discovered from the managed runtime API (Project type from SDK) */
-	projects: ManagedRuntimeProject[]
+	/** Projects discovered from the project runtime API (Project type from SDK) */
+	projects: ProjectRuntimeProject[]
 }
 
 // ============================================================
