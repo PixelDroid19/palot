@@ -1,7 +1,7 @@
 import os from "node:os"
 import { buildEndpoints, parsePort, type RemoteEndpoint } from "./lan-endpoints"
 import { createLogger } from "./logger"
-import { getManagedRuntimeUrl } from "./opencode-manager"
+import { getManagedRuntimeUrl } from "./project-runtime-manager"
 
 export type { EndpointType, RemoteEndpoint } from "./lan-endpoints"
 

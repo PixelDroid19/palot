@@ -22,8 +22,8 @@ import {
 	onStateChanged,
 	type SessionState,
 } from "./notification-watcher"
-import { createMainProcessManagedRuntimeClient } from "./opencode-runtime"
-import { getManagedRuntimeAuthHeader, getManagedRuntimeUrl } from "./opencode-manager"
+import { getManagedRuntimeAuthHeader, getManagedRuntimeUrl } from "./project-runtime-manager"
+import { createMainProcessManagedRuntimeClient } from "./project-runtime-sdk"
 
 const log = createLogger("tray")
 

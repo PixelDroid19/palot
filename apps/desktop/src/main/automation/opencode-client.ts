@@ -11,8 +11,8 @@
 
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createLogger } from "../logger"
-import { createMainProcessManagedRuntimeClient } from "../opencode-runtime"
-import { getManagedRuntimeAuthHeader, getManagedRuntimeUrl } from "../opencode-manager"
+import { getManagedRuntimeAuthHeader, getManagedRuntimeUrl } from "../project-runtime-manager"
+import { createMainProcessManagedRuntimeClient } from "../project-runtime-sdk"
 
 const log = createLogger("automation-client")
 

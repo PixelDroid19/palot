@@ -79,7 +79,7 @@ import {
 	getManagedRuntimeUrl,
 	restartManagedRuntimeServer,
 	stopManagedRuntimeServer,
-} from "./opencode-manager"
+} from "./project-runtime-manager"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
 	checkForUpdates,

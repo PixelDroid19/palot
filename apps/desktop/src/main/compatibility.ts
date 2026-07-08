@@ -9,7 +9,7 @@
 import { execFile } from "node:child_process"
 import { coerce, satisfies, valid } from "semver"
 import { createLogger } from "./logger"
-import { getManagedRuntimeAugmentedPath } from "./opencode-runtime"
+import { getManagedRuntimeAugmentedPath } from "./project-runtime-sdk"
 import { waitForEnv } from "./shell-env"
 
 const log = createLogger("compatibility")

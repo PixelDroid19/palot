@@ -16,7 +16,7 @@ import fs from "node:fs"
 import path from "node:path"
 import type { OpencodeClient, PermissionRuleset } from "@opencode-ai/sdk/v2/client"
 import { createLogger } from "../logger"
-import { createAutomationClient } from "./opencode-client"
+import { createAutomationClient } from "./project-runtime-client"
 import { getConfigDir } from "./paths"
 import type { AutomationConfig, PermissionPreset } from "./types"
 
