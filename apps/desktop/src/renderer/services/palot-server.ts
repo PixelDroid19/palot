@@ -28,10 +28,10 @@ export async function fetchServers() {
 }
 
 /**
- * Ensures the single managed runtime server is running and returns its URL.
+ * Ensures the single project runtime server is running and returns its URL.
  * Calls `GET /api/servers/opencode` on the Palot backend.
  */
-export async function fetchManagedRuntimeUrl(): Promise<{ url: string }> {
+export async function fetchProjectRuntimeUrl(): Promise<{ url: string }> {
 	const res = await client.api.servers.opencode.$get()
 	if (!res.ok) {
 		const data = await res.json()
@@ -39,6 +39,8 @@ export async function fetchManagedRuntimeUrl(): Promise<{ url: string }> {
 	}
 	return res.json()
 }
+
+export const fetchManagedRuntimeUrl = fetchProjectRuntimeUrl
 
 /**
  * Fetches the OpenCode model state (recent models, favorites, variants)

@@ -7,7 +7,7 @@ import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
 import { resolveAuthHeader, resolveServerUrl } from "../services/backend"
 import {
-	connectToManagedRuntime,
+	connectToProjectRuntime,
 	loadAllProjects,
 	loadProjectSessions,
 } from "../services/connection-manager"
@@ -36,7 +36,7 @@ function setPhase(phase: import("../atoms/discovery").DiscoveryPhase): void {
  * On mount:
  * 1. Resolves the active server URL (spawns local or uses remote URL)
  * 2. Resolves auth credentials if the server requires them
- * 3. Connects to the managed runtime server (SSE events for all projects)
+ * 3. Connects to the project runtime server (SSE events for all projects)
  * 4. Lists all projects from the API via `client.project.list()`
  * 5. Loads sessions for the top few most-recently-active projects
  *    (enough to populate "Recent" and "Active Now" sections)
@@ -78,15 +78,15 @@ export function useDiscovery() {
 
 				// --- Step 3: Connect to the server (starts SSE event loop) ---
 				setPhase("connecting")
-				log.info("Connecting to managed runtime server", {
+				log.info("Connecting to project runtime server", {
 					url,
 					server: activeServer.name,
 					authenticated: !!authHeader,
 				})
-				await connectToManagedRuntime(url, authHeader)
+				await connectToProjectRuntime(url, authHeader)
 
 				// --- Step 3b: Bail if server is unreachable ---
-				// connectToManagedRuntime runs a health check and sets serverConnectedAtom.
+				// connectToProjectRuntime runs a health check and sets serverConnectedAtom.
 				// If the server is offline, skip project/session loading so discovery
 				// stays in a non-loaded state, allowing the sidebar to show "Server offline".
 				// Keep discoveryInFlight = true to prevent an infinite retry loop;

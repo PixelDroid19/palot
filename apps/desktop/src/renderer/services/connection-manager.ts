@@ -104,13 +104,13 @@ function setGlobalAbort(controller: AbortController | null) {
 // ============================================================
 
 /**
- * Connect to the managed runtime server.
+ * Connect to the project runtime server.
  * Starts SSE subscription for all-project events.
  *
- * @param url       Base URL of the managed runtime server
+ * @param url       Base URL of the project runtime server
  * @param authHeader  Optional HTTP Authorization header for remote servers
  */
-export async function connectToManagedRuntime(
+export async function connectToProjectRuntime(
 	url: string,
 	authHeader?: string | null,
 ): Promise<void> {
@@ -144,7 +144,7 @@ export async function connectToManagedRuntime(
 	connection = { url, authHeader: resolvedAuth, baseClient, abortController }
 	setGlobalAbort(abortController)
 
-	log.info("Connecting to managed runtime server", {
+	log.info("Connecting to project runtime server", {
 		url,
 		authenticated: !!resolvedAuth,
 		generation: gen,
@@ -164,6 +164,8 @@ export async function connectToManagedRuntime(
 	// Connected state is updated when the SSE stream opens or fails.
 	startEventLoop(baseClient, abortController.signal, gen)
 }
+
+export const connectToManagedRuntime = connectToProjectRuntime
 
 /**
  * List all projects known to the OpenCode server via the API.

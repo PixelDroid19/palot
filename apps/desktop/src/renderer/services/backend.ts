@@ -44,27 +44,29 @@ export const isElectron = typeof window !== "undefined" && "palot" in window
 // ============================================================
 
 /**
- * Ensures the single managed runtime server is running and returns its URL.
+ * Ensures the single project runtime server is running and returns its URL.
  * For local servers, this spawns/attaches via IPC.
  * For remote servers, the URL is already known and returned directly.
  */
-export async function fetchManagedRuntimeUrl(): Promise<{ url: string }> {
-	log.debug("fetchManagedRuntimeUrl", { via: isElectron ? "ipc" : "http" })
+export async function fetchProjectRuntimeUrl(): Promise<{ url: string }> {
+	log.debug("fetchProjectRuntimeUrl", { via: isElectron ? "ipc" : "http" })
 	try {
 		if (isElectron) {
 			const info = await window.palot.projectRuntime.ensure()
 			log.info("OpenCode server URL resolved", { url: info.url })
 			return { url: info.url }
 		}
-		const { fetchManagedRuntimeUrl: httpFetch } = await import("./palot-server")
+		const { fetchProjectRuntimeUrl: httpFetch } = await import("./palot-server")
 		const result = await httpFetch()
 		log.info("OpenCode server URL resolved", { url: result.url })
 		return result
 	} catch (err) {
-		log.error("fetchManagedRuntimeUrl failed", err)
+		log.error("fetchProjectRuntimeUrl failed", err)
 		throw err
 	}
 }
+
+export const fetchManagedRuntimeUrl = fetchProjectRuntimeUrl
 
 /**
  * Resolve the connection URL for a server config.
@@ -76,7 +78,7 @@ export async function resolveServerUrl(
 ): Promise<string> {
 	switch (server.type) {
 		case "local": {
-			const { url } = await fetchManagedRuntimeUrl()
+			const { url } = await fetchProjectRuntimeUrl()
 			return url
 		}
 		case "remote":
