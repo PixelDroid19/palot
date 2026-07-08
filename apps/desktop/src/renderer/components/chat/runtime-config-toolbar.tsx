@@ -29,11 +29,21 @@ interface OpenCodeRuntimeConfigToolbarProps extends PromptToolbarProps {
 	kind: "opencode"
 }
 
+interface CliSessionRuntimeConfigToolbarProps {
+	kind: "cli-session"
+	sessionId: string
+}
+
 type RuntimeConfigToolbarProps =
 	| CliRuntimeConfigToolbarProps
+	| CliSessionRuntimeConfigToolbarProps
 	| OpenCodeRuntimeConfigToolbarProps
 
 export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
+	if (props.kind === "cli-session") {
+		return <CliSessionRuntimeConfigToolbar sessionId={props.sessionId} />
+	}
+
 	if (props.kind === "cli") {
 		return (
 			<CliPromptToolbar
@@ -67,7 +77,7 @@ export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
 	)
 }
 
-export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
+function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
 	const meta = useAtomValue(cliSessionsAtom)[sessionId]
 	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
 

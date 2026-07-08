@@ -94,7 +94,7 @@ import { CliApprovalBar } from "./cli-approval-bar"
 import { CliQuestionBar } from "./cli-question-bar"
 import { SessionRuntimeSwitch } from "./cli-toolbar"
 import { StatusBar } from "./prompt-toolbar"
-import { CliSessionToolbar, RuntimeConfigToolbar } from "./runtime-config-toolbar"
+import { RuntimeConfigToolbar } from "./runtime-config-toolbar"
 import { SessionTaskList } from "./session-task-list"
 import { SkillPickerDialog } from "./skill-picker-dialog"
 import { SlashCommandPopover, type SlashCommandPopoverHandle } from "./slash-command-popover"
@@ -1444,37 +1444,33 @@ function ChatInputSection({
 									{/* Toolbar inside the card — agent + model + variant selectors + submit */}
 									<PromptInputFooter>
 										<PromptInputTools>
-											{isCli && (
-												<>
-													<AttachButton disabled={!isConnected} />
-													<SessionRuntimeSwitch
-														sessionId={agent.sessionId}
-														current={cliMeta?.runtimeId ?? "opencode"}
-													/>
-													<CliSessionToolbar sessionId={agent.sessionId} />
-												</>
-											)}
-											{!isCli && (
-												<>
-													<AttachButton disabled={!isConnected} />
-													<SessionRuntimeSwitch sessionId={agent.sessionId} current="opencode" />
-													<RuntimeConfigToolbar
-														kind="opencode"
-														agents={openCodeAgents ?? []}
-														selectedAgent={selectedAgent}
-														defaultAgent={config?.defaultAgent}
-														onSelectAgent={setSelectedAgent}
-														providers={providers ?? null}
-														effectiveModel={effectiveModel}
-														hasModelOverride={!!selectedModel}
-														onSelectModel={handleModelSelect}
-														recentModels={recentModels}
-														selectedVariant={selectedVariant}
-														onSelectVariant={setSelectedVariant}
-														disabled={!isConnected}
-													/>
-												</>
-											)}
+											<AttachButton disabled={!isConnected} />
+											<SessionRuntimeSwitch
+												sessionId={agent.sessionId}
+												current={cliMeta?.runtimeId ?? "opencode"}
+											/>
+											<RuntimeConfigToolbar
+												{...(isCli
+													? {
+															kind: "cli-session" as const,
+															sessionId: agent.sessionId,
+														}
+													: {
+															kind: "opencode" as const,
+															agents: openCodeAgents ?? [],
+															selectedAgent,
+															defaultAgent: config?.defaultAgent,
+															onSelectAgent: setSelectedAgent,
+															providers: providers ?? null,
+															effectiveModel,
+															hasModelOverride: !!selectedModel,
+															onSelectModel: handleModelSelect,
+															recentModels,
+															selectedVariant,
+															onSelectVariant: setSelectedVariant,
+															disabled: !isConnected,
+														})}
+											/>
 										</PromptInputTools>
 										<PromptInputSubmit
 											disabled={!canSend}
