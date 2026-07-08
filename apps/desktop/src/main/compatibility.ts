@@ -7,10 +7,9 @@
  */
 
 import { execFile } from "node:child_process"
-import { homedir } from "node:os"
-import path from "node:path"
 import { coerce, satisfies, valid } from "semver"
 import { createLogger } from "./logger"
+import { getOpenCodeAugmentedPath } from "./opencode-runtime"
 import { waitForEnv } from "./shell-env"
 
 const log = createLogger("compatibility")
@@ -20,10 +19,10 @@ const log = createLogger("compatibility")
 // ============================================================
 
 export const OPENCODE_COMPAT = {
-	/** Supported range -- versions that should work. Below this: hard block. */
-	supported: ">=1.2.0",
-	/** Tested range -- versions actively tested against. Subset of supported. */
-	tested: "~1.2.0",
+	/** Supported range -- aligned with the upgraded SDK/runtime integration. */
+	supported: ">=1.17.0",
+	/** Tested range -- versions actively tested against with the current runtime layer. */
+	tested: "~1.17.0",
 	/** Known-broken versions. These are hard-blocked with a specific message. */
 	blocked: [] as string[],
 }
@@ -47,9 +46,7 @@ export interface OpenCodeCheckResult {
 
 /** Build the augmented PATH that includes ~/.opencode/bin. */
 function getAugmentedPath(): string {
-	const opencodeBinDir = path.join(homedir(), ".opencode", "bin")
-	const sep = process.platform === "win32" ? ";" : ":"
-	return `${opencodeBinDir}${sep}${process.env.PATH ?? ""}`
+	return getOpenCodeAugmentedPath()
 }
 
 /** Run a command and return stdout, or null on failure. */
