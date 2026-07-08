@@ -68,7 +68,7 @@ import {
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
-import { CliModelSelect, CliOptionSelect } from "./chat/cli-toolbar"
+import { CliOptionSelect, CliPromptToolbar } from "./chat/cli-toolbar"
 import { PromptAttachmentPreview } from "./chat/prompt-attachments"
 import { PromptToolbar, StatusBar } from "./chat/prompt-toolbar"
 import { PalotWordmark } from "./palot-wordmark"
@@ -883,55 +883,19 @@ export function NewChat() {
 								<PromptInputFooter>
 									<PromptInputTools>
 										{isCliSessionRuntime ? (
-											<>
-												{cliModels.length > 0 && (
-													<CliModelSelect
-														models={cliModels}
-														value={resolvedCliModel ?? ""}
-														onValueChange={(value) => {
-															setCliModel(value)
-															setCliEffort("")
-														}}
-													/>
-												)}
-												<CliOptionSelect
-													aria-label={t("runtimePicker.sandbox")}
-													value={cliSandbox}
-													onValueChange={(value) => setCliSandbox(value as AgentSandbox)}
-													options={[
-														{ value: "plan", label: t("runtimePicker.sandboxPlan") },
-														{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
-														{
-															value: "workspace-write",
-															label: t("runtimePicker.sandboxWorkspaceWrite"),
-														},
-														{
-															value: "danger-full-access",
-															label: t("runtimePicker.sandboxFullAccess"),
-														},
-													]}
-												/>
-												{cliEfforts.length > 0 && (
-													<CliOptionSelect
-														aria-label={t("runtimePicker.effort")}
-														value={cliEffort || "__default__"}
-														onValueChange={(value) =>
-															setCliEffort(value === "__default__" ? "" : value)
-														}
-														options={[
-															{
-																value: "__default__",
-																label: t("runtimePicker.effortDefault"),
-																muted: true,
-															},
-															...cliEfforts.map((effort) => ({
-																value: effort,
-																label: t("runtimePicker.effortLevel", { level: effort }),
-															})),
-														]}
-													/>
-												)}
-											</>
+											<CliPromptToolbar
+												models={cliModels}
+												modelValue={resolvedCliModel ?? ""}
+												onModelChange={(value) => {
+													setCliModel(value)
+													setCliEffort("")
+												}}
+												sandboxValue={cliSandbox}
+												onSandboxChange={setCliSandbox}
+												efforts={cliEfforts}
+												effortValue={cliEffort}
+												onEffortChange={setCliEffort}
+											/>
 										) : (
 											<PromptToolbar
 												agents={openCodeAgents ?? []}

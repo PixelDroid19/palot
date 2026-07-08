@@ -15,6 +15,7 @@ import {
 	SearchableListPopoverTrigger,
 	useSearchableListPopoverSearch,
 } from "@palot/ui/components/searchable-list-popover"
+import { Separator } from "@palot/ui/components/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@palot/ui/components/select"
 import { cn } from "@palot/ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
@@ -48,6 +49,21 @@ interface ToolbarOption {
 	value: string
 	label: string
 	muted?: boolean
+}
+
+function cliEffortOptions(
+	t: ReturnType<typeof useTranslation>["t"],
+	efforts: string[],
+): ToolbarOption[] {
+	return [
+		{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
+		...efforts.map((effort) => ({
+			value: effort,
+			label: t("runtimePicker.effortLevel", {
+				level: effort.charAt(0).toUpperCase() + effort.slice(1),
+			}),
+		})),
+	]
 }
 
 export function CliOptionSelect({
@@ -167,6 +183,63 @@ function CliModelSelectList({
 	)
 }
 
+export function CliPromptToolbar({
+	models,
+	modelValue,
+	onModelChange,
+	sandboxValue,
+	onSandboxChange,
+	efforts,
+	effortValue,
+	onEffortChange,
+}: {
+	models: AgentRuntimeDescriptor["models"]
+	modelValue: string
+	onModelChange: (value: string) => void
+	sandboxValue: AgentSandbox
+	onSandboxChange: (value: AgentSandbox) => void
+	efforts: string[]
+	effortValue: string
+	onEffortChange: (value: string) => void
+}) {
+	const { t } = useTranslation()
+	const hasModel = models.length > 0
+	const hasEffort = efforts.length > 0
+
+	return (
+		<div className="flex min-w-0 flex-wrap items-center gap-0.5">
+			{hasModel && (
+				<CliModelSelect models={models} value={modelValue} onValueChange={onModelChange} />
+			)}
+
+			{hasModel && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
+
+			<CliOptionSelect
+				aria-label={t("runtimePicker.sandbox")}
+				value={sandboxValue}
+				onValueChange={(value) => onSandboxChange(value as AgentSandbox)}
+				options={[
+					{ value: "plan", label: t("runtimePicker.sandboxPlan") },
+					{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
+					{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
+					{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
+				]}
+			/>
+
+			{hasEffort && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
+
+			{hasEffort && (
+				<CliOptionSelect
+					aria-label={t("runtimePicker.effort")}
+					value={effortValue || "__default__"}
+					onValueChange={(value) => onEffortChange(value === "__default__" ? "" : value)}
+					options={cliEffortOptions(t, efforts)}
+				/>
+			)}
+		</div>
+	)
+}
+
 /**
  * Runtime switcher available in EVERY chat (OpenCode or CLI-backed): one
  * conversation can move between OpenCode, Codex and Claude Code mid-session.
@@ -221,7 +294,6 @@ export function SessionRuntimeSwitch({
 }
 
 export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
-	const { t } = useTranslation()
 	const meta = useAtomValue(cliSessionsAtom)[sessionId]
 	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
 
@@ -265,39 +337,15 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 	}
 
 	return (
-		<div className="flex items-center gap-1.5">
-			{models.length > 0 && (
-				<CliModelSelect
-					models={models}
-					value={currentSlug}
-					onValueChange={(value) => apply({ model: value, effort: "" })}
-				/>
-			)}
-			<CliOptionSelect
-				aria-label={t("runtimePicker.sandbox")}
-				value={meta.sandbox}
-				onValueChange={(value) => apply({ sandbox: value as AgentSandbox })}
-				options={[
-					{ value: "plan", label: t("runtimePicker.sandboxPlan") },
-					{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
-					{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
-					{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
-				]}
-			/>
-			{descriptor.capabilities.reasoningEffort && efforts.length > 0 && (
-				<CliOptionSelect
-					aria-label={t("runtimePicker.effort")}
-					value={currentEffort || "__default__"}
-					onValueChange={(value) => apply({ effort: value === "__default__" ? "" : value })}
-					options={[
-						{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
-						...efforts.map((effort) => ({
-							value: effort,
-							label: t("runtimePicker.effortLevel", { level: effort }),
-						})),
-					]}
-				/>
-			)}
-		</div>
+		<CliPromptToolbar
+			models={models}
+			modelValue={currentSlug}
+			onModelChange={(value) => apply({ model: value, effort: "" })}
+			sandboxValue={meta.sandbox}
+			onSandboxChange={(value) => apply({ sandbox: value })}
+			efforts={descriptor.capabilities.reasoningEffort ? efforts : []}
+			effortValue={currentEffort}
+			onEffortChange={(value) => apply({ effort: value })}
+		/>
 	)
 }
