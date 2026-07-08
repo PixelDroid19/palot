@@ -53,9 +53,11 @@ import type { FileAttachment } from "../lib/types"
 import { useTranslation } from "../i18n/use-translation"
 import {
 	persistRuntimeSelection,
+	runtimeIdCapabilities,
 	useProjectRuntimePreference,
 } from "../lib/runtime-session-config"
 import {
+	DEFAULT_SESSION_RUNTIME_ID,
 	isCliRuntime,
 	loadRuntimeDescriptors,
 	type SessionRuntimeId,
@@ -287,8 +289,9 @@ export function NewChat() {
 
 	// Session runtime is a first-class user choice, remembered across launches.
 	const [sessionRuntime, setSessionRuntimeState] = useState<SessionRuntimeId>(
-		() => localStorage.getItem("palot:lastSessionRuntime") || "opencode",
+		() => (localStorage.getItem("palot:lastSessionRuntime") as SessionRuntimeId) || DEFAULT_SESSION_RUNTIME_ID,
 	)
+	const runtimeCapabilities = useMemo(() => runtimeIdCapabilities(sessionRuntime), [sessionRuntime])
 	const setSessionRuntime = (id: SessionRuntimeId) => {
 		setSessionRuntimeState(id)
 		localStorage.setItem("palot:lastSessionRuntime", id)
@@ -316,8 +319,9 @@ export function NewChat() {
 			setCliRuntimes(installed)
 			// The remembered runtime may have been uninstalled since last use.
 			setSessionRuntimeState((current) =>
-				current !== "opencode" && !installed.some((d) => d.id === current)
-					? "opencode"
+				!runtimeIdCapabilities(current).supportsOpenCodePromptConfig &&
+				  !installed.some((d) => d.id === current)
+					? DEFAULT_SESSION_RUNTIME_ID
 					: current,
 			)
 		})
@@ -408,10 +412,13 @@ export function NewChat() {
 		[projects, selectedDirectory],
 	)
 
-	const { data: providers } = useProviders(selectedDirectory || null)
-	const { data: config } = useConfig(selectedDirectory || null)
+	const openCodeConfigDirectory = runtimeCapabilities.supportsOpenCodePromptConfig
+		? (selectedDirectory || null)
+		: null
+	const { data: providers } = useProviders(openCodeConfigDirectory)
+	const { data: config } = useConfig(openCodeConfigDirectory)
 	const { data: vcs, reload: reloadVcs } = useVcs(selectedDirectory || null)
-	const { agents: openCodeAgents } = useOpenCodeAgents(selectedDirectory || null)
+	const { agents: openCodeAgents } = useOpenCodeAgents(openCodeConfigDirectory)
 	const { recentModels, addRecent: addRecentModel } = useModelState()
 
 	// Handle model selection — set local state + persist to model.json.
@@ -542,7 +549,7 @@ export function NewChat() {
 			})
 		}
 
-		if (sessionRuntime === "opencode") {
+		if (runtimeCapabilities.supportsOpenCodePromptConfig) {
 			return buildOpenCodeNewChatRuntimeConfig({
 				agents: openCodeAgents ?? [],
 				selectedAgent,
@@ -576,7 +583,7 @@ export function NewChat() {
 		selectedAgent,
 		selectedModel,
 		selectedVariant,
-		sessionRuntime,
+		runtimeCapabilities.supportsOpenCodePromptConfig,
 		worktreeMode,
 	])
 
@@ -991,7 +998,7 @@ export function NewChat() {
 											]}
 										/>
 									)}
-									{vcs && runtimeConfig?.kind === "opencode" && (
+									{vcs && runtimeCapabilities.supportsWorktreeLaunch && runtimeConfig?.kind === "opencode" && (
 										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
 									)}
 								</div>

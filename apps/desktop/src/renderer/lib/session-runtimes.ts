@@ -11,6 +11,7 @@
 import type { AgentRuntimeDescriptor, AgentRuntimeId } from "../../preload/api"
 
 export type SessionRuntimeId = "opencode" | AgentRuntimeId
+export const DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = "opencode"
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 

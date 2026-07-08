@@ -21,7 +21,11 @@ import { useConfig, useOpenCodeAgents, useProviders, useVcs } from "../hooks/use
 import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"
-import type { RuntimePromptOptions } from "../lib/runtime-session-config"
+import {
+	sessionRuntimeCapabilities,
+	type RuntimePromptOptions,
+	useSessionRuntimeState,
+} from "../lib/runtime-session-config"
 import type { Agent, QuestionAnswer } from "../lib/types"
 import { fetchSessionById } from "../services/connection-manager"
 import { AgentDetail } from "./agent-detail"
@@ -131,10 +135,13 @@ export function SessionView({ sessionId }: SessionViewProps) {
 
 	// Toolbar data -- providers, config, VCS, and OpenCode agents
 	const directory = selectedAgent?.directory ?? null
-	const { data: providers } = useProviders(directory)
-	const { data: config } = useConfig(directory)
+	const runtimeState = useSessionRuntimeState(selectedAgent?.sessionId ?? sessionId, directory)
+	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
+	const openCodeDataDirectory = runtimeCapabilities.supportsOpenCodePromptConfig ? directory : null
+	const { data: providers } = useProviders(openCodeDataDirectory)
+	const { data: config } = useConfig(openCodeDataDirectory)
 	const { data: vcs } = useVcs(directory)
-	const { agents: openCodeAgents } = useOpenCodeAgents(directory)
+	const { agents: openCodeAgents } = useOpenCodeAgents(openCodeDataDirectory)
 
 	// Handlers
 	const handleStopAgent = useCallback(

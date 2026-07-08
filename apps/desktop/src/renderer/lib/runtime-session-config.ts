@@ -4,6 +4,10 @@ import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
 import { cliSessionsAtom, getCliMeta, patchCliMeta, type CliSessionMeta } from "../atoms/cli-sessions"
 import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-opencode-data"
+import {
+	DEFAULT_SESSION_RUNTIME_ID,
+	type SessionRuntimeId,
+} from "./session-runtimes"
 import { persistCliRuntimeSession } from "../services/runtime-cli-store"
 import type { FileAttachment } from "./types"
 
@@ -57,6 +61,8 @@ export interface SessionRuntimeCapabilities {
 	supportsSessionSummarize: boolean
 	supportsServerSlashCommands: boolean
 	supportsFork: boolean
+	supportsOpenCodePromptConfig: boolean
+	supportsWorktreeLaunch: boolean
 }
 
 export const OPENCODE_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
@@ -64,6 +70,8 @@ export const OPENCODE_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities =
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
 	supportsFork: true,
+	supportsOpenCodePromptConfig: true,
+	supportsWorktreeLaunch: true,
 }
 
 export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
@@ -71,14 +79,20 @@ export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 	supportsSessionSummarize: false,
 	supportsServerSlashCommands: false,
 	supportsFork: false,
+	supportsOpenCodePromptConfig: false,
+	supportsWorktreeLaunch: false,
+}
+
+export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapabilities {
+	return id === DEFAULT_SESSION_RUNTIME_ID
+		? OPENCODE_SESSION_RUNTIME_CAPABILITIES
+		: CLI_SESSION_RUNTIME_CAPABILITIES
 }
 
 export function sessionRuntimeCapabilities(
 	state: Pick<SessionRuntimeState, "runtime">,
 ): SessionRuntimeCapabilities {
-	return state.runtime === "opencode"
-		? OPENCODE_SESSION_RUNTIME_CAPABILITIES
-		: CLI_SESSION_RUNTIME_CAPABILITIES
+	return runtimeIdCapabilities(state.runtime)
 }
 
 export function readProjectRuntimePreference(
