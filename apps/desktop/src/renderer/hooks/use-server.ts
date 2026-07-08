@@ -1,6 +1,5 @@
 import { useAtomValue } from "jotai"
 import { useCallback } from "react"
-import { isCliSession } from "../atoms/cli-sessions"
 import { connectionAtom } from "../atoms/connection"
 import { upsertMessageAtom } from "../atoms/messages"
 import { upsertPartAtom } from "../atoms/parts"
@@ -8,6 +7,7 @@ import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/se
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
+import { readSessionRuntimeState } from "../lib/runtime-session-config"
 import {
 	cancelCliTurn,
 	consumeOpencodeHandoff,
@@ -43,7 +43,7 @@ export function useServerConnection() {
  */
 export function useAgentActions() {
 	const abort = useCallback(async (directory: string, sessionId: string) => {
-		if (isCliSession(sessionId)) {
+		if (readSessionRuntimeState(sessionId).runtime === "cli") {
 			cancelCliTurn(sessionId)
 			return
 		}
@@ -65,11 +65,12 @@ export function useAgentActions() {
 			text: string,
 			options?: RuntimePromptOptions,
 		) => {
+			const storedRuntime = readSessionRuntimeState(sessionId).runtime
 			log.debug("sendPrompt called", {
 				directory,
 				sessionId,
 				textLength: text.length,
-				runtime: options?.runtime ?? (isCliSession(sessionId) ? "cli" : "opencode"),
+				runtime: options?.runtime ?? storedRuntime,
 				agent: options?.runtime === "cli" ? undefined : options?.agentName,
 				model: options?.runtime === "cli" ? undefined : options?.model,
 				variant: options?.runtime === "cli" ? undefined : options?.variant,
@@ -77,7 +78,7 @@ export function useAgentActions() {
 			})
 
 			// CLI-backed sessions run through the agent runtime, not the OpenCode client.
-			if (options?.runtime === "cli" || isCliSession(sessionId)) {
+			if (options?.runtime === "cli" || storedRuntime === "cli") {
 				await runCliTurn(sessionId, text, options?.files)
 				return
 			}
@@ -207,7 +208,7 @@ export function useAgentActions() {
 		}
 
 		// CLI-backed sessions only exist locally.
-		if (isCliSession(sessionId)) {
+		if (readSessionRuntimeState(sessionId).runtime === "cli") {
 			persistCliSession(sessionId)
 			return
 		}
@@ -227,7 +228,7 @@ export function useAgentActions() {
 	const deleteSession = useCallback(async (directory: string, sessionId: string) => {
 		// CLI-backed sessions only exist locally: drop them from the atoms and
 		// their persisted transcript, never from the OpenCode server.
-		if (isCliSession(sessionId)) {
+		if (readSessionRuntimeState(sessionId).runtime === "cli") {
 			cancelCliTurn(sessionId)
 			await forgetCliSession(sessionId)
 			appStore.set(removeSessionAtom, sessionId)

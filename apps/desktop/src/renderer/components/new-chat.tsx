@@ -15,7 +15,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@palot/ui/components/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
-import { useAtomValue } from "jotai"
 import {
 	BookMarkedIcon,
 	ChevronDownIcon,
@@ -27,7 +26,6 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createUuidV7 } from "../../shared/uuid"
-import { projectModelsAtom } from "../atoms/preferences"
 import {
 	removeSessionAtom,
 	setSessionBranchAtom,
@@ -54,7 +52,10 @@ import type { AgentRuntimeDescriptor, AgentSandbox } from "../../preload/api"
 import { createCliSession } from "../services/cli-chat"
 import type { FileAttachment } from "../lib/types"
 import { useTranslation } from "../i18n/use-translation"
-import { persistRuntimeSelection } from "../lib/runtime-session-config"
+import {
+	persistRuntimeSelection,
+	useProjectRuntimePreference,
+} from "../lib/runtime-session-config"
 import {
 	isCliRuntime,
 	loadRuntimeDescriptors,
@@ -382,12 +383,12 @@ export function NewChat() {
 	// This puts the model at step 1 (user override) in resolveEffectiveModel, so it
 	// wins over config.model and global recent list — matching the user's expectation
 	// that the model they last used in this project sticks.
-	const projectModels = useAtomValue(projectModelsAtom)
+	const projectModelPreference = useProjectRuntimePreference(selectedDirectory)
 	const prevDirectoryRef = useRef<string>("")
 	useEffect(() => {
 		if (!selectedDirectory || selectedDirectory === prevDirectoryRef.current) return
 		prevDirectoryRef.current = selectedDirectory
-		const stored = projectModels[selectedDirectory]
+		const stored = projectModelPreference
 		if (stored?.providerID && stored?.modelID) {
 			setSelectedModel(stored)
 			setSelectedVariant(stored.variant)
@@ -397,7 +398,7 @@ export function NewChat() {
 		}
 		// Restore the per-project agent preference (null = use config default)
 		setSelectedAgent(stored?.agent ?? null)
-	}, [selectedDirectory, projectModels])
+	}, [selectedDirectory, projectModelPreference])
 
 	const selectedProject = useMemo(
 		() => projects.find((p) => p.directory === selectedDirectory),

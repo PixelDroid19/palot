@@ -38,9 +38,7 @@ import {
 	useRef,
 	useState,
 } from "react"
-import { cliSessionsAtom } from "../../atoms/cli-sessions"
 import { messagesFamily, removeMessageAtom } from "../../atoms/messages"
-import { projectModelsAtom } from "../../atoms/preferences"
 import type { SessionSetupPhase } from "../../atoms/sessions"
 import { sessionFamily } from "../../atoms/sessions"
 import {
@@ -64,7 +62,11 @@ import {
 } from "../../hooks/use-opencode-data"
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
-import { persistRuntimeSelection, type RuntimePromptOptions } from "../../lib/runtime-session-config"
+import {
+	persistRuntimeSelection,
+	type RuntimePromptOptions,
+	useSessionRuntimeState,
+} from "../../lib/runtime-session-config"
 import { computeTurnWorkTimeSplit, formatWorkDuration } from "../../lib/session-metrics"
 import type { Agent, FileAttachment, FilePart, QuestionAnswer, TextPart } from "../../lib/types"
 import { getProjectClient } from "../../services/connection-manager"
@@ -824,8 +826,9 @@ function ChatInputSection({
 	const [sending, setSending] = useState(false)
 	// CLI-backed sessions use their own model; hide the OpenCode agent/model
 	// picker. Reactive so a mid-session runtime switch swaps the toolbar live.
-	const cliMeta = useAtomValue(cliSessionsAtom)[agent.sessionId]
-	const isCli = !!cliMeta
+	const runtimeState = useSessionRuntimeState(agent.sessionId, agent.directory)
+	const cliMeta = runtimeState.runtime === "cli" ? runtimeState.meta : null
+	const isCli = runtimeState.runtime === "cli"
 
 	// Tree-scoped interactive requests — bubbles up from sub-agent sessions.
 	// These replace the direct `agent.permissions` / `agent.questions` arrays
@@ -890,14 +893,13 @@ function ChatInputSection({
 
 	// Initialize model, variant, and agent from the session's last user message.
 	const sessionMessages = useAtomValue(messagesFamily(agent.sessionId))
-	const projectModels = useAtomValue(projectModelsAtom)
 	const initializedForSessionRef = useRef<string | null>(null)
 	const resetForSessionRef = useRef<string | null>(null)
 	useEffect(() => {
 		if (resetForSessionRef.current !== agent.sessionId) {
 			resetForSessionRef.current = agent.sessionId
 			initializedForSessionRef.current = null
-			const stored = agent.directory ? projectModels[agent.directory] : undefined
+			const stored = runtimeState.modelPreference
 			if (stored?.providerID && stored?.modelID) {
 				setSelectedModel(stored)
 				setSelectedVariant(stored.variant)
@@ -945,7 +947,7 @@ function ChatInputSection({
 
 			if (foundModel && foundAgent) break
 		}
-	}, [sessionMessages, agent.sessionId, agent.directory, projectModels])
+	}, [sessionMessages, agent.sessionId, runtimeState.modelPreference])
 
 	const { recentModels, addRecent: addRecentModel } = useModelState()
 

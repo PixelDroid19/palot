@@ -1,6 +1,7 @@
+import { useAtomValue } from "jotai"
 import type { PersistedModelRef } from "../atoms/preferences"
-import { setProjectModelAtom } from "../atoms/preferences"
-import { patchCliMeta, type CliSessionMeta } from "../atoms/cli-sessions"
+import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
+import { cliSessionsAtom, getCliMeta, patchCliMeta, type CliSessionMeta } from "../atoms/cli-sessions"
 import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-opencode-data"
 import { persistCliSession } from "../services/cli-chat"
@@ -36,6 +37,95 @@ export interface CliRuntimeSelection {
 
 export type RuntimeSelectionPersistence = OpenCodeRuntimeSelection | CliRuntimeSelection
 
+export type SessionRuntimeState =
+	| {
+			runtime: "cli"
+			sessionId: string
+			directory: string | null
+			meta: CliSessionMeta
+			modelPreference: PersistedModelRef | null
+	  }
+	| {
+			runtime: "opencode"
+			sessionId: string
+			directory: string | null
+			modelPreference: PersistedModelRef | null
+	  }
+
+export function readProjectRuntimePreference(
+	directory: string | null | undefined,
+): PersistedModelRef | null {
+	if (!directory) return null
+	return appStore.get(projectModelsAtom)[directory] ?? null
+}
+
+export function useProjectRuntimePreference(
+	directory: string | null | undefined,
+): PersistedModelRef | null {
+	const projectModels = useAtomValue(projectModelsAtom)
+	if (!directory) return null
+	return projectModels[directory] ?? null
+}
+
+export function readSessionRuntimeState(
+	sessionId: string,
+	directory?: string | null,
+): SessionRuntimeState {
+	const meta = getCliMeta(sessionId)
+	const modelPreference = readProjectRuntimePreference(directory)
+	if (meta) {
+		return {
+			runtime: "cli",
+			sessionId,
+			directory: directory ?? null,
+			meta,
+			modelPreference,
+		}
+	}
+	return {
+		runtime: "opencode",
+		sessionId,
+		directory: directory ?? null,
+		modelPreference,
+	}
+}
+
+export function useSessionRuntimeState(
+	sessionId: string,
+	directory?: string | null,
+): SessionRuntimeState {
+	const cliSessions = useAtomValue(cliSessionsAtom)
+	const projectModels = useAtomValue(projectModelsAtom)
+	const meta = cliSessions[sessionId]
+	const modelPreference = directory ? (projectModels[directory] ?? null) : null
+	if (meta) {
+		return {
+			runtime: "cli",
+			sessionId,
+			directory: directory ?? null,
+			meta,
+			modelPreference,
+		}
+	}
+	return {
+		runtime: "opencode",
+		sessionId,
+		directory: directory ?? null,
+		modelPreference,
+	}
+}
+
+export function patchSessionRuntimeState(
+	sessionId: string,
+	patch: Partial<CliSessionMeta>,
+	persist = true,
+): void {
+	patchCliMeta(sessionId, patch)
+	if (persist) {
+		persistCliSession(sessionId)
+	}
+}
+
 export function persistRuntimeSelection(
 	selection: RuntimeSelectionPersistence | null | undefined,
 ): void {
@@ -49,8 +139,5 @@ export function persistRuntimeSelection(
 		return
 	}
 
-	patchCliMeta(selection.sessionId, selection.patch)
-	if (selection.persist !== false) {
-		persistCliSession(selection.sessionId)
-	}
+	patchSessionRuntimeState(selection.sessionId, selection.patch, selection.persist !== false)
 }

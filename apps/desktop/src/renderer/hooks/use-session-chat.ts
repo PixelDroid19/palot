@@ -6,11 +6,11 @@ import {
 	groupIntoTurns,
 	mergeSessionParts,
 } from "../atoms/derived/session-chat"
-import { isCliSession } from "../atoms/cli-sessions"
 import { messagesFamily, setMessagesAtom } from "../atoms/messages"
 import { isMockModeAtom } from "../atoms/mock-mode"
 import { partsFamily } from "../atoms/parts"
 import { appStore } from "../atoms/store"
+import { readSessionRuntimeState } from "../lib/runtime-session-config"
 import { streamingVersionFamily } from "../atoms/streaming"
 import type { Message, Part } from "../lib/types"
 import { getBaseClient, getProjectClient } from "../services/connection-manager"
@@ -75,7 +75,7 @@ export function useSessionChat(
 		async (sid: string) => {
 			// CLI-backed sessions have no OpenCode server history; their transcript
 			// lives entirely in the atoms, so skip the REST hydrate.
-			if (isCliSession(sid)) {
+			if (readSessionRuntimeState(sid).runtime === "cli") {
 				setLoading(false)
 				return
 			}

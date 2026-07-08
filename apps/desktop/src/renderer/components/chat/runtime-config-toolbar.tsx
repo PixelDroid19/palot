@@ -1,15 +1,16 @@
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
-import { useAtomValue } from "jotai"
 import { useEffect, useState } from "react"
-import { cliSessionsAtom, patchCliMeta } from "../../atoms/cli-sessions"
 import {
 	availableRuntimeModels,
 	getRuntimeModelEfforts,
 	resolveRuntimeEffort,
 	resolveRuntimeModel,
 } from "../../lib/runtime-model-selection"
+import {
+	patchSessionRuntimeState,
+	useSessionRuntimeState,
+} from "../../lib/runtime-session-config"
 import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
-import { persistCliSession } from "../../services/cli-chat"
 import { CliPromptToolbar } from "./cli-toolbar"
 import { type PromptToolbarProps, PromptToolbar } from "./prompt-toolbar"
 
@@ -78,7 +79,8 @@ export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
 }
 
 function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
-	const meta = useAtomValue(cliSessionsAtom)[sessionId]
+	const runtimeState = useSessionRuntimeState(sessionId)
+	const meta = runtimeState.runtime === "cli" ? runtimeState.meta : null
 	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
 
 	const runtimeId = meta?.runtimeId
@@ -100,11 +102,10 @@ function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
 		const normalizedModel = currentSlug || undefined
 		const normalizedEffort = currentEffort || undefined
 		if (meta.model === normalizedModel && meta.effort === normalizedEffort) return
-		patchCliMeta(sessionId, {
+		patchSessionRuntimeState(sessionId, {
 			model: normalizedModel,
 			effort: normalizedEffort,
 		})
-		persistCliSession(sessionId)
 	}, [currentEffort, currentSlug, descriptor, meta, sessionId])
 
 	if (!meta || !descriptor) return null
@@ -112,12 +113,11 @@ function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
 	const apply = (patch: { model?: string; effort?: string; sandbox?: AgentSandbox }) => {
 		const nextModel = resolveRuntimeModel(descriptor, patch.model ?? meta.model)
 		const nextEffort = resolveRuntimeEffort(descriptor, nextModel, patch.effort ?? meta.effort)
-		patchCliMeta(sessionId, {
+		patchSessionRuntimeState(sessionId, {
 			model: nextModel,
 			effort: nextEffort,
 			sandbox: patch.sandbox ?? meta.sandbox,
 		})
-		persistCliSession(sessionId)
 	}
 
 	return (
