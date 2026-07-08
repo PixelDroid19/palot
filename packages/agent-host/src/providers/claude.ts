@@ -41,6 +41,8 @@ import {
 
 const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 const CLAUDE_MODEL_ALIASES: AgentModelInfo[] = [
+	{ slug: "default", label: "Default", efforts: CLAUDE_EFFORTS },
+	{ slug: "best", label: "Best", efforts: CLAUDE_EFFORTS },
 	{ slug: "sonnet", label: "Sonnet", efforts: CLAUDE_EFFORTS },
 	{ slug: "opus", label: "Opus", efforts: CLAUDE_EFFORTS },
 	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS },

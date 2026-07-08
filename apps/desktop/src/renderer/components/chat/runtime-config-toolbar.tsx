@@ -1,8 +1,9 @@
-import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
-import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-project-runtime-data"
+import type { AgentSandbox } from "../../../preload/api"
+import type { SdkAgent } from "../../hooks/use-project-runtime-data"
 import { useTranslation } from "../../i18n/use-translation"
-import { CliModelSelect, CliOptionSelect } from "./cli-toolbar"
-import { AgentSelector, ModelSelector, VariantSelector } from "./prompt-toolbar"
+import { CliOptionSelect } from "./cli-toolbar"
+import { AgentSelector, VariantSelector } from "./prompt-toolbar"
+import { RuntimeModelSelect, type RuntimeModelSelectItem } from "./runtime-model-select"
 import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
 interface ToolbarOption {
@@ -35,11 +36,9 @@ export interface RuntimeToolbarAgentSection {
 }
 
 export interface RuntimeToolbarProjectModelSection {
-	providers: ProvidersData | null
-	effectiveModel: ModelRef | null
-	hasOverride: boolean
-	onSelectModel: (model: ModelRef | null) => void
-	recentModels?: ModelRef[]
+	items: RuntimeModelSelectItem[]
+	value: string | null
+	onValueChange: (value: string) => void
 	disabled?: boolean
 }
 
@@ -48,12 +47,6 @@ export interface RuntimeToolbarVariantSection {
 	selectedVariant: string | undefined
 	onSelectVariant: (variant: string | undefined) => void
 	disabled?: boolean
-}
-
-export interface RuntimeToolbarCliModelSection {
-	models: AgentRuntimeDescriptor["models"]
-	value: string
-	onValueChange: (value: string) => void
 }
 
 export interface RuntimeToolbarSandboxSection {
@@ -69,9 +62,8 @@ export interface RuntimeToolbarEffortSection {
 
 export interface RuntimeToolbarSections {
 	agent?: RuntimeToolbarAgentSection
-	projectModel?: RuntimeToolbarProjectModelSection
+	model?: RuntimeToolbarProjectModelSection
 	variant?: RuntimeToolbarVariantSection
-	cliModel?: RuntimeToolbarCliModelSection
 	sandbox?: RuntimeToolbarSandboxSection
 	effort?: RuntimeToolbarEffortSection
 }
@@ -93,21 +85,12 @@ function RuntimeToolbarSectionsView({ sections }: { sections: RuntimeToolbarSect
 				disabled={sections.agent.disabled}
 			/>
 		),
-		sections.projectModel && (
-			<ModelSelector
-				providers={sections.projectModel.providers}
-				effectiveModel={sections.projectModel.effectiveModel}
-				hasOverride={sections.projectModel.hasOverride}
-				onSelectModel={sections.projectModel.onSelectModel}
-				recentModels={sections.projectModel.recentModels}
-				disabled={sections.projectModel.disabled}
-			/>
-		),
-		sections.cliModel && (
-			<CliModelSelect
-				models={sections.cliModel.models}
-				value={sections.cliModel.value}
-				onValueChange={sections.cliModel.onValueChange}
+		sections.model && (
+			<RuntimeModelSelect
+				items={sections.model.items}
+				value={sections.model.value}
+				onValueChange={sections.model.onValueChange}
+				disabled={sections.model.disabled}
 			/>
 		),
 		sections.variant && (

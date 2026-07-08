@@ -6,6 +6,7 @@ import type {
 import { useEffect, useState } from "react"
 import {
 	getModelVariants,
+	parseModelRef,
 	type ModelRef,
 	type ProvidersData,
 	type SdkAgent,
@@ -38,6 +39,7 @@ import type {
 	RuntimeConfigToolbarProps,
 	RuntimeToolbarSections,
 } from "./runtime-config-toolbar"
+import type { RuntimeModelSelectItem } from "./runtime-model-select"
 
 export interface NewChatRuntimeConfig {
 	runtimeId: SessionRuntimeId
@@ -60,6 +62,72 @@ export interface ChatRuntimeConfig {
 	toolbarProps: RuntimeConfigToolbarProps
 	persistedSelection: RuntimeSelectionPersistence | null
 	sendOptions: RuntimePromptOptions
+}
+
+interface ProjectRuntimeModelOption {
+	value: string
+	providerID: string
+	modelID: string
+	displayName: string
+	providerName: string
+	reasoning: boolean
+}
+
+function flattenProjectRuntimeModels(providers: ProvidersData | null): ProjectRuntimeModelOption[] {
+	if (!providers) return []
+	const models: ProjectRuntimeModelOption[] = []
+	for (const provider of providers.providers) {
+		for (const [key, model] of Object.entries(provider.models)) {
+			models.push({
+				value: `${provider.id}/${key}`,
+				providerID: provider.id,
+				modelID: key,
+				displayName: model.name,
+				providerName: provider.name,
+				reasoning: model.capabilities?.reasoning ?? false,
+			})
+		}
+	}
+	return models
+}
+
+function buildProjectRuntimeModelItems(args: {
+	providers: ProvidersData | null
+	recentModels?: ModelRef[]
+}): RuntimeModelSelectItem[] {
+	const models = flattenProjectRuntimeModels(args.providers)
+	const modelItems = models.map((model) => ({
+		value: model.value,
+		label: model.displayName,
+		group: model.providerName,
+		description: model.providerName,
+		searchTerms: [model.providerName, model.modelID, model.displayName],
+		badge: model.reasoning ? "reasoning" : undefined,
+		provider: {
+			id: model.providerID,
+			name: model.providerName,
+		},
+	}))
+	if (!args.recentModels?.length) return modelItems
+
+	const recent = args.recentModels
+		.slice(0, 3)
+		.map((ref) => models.find((model) => model.providerID === ref.providerID && model.modelID === ref.modelID))
+		.filter((model): model is ProjectRuntimeModelOption => model != null)
+		.map((model) => ({
+			value: model.value,
+			label: model.displayName,
+			group: "Last used",
+			description: model.providerName,
+			searchTerms: [model.providerName, model.modelID, model.displayName],
+			badge: model.reasoning ? "reasoning" : undefined,
+			provider: {
+				id: model.providerID,
+				name: model.providerName,
+			},
+		}))
+
+	return [...recent, ...modelItems]
 }
 
 function buildProjectRuntimeToolbarSections(args: {
@@ -93,12 +161,17 @@ function buildProjectRuntimeToolbarSections(args: {
 			onSelectAgent: args.onSelectAgent,
 			disabled: args.disabled,
 		},
-		projectModel: {
-			providers: args.providers,
-			effectiveModel: args.effectiveModel,
-			hasOverride: args.hasModelOverride,
-			onSelectModel: args.onSelectModel,
-			recentModels: args.recentModels,
+		model: {
+			items: buildProjectRuntimeModelItems({
+				providers: args.providers,
+				recentModels: args.recentModels,
+			}),
+			value: args.effectiveModel
+				? `${args.effectiveModel.providerID}/${args.effectiveModel.modelID}`
+				: null,
+			onValueChange: (value) => {
+				args.onSelectModel(parseModelRef(value))
+			},
 			disabled: args.disabled,
 		},
 		variant: variants.length
@@ -114,7 +187,7 @@ function buildProjectRuntimeToolbarSections(args: {
 
 function buildCliRuntimeToolbarSections(args: {
 	models: AgentRuntimeDescriptor["models"]
-	modelValue: string
+	modelValue: string | null
 	onModelChange: (value: string) => void
 	sandboxValue: AgentSandbox
 	onSandboxChange: (value: AgentSandbox) => void
@@ -123,8 +196,14 @@ function buildCliRuntimeToolbarSections(args: {
 	onEffortChange: (value: string) => void
 }): RuntimeToolbarSections {
 	return {
-		cliModel: {
-			models: args.models,
+		model: {
+			items: args.models.map((model) => ({
+				value: model.slug,
+				label: model.label,
+				group: "Models",
+				description: model.slug === model.label ? undefined : model.slug,
+				searchTerms: [model.slug, model.label],
+			})),
 			value: args.modelValue,
 			onValueChange: args.onModelChange,
 		},
@@ -175,7 +254,7 @@ export function buildCliNewChatRuntimeConfig(args: {
 		toolbarProps: {
 			sections: buildCliRuntimeToolbarSections({
 				models: args.models,
-				modelValue: args.modelValue,
+				modelValue: args.modelValue || null,
 				onModelChange: args.onModelChange,
 				sandboxValue: args.sandboxValue,
 				onSandboxChange: args.onSandboxChange,
@@ -313,7 +392,7 @@ export function useCliChatRuntimeToolbarProps(
 	return {
 		sections: buildCliRuntimeToolbarSections({
 			models,
-			modelValue: currentSlug,
+			modelValue: currentSlug || null,
 			onModelChange: (value) => apply({ model: value, effort: "" }),
 			sandboxValue: meta.sandbox,
 			onSandboxChange: (value) => apply({ sandbox: value }),
