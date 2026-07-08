@@ -3,6 +3,7 @@
  *
  * Produces OpenCode-compatible configuration files from canonical representation.
  */
+import { dirname } from "node:path"
 import type {
 	CanonicalAgentFile,
 	CanonicalCommandFile,
@@ -13,10 +14,16 @@ import type {
 	CanonicalScanResult,
 	ConversionReport,
 } from "../../types/canonical"
-import { createEmptyReport, mergeReports } from "../../types/canonical"
+import {
+	createConversionReportMessage,
+	createEmptyReport,
+	mergeReports,
+} from "../../types/canonical"
+import type { ClaudeHooks } from "../../types/claude-code"
 import type { OpenCodeCommandFrontmatter } from "../../types/opencode"
 import * as paths from "../../utils/paths"
 import { serializeFrontmatter } from "../../utils/yaml"
+import { convertHooks } from "../hooks"
 import { detectProvider, suggestSmallModel, translateModelId } from "../model-id"
 
 /**
@@ -38,6 +45,7 @@ export function canonicalToOpenCode(
 		agents: new Map(),
 		commands: new Map(),
 		rules: new Map(),
+		linkedDirs: new Map(),
 		extraFiles: new Map(),
 		report: createEmptyReport(),
 	}
@@ -48,6 +56,11 @@ export function canonicalToOpenCode(
 	const { config: globalConfig, report: globalReport } = convertGlobalToOC(scan.global, options)
 	result.globalConfig = globalConfig
 	reports.push(globalReport)
+
+	const globalHooksReport = convertGlobalHooksToOC(scan.global, result)
+	if (globalHooksReport) {
+		reports.push(globalHooksReport)
+	}
 
 	// ─── Global agents ───────────────────────────────────────────────
 	for (const agent of scan.global.agents) {
@@ -69,6 +82,21 @@ export function canonicalToOpenCode(
 		if (combined) {
 			result.rules.set(paths.ocGlobalAgentsMdPath(), combined)
 		}
+	}
+
+	// ─── Global skills ───────────────────────────────────────────────
+	const globalSkillsReport = createEmptyReport()
+	for (const skill of scan.global.skills) {
+		const targetPath = `${paths.ocGlobalSkillsDir()}/${skill.name}`
+		result.linkedDirs.set(targetPath, dirname(skill.path))
+		globalSkillsReport.converted.push({
+			category: "skills",
+			source: skill.path,
+			target: targetPath,
+		})
+	}
+	if (globalSkillsReport.converted.length > 0) {
+		reports.push(globalSkillsReport)
 	}
 
 	// ─── Per-project conversion ──────────────────────────────────────
@@ -151,6 +179,50 @@ function convertGlobalToOC(
 	return { config, report }
 }
 
+function convertGlobalHooksToOC(
+	global: CanonicalScanResult["global"],
+	result: CanonicalConversionResult,
+): ConversionReport | null {
+	const report = createEmptyReport()
+	const hooks = getHooksFromExtraSettings(global.extraSettings)
+	if (!hooks) return null
+
+	const hookConversion = convertHooks(hooks)
+	if (hookConversion.plugins.size === 0) return null
+
+	for (const [fileName, content] of hookConversion.plugins) {
+		result.extraFiles.set(`${paths.ocGlobalPluginsDir()}/${fileName}`, content)
+	}
+
+	for (const convertedItem of hookConversion.report.migrated) {
+		report.converted.push({
+			category: convertedItem.category,
+			source: convertedItem.source,
+			target: convertedItem.target,
+			details: convertedItem.details,
+		})
+	}
+	for (const warning of hookConversion.report.warnings) {
+		report.warnings.push(createConversionReportMessage("hooks", warning))
+	}
+	for (const manualAction of hookConversion.report.manualActions) {
+		report.manualActions.push(createConversionReportMessage("hooks", manualAction))
+	}
+	for (const error of hookConversion.report.errors) {
+		report.errors.push(createConversionReportMessage("hooks", error))
+	}
+
+	return report
+}
+
+function getHooksFromExtraSettings(
+	extraSettings: Record<string, unknown> | undefined,
+): ClaudeHooks | undefined {
+	const hooks = extraSettings?.hooks
+	if (!hooks || typeof hooks !== "object" || Array.isArray(hooks)) return
+	return hooks as ClaudeHooks
+}
+
 function convertProjectToOC(
 	project: CanonicalProjectConfig,
 	result: CanonicalConversionResult,
@@ -190,6 +262,14 @@ function convertProjectToOC(
 		result.projectConfigs.set(project.path, projectConfig)
 	}
 
+	const projectHooksReport = convertProjectHooksToOC(project, result)
+	if (projectHooksReport) {
+		report.converted.push(...projectHooksReport.converted)
+		report.warnings.push(...projectHooksReport.warnings)
+		report.manualActions.push(...projectHooksReport.manualActions)
+		report.errors.push(...projectHooksReport.errors)
+	}
+
 	// Rules -> AGENTS.md
 	const alwaysRules = project.rules.filter(
 		(r) => r.ruleType === "always" || r.alwaysApply || r.ruleType === "general",
@@ -212,9 +292,12 @@ function convertProjectToOC(
 	)
 	if (scopedRules.length > 0) {
 		report.manualActions.push(
-			`${scopedRules.length} file-scoped/intelligent rules found in ${project.path}. ` +
-				`OpenCode does not support file-scoped rules natively. ` +
-				`Consider merging their content into AGENTS.md or using path-conditional AGENTS.md files in subdirectories.`,
+			createConversionReportMessage(
+				"rules",
+				`${scopedRules.length} file-scoped/intelligent rules found in ${project.path}. ` +
+					`OpenCode does not support file-scoped rules natively. ` +
+					`Consider merging their content into AGENTS.md or using path-conditional AGENTS.md files in subdirectories.`,
+			),
 		)
 	}
 
@@ -232,7 +315,54 @@ function convertProjectToOC(
 		report.converted.push(...cmdReport.converted)
 	}
 
+	// Skills
+	for (const skill of project.skills) {
+		const targetPath = `${paths.ocProjectSkillsDir(project.path)}/${skill.name}`
+		result.linkedDirs.set(targetPath, dirname(skill.path))
+		report.converted.push({
+			category: "skills",
+			source: skill.path,
+			target: targetPath,
+		})
+	}
+
 	return { report }
+}
+
+function convertProjectHooksToOC(
+	project: CanonicalProjectConfig,
+	result: CanonicalConversionResult,
+): ConversionReport | null {
+	const report = createEmptyReport()
+	const hooks = getHooksFromExtraSettings(project.extraSettings)
+	if (!hooks) return null
+
+	const hookConversion = convertHooks(hooks)
+	if (hookConversion.plugins.size === 0) return null
+
+	for (const [fileName, content] of hookConversion.plugins) {
+		result.extraFiles.set(`${paths.ocProjectPluginsDir(project.path)}/${fileName}`, content)
+	}
+
+	for (const convertedItem of hookConversion.report.migrated) {
+		report.converted.push({
+			category: convertedItem.category,
+			source: convertedItem.source,
+			target: convertedItem.target,
+			details: convertedItem.details,
+		})
+	}
+	for (const warning of hookConversion.report.warnings) {
+		report.warnings.push(createConversionReportMessage("hooks", warning))
+	}
+	for (const manualAction of hookConversion.report.manualActions) {
+		report.manualActions.push(createConversionReportMessage("hooks", manualAction))
+	}
+	for (const error of hookConversion.report.errors) {
+		report.errors.push(createConversionReportMessage("hooks", error))
+	}
+
+	return report
 }
 
 // ============================================================

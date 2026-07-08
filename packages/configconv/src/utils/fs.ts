@@ -11,17 +11,17 @@ import {
 	readFile,
 	readlink,
 	realpath,
-	stat,
+	symlink,
 	writeFile,
 } from "node:fs/promises"
 import { dirname, join } from "node:path"
 
 /**
- * Check if a file or directory exists.
+ * Check if a file, directory, or symlink exists.
  */
 export async function exists(path: string): Promise<boolean> {
 	try {
-		await stat(path)
+		await lstat(path)
 		return true
 	} catch {
 		return false
@@ -124,6 +124,31 @@ export async function ensureDir(path: string): Promise<void> {
 export async function writeFileSafe(path: string, content: string): Promise<void> {
 	await ensureDir(dirname(path))
 	await writeFile(path, content, "utf-8")
+}
+
+/**
+ * Create a directory symlink, creating parent directories as needed.
+ * If the exact symlink already exists, this is a no-op.
+ */
+export async function writeDirSymlinkSafe(path: string, target: string): Promise<void> {
+	await ensureDir(dirname(path))
+
+	try {
+		const existing = await lstat(path)
+		if (existing.isSymbolicLink()) {
+			const existingTarget = await readlink(path)
+			if (existingTarget === target) {
+				return
+			}
+		}
+		throw new Error(`Path already exists: ${path}`)
+	} catch (err) {
+		if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+			throw err
+		}
+	}
+
+	await symlink(target, path, process.platform === "win32" ? "junction" : "dir")
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 import { createBackup } from "../backup"
 import type { AgentFormat, CanonicalConversionResult } from "../types/canonical"
-import { exists, safeReadFile, writeFileSafe } from "../utils/fs"
+import { exists, safeReadFile, writeDirSymlinkSafe, writeFileSafe } from "../utils/fs"
 import { stringifyJson } from "../utils/json"
 import * as paths from "../utils/paths"
 
@@ -83,6 +83,9 @@ function collectTargetPaths(conversion: CanonicalConversionResult): string[] {
 		targetPaths.push(targetPath)
 	}
 	for (const [targetPath] of conversion.rules) {
+		targetPaths.push(targetPath)
+	}
+	for (const [targetPath] of conversion.linkedDirs) {
 		targetPaths.push(targetPath)
 	}
 	for (const [targetPath] of conversion.extraFiles) {
@@ -162,6 +165,11 @@ export async function universalWrite(
 		await writeTextFile(targetPath, content, { dryRun, force }, result)
 	}
 
+	// ─── Write linked directories (skills, etc.) ─────────────────────
+	for (const [targetPath, sourcePath] of conversion.linkedDirs) {
+		await writeLinkedDir(targetPath, sourcePath, { dryRun, force }, result)
+	}
+
 	// ─── Write extra files (plugins, etc.) ───────────────────────────
 	for (const [targetPath, content] of conversion.extraFiles) {
 		await writeTextFile(targetPath, content, { dryRun, force }, result)
@@ -226,6 +234,29 @@ async function writeTextFile(
 
 	if (!options.dryRun) {
 		await writeFileSafe(filePath, content)
+	}
+	result.filesWritten.push(filePath)
+}
+
+async function writeLinkedDir(
+	filePath: string,
+	sourcePath: string,
+	options: { dryRun: boolean; force: boolean },
+	result: UniversalWriteResult,
+): Promise<void> {
+	const fileExists = await exists(filePath)
+
+	if (fileExists && !options.force) {
+		result.filesSkipped.push(filePath)
+		return
+	}
+
+	if (fileExists && options.force) {
+		throw new Error(`Cannot overwrite existing linked directory: ${filePath}`)
+	}
+
+	if (!options.dryRun) {
+		await writeDirSymlinkSafe(filePath, sourcePath)
 	}
 	result.filesWritten.push(filePath)
 }

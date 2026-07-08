@@ -3,6 +3,7 @@
  *
  * Produces Cursor-compatible configuration files from canonical representation.
  */
+import { dirname } from "node:path"
 import type {
 	CanonicalAgentFile,
 	CanonicalCommandFile,
@@ -13,7 +14,11 @@ import type {
 	CanonicalScanResult,
 	ConversionReport,
 } from "../../types/canonical"
-import { createEmptyReport, mergeReports } from "../../types/canonical"
+import {
+	createConversionReportMessage,
+	createEmptyReport,
+	mergeReports,
+} from "../../types/canonical"
 import type { CursorMcpServer } from "../../types/cursor"
 import * as paths from "../../utils/paths"
 import { serializeFrontmatter } from "../../utils/yaml"
@@ -30,6 +35,7 @@ export function canonicalToCursor(scan: CanonicalScanResult): CanonicalConversio
 		agents: new Map(),
 		commands: new Map(),
 		rules: new Map(),
+		linkedDirs: new Map(),
 		extraFiles: new Map(),
 		report: createEmptyReport(),
 	}
@@ -55,6 +61,21 @@ export function canonicalToCursor(scan: CanonicalScanResult): CanonicalConversio
 		const { content, report } = convertCommandToCursor(cmd)
 		result.commands.set(`${paths.cursorGlobalCommandsDir()}/${cmd.name}.md`, content)
 		reports.push(report)
+	}
+
+	// ─── Global skills -> ~/.cursor/skills/ ──────────────────────────
+	const globalSkillsReport = createEmptyReport()
+	for (const skill of scan.global.skills) {
+		const targetPath = `${paths.cursorGlobalSkillsDir()}/${skill.name}`
+		result.linkedDirs.set(targetPath, dirname(skill.path))
+		globalSkillsReport.converted.push({
+			category: "skills",
+			source: skill.path,
+			target: targetPath,
+		})
+	}
+	if (globalSkillsReport.converted.length > 0) {
+		reports.push(globalSkillsReport)
 	}
 
 	// ─── Per-project conversion ──────────────────────────────────────
@@ -100,6 +121,17 @@ function convertProjectToCursor(
 		const { content, report: cmdReport } = convertCommandToCursor(cmd)
 		result.commands.set(`${paths.cursorProjectCommandsDir(project.path)}/${cmd.name}.md`, content)
 		report.converted.push(...cmdReport.converted)
+	}
+
+	// Skills -> .cursor/skills/
+	for (const skill of project.skills) {
+		const targetPath = `${paths.cursorProjectSkillsDir(project.path)}/${skill.name}`
+		result.linkedDirs.set(targetPath, dirname(skill.path))
+		report.converted.push({
+			category: "skills",
+			source: skill.path,
+			target: targetPath,
+		})
 	}
 
 	return { report }
@@ -156,8 +188,11 @@ function convertMcpToCursor(
 		// Warn about embedded credentials in URLs
 		if (server.url && /[?&](token|key|secret|api_key)=/i.test(server.url)) {
 			report.warnings.push(
-				`MCP server "${name}": URL contains embedded credentials. ` +
-					`Consider using \${env:VAR} interpolation.`,
+				createConversionReportMessage(
+					"mcp",
+					`MCP server "${name}": URL contains embedded credentials. ` +
+						`Consider using \${env:VAR} interpolation.`,
+				),
 			)
 		}
 	}

@@ -239,6 +239,8 @@ export interface CanonicalConversionResult {
 	commands: Map<string, string>
 	/** Rules files to write: target path -> content */
 	rules: Map<string, string>
+	/** Directory symlinks to create: target path -> source directory */
+	linkedDirs: Map<string, string>
 	/** Additional files to write (plugins, etc.): target path -> content */
 	extraFiles: Map<string, string>
 	/** Full migration report */
@@ -255,11 +257,31 @@ export interface ConversionReport {
 	/** Items that were skipped */
 	skipped: ConversionReportItem[]
 	/** Non-fatal warnings */
-	warnings: string[]
+	warnings: ConversionReportMessage[]
 	/** Actions the user must take manually */
-	manualActions: string[]
+	manualActions: ConversionReportMessage[]
 	/** Errors encountered */
-	errors: string[]
+	errors: ConversionReportMessage[]
+}
+
+export interface ConversionReportMessage {
+	/** Report category to support downstream filtering */
+	category: ConversionCategory
+	/** Human-readable message */
+	message: string
+}
+
+export type ConversionReportMessageInput = ConversionReportMessage | string
+
+export function createConversionReportMessage(
+	category: ConversionCategory,
+	message: string,
+): ConversionReportMessage {
+	return { category, message }
+}
+
+export function conversionReportMessageToText(message: ConversionReportMessageInput): string {
+	return typeof message === "string" ? message : message.message
 }
 
 export interface ConversionReportItem {

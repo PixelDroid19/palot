@@ -159,6 +159,34 @@ describe("universalConvert", () => {
 		expect(agentsMd?.[1]).toContain("Always apply this")
 	})
 
+	test("Claude Code -> OpenCode: converts skills into linked directories", () => {
+		const ccScan: ScanResult = {
+			global: { skills: [] },
+			projects: [
+				{
+					path: "/test/project",
+					agents: [],
+					commands: [],
+					skills: [
+						{
+							path: "/test/project/.claude/skills/research/SKILL.md",
+							name: "research",
+							description: "Research helper",
+						},
+					],
+					projectMcpServers: {},
+				},
+			],
+		}
+
+		const result = universalConvert({ format: "claude-code", data: ccScan }, { to: "opencode" })
+
+		expect(result.linkedDirs.size).toBe(1)
+		expect(result.linkedDirs.get("/test/project/.opencode/skills/research")).toBe(
+			"/test/project/.claude/skills/research",
+		)
+	})
+
 	test("Cursor -> Claude Code: converts rules to CLAUDE.md", () => {
 		const cursorScan: CursorScanResult = {
 			global: { skills: [], commands: [], agents: [] },

@@ -3,6 +3,7 @@
  *
  * Produces Claude Code-compatible configuration files from canonical representation.
  */
+import { dirname } from "node:path"
 import type {
 	CanonicalAgentFile,
 	CanonicalCommandFile,
@@ -14,7 +15,11 @@ import type {
 	CanonicalScanResult,
 	ConversionReport,
 } from "../../types/canonical"
-import { createEmptyReport, mergeReports } from "../../types/canonical"
+import {
+	createConversionReportMessage,
+	createEmptyReport,
+	mergeReports,
+} from "../../types/canonical"
 import type { ClaudeMcpServer, ClaudePermissions } from "../../types/claude-code"
 import * as paths from "../../utils/paths"
 import { serializeFrontmatter } from "../../utils/yaml"
@@ -31,6 +36,7 @@ export function canonicalToClaudeCode(scan: CanonicalScanResult): CanonicalConve
 		agents: new Map(),
 		commands: new Map(),
 		rules: new Map(),
+		linkedDirs: new Map(),
 		extraFiles: new Map(),
 		report: createEmptyReport(),
 	}
@@ -48,6 +54,21 @@ export function canonicalToClaudeCode(scan: CanonicalScanResult): CanonicalConve
 		if (combined) {
 			result.rules.set(paths.ccGlobalClaudeMdPath(), combined)
 		}
+	}
+
+	// ─── Global skills ───────────────────────────────────────────────
+	const globalSkillsReport = createEmptyReport()
+	for (const skill of scan.global.skills) {
+		const targetPath = `${paths.ccGlobalSkillsDir()}/${skill.name}`
+		result.linkedDirs.set(targetPath, dirname(skill.path))
+		globalSkillsReport.converted.push({
+			category: "skills",
+			source: skill.path,
+			target: targetPath,
+		})
+	}
+	if (globalSkillsReport.converted.length > 0) {
+		reports.push(globalSkillsReport)
 	}
 
 	// ─── Per-project conversion ──────────────────────────────────────
@@ -143,9 +164,12 @@ function convertProjectToCC(
 	)
 	if (scopedRules.length > 0) {
 		report.manualActions.push(
-			`${scopedRules.length} file-scoped/intelligent rules found in ${project.path}. ` +
-				`Claude Code supports path-scoped rules via .claude/rules/*.md with \`paths\` frontmatter. ` +
-				`These rules need manual adaptation.`,
+			createConversionReportMessage(
+				"rules",
+				`${scopedRules.length} file-scoped/intelligent rules found in ${project.path}. ` +
+					`Claude Code supports path-scoped rules via .claude/rules/*.md with \`paths\` frontmatter. ` +
+					`These rules need manual adaptation.`,
+			),
 		)
 		// Write them as .claude/rules/*.md with paths frontmatter
 		for (const rule of scopedRules) {
@@ -170,6 +194,17 @@ function convertProjectToCC(
 		const { content, report: cmdReport } = convertCommandToCC(cmd)
 		result.commands.set(`${paths.ccProjectCommandsDir(project.path)}/${cmd.name}.md`, content)
 		report.converted.push(...cmdReport.converted)
+	}
+
+	// Skills -> .claude/skills/
+	for (const skill of project.skills) {
+		const targetPath = `${paths.ccProjectSkillsDir(project.path)}/${skill.name}`
+		result.linkedDirs.set(targetPath, dirname(skill.path))
+		report.converted.push({
+			category: "skills",
+			source: skill.path,
+			target: targetPath,
+		})
 	}
 
 	return { report }
