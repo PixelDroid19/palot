@@ -21,7 +21,7 @@ import {
 	summarizeRuntimeSession,
 	unrevertRuntimeSession,
 } from "../services/runtime-session-actions"
-import { createRuntimeSession } from "../services/runtime-session-launch"
+import { createDefaultRuntimeSession } from "../services/runtime-session-launch"
 import { sendRuntimePrompt } from "../services/runtime-session-prompt"
 
 const log = createLogger("use-server")
@@ -71,7 +71,7 @@ export function useAgentActions() {
 	const createSession = useCallback(async (directory: string, title?: string) => {
 		log.debug("createSession", { directory, title })
 		try {
-			const session = (await createRuntimeSession({ directory, title }))?.session
+			const session = (await createDefaultRuntimeSession(directory, title))?.session
 			log.debug("createSession succeeded", { sessionId: session?.id })
 			return session
 		} catch (err) {

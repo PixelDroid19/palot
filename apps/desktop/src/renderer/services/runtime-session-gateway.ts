@@ -7,7 +7,7 @@ import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import {
 	isCliRuntimeState,
 	readSessionRuntimeState,
-	resolveProjectRuntimePromptOptions,
+	resolveConfiguredPromptOptions,
 	resolvePromptRuntime,
 } from "../lib/runtime-session-config"
 import {
@@ -70,7 +70,7 @@ async function promptProjectRuntimeSession(
 ): Promise<void> {
 	const client = requireProjectRuntimeSessionClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
-	const projectOptions = resolveProjectRuntimePromptOptions(
+	const projectOptions = resolveConfiguredPromptOptions(
 		readSessionRuntimeState(sessionId),
 		options,
 	)

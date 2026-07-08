@@ -13,19 +13,13 @@ import {
 import { persistCliRuntimeSession } from "../services/runtime-cli-store"
 import type { FileAttachment } from "./types"
 
-export interface CliPromptOptions {
-	runtime: "cli"
-	files?: FileAttachment[]
-}
-
-export interface ProjectRuntimePromptOptions {
+export interface RuntimePromptOptions {
+	runtimeId?: SessionRuntimeId
 	model?: ModelRef
 	agentName?: string
 	variant?: string
 	files?: FileAttachment[]
 }
-
-export type RuntimePromptOptions = CliPromptOptions | ProjectRuntimePromptOptions
 
 export interface ProjectRuntimeSelection {
 	kind: "project"
@@ -103,19 +97,16 @@ export function resolvePromptRuntime(
 	state: Pick<SessionRuntimeState, "runtimeId"> | null | undefined,
 	options?: RuntimePromptOptions,
 ): SessionRuntimeId {
-	if (options?.runtime === "cli" && state && isCliRuntimeState(state)) {
-		return state.runtimeId
-	}
-	return state?.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID
+	return options?.runtimeId ?? state?.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID
 }
 
-export function resolveProjectRuntimePromptOptions(
+export function resolveConfiguredPromptOptions(
 	state: Pick<SessionRuntimeState, "runtimeId"> | null | undefined,
 	options?: RuntimePromptOptions,
-): ProjectRuntimePromptOptions | null {
+): RuntimePromptOptions | null {
 	return isCliRuntime(resolvePromptRuntime(state, options))
 		? null
-		: ((options ?? {}) as ProjectRuntimePromptOptions)
+		: (options ?? {})
 }
 
 export function resolveSessionRuntimeId(state: SessionRuntimeState): SessionRuntimeId {

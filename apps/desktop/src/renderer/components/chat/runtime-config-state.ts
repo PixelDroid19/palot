@@ -18,7 +18,6 @@ import {
 	resolveRuntimeModel,
 } from "../../lib/runtime-model-selection"
 import type {
-	ProjectRuntimePromptOptions,
 	ProjectRuntimeSelection,
 	RuntimePromptOptions,
 	RuntimeSelectionPersistence,
@@ -268,7 +267,7 @@ export function buildCliNewChatRuntimeConfig(args: {
 				sandbox: args.sandbox,
 			},
 			promptOptions: {
-				runtime: "cli",
+				runtimeId: args.runtimeId,
 			},
 		},
 	}
@@ -316,7 +315,7 @@ export function buildCliChatRuntimeConfig(args: {
 		toolbarProps: args.toolbarProps,
 		persistedSelection: null,
 		sendOptions: {
-			runtime: "cli",
+			runtimeId: args.runtimeId,
 		},
 	})
 }
@@ -335,7 +334,7 @@ export function buildProjectRuntimeChatRuntimeConfig(args: {
 	onSelectVariant: (variant: string | undefined) => void
 	disabled?: boolean
 	persistedSelection: ProjectRuntimeSelection | null
-	sendOptions: ProjectRuntimePromptOptions
+	sendOptions: RuntimePromptOptions
 }): ChatRuntimeConfig {
 	return buildChatRuntimeConfig({
 		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
