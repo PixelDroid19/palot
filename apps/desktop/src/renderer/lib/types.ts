@@ -127,7 +127,7 @@ export interface Activity {
 }
 
 /**
- * Agent is our UI-facing representation of a managed runtime session.
+ * Agent is our UI-facing representation of a project runtime session.
  * It merges Session data + SessionStatus + derived activity info.
  *
  * Note: Metrics (cost, tokens, work time, exchange count) are NOT included here.
@@ -154,7 +154,7 @@ export interface Agent {
 	duration: string
 	currentActivity?: string
 	activities: Activity[]
-	/** The underlying managed runtime session ID */
+	/** The underlying project runtime session ID */
 	sessionId: string
 	/** Pending permission requests for this agent */
 	permissions: SdkPermissionRequest[]

@@ -27,7 +27,7 @@ import {
 	listProjects,
 	listSessions,
 	subscribeToGlobalEvents,
-} from "./managed-runtime"
+} from "./project-runtime"
 
 const log = createLogger("connection-manager")
 

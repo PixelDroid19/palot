@@ -137,7 +137,7 @@ export function ServerSettings() {
 									</div>
 									<span className="block truncate text-xs text-muted-foreground">
 										{isLocal
-											? "Auto-managed local runtime server"
+											? "Local project runtime server managed by Palot"
 											: server.type === "remote"
 												? server.url
 												: `SSH: ${(server as { sshHost: string }).sshHost}`}

@@ -9,7 +9,7 @@ import type { ProjectRuntimeProject } from "../lib/types"
  * Granular startup phase for UI feedback.
  *
  * - `idle`: initial state, discovery hasn't started
- * - `starting-server`: waiting for the managed runtime server to start/connect
+ * - `starting-server`: waiting for the project runtime server to start/connect
  * - `connecting`: establishing SSE event stream
  * - `loading-projects`: fetching the project list from the API
  * - `loading-sessions`: fetching sessions for discovered projects
