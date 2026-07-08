@@ -46,7 +46,9 @@ const CLAUDE_MODEL_LABELS: Record<string, string> = {
 	fable: "Fable",
 	opus: "Opus",
 	sonnet: "Sonnet",
+	haiku: "Haiku",
 }
+const CLAUDE_DOCUMENTED_MODEL_ALIASES = Object.keys(CLAUDE_MODEL_LABELS)
 
 const TOOL_RESULT_MAX_CHARS = 4_000
 
@@ -56,7 +58,7 @@ function parseClaudeModelAliases(help: string): string[] {
 	const aliases = [...modelSection.matchAll(/'([a-z][a-z0-9]*)'/g)]
 		.map((match) => match[1])
 		.filter((alias) => alias in CLAUDE_MODEL_LABELS)
-	return [...new Set(aliases)]
+	return [...new Set([...aliases, ...CLAUDE_DOCUMENTED_MODEL_ALIASES])]
 }
 
 function parseClaudeEfforts(help: string): string[] {
