@@ -1,25 +1,12 @@
 import { useAtomValue } from "jotai"
 import { useCallback } from "react"
 import { connectionAtom } from "../atoms/connection"
-import { upsertMessageAtom } from "../atoms/messages"
-import { upsertPartAtom } from "../atoms/parts"
-import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
-import { readSessionRuntimeState } from "../lib/runtime-session-config"
-import {
-	consumeCliToOpenCodeHandoff,
-	runCliRuntimeTurn,
-} from "../services/runtime-cli-turns"
 import type {
-	FilePart,
-	FilePartInput,
 	QuestionAnswer,
 	Session,
-	TextPart,
-	UserMessage,
 } from "../lib/types"
-import { getProjectClient } from "../services/connection-manager"
 import {
 	abortRuntimeSession,
 	deleteRuntimePart,
@@ -35,6 +22,7 @@ import {
 	unrevertRuntimeSession,
 } from "../services/runtime-session-actions"
 import { createOpenCodeSession } from "../services/runtime-session-launch"
+import { sendRuntimePrompt } from "../services/runtime-session-prompt"
 
 const log = createLogger("use-server")
 
@@ -70,114 +58,10 @@ export function useAgentActions() {
 			text: string,
 			options?: RuntimePromptOptions,
 		) => {
-			const storedRuntime = readSessionRuntimeState(sessionId).runtime
-			log.debug("sendPrompt called", {
-				directory,
-				sessionId,
-				textLength: text.length,
-				runtime: options?.runtime ?? storedRuntime,
-				agent: options?.runtime === "cli" ? undefined : options?.agentName,
-				model: options?.runtime === "cli" ? undefined : options?.model,
-				variant: options?.runtime === "cli" ? undefined : options?.variant,
-				hasFiles: !!(options?.files && options.files.length > 0),
-			})
-
-			// CLI-backed sessions run through the agent runtime, not the OpenCode client.
-			if (options?.runtime === "cli" || storedRuntime === "cli") {
-				await runCliRuntimeTurn(sessionId, text, options?.files)
-				return
-			}
-
-			const openCodeOptions = options
-
-			const client = getProjectClient(directory)
-			if (!client) {
-				log.error("sendPrompt: no client for directory", { directory })
-				throw new Error("Not connected to OpenCode server")
-			}
-			log.debug("sendPrompt: got client", { directory })
-
-			// Optimistic user message — include variant so it's available when
-			// re-initializing the session's toolbar state (the v1 UserMessage type
-			// doesn't have variant but the server stores it on user messages).
-			const optimisticId = `optimistic-${Date.now()}`
-			const optimisticMessage: UserMessage & { variant?: string } = {
-				id: optimisticId,
-				sessionID: sessionId,
-				role: "user",
-				time: { created: Date.now() },
-				agent: openCodeOptions?.agentName ?? "build",
-				model: openCodeOptions?.model ?? { providerID: "", modelID: "" },
-				variant: openCodeOptions?.variant,
-			}
-			appStore.set(upsertMessageAtom, optimisticMessage as UserMessage)
-			log.debug("sendPrompt: optimistic message set", { optimisticId })
-
-			// Optimistic text part
-			const optimisticTextPart: TextPart = {
-				id: `${optimisticId}-text`,
-				sessionID: sessionId,
-				messageID: optimisticId,
-				type: "text",
-				text,
-			}
-			appStore.set(upsertPartAtom, optimisticTextPart)
-
-			// Optimistic file parts
-			const files = options?.files ?? []
-			for (let i = 0; i < files.length; i++) {
-				const file = files[i]
-				const optimisticFilePart: FilePart = {
-					id: `${optimisticId}-file-${i}`,
-					sessionID: sessionId,
-					messageID: optimisticId,
-					type: "file",
-					mime: file.mediaType ?? "application/octet-stream",
-					filename: file.filename,
-					url: file.url,
-				}
-				appStore.set(upsertPartAtom, optimisticFilePart)
-			}
-
-			// Build parts array for the API call. A runtime switch (CLI → OpenCode)
-			// leaves a one-shot history block that rides with the first prompt.
-			const parts: Array<{ type: "text"; text: string } | FilePartInput> = [{ type: "text", text }]
-			const handoff = consumeCliToOpenCodeHandoff(sessionId)
-			if (handoff) parts.unshift({ type: "text", text: handoff })
-			for (const file of files) {
-				parts.push({
-					type: "file",
-					mime: file.mediaType ?? "application/octet-stream",
-					filename: file.filename,
-					url: file.url,
-				})
-			}
-
-			log.debug("sendPrompt: calling promptAsync", {
-				sessionId,
-				agent: openCodeOptions?.agentName,
-				model: openCodeOptions?.model,
-				partsCount: parts.length,
-			})
 			try {
-				const result = await client.session.promptAsync({
-					sessionID: sessionId,
-					parts,
-					model: openCodeOptions?.model
-						? {
-								providerID: openCodeOptions.model.providerID,
-								modelID: openCodeOptions.model.modelID,
-							}
-						: undefined,
-					agent: openCodeOptions?.agentName,
-					variant: openCodeOptions?.variant,
-				})
-				log.debug("sendPrompt: promptAsync returned", {
-					sessionId,
-					result: JSON.stringify(result).slice(0, 200),
-				})
+				await sendRuntimePrompt(directory, sessionId, text, options)
 			} catch (err) {
-				log.error("sendPrompt: promptAsync failed", { sessionId, agent: openCodeOptions?.agentName }, err)
+				log.error("sendPrompt failed", { sessionId }, err)
 				throw err
 			}
 		},
