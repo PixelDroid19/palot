@@ -12,10 +12,6 @@ import {
 	createFileMention,
 	insertMentionIntoText,
 } from "./chat/prompt-mentions"
-import {
-	NativeSelect,
-	NativeSelectOption,
-} from "@palot/ui/components/native-select"
 import { Popover, PopoverContent, PopoverTrigger } from "@palot/ui/components/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
@@ -72,6 +68,7 @@ import {
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
+import { CliModelSelect, CliOptionSelect } from "./chat/cli-toolbar"
 import { PromptAttachmentPreview } from "./chat/prompt-attachments"
 import { PromptToolbar, StatusBar } from "./chat/prompt-toolbar"
 import { PalotWordmark } from "./palot-wordmark"
@@ -924,12 +921,11 @@ export function NewChat() {
 							extraSlot={
 								<div className="flex items-center gap-2">
 									{cliRuntimes.length > 0 && (
-										<NativeSelect
+										<CliOptionSelect
 											aria-label={t("runtimePicker.runtime")}
-											size="sm"
 											value={sessionRuntime}
-											onChange={(e) => {
-												const next = e.target.value as SessionRuntimeId
+											onValueChange={(value) => {
+												const next = value as SessionRuntimeId
 												setSessionRuntime(next)
 												// Restore this runtime's remembered defaults (if any).
 												const prefs = loadCliPrefs(next)
@@ -937,71 +933,57 @@ export function NewChat() {
 												setCliEffort(prefs?.effort ?? "")
 												setCliSandbox(prefs?.sandbox ?? "read-only")
 											}}
-										>
-											<NativeSelectOption value="opencode">OpenCode</NativeSelectOption>
-											{cliRuntimes.map((r) => (
-												<NativeSelectOption key={r.id} value={r.id}>
-													{cliAuth[r.id] === "unauthenticated"
-														? t("runtimePicker.loginRequired", { name: r.displayName })
-														: r.displayName}
-												</NativeSelectOption>
-											))}
-										</NativeSelect>
+											options={[
+												{ value: "opencode", label: "OpenCode" },
+												...cliRuntimes.map((r) => ({
+													value: r.id,
+													label:
+														cliAuth[r.id] === "unauthenticated"
+															? t("runtimePicker.loginRequired", { name: r.displayName })
+															: r.displayName,
+												})),
+											]}
+										/>
 									)}
 									{isCliRuntime(sessionRuntime) && cliModels.length > 0 && (
-										<NativeSelect
-											aria-label={t("runtimePicker.model")}
-											size="sm"
-											value={cliModel}
-											onChange={(e) => {
-												setCliModel(e.target.value)
+										<CliModelSelect
+											models={cliModels}
+											value={resolvedCliModel ?? ""}
+											onValueChange={(value) => {
+												setCliModel(value)
 												setCliEffort("")
 											}}
-										>
-										{cliModels.map((m) => (
-											<NativeSelectOption key={m.slug} value={m.slug}>
-												{m.label}
-											</NativeSelectOption>
-										))}
-									</NativeSelect>
+										/>
 									)}
 									{isCliRuntime(sessionRuntime) && (
-										<NativeSelect
+										<CliOptionSelect
 											aria-label={t("runtimePicker.sandbox")}
-											size="sm"
 											value={cliSandbox}
-											onChange={(e) => setCliSandbox(e.target.value as AgentSandbox)}
-										>
-											<NativeSelectOption value="plan">
-												{t("runtimePicker.sandboxPlan")}
-											</NativeSelectOption>
-											<NativeSelectOption value="read-only">
-												{t("runtimePicker.sandboxReadOnly")}
-											</NativeSelectOption>
-											<NativeSelectOption value="workspace-write">
-												{t("runtimePicker.sandboxWorkspaceWrite")}
-											</NativeSelectOption>
-											<NativeSelectOption value="danger-full-access">
-												{t("runtimePicker.sandboxFullAccess")}
-											</NativeSelectOption>
-										</NativeSelect>
+											onValueChange={(value) => setCliSandbox(value as AgentSandbox)}
+											options={[
+												{ value: "plan", label: t("runtimePicker.sandboxPlan") },
+												{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
+												{
+													value: "workspace-write",
+													label: t("runtimePicker.sandboxWorkspaceWrite"),
+												},
+												{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
+											]}
+										/>
 									)}
 									{isCliRuntime(sessionRuntime) && cliEfforts.length > 0 && (
-										<NativeSelect
+										<CliOptionSelect
 											aria-label={t("runtimePicker.effort")}
-											size="sm"
-											value={cliEffort}
-											onChange={(e) => setCliEffort(e.target.value)}
-										>
-											<NativeSelectOption value="">
-												{t("runtimePicker.effortDefault")}
-											</NativeSelectOption>
-											{cliEfforts.map((effort) => (
-												<NativeSelectOption key={effort} value={effort}>
-													{t("runtimePicker.effortLevel", { level: effort })}
-												</NativeSelectOption>
-											))}
-										</NativeSelect>
+											value={cliEffort || "__default__"}
+											onValueChange={(value) => setCliEffort(value === "__default__" ? "" : value)}
+											options={[
+												{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
+												...cliEfforts.map((effort) => ({
+													value: effort,
+													label: t("runtimePicker.effortLevel", { level: effort }),
+												})),
+											]}
+										/>
 									)}
 									{vcs && !isCliRuntime(sessionRuntime) && (
 										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />

@@ -4,10 +4,23 @@
  * turn via the session's CLI meta. Mid-session switching works because both
  * Codex and Claude accept model overrides when resuming a session.
  */
-import { NativeSelect, NativeSelectOption } from "@palot/ui/components/native-select"
+import {
+	SearchableListPopover,
+	SearchableListPopoverContent,
+	SearchableListPopoverEmpty,
+	SearchableListPopoverGroup,
+	SearchableListPopoverItem,
+	SearchableListPopoverList,
+	SearchableListPopoverSearch,
+	SearchableListPopoverTrigger,
+	useSearchableListPopoverSearch,
+} from "@palot/ui/components/searchable-list-popover"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@palot/ui/components/select"
+import { cn } from "@palot/ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
-import { useEffect, useState } from "react"
+import { CheckIcon, ChevronDownIcon } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import { cliSessionsAtom, patchCliMeta } from "../../atoms/cli-sessions"
 import { useAgentActions } from "../../hooks/use-server"
@@ -24,6 +37,135 @@ import {
 	switchCliRuntime,
 	switchCliSessionToOpenCode,
 } from "../../services/cli-chat"
+
+const TOOLBAR_TRIGGER_BASE_CN =
+	"flex h-7 items-center gap-1 rounded-md border-none bg-transparent px-2 text-xs shadow-none transition-colors"
+
+const TOOLBAR_TRIGGER_CN =
+	"h-7! gap-1 border-none bg-transparent! hover:bg-muted! px-2! py-0! text-xs shadow-none transition-colors"
+
+interface ToolbarOption {
+	value: string
+	label: string
+	muted?: boolean
+}
+
+export function CliOptionSelect({
+	"aria-label": ariaLabel,
+	value,
+	options,
+	onValueChange,
+}: {
+	"aria-label": string
+	value: string
+	options: ToolbarOption[]
+	onValueChange: (value: string) => void
+}) {
+	const active = options.find((option) => option.value === value) ?? options[0]
+	if (!active) return null
+
+	return (
+		<Select
+			value={active.value}
+			onValueChange={(next) => {
+				if (next != null) onValueChange(next)
+			}}
+		>
+			<SelectTrigger aria-label={ariaLabel} className={TOOLBAR_TRIGGER_CN}>
+				<span className={cn("truncate", active.muted && "text-muted-foreground")}>
+					{active.label}
+				</span>
+			</SelectTrigger>
+			<SelectContent side="top" align="start" alignItemWithTrigger={false}>
+				{options.map((option) => (
+					<SelectItem key={option.value} value={option.value}>
+						<span className={cn(option.muted && "text-muted-foreground")}>{option.label}</span>
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
+	)
+}
+
+export function CliModelSelect({
+	models,
+	value,
+	onValueChange,
+}: {
+	models: AgentRuntimeDescriptor["models"]
+	value: string
+	onValueChange: (value: string) => void
+}) {
+	const active = useMemo(() => models.find((model) => model.slug === value) ?? null, [models, value])
+	const [open, setOpen] = useState(false)
+	const handleSelect = useCallback(
+		(next: string) => {
+			onValueChange(next)
+			setOpen(false)
+		},
+		[onValueChange],
+	)
+
+	if (models.length === 0) return null
+
+	return (
+		<SearchableListPopover open={open} onOpenChange={setOpen}>
+			<SearchableListPopoverTrigger
+				aria-label="Model"
+				className={cn(
+					TOOLBAR_TRIGGER_BASE_CN,
+					"hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50",
+				)}
+			>
+				<span className="truncate">{active?.label ?? "Select model..."}</span>
+				<ChevronDownIcon className="size-4 shrink-0 text-muted-foreground pointer-events-none" />
+			</SearchableListPopoverTrigger>
+			<SearchableListPopoverContent side="top" align="start">
+				<SearchableListPopoverSearch placeholder="Search models..." />
+				<CliModelSelectList models={models} activeValue={active?.slug ?? null} onSelect={handleSelect} />
+			</SearchableListPopoverContent>
+		</SearchableListPopover>
+	)
+}
+
+function CliModelSelectList({
+	models,
+	activeValue,
+	onSelect,
+}: {
+	models: AgentRuntimeDescriptor["models"]
+	activeValue: string | null
+	onSelect: (value: string) => void
+}) {
+	const search = useSearchableListPopoverSearch()
+	const filtered = useMemo(() => {
+		if (!search) return models
+		const q = search.toLowerCase()
+		return models.filter(
+			(model) =>
+				model.label.toLowerCase().includes(q) || model.slug.toLowerCase().includes(q),
+		)
+	}, [models, search])
+
+	return (
+		<SearchableListPopoverList>
+			{filtered.length === 0 ? (
+				<SearchableListPopoverEmpty>No models found</SearchableListPopoverEmpty>
+			) : (
+				<SearchableListPopoverGroup label="Models">
+					{filtered.map((model) => (
+						<SearchableListPopoverItem key={model.slug} onSelect={() => onSelect(model.slug)}>
+							<span className="min-w-0 flex-1 truncate">{model.label}</span>
+							{model.slug === activeValue && (
+								<CheckIcon className="size-3.5 shrink-0 text-primary" />
+							)}
+						</SearchableListPopoverItem>
+					))}
+				</SearchableListPopoverGroup>
+			)}
+		</SearchableListPopoverList>
+	)
+}
 
 /**
  * Runtime switcher available in EVERY chat (OpenCode or CLI-backed): one
@@ -66,19 +208,15 @@ export function SessionRuntimeSwitch({
 	}
 
 	return (
-		<NativeSelect
+		<CliOptionSelect
 			aria-label={t("runtimePicker.runtime")}
-			size="sm"
 			value={current}
-			onChange={(e) => void switchTo(e.target.value)}
-		>
-			<NativeSelectOption value="opencode">OpenCode</NativeSelectOption>
-			{runtimes.map((r) => (
-				<NativeSelectOption key={r.id} value={r.id}>
-					{r.displayName}
-				</NativeSelectOption>
-			))}
-		</NativeSelect>
+			onValueChange={(value) => void switchTo(value)}
+			options={[
+				{ value: "opencode", label: "OpenCode" },
+				...runtimes.map((r) => ({ value: r.id, label: r.displayName })),
+			]}
+		/>
 	)
 }
 
@@ -127,50 +265,36 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 		<div className="flex items-center gap-1.5">
 			<SessionRuntimeSwitch sessionId={sessionId} current={meta.runtimeId} />
 			{models.length > 0 && (
-				<NativeSelect
-					aria-label={t("runtimePicker.model")}
-					size="sm"
+				<CliModelSelect
+					models={models}
 					value={currentSlug}
-					onChange={(e) => apply({ model: e.target.value, effort: "" })}
-				>
-					{models.map((m) => (
-						<NativeSelectOption key={m.slug} value={m.slug}>
-							{m.label}
-						</NativeSelectOption>
-					))}
-				</NativeSelect>
+					onValueChange={(value) => apply({ model: value, effort: "" })}
+				/>
 			)}
-			<NativeSelect
+			<CliOptionSelect
 				aria-label={t("runtimePicker.sandbox")}
-				size="sm"
 				value={meta.sandbox}
-				onChange={(e) => apply({ sandbox: e.target.value as AgentSandbox })}
-			>
-				<NativeSelectOption value="plan">{t("runtimePicker.sandboxPlan")}</NativeSelectOption>
-				<NativeSelectOption value="read-only">
-					{t("runtimePicker.sandboxReadOnly")}
-				</NativeSelectOption>
-				<NativeSelectOption value="workspace-write">
-					{t("runtimePicker.sandboxWorkspaceWrite")}
-				</NativeSelectOption>
-				<NativeSelectOption value="danger-full-access">
-					{t("runtimePicker.sandboxFullAccess")}
-				</NativeSelectOption>
-			</NativeSelect>
+				onValueChange={(value) => apply({ sandbox: value as AgentSandbox })}
+				options={[
+					{ value: "plan", label: t("runtimePicker.sandboxPlan") },
+					{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
+					{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
+					{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
+				]}
+			/>
 			{descriptor.capabilities.reasoningEffort && efforts.length > 0 && (
-				<NativeSelect
+				<CliOptionSelect
 					aria-label={t("runtimePicker.effort")}
-					size="sm"
-					value={currentEffort}
-					onChange={(e) => apply({ effort: e.target.value })}
-				>
-					<NativeSelectOption value="">{t("runtimePicker.effortDefault")}</NativeSelectOption>
-					{efforts.map((effort) => (
-						<NativeSelectOption key={effort} value={effort}>
-							{t("runtimePicker.effortLevel", { level: effort })}
-						</NativeSelectOption>
-					))}
-				</NativeSelect>
+					value={currentEffort || "__default__"}
+					onValueChange={(value) => apply({ effort: value === "__default__" ? "" : value })}
+					options={[
+						{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
+						...efforts.map((effort) => ({
+							value: effort,
+							label: t("runtimePicker.effortLevel", { level: effort }),
+						})),
+					]}
+				/>
 			)}
 		</div>
 	)
