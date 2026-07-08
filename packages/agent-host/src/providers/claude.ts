@@ -19,9 +19,10 @@ import {
 	type CanUseTool,
 	type Options,
 	type PermissionMode,
-	type Query,
 	query,
+	type Query,
 	type SDKUserMessage,
+	type Settings,
 } from "@anthropic-ai/claude-agent-sdk"
 import {
 	type AgentModelInfo,
@@ -48,6 +49,50 @@ const CLAUDE_MODEL_ALIASES: AgentModelInfo[] = [
 	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS },
 	{ slug: "fable", label: "Fable", efforts: CLAUDE_EFFORTS },
 ]
+
+async function* emptyPrompt(): AsyncIterable<SDKUserMessage> {
+	return
+}
+
+function uniqueClaudeModels(models: AgentModelInfo[]): AgentModelInfo[] {
+	const seen = new Set<string>()
+	return models.filter((model) => {
+		const slug = model.slug.trim()
+		if (!slug || seen.has(slug)) return false
+		seen.add(slug)
+		return true
+	})
+}
+
+function settingsModelInfo(settings: Settings): AgentModelInfo[] {
+	const models: AgentModelInfo[] = []
+	const push = (slug: string | undefined, label?: string) => {
+		const trimmed = slug?.trim()
+		if (!trimmed) return
+		models.push({
+			slug: trimmed,
+			label: label?.trim() || trimmed,
+			efforts: CLAUDE_EFFORTS,
+		})
+	}
+
+	push(settings.model, settings.model === "default" ? "Default" : undefined)
+
+	for (const model of settings.availableModels ?? []) {
+		push(model)
+	}
+
+	for (const model of settings.fallbackModel ?? []) {
+		push(model)
+	}
+
+	for (const [model, override] of Object.entries(settings.modelOverrides ?? {})) {
+		push(model)
+		push(override, model)
+	}
+
+	return uniqueClaudeModels(models)
+}
 
 const TOOL_RESULT_MAX_CHARS = 4_000
 
@@ -615,6 +660,31 @@ export class ClaudeProvider implements AgentSessionProvider {
 	constructor(private readonly resolveBinary: () => Promise<string | null>) {}
 
 	async listModels(): Promise<AgentModelInfo[]> {
+		const binary = await this.resolveBinary().catch(() => null)
+		if (!binary) return CLAUDE_MODEL_ALIASES
+
+		const q = query({
+			prompt: emptyPrompt(),
+			options: {
+				cwd: process.cwd(),
+				permissionMode: "plan",
+				settingSources: ["user", "project", "local"],
+				systemPrompt: { type: "preset", preset: "claude_code" },
+				pathToClaudeCodeExecutable: binary,
+			},
+		})
+
+		try {
+			const settings = await q.getSettings()
+			const discovered = settingsModelInfo(settings)
+			if (discovered.length > 0) {
+				return uniqueClaudeModels([...discovered, ...CLAUDE_MODEL_ALIASES])
+			}
+		} catch {}
+		finally {
+			q.close()
+		}
+
 		return CLAUDE_MODEL_ALIASES
 	}
 
