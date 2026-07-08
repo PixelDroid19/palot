@@ -18,7 +18,7 @@ import { appStore } from "../atoms/store"
 import { viewedSessionIdAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
-	useProjectRuntimeSessionData,
+	useRuntimeSessionData,
 } from "../hooks/use-project-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
@@ -142,14 +142,14 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const runtimeDataDirectory = runtimeCapabilities.supportsRuntimeConfiguration
 		? directory
 		: null
-	const projectRuntimeData = useProjectRuntimeSessionData({
+	const runtimeData = useRuntimeSessionData({
 		configDirectory: runtimeDataDirectory,
 		workspaceDirectory: directory,
 	})
-	const { data: providers } = projectRuntimeData.providers
-	const { data: config } = projectRuntimeData.config
-	const { data: vcs } = projectRuntimeData.vcs
-	const { agents: projectRuntimeAgents } = projectRuntimeData.agents
+	const { data: providers } = runtimeData.providers
+	const { data: config } = runtimeData.config
+	const { data: vcs } = runtimeData.vcs
+	const { agents: projectRuntimeAgents } = runtimeData.agents
 
 	// Handlers
 	const handleStopAgent = useCallback(

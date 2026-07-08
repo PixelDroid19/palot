@@ -32,7 +32,7 @@ import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
-	useProjectRuntimeSessionData,
+	useRuntimeSessionData,
 } from "../hooks/use-project-runtime-data"
 import type { AgentSandbox, SessionRuntimeDescriptor } from "../../preload/api"
 import type { FileAttachment } from "../lib/types"
@@ -398,15 +398,15 @@ export function NewChat() {
 	const runtimeConfigDirectory = runtimeCapabilities.supportsRuntimeConfiguration
 		? (selectedDirectory || null)
 		: null
-	const projectRuntimeData = useProjectRuntimeSessionData({
+	const runtimeData = useRuntimeSessionData({
 		configDirectory: runtimeConfigDirectory,
 		workspaceDirectory: selectedDirectory || null,
 	})
-	const { data: providers } = projectRuntimeData.providers
-	const { data: config } = projectRuntimeData.config
-	const { data: vcs, reload: reloadVcs } = projectRuntimeData.vcs
-	const { agents: projectRuntimeAgents } = projectRuntimeData.agents
-	const { recentModels, addRecent: addRecentModel } = projectRuntimeData.modelState
+	const { data: providers } = runtimeData.providers
+	const { data: config } = runtimeData.config
+	const { data: vcs, reload: reloadVcs } = runtimeData.vcs
+	const { agents: projectRuntimeAgents } = runtimeData.agents
+	const { recentModels, addRecent: addRecentModel } = runtimeData.modelState
 
 	// Handle model selection — set local state + persist to model.json.
 	// Reset variant when the model changes: the new model may have different

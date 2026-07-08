@@ -45,28 +45,37 @@ export {
 	resolveEffectiveModel,
 }
 
-export const useProjectRuntimeConfig = useConfig
-export const useProjectRuntimeProviders = useProviders
-export const useProjectRuntimeAgents = useProjectRuntimeAgentsSource
-export const useProjectRuntimeCommands = useServerCommands
-export const useProjectRuntimeVcs = useVcs
-export const useProjectRuntimeModelState = useModelState
-export const useManagedRuntimeConfig = useProjectRuntimeConfig
-export const useManagedRuntimeProviders = useProjectRuntimeProviders
-export const useManagedRuntimeAgents = useProjectRuntimeAgents
-export const useManagedRuntimeCommands = useProjectRuntimeCommands
-export const useManagedRuntimeVcs = useProjectRuntimeVcs
-export const useManagedRuntimeModelState = useProjectRuntimeModelState
+export const useRuntimeConfig = useConfig
+export const useRuntimeProviders = useProviders
+export const useRuntimeAgents = useProjectRuntimeAgentsSource
+export const useRuntimeCommands = useServerCommands
+export const useRuntimeVcs = useVcs
+export const useRuntimeModelState = useModelState
 
-export function useProjectRuntimeSessionData(args: {
+export const useProjectRuntimeConfig = useRuntimeConfig
+export const useProjectRuntimeProviders = useRuntimeProviders
+export const useProjectRuntimeAgents = useRuntimeAgents
+export const useProjectRuntimeCommands = useRuntimeCommands
+export const useProjectRuntimeVcs = useRuntimeVcs
+export const useProjectRuntimeModelState = useRuntimeModelState
+export const useManagedRuntimeConfig = useRuntimeConfig
+export const useManagedRuntimeProviders = useRuntimeProviders
+export const useManagedRuntimeAgents = useRuntimeAgents
+export const useManagedRuntimeCommands = useRuntimeCommands
+export const useManagedRuntimeVcs = useRuntimeVcs
+export const useManagedRuntimeModelState = useRuntimeModelState
+
+export function useRuntimeSessionData(args: {
 	configDirectory: string | null
 	workspaceDirectory: string | null
 }) {
 	return {
-		providers: useProjectRuntimeProviders(args.configDirectory),
-		config: useProjectRuntimeConfig(args.configDirectory),
-		agents: useProjectRuntimeAgents(args.configDirectory),
-		vcs: useProjectRuntimeVcs(args.workspaceDirectory),
-		modelState: useProjectRuntimeModelState(),
+		providers: useRuntimeProviders(args.configDirectory),
+		config: useRuntimeConfig(args.configDirectory),
+		agents: useRuntimeAgents(args.configDirectory),
+		vcs: useRuntimeVcs(args.workspaceDirectory),
+		modelState: useRuntimeModelState(),
 	}
 }
+
+export const useProjectRuntimeSessionData = useRuntimeSessionData

@@ -58,7 +58,7 @@ import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
-	useProjectRuntimeModelState,
+	useRuntimeModelState,
 } from "../../hooks/use-project-runtime-data"
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
@@ -958,7 +958,7 @@ function ChatInputSection({
 		}
 	}, [sessionMessages, agent.sessionId, runtimeState.modelPreference])
 
-	const { recentModels, addRecent: addRecentModel } = useProjectRuntimeModelState()
+	const { recentModels, addRecent: addRecentModel } = useRuntimeModelState()
 
 	const activeProjectRuntimeAgent = useMemo(() => {
 		const agentName = selectedAgent ?? config?.defaultAgent
