@@ -70,8 +70,7 @@ import {
 	resolveRuntimeModel,
 } from "../lib/runtime-model-selection"
 import {
-	createCliRuntimeSession,
-	createOpenCodeSession,
+	createRuntimeSession,
 } from "../services/runtime-session-launch"
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
@@ -638,7 +637,7 @@ export function NewChat() {
 	/** Launch a session in local mode (no worktree). */
 	const launchLocal = useCallback(
 		async (promptText: string, files?: FileAttachment[]) => {
-			const session = await createOpenCodeSession(selectedDirectory)
+			const session = (await createRuntimeSession({ directory: selectedDirectory }))?.session
 			if (!session) return
 
 			const currentBranch = vcs?.branch ?? ""
@@ -720,7 +719,7 @@ export function NewChat() {
 						sessionId: stubId,
 						setupPhase: "starting-session",
 					})
-					const session = await createOpenCodeSession(sdkDirectory)
+					const session = (await createRuntimeSession({ directory: sdkDirectory }))?.session
 					if (!session) {
 						throw new Error("Failed to create session in worktree")
 					}
@@ -781,15 +780,21 @@ export function NewChat() {
 		async (promptText: string, files?: FileAttachment[]) => {
 			if (!selectedDirectory || !promptText || !runtimeConfig) return
 			if (runtimeConfig.kind === "cli") {
-				const sessionId = createCliRuntimeSession({
+				const result = await createRuntimeSession({
+					kind: "cli",
 					directory: selectedDirectory,
 					runtimeId: runtimeConfig.runtimeId,
 					sandbox: runtimeConfig.sandbox,
 					model: runtimeConfig.model,
 					effort: runtimeConfig.effort,
 				})
+				const sessionId = result?.sessionId
+				if (!sessionId) return
 				clearDraft()
-				void sendPrompt(selectedDirectory, sessionId, promptText)
+				void sendPrompt(selectedDirectory, sessionId, promptText, {
+					runtime: "cli",
+					files,
+				})
 				navigateToSession(sessionId)
 				return
 			}

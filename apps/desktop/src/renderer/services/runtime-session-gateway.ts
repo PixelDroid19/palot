@@ -5,7 +5,11 @@ import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/se
 import { appStore } from "../atoms/store"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import { readSessionRuntimeState } from "../lib/runtime-session-config"
-import { isCliRuntime, type SessionRuntimeId } from "../lib/session-runtimes"
+import {
+	DEFAULT_SESSION_RUNTIME_ID,
+	isCliRuntime,
+	type SessionRuntimeId,
+} from "../lib/session-runtimes"
 import type {
 	FilePart,
 	FilePartInput,
@@ -128,6 +132,27 @@ async function promptOpenCodeSession(
 	})
 }
 
+export type RuntimeSessionCreateRequest =
+	| {
+			directory: string
+			title?: string
+			kind?: "opencode"
+	  }
+	| {
+			directory: string
+			kind: "cli"
+			runtimeId: AgentRuntimeId
+			sandbox: AgentSandbox
+			model?: string
+			effort?: string
+	  }
+
+export interface RuntimeSessionCreateResult {
+	runtimeId: SessionRuntimeId
+	sessionId: string
+	session?: Session
+}
+
 export const runtimeSessionGateway = {
 	createOpenCodeSession,
 	createCliRuntimeSession(args: {
@@ -138,6 +163,25 @@ export const runtimeSessionGateway = {
 		effort?: string
 	}): string {
 		return createCliRuntimeSessionState(args)
+	},
+	async createSession(
+		args: RuntimeSessionCreateRequest,
+	): Promise<RuntimeSessionCreateResult | null> {
+		if (args.kind === "cli") {
+			const sessionId = createCliRuntimeSessionState(args)
+			return {
+				runtimeId: args.runtimeId,
+				sessionId,
+			}
+		}
+
+		const session = await createOpenCodeSession(args.directory, args.title)
+		if (!session) return null
+		return {
+			runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+			sessionId: session.id,
+			session,
+		}
 	},
 	async switchRuntimeSession(
 		sessionId: string,

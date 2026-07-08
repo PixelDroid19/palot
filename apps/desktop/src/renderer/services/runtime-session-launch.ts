@@ -2,7 +2,11 @@ import type { AgentRuntimeId, AgentSandbox } from "../../preload/api"
 import type { SessionRuntimeId } from "../lib/session-runtimes"
 import type { Session } from "../lib/types"
 import { restoreCliRuntimeSessions } from "./runtime-cli-store"
-import { runtimeSessionGateway } from "./runtime-session-gateway"
+import {
+	runtimeSessionGateway,
+	type RuntimeSessionCreateRequest,
+	type RuntimeSessionCreateResult,
+} from "./runtime-session-gateway"
 
 export function restoreRuntimeSessions(): void {
 	restoreCliRuntimeSessions()
@@ -23,6 +27,12 @@ export function createCliRuntimeSession(args: {
 	effort?: string
 }): string {
 	return runtimeSessionGateway.createCliRuntimeSession(args)
+}
+
+export async function createRuntimeSession(
+	args: RuntimeSessionCreateRequest,
+): Promise<RuntimeSessionCreateResult | null> {
+	return runtimeSessionGateway.createSession(args)
 }
 
 export async function switchRuntimeSession(
