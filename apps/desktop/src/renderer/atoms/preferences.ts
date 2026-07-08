@@ -34,7 +34,7 @@ function migrateFromZustandPersist(): void {
 			localStorage.setItem("palot:colorScheme", JSON.stringify(state.colorScheme))
 		if (state.drafts) localStorage.setItem("palot:drafts", JSON.stringify(state.drafts))
 		if (state.projectModels)
-			localStorage.setItem("palot:projectModels", JSON.stringify(state.projectModels))
+			localStorage.setItem("palot:runtimeSelections", JSON.stringify(state.projectModels))
 
 		// Remove old key after successful migration
 		localStorage.removeItem(oldKey)
@@ -54,6 +54,18 @@ function migrateDisplayMode(): void {
 	}
 }
 migrateDisplayMode()
+
+function migrateRuntimeSelectionsKey(): void {
+	const legacyKey = "palot:projectModels"
+	const nextKey = "palot:runtimeSelections"
+	const next = localStorage.getItem(nextKey)
+	if (next) return
+	const legacy = localStorage.getItem(legacyKey)
+	if (!legacy) return
+	localStorage.setItem(nextKey, legacy)
+	localStorage.removeItem(legacyKey)
+}
+migrateRuntimeSelectionsKey()
 
 // ============================================================
 // Persisted atoms — each is independent with its own localStorage key
@@ -90,8 +102,8 @@ export const isTransparentAtom = atom((get) => {
 
 export const draftsAtom = atomWithStorage<Record<string, string>>("palot:drafts", {})
 
-export const projectModelsAtom = atomWithStorage<Record<string, PersistedModelRef>>(
-	"palot:projectModels",
+export const runtimeSelectionsAtom = atomWithStorage<Record<string, PersistedModelRef>>(
+	"palot:runtimeSelections",
 	{},
 )
 
@@ -129,8 +141,8 @@ export const clearDraftAtom = atom(null, (get, set, key: string) => {
 	set(draftsAtom, drafts)
 })
 
-/** Set a project model (write-only action atom) */
-export const setProjectModelAtom = atom(
+/** Set a persisted runtime selection for a directory (write-only action atom) */
+export const setRuntimeSelectionAtom = atom(
 	null,
 	(
 		get,
@@ -140,13 +152,13 @@ export const setProjectModelAtom = atom(
 			model: PersistedModelRef
 		},
 	) => {
-		const models = { ...get(projectModelsAtom) }
-		models[args.directory] = {
+		const runtimeSelections = { ...get(runtimeSelectionsAtom) }
+		runtimeSelections[args.directory] = {
 			providerID: args.model.providerID,
 			modelID: args.model.modelID,
 			variant: args.model.variant,
 			agent: args.model.agent,
 		}
-		set(projectModelsAtom, models)
+		set(runtimeSelectionsAtom, runtimeSelections)
 	},
 )

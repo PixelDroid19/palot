@@ -1026,7 +1026,7 @@ function ChatInputSection({
 						persistedSelection:
 							effectiveModel && agent.directory
 								? {
-										kind: "project",
+										kind: "configurable-runtime",
 										directory: agent.directory,
 										model: {
 											...effectiveModel,

@@ -18,7 +18,7 @@ import {
 	resolveRuntimeModel,
 } from "../../lib/runtime-model-selection"
 import type {
-	ProjectRuntimeSelection,
+	ConfigurableRuntimeSelection,
 	RuntimePromptOptions,
 	RuntimeSelectionPersistence,
 } from "../../lib/runtime-session-config"
@@ -333,7 +333,7 @@ export function buildProjectRuntimeChatRuntimeConfig(args: {
 	selectedVariant: string | undefined
 	onSelectVariant: (variant: string | undefined) => void
 	disabled?: boolean
-	persistedSelection: ProjectRuntimeSelection | null
+	persistedSelection: ConfigurableRuntimeSelection | null
 	sendOptions: RuntimePromptOptions
 }): ChatRuntimeConfig {
 	return buildChatRuntimeConfig({

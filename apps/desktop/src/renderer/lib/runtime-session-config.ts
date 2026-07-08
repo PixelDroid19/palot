@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai"
 import type { PersistedModelRef } from "../atoms/preferences"
-import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
+import { runtimeSelectionsAtom, setRuntimeSelectionAtom } from "../atoms/preferences"
 import { cliSessionsAtom, getCliMeta, patchCliMeta, type CliSessionMeta } from "../atoms/cli-sessions"
 import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-project-runtime-data"
@@ -21,8 +21,8 @@ export interface RuntimePromptOptions {
 	files?: FileAttachment[]
 }
 
-export interface ProjectRuntimeSelection {
-	kind: "project"
+export interface ConfigurableRuntimeSelection {
+	kind: "configurable-runtime"
 	directory: string
 	model: PersistedModelRef
 }
@@ -34,7 +34,7 @@ export interface CliRuntimeSelection {
 	persist?: boolean
 }
 
-export type RuntimeSelectionPersistence = ProjectRuntimeSelection | CliRuntimeSelection
+export type RuntimeSelectionPersistence = ConfigurableRuntimeSelection | CliRuntimeSelection
 
 export interface SessionRuntimeState {
 	sessionId: string
@@ -119,25 +119,25 @@ export function sessionRuntimeCapabilities(
 	return runtimeIdCapabilities(state.runtimeId)
 }
 
-function isProjectRuntimeSelection(
+function isConfigurableRuntimeSelection(
 	selection: RuntimeSelectionPersistence,
-): selection is ProjectRuntimeSelection {
-	return selection.kind === "project"
+): selection is ConfigurableRuntimeSelection {
+	return selection.kind === "configurable-runtime"
 }
 
-export function readProjectRuntimePreference(
+export function readRuntimePreference(
 	directory: string | null | undefined,
 ): PersistedModelRef | null {
 	if (!directory) return null
-	return appStore.get(projectModelsAtom)[directory] ?? null
+	return appStore.get(runtimeSelectionsAtom)[directory] ?? null
 }
 
-export function useProjectRuntimePreference(
+export function useRuntimePreference(
 	directory: string | null | undefined,
 ): PersistedModelRef | null {
-	const projectModels = useAtomValue(projectModelsAtom)
+	const runtimeSelections = useAtomValue(runtimeSelectionsAtom)
 	if (!directory) return null
-	return projectModels[directory] ?? null
+	return runtimeSelections[directory] ?? null
 }
 
 export function readSessionRuntimeState(
@@ -145,7 +145,7 @@ export function readSessionRuntimeState(
 	directory?: string | null,
 ): SessionRuntimeState {
 	const meta = getCliMeta(sessionId)
-	const modelPreference = readProjectRuntimePreference(directory)
+	const modelPreference = readRuntimePreference(directory)
 	if (meta) {
 		return {
 			sessionId,
@@ -169,9 +169,9 @@ export function useSessionRuntimeState(
 	directory?: string | null,
 ): SessionRuntimeState {
 	const cliSessions = useAtomValue(cliSessionsAtom)
-	const projectModels = useAtomValue(projectModelsAtom)
+	const runtimeSelections = useAtomValue(runtimeSelectionsAtom)
 	const meta = cliSessions[sessionId]
-	const modelPreference = directory ? (projectModels[directory] ?? null) : null
+	const modelPreference = directory ? (runtimeSelections[directory] ?? null) : null
 	if (meta) {
 		return {
 			sessionId,
@@ -206,8 +206,8 @@ export function persistRuntimeSelection(
 ): void {
 	if (!selection) return
 
-	if (isProjectRuntimeSelection(selection)) {
-		appStore.set(setProjectModelAtom, {
+	if (isConfigurableRuntimeSelection(selection)) {
+		appStore.set(setRuntimeSelectionAtom, {
 			directory: selection.directory,
 			model: selection.model,
 		})

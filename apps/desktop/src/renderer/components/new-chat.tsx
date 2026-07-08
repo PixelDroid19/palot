@@ -40,7 +40,7 @@ import { useTranslation } from "../i18n/use-translation"
 import {
 	persistRuntimeSelection,
 	runtimeIdCapabilities,
-	useProjectRuntimePreference,
+	useRuntimePreference,
 } from "../lib/runtime-session-config"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
@@ -373,12 +373,12 @@ export function NewChat() {
 	// This puts the model at step 1 (user override) in resolveEffectiveModel, so it
 	// wins over config.model and global recent list — matching the user's expectation
 	// that the model they last used in this project sticks.
-	const projectModelPreference = useProjectRuntimePreference(selectedDirectory)
+	const runtimePreference = useRuntimePreference(selectedDirectory)
 	const prevDirectoryRef = useRef<string>("")
 	useEffect(() => {
 		if (!selectedDirectory || selectedDirectory === prevDirectoryRef.current) return
 		prevDirectoryRef.current = selectedDirectory
-		const stored = projectModelPreference
+		const stored = runtimePreference
 		if (stored?.providerID && stored?.modelID) {
 			setSelectedModel(stored)
 			setSelectedVariant(stored.variant)
@@ -388,7 +388,7 @@ export function NewChat() {
 		}
 		// Restore the per-project agent preference (null = use config default)
 		setSelectedAgent(stored?.agent ?? null)
-	}, [selectedDirectory, projectModelPreference])
+	}, [selectedDirectory, runtimePreference])
 
 	const selectedProject = useMemo(
 		() => projects.find((p) => p.directory === selectedDirectory),
@@ -593,10 +593,10 @@ export function NewChat() {
 	// ---
 
 	/** Persist the model + variant + agent for this project so new sessions remember it. */
-	const persistProjectModel = useCallback(() => {
+	const persistRuntimePreference = useCallback(() => {
 		if (!effectiveModel || !selectedDirectory) return
 		persistRuntimeSelection({
-			kind: "project",
+			kind: "configurable-runtime",
 			directory: selectedDirectory,
 			model: {
 				...effectiveModel,
@@ -629,7 +629,7 @@ export function NewChat() {
 			try {
 				clearDraft()
 				if (runtimeCapabilities.supportsRuntimeConfiguration) {
-					persistProjectModel()
+					persistRuntimePreference()
 				}
 				await launchRuntimeSession({
 					currentBranch: vcs?.branch ?? "",
@@ -654,7 +654,7 @@ export function NewChat() {
 			clearDraft,
 			navigate,
 			navigateToSession,
-			persistProjectModel,
+			persistRuntimePreference,
 			runtimeConfig,
 			selectedDirectory,
 			vcs,
