@@ -205,4 +205,94 @@ export const runtimeSessionGateway = {
 		const client = requireOpenCodeClient(directory)
 		await client.session.delete({ sessionID: sessionId })
 	},
+	async revertSession(
+		directory: string,
+		sessionId: string,
+		messageId: string,
+	): Promise<void> {
+		if (isCliSession(sessionId)) {
+			throw new Error("Revert is not supported for CLI sessions")
+		}
+
+		const client = requireOpenCodeClient(directory)
+		const entry = appStore.get(sessionFamily(sessionId))
+		if (entry?.status?.type === "busy") {
+			await client.session.abort({ sessionID: sessionId })
+		}
+		await client.session.revert({ sessionID: sessionId, messageID: messageId })
+	},
+	async unrevertSession(directory: string, sessionId: string): Promise<void> {
+		if (isCliSession(sessionId)) {
+			throw new Error("Undo is not supported for CLI sessions")
+		}
+
+		const client = requireOpenCodeClient(directory)
+		await client.session.unrevert({ sessionID: sessionId })
+	},
+	async executeCommand(
+		directory: string,
+		sessionId: string,
+		command: string,
+		args: string,
+	): Promise<void> {
+		if (isCliSession(sessionId)) {
+			throw new Error("Slash commands are not supported for CLI sessions")
+		}
+
+		const client = requireOpenCodeClient(directory)
+		await client.session.command({
+			sessionID: sessionId,
+			command,
+			arguments: args,
+		})
+	},
+	async summarizeSession(
+		directory: string,
+		sessionId: string,
+		model?: { providerID: string; modelID: string },
+	): Promise<void> {
+		if (isCliSession(sessionId)) {
+			throw new Error("Summarize is not supported for CLI sessions")
+		}
+
+		const client = requireOpenCodeClient(directory)
+		await client.session.summarize({
+			sessionID: sessionId,
+			providerID: model?.providerID,
+			modelID: model?.modelID,
+		})
+	},
+	async deletePart(
+		directory: string,
+		sessionId: string,
+		messageId: string,
+		partId: string,
+	): Promise<void> {
+		if (isCliSession(sessionId)) {
+			throw new Error("Deleting parts is not supported for CLI sessions")
+		}
+
+		const client = requireOpenCodeClient(directory)
+		await client.part.delete({ sessionID: sessionId, messageID: messageId, partID: partId })
+	},
+	async forkSession(
+		directory: string,
+		sessionId: string,
+		messageId?: string,
+	): Promise<Session> {
+		if (isCliSession(sessionId)) {
+			throw new Error("Fork is not supported for CLI sessions")
+		}
+
+		const client = requireOpenCodeClient(directory)
+		const result = await client.session.fork({
+			sessionID: sessionId,
+			messageID: messageId,
+		})
+		const session = result.data as Session
+		if (session) {
+			appStore.set(upsertSessionAtom, { session, directory })
+		}
+		return session
+	},
 }

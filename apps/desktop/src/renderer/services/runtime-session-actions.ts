@@ -1,7 +1,4 @@
 import type { AgentPermissionDecision } from "../../preload/api"
-import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
-import { appStore } from "../atoms/store"
-import { readSessionRuntimeState } from "../lib/runtime-session-config"
 import type { QuestionAnswer, Session } from "../lib/types"
 import {
 	answerCliRuntimeQuestionRequest,
@@ -81,30 +78,14 @@ export async function revertRuntimeSession(
 	sessionId: string,
 	messageId: string,
 ): Promise<void> {
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		throw new Error("Revert is not supported for CLI sessions")
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	const entry = appStore.get(sessionFamily(sessionId))
-	if (entry?.status?.type === "busy") {
-		await client.session.abort({ sessionID: sessionId })
-	}
-	await client.session.revert({ sessionID: sessionId, messageID: messageId })
+	await runtimeSessionGateway.revertSession(directory, sessionId, messageId)
 }
 
 export async function unrevertRuntimeSession(
 	directory: string,
 	sessionId: string,
 ): Promise<void> {
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		throw new Error("Undo is not supported for CLI sessions")
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	await client.session.unrevert({ sessionID: sessionId })
+	await runtimeSessionGateway.unrevertSession(directory, sessionId)
 }
 
 export async function executeRuntimeCommand(
@@ -113,17 +94,7 @@ export async function executeRuntimeCommand(
 	command: string,
 	args: string,
 ): Promise<void> {
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		throw new Error("Slash commands are not supported for CLI sessions")
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	await client.session.command({
-		sessionID: sessionId,
-		command,
-		arguments: args,
-	})
+	await runtimeSessionGateway.executeCommand(directory, sessionId, command, args)
 }
 
 export async function summarizeRuntimeSession(
@@ -131,17 +102,7 @@ export async function summarizeRuntimeSession(
 	sessionId: string,
 	model?: { providerID: string; modelID: string },
 ): Promise<void> {
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		throw new Error("Summarize is not supported for CLI sessions")
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	await client.session.summarize({
-		sessionID: sessionId,
-		providerID: model?.providerID,
-		modelID: model?.modelID,
-	})
+	await runtimeSessionGateway.summarizeSession(directory, sessionId, model)
 }
 
 export async function deleteRuntimePart(
@@ -150,13 +111,7 @@ export async function deleteRuntimePart(
 	messageId: string,
 	partId: string,
 ): Promise<void> {
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		throw new Error("Deleting parts is not supported for CLI sessions")
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	await client.part.delete({ sessionID: sessionId, messageID: messageId, partID: partId })
+	await runtimeSessionGateway.deletePart(directory, sessionId, messageId, partId)
 }
 
 export async function forkRuntimeSession(
@@ -164,19 +119,5 @@ export async function forkRuntimeSession(
 	sessionId: string,
 	messageId?: string,
 ): Promise<Session> {
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		throw new Error("Fork is not supported for CLI sessions")
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	const result = await client.session.fork({
-		sessionID: sessionId,
-		messageID: messageId,
-	})
-	const session = result.data as Session
-	if (session) {
-		appStore.set(upsertSessionAtom, { session, directory })
-	}
-	return session
+	return runtimeSessionGateway.forkSession(directory, sessionId, messageId)
 }
