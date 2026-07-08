@@ -40,7 +40,7 @@ import {
 } from "react"
 import { cliSessionsAtom } from "../../atoms/cli-sessions"
 import { messagesFamily, removeMessageAtom } from "../../atoms/messages"
-import { projectModelsAtom, setProjectModelAtom } from "../../atoms/preferences"
+import { projectModelsAtom } from "../../atoms/preferences"
 import type { SessionSetupPhase } from "../../atoms/sessions"
 import { sessionFamily } from "../../atoms/sessions"
 import {
@@ -64,6 +64,7 @@ import {
 } from "../../hooks/use-opencode-data"
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
+import { persistRuntimeSelection, type RuntimePromptOptions } from "../../lib/runtime-session-config"
 import { computeTurnWorkTimeSplit, formatWorkDuration } from "../../lib/session-metrics"
 import type { Agent, FileAttachment, FilePart, QuestionAnswer, TextPart } from "../../lib/types"
 import { getProjectClient } from "../../services/connection-manager"
@@ -401,7 +402,7 @@ interface ChatViewProps {
 	onSendMessage?: (
 		agent: Agent,
 		message: string,
-		options?: { model?: ModelRef; agentName?: string; variant?: string; files?: FileAttachment[] },
+		options?: RuntimePromptOptions,
 	) => Promise<void>
 	/** Callback to stop/abort the running session */
 	onStop?: (agent: Agent) => Promise<void>
@@ -1011,9 +1012,10 @@ function ChatInputSection({
 						selectedVariant,
 						onSelectVariant: setSelectedVariant,
 						disabled: !isConnected,
-						projectModel:
+						persistedSelection:
 							effectiveModel && agent.directory
 								? {
+										runtime: "opencode",
 										directory: agent.directory,
 										model: {
 											...effectiveModel,
@@ -1023,6 +1025,7 @@ function ChatInputSection({
 									}
 								: null,
 						sendOptions: {
+							runtime: "opencode",
 							model: effectiveModel ?? undefined,
 							agentName: selectedAgent || undefined,
 							variant: selectedVariant,
@@ -1139,12 +1142,7 @@ function ChatInputSection({
 
 			setSending(true)
 			try {
-				if (chatRuntimeConfig.kind === "opencode" && chatRuntimeConfig.projectModel) {
-					appStore.set(setProjectModelAtom, {
-						directory: chatRuntimeConfig.projectModel.directory,
-						model: chatRuntimeConfig.projectModel.model,
-					})
-				}
+				persistRuntimeSelection(chatRuntimeConfig.persistedSelection)
 
 				log.debug("handleSend calling onSendMessage", {
 					sessionId: agent.sessionId,
@@ -1159,10 +1157,7 @@ function ChatInputSection({
 				const commentPrefix = serializeCommentsForChat(diffComments)
 				const finalText = commentPrefix ? `${commentPrefix}${text.trim()}` : text.trim()
 
-				await onSendMessage(agent, finalText, {
-					...(chatRuntimeConfig.kind === "opencode" ? chatRuntimeConfig.sendOptions : {}),
-					files,
-				})
+				await onSendMessage(agent, finalText, { ...chatRuntimeConfig.sendOptions, files })
 				log.debug("handleSend onSendMessage completed", { sessionId: agent.sessionId })
 				clearDraft()
 				setMentions([])

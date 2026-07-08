@@ -11,8 +11,6 @@ import {
 } from "@palot/ui/components/ai-elements/prompt-input"
 import { PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
-import { setProjectModelAtom } from "../../atoms/preferences"
-import { appStore } from "../../atoms/store"
 import { useDraftActions, useDraftSnapshot } from "../../hooks/use-draft"
 import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-opencode-data"
 import {
@@ -21,6 +19,10 @@ import {
 	useModelState,
 } from "../../hooks/use-opencode-data"
 
+import {
+	persistRuntimeSelection,
+	type RuntimePromptOptions,
+} from "../../lib/runtime-session-config"
 import type { Agent, FileAttachment } from "../../lib/types"
 import { ContextItems } from "./context-items"
 import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./mention-popover"
@@ -42,7 +44,7 @@ interface ChatInputProps {
 	onSendMessage?: (
 		agent: Agent,
 		message: string,
-		options?: { model?: ModelRef; agentName?: string; variant?: string; files?: FileAttachment[] },
+		options?: RuntimePromptOptions,
 	) => Promise<void>
 	onStop?: (agent: Agent) => Promise<void>
 	providers?: ProvidersData | null
@@ -221,7 +223,8 @@ export function ChatInput({
 			setSending(true)
 			try {
 				if (effectiveModel && agent.directory) {
-					appStore.set(setProjectModelAtom, {
+					persistRuntimeSelection({
+						runtime: "opencode",
 						directory: agent.directory,
 						model: {
 							...effectiveModel,
@@ -231,6 +234,7 @@ export function ChatInput({
 					})
 				}
 				await onSendMessage(agent, text.trim(), {
+					runtime: "opencode",
 					model: effectiveModel ?? undefined,
 					agentName: selectedAgent || undefined,
 					variant: selectedVariant,

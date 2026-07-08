@@ -7,6 +7,7 @@ import { upsertPartAtom } from "../atoms/parts"
 import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
+import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import {
 	cancelCliTurn,
 	consumeOpencodeHandoff,
@@ -15,7 +16,6 @@ import {
 	runCliTurn,
 } from "../services/cli-chat"
 import type {
-	FileAttachment,
 	FilePart,
 	FilePartInput,
 	QuestionAnswer,
@@ -63,28 +63,26 @@ export function useAgentActions() {
 			directory: string,
 			sessionId: string,
 			text: string,
-			options?: {
-				model?: { providerID: string; modelID: string }
-				agent?: string
-				variant?: string
-				files?: FileAttachment[]
-			},
+			options?: RuntimePromptOptions,
 		) => {
 			log.debug("sendPrompt called", {
 				directory,
 				sessionId,
 				textLength: text.length,
-				agent: options?.agent,
-				model: options?.model,
-				variant: options?.variant,
+				runtime: options?.runtime ?? (isCliSession(sessionId) ? "cli" : "opencode"),
+				agent: options?.runtime === "cli" ? undefined : options?.agentName,
+				model: options?.runtime === "cli" ? undefined : options?.model,
+				variant: options?.runtime === "cli" ? undefined : options?.variant,
 				hasFiles: !!(options?.files && options.files.length > 0),
 			})
 
 			// CLI-backed sessions run through the agent runtime, not the OpenCode client.
-			if (isCliSession(sessionId)) {
+			if (options?.runtime === "cli" || isCliSession(sessionId)) {
 				await runCliTurn(sessionId, text, options?.files)
 				return
 			}
+
+			const openCodeOptions = options
 
 			const client = getProjectClient(directory)
 			if (!client) {
@@ -102,9 +100,9 @@ export function useAgentActions() {
 				sessionID: sessionId,
 				role: "user",
 				time: { created: Date.now() },
-				agent: options?.agent ?? "build",
-				model: options?.model ?? { providerID: "", modelID: "" },
-				variant: options?.variant,
+				agent: openCodeOptions?.agentName ?? "build",
+				model: openCodeOptions?.model ?? { providerID: "", modelID: "" },
+				variant: openCodeOptions?.variant,
 			}
 			appStore.set(upsertMessageAtom, optimisticMessage as UserMessage)
 			log.debug("sendPrompt: optimistic message set", { optimisticId })
@@ -151,26 +149,29 @@ export function useAgentActions() {
 
 			log.debug("sendPrompt: calling promptAsync", {
 				sessionId,
-				agent: options?.agent,
-				model: options?.model,
+				agent: openCodeOptions?.agentName,
+				model: openCodeOptions?.model,
 				partsCount: parts.length,
 			})
 			try {
 				const result = await client.session.promptAsync({
 					sessionID: sessionId,
 					parts,
-					model: options?.model
-						? { providerID: options.model.providerID, modelID: options.model.modelID }
+					model: openCodeOptions?.model
+						? {
+								providerID: openCodeOptions.model.providerID,
+								modelID: openCodeOptions.model.modelID,
+							}
 						: undefined,
-					agent: options?.agent,
-					variant: options?.variant,
+					agent: openCodeOptions?.agentName,
+					variant: openCodeOptions?.variant,
 				})
 				log.debug("sendPrompt: promptAsync returned", {
 					sessionId,
 					result: JSON.stringify(result).slice(0, 200),
 				})
 			} catch (err) {
-				log.error("sendPrompt: promptAsync failed", { sessionId, agent: options?.agent }, err)
+				log.error("sendPrompt: promptAsync failed", { sessionId, agent: openCodeOptions?.agentName }, err)
 				throw err
 			}
 		},

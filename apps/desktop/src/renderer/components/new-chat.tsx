@@ -27,7 +27,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createUuidV7 } from "../../shared/uuid"
-import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
+import { projectModelsAtom } from "../atoms/preferences"
 import {
 	removeSessionAtom,
 	setSessionBranchAtom,
@@ -54,6 +54,7 @@ import type { AgentRuntimeDescriptor, AgentSandbox } from "../../preload/api"
 import { createCliSession } from "../services/cli-chat"
 import type { FileAttachment } from "../lib/types"
 import { useTranslation } from "../i18n/use-translation"
+import { persistRuntimeSelection } from "../lib/runtime-session-config"
 import {
 	isCliRuntime,
 	loadRuntimeDescriptors,
@@ -596,7 +597,8 @@ export function NewChat() {
 	/** Persist the model + variant + agent for this project so new sessions remember it. */
 	const persistProjectModel = useCallback(() => {
 		if (!effectiveModel || !selectedDirectory) return
-		appStore.set(setProjectModelAtom, {
+		persistRuntimeSelection({
+			runtime: "opencode",
 			directory: selectedDirectory,
 			model: {
 				...effectiveModel,
@@ -635,8 +637,9 @@ export function NewChat() {
 			persistProjectModel()
 
 			await sendPrompt(selectedDirectory, session.id, promptText, {
+				runtime: "opencode",
 				model: effectiveModel ?? undefined,
-				agent: selectedAgent ?? undefined,
+				agentName: selectedAgent ?? undefined,
 				variant: selectedVariant,
 				files,
 			})
@@ -733,8 +736,9 @@ export function NewChat() {
 
 					// Phase 3: Send the prompt
 					await sendPrompt(sdkDirectory, session.id, promptText, {
+						runtime: "opencode",
 						model: effectiveModel ?? undefined,
-						agent: selectedAgent ?? undefined,
+						agentName: selectedAgent ?? undefined,
 						variant: selectedVariant,
 						files,
 					})

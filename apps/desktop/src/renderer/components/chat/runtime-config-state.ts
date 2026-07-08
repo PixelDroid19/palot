@@ -1,5 +1,11 @@
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-opencode-data"
+import type {
+	OpenCodePromptOptions,
+	OpenCodeRuntimeSelection,
+	RuntimePromptOptions,
+	RuntimeSelectionPersistence,
+} from "../../lib/runtime-session-config"
 import type { SessionRuntimeId } from "../../lib/session-runtimes"
 import type { RuntimeConfigToolbarProps } from "./runtime-config-toolbar"
 
@@ -18,28 +24,13 @@ export type NewChatRuntimeConfig =
 			worktreeMode: "local" | "worktree"
 	  }
 
-export type ChatRuntimeConfig =
-	| {
-			kind: "cli-session"
-			runtimeSwitchCurrent: string
-			toolbarProps: RuntimeConfigToolbarProps
-	  }
-	| {
-			kind: "opencode"
-			runtimeSwitchCurrent: "opencode"
-			toolbarProps: RuntimeConfigToolbarProps
-			projectModel:
-				| {
-						directory: string
-						model: ModelRef & { variant?: string; agent?: string }
-				  }
-				| null
-			sendOptions: {
-				model?: ModelRef
-				agentName?: string
-				variant?: string
-			}
-	  }
+export interface ChatRuntimeConfig {
+	kind: "cli-session" | "opencode"
+	runtimeSwitchCurrent: string
+	toolbarProps: RuntimeConfigToolbarProps
+	persistedSelection: RuntimeSelectionPersistence | null
+	sendOptions: RuntimePromptOptions
+}
 
 export function buildCliNewChatRuntimeConfig(args: {
 	runtimeId: Exclude<SessionRuntimeId, "opencode">
@@ -120,6 +111,10 @@ export function buildCliChatRuntimeConfig(args: {
 			kind: "cli-session",
 			sessionId: args.sessionId,
 		},
+		persistedSelection: null,
+		sendOptions: {
+			runtime: "cli",
+		},
 	}
 }
 
@@ -136,17 +131,8 @@ export function buildOpenCodeChatRuntimeConfig(args: {
 	selectedVariant: string | undefined
 	onSelectVariant: (variant: string | undefined) => void
 	disabled?: boolean
-	projectModel:
-		| {
-				directory: string
-				model: ModelRef & { variant?: string; agent?: string }
-		  }
-		| null
-	sendOptions: {
-		model?: ModelRef
-		agentName?: string
-		variant?: string
-	}
+	persistedSelection: OpenCodeRuntimeSelection | null
+	sendOptions: OpenCodePromptOptions
 }): ChatRuntimeConfig {
 	return {
 		kind: "opencode",
@@ -166,7 +152,7 @@ export function buildOpenCodeChatRuntimeConfig(args: {
 			onSelectVariant: args.onSelectVariant,
 			disabled: args.disabled,
 		},
-		projectModel: args.projectModel,
+		persistedSelection: args.persistedSelection,
 		sendOptions: args.sendOptions,
 	}
 }

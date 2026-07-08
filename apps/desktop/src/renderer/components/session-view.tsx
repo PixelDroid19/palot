@@ -17,12 +17,12 @@ import { upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { viewedSessionIdAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
-import type { ModelRef } from "../hooks/use-opencode-data"
 import { useConfig, useOpenCodeAgents, useProviders, useVcs } from "../hooks/use-opencode-data"
 import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"
-import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
+import type { RuntimePromptOptions } from "../lib/runtime-session-config"
+import type { Agent, QuestionAnswer } from "../lib/types"
 import { fetchSessionById } from "../services/connection-manager"
 import { AgentDetail } from "./agent-detail"
 
@@ -221,28 +221,19 @@ export function SessionView({ sessionId }: SessionViewProps) {
 		async (
 			agent: Agent,
 			message: string,
-			options?: {
-				model?: ModelRef
-				agentName?: string
-				variant?: string
-				files?: FileAttachment[]
-			},
+			options?: RuntimePromptOptions,
 		) => {
 			log.debug("handleSendMessage", {
 				sessionId: agent.sessionId,
 				directory: agent.directory,
 				messageLength: message.length,
-				model: options?.model,
-				agentName: options?.agentName,
-				variant: options?.variant,
+				runtime: options?.runtime ?? "opencode",
+				model: options?.runtime === "cli" ? undefined : options?.model,
+				agentName: options?.runtime === "cli" ? undefined : options?.agentName,
+				variant: options?.runtime === "cli" ? undefined : options?.variant,
 			})
 			try {
-				await sendPrompt(agent.directory, agent.sessionId, message, {
-					model: options?.model,
-					agent: options?.agentName || undefined,
-					variant: options?.variant,
-					files: options?.files,
-				})
+				await sendPrompt(agent.directory, agent.sessionId, message, options)
 				log.debug("handleSendMessage completed", { sessionId: agent.sessionId })
 			} catch (err) {
 				log.error("handleSendMessage failed", { sessionId: agent.sessionId }, err)
