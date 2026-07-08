@@ -24,6 +24,7 @@ import { app } from "electron"
 import { detectAgentClis } from "../agent-clis"
 import { checkManagedRuntime } from "../compatibility"
 import { createLogger } from "../logger"
+import { PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
 
 const log = createLogger("agent-host")
 
@@ -91,7 +92,6 @@ export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 	}
 }
 
-const MANAGED_RUNTIME_DESCRIPTOR_ID = "opencode"
 const MANAGED_RUNTIME_DESCRIPTOR_LABEL = "OpenCode"
 const MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES: AgentRuntimeCapabilities = {
 	imageInput: true,
@@ -147,7 +147,7 @@ function describeManagedRuntime(detection?: {
 	installHint: string
 }): Promise<SessionRuntimeDescriptor> {
 	return checkManagedRuntime().then((runtime) => ({
-		id: MANAGED_RUNTIME_DESCRIPTOR_ID,
+		id: PROJECT_RUNTIME_ID,
 		displayName: MANAGED_RUNTIME_DESCRIPTOR_LABEL,
 		mode: "managed",
 		installed: runtime.installed,
@@ -170,7 +170,7 @@ export async function describeSessionRuntimes(): Promise<SessionRuntimeDescripto
 		getAgentHost().describeRuntimes(),
 	])
 	const detections = new Map(cliDetections.map((runtime) => [runtime.id, runtime]))
-	const managedRuntime = await describeManagedRuntime(detections.get(MANAGED_RUNTIME_DESCRIPTOR_ID))
+	const managedRuntime = await describeManagedRuntime(detections.get(PROJECT_RUNTIME_ID))
 	return [
 		managedRuntime,
 		...cliRuntimes.map((runtime) => ({

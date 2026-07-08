@@ -10,8 +10,9 @@
  * `loadRuntimeDescriptors()` resolves.
  */
 import type { AgentRuntimeId, SessionRuntimeDescriptor } from "../../preload/api"
+import { PROJECT_RUNTIME_ID as SHARED_PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
 
-export const PROJECT_RUNTIME_ID = "opencode"
+export const PROJECT_RUNTIME_ID = SHARED_PROJECT_RUNTIME_ID
 export type SessionRuntimeId = typeof PROJECT_RUNTIME_ID | AgentRuntimeId
 export const DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = PROJECT_RUNTIME_ID
 export interface SessionRuntimeOption {
