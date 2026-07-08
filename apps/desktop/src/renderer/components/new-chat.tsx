@@ -750,9 +750,8 @@ export function NewChat() {
 		],
 	)
 
-	// The agent/model picker is OpenCode-specific; CLI runtimes use their own
-	// model, so hide it when a CLI runtime is selected.
-	const hasToolbar = providers && !isCliRuntime(sessionRuntime)
+	const isCliSessionRuntime = isCliRuntime(sessionRuntime)
+	const hasToolbar = providers && (!isCliSessionRuntime || activeCliRuntime)
 
 	return (
 		<div className="relative flex h-full flex-col">
@@ -879,23 +878,75 @@ export function NewChat() {
 								onKeyDown={handleTextareaKeyDown}
 							/>
 
-							{/* Toolbar inside the card — agent + model + variant selectors */}
+							{/* Toolbar inside the card — runtime-specific session controls */}
 							{hasToolbar && (
 								<PromptInputFooter>
 									<PromptInputTools>
-										<PromptToolbar
-											agents={openCodeAgents ?? []}
-											selectedAgent={selectedAgent}
-											defaultAgent={config?.defaultAgent}
-											onSelectAgent={setSelectedAgent}
-											providers={providers}
-											effectiveModel={effectiveModel}
-											hasModelOverride={!!selectedModel}
-											onSelectModel={handleModelSelect}
-											recentModels={recentModels}
-											selectedVariant={selectedVariant}
-											onSelectVariant={setSelectedVariant}
-										/>
+										{isCliSessionRuntime ? (
+											<>
+												{cliModels.length > 0 && (
+													<CliModelSelect
+														models={cliModels}
+														value={resolvedCliModel ?? ""}
+														onValueChange={(value) => {
+															setCliModel(value)
+															setCliEffort("")
+														}}
+													/>
+												)}
+												<CliOptionSelect
+													aria-label={t("runtimePicker.sandbox")}
+													value={cliSandbox}
+													onValueChange={(value) => setCliSandbox(value as AgentSandbox)}
+													options={[
+														{ value: "plan", label: t("runtimePicker.sandboxPlan") },
+														{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
+														{
+															value: "workspace-write",
+															label: t("runtimePicker.sandboxWorkspaceWrite"),
+														},
+														{
+															value: "danger-full-access",
+															label: t("runtimePicker.sandboxFullAccess"),
+														},
+													]}
+												/>
+												{cliEfforts.length > 0 && (
+													<CliOptionSelect
+														aria-label={t("runtimePicker.effort")}
+														value={cliEffort || "__default__"}
+														onValueChange={(value) =>
+															setCliEffort(value === "__default__" ? "" : value)
+														}
+														options={[
+															{
+																value: "__default__",
+																label: t("runtimePicker.effortDefault"),
+																muted: true,
+															},
+															...cliEfforts.map((effort) => ({
+																value: effort,
+																label: t("runtimePicker.effortLevel", { level: effort }),
+															})),
+														]}
+													/>
+												)}
+											</>
+										) : (
+											<PromptToolbar
+												agents={openCodeAgents ?? []}
+												selectedAgent={selectedAgent}
+												defaultAgent={config?.defaultAgent}
+												onSelectAgent={setSelectedAgent}
+												providers={providers}
+												effectiveModel={effectiveModel}
+												hasModelOverride={!!selectedModel}
+												onSelectModel={handleModelSelect}
+												recentModels={recentModels}
+												selectedVariant={selectedVariant}
+												onSelectVariant={setSelectedVariant}
+											/>
+										)}
 									</PromptInputTools>
 								</PromptInputFooter>
 							)}
@@ -945,47 +996,7 @@ export function NewChat() {
 											]}
 										/>
 									)}
-									{isCliRuntime(sessionRuntime) && cliModels.length > 0 && (
-										<CliModelSelect
-											models={cliModels}
-											value={resolvedCliModel ?? ""}
-											onValueChange={(value) => {
-												setCliModel(value)
-												setCliEffort("")
-											}}
-										/>
-									)}
-									{isCliRuntime(sessionRuntime) && (
-										<CliOptionSelect
-											aria-label={t("runtimePicker.sandbox")}
-											value={cliSandbox}
-											onValueChange={(value) => setCliSandbox(value as AgentSandbox)}
-											options={[
-												{ value: "plan", label: t("runtimePicker.sandboxPlan") },
-												{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
-												{
-													value: "workspace-write",
-													label: t("runtimePicker.sandboxWorkspaceWrite"),
-												},
-												{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
-											]}
-										/>
-									)}
-									{isCliRuntime(sessionRuntime) && cliEfforts.length > 0 && (
-										<CliOptionSelect
-											aria-label={t("runtimePicker.effort")}
-											value={cliEffort || "__default__"}
-											onValueChange={(value) => setCliEffort(value === "__default__" ? "" : value)}
-											options={[
-												{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
-												...cliEfforts.map((effort) => ({
-													value: effort,
-													label: t("runtimePicker.effortLevel", { level: effort }),
-												})),
-											]}
-										/>
-									)}
-									{vcs && !isCliRuntime(sessionRuntime) && (
+									{vcs && !isCliSessionRuntime && (
 										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
 									)}
 								</div>
