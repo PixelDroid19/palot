@@ -23,9 +23,11 @@ export function WelcomeStep({ onContinue }: WelcomeStepProps) {
 
 				{/* Description */}
 				<div className="space-y-3">
-					<p className="text-lg text-muted-foreground">Your desktop companion for OpenCode.</p>
+					<p className="text-lg text-muted-foreground">
+						Your native workspace for coding runtimes.
+					</p>
 					<p className="text-sm leading-relaxed text-muted-foreground/70">
-						Palot gives you a native experience for managing OpenCode sessions across all your
+						Palot gives you a native experience for managing coding sessions across all your
 						projects, with real-time streaming, native notifications, and multi-session support.
 					</p>
 				</div>

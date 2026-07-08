@@ -96,7 +96,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		])
 
 		try {
-			// Step 1: Check OpenCode installation
+			// Step 1: Check managed runtime installation
 			const result = await window.palot.onboarding.checkOpenCode()
 			setOpenCodeResult(result)
 
@@ -337,8 +337,8 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 					>
 						<p className="text-sm text-muted-foreground">
 							{needsUpdate
-								? "Your OpenCode version is too old. Update to continue."
-								: "Palot needs a managed runtime available for local managed sessions. Install OpenCode to continue."}
+								? "Your managed runtime version is too old. Update to continue."
+								: "Palot needs a managed runtime available for local sessions. Install OpenCode to continue."}
 						</p>
 						<div className="flex gap-2">
 							<Button size="sm" onClick={handleInstall} className="gap-2">

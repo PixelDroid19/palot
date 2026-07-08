@@ -2,7 +2,7 @@
  * Onboarding: Provider Setup.
  *
  * Allows users to connect AI providers during onboarding.
- * OpenCode Zen is featured prominently as the built-in provider with free models.
+ * The bundled Zen provider is featured prominently because it includes free models.
  * Reuses ConnectProviderDialog for the actual auth flows.
  */
 
@@ -119,8 +119,8 @@ export function ProviderSetupStep({ onComplete, onSkip }: ProviderSetupStepProps
 				</motion.div>
 				<h2 className="text-2xl font-bold tracking-tight">AI Providers</h2>
 				<p className="text-muted-foreground">
-					Free models are included with OpenCode Zen. Connect additional providers for more model
-					choices.
+					Free models are available through the bundled Zen provider. Connect additional
+					providers for more model choices.
 				</p>
 			</div>
 

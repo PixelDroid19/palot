@@ -2,7 +2,7 @@
  * Onboarding: Complete / Ready.
  *
  * Shows a success state, quick tips, and optional prompts to migrate
- * from detected providers (Claude Code, Cursor, OpenCode). Migration
+ * from detected providers (Claude Code, Cursor, OpenCode). Import
  * cards only appear for providers that have config on disk and haven't
  * already been migrated.
  */
@@ -57,8 +57,7 @@ export function CompleteStep({
 		window.palot.onboarding
 			.detectProviders()
 			.then((detections) => {
-				// Only show providers that were found and aren't OpenCode itself
-				// (no point migrating OpenCode -> OpenCode)
+				// Only show providers that were found and aren't the managed runtime itself.
 				setProviders(detections.filter((d) => d.found && !isManagedRuntimeId(d.provider)))
 				setDetecting(false)
 			})
@@ -102,7 +101,7 @@ export function CompleteStep({
 					<h2 className="text-2xl font-semibold text-foreground">You're all set.</h2>
 					<p className="text-sm text-muted-foreground">
 						{managedRuntimeVersion
-							? `Palot's managed runtime is ready (OpenCode ${formatVersion(managedRuntimeVersion)})`
+							? `Palot is ready (managed runtime: OpenCode ${formatVersion(managedRuntimeVersion)})`
 							: "Palot is ready to go"}
 						{hasMigrated ? " and your configuration has been migrated." : "."}
 					</p>
