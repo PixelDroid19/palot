@@ -12,6 +12,7 @@ import type { AgentRuntimeDescriptor, AgentRuntimeId } from "../../preload/api"
 
 export type SessionRuntimeId = "opencode" | AgentRuntimeId
 export const DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = "opencode"
+export const MANAGED_RUNTIME_LABEL = "OpenCode"
 export interface SessionRuntimeOption {
 	value: SessionRuntimeId
 	label: string
@@ -57,13 +58,17 @@ export function runtimeDescriptor(id: SessionRuntimeId): AgentRuntimeDescriptor 
 	return runtimeDescriptors().find((d) => d.id === id)
 }
 
+export function isManagedRuntimeId(id: string): id is typeof DEFAULT_SESSION_RUNTIME_ID {
+	return id === DEFAULT_SESSION_RUNTIME_ID
+}
+
 export function isCliRuntime(id: SessionRuntimeId): id is AgentRuntimeId {
-	return id !== "opencode"
+	return !isManagedRuntimeId(id)
 }
 
 /** Human label for a runtime id (falls back to the id itself). */
 export function runtimeLabel(id: SessionRuntimeId): string {
-	if (id === "opencode") return "OpenCode"
+	if (isManagedRuntimeId(id)) return MANAGED_RUNTIME_LABEL
 	return runtimeDescriptor(id)?.displayName ?? id
 }
 

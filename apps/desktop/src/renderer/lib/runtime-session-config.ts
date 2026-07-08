@@ -6,6 +6,7 @@ import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-opencode-data"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
+	isManagedRuntimeId,
 	type SessionRuntimeId,
 } from "./session-runtimes"
 import { persistCliRuntimeSession } from "../services/runtime-cli-store"
@@ -125,6 +126,12 @@ export function sessionRuntimeCapabilities(
 	return runtimeIdCapabilities(state.runtime)
 }
 
+function isManagedRuntimeSelection(
+	selection: RuntimeSelectionPersistence,
+): selection is OpenCodeRuntimeSelection {
+	return isManagedRuntimeId(selection.runtime)
+}
+
 export function readProjectRuntimePreference(
 	directory: string | null | undefined,
 ): PersistedModelRef | null {
@@ -204,7 +211,7 @@ export function persistRuntimeSelection(
 ): void {
 	if (!selection) return
 
-	if (selection.runtime === "opencode") {
+	if (isManagedRuntimeSelection(selection)) {
 		appStore.set(setProjectModelAtom, {
 			directory: selection.directory,
 			model: selection.model,

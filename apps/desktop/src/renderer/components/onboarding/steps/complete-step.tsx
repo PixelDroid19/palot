@@ -14,6 +14,7 @@ import { ArrowRightIcon, CheckCircle2Icon, CommandIcon, FlaskConicalIcon } from 
 import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import type { MigrationProvider, MigrationResult, ProviderDetection } from "../../../../preload/api"
+import { isManagedRuntimeId } from "../../../lib/session-runtimes"
 
 // ============================================================
 // Types
@@ -58,7 +59,7 @@ export function CompleteStep({
 			.then((detections) => {
 				// Only show providers that were found and aren't OpenCode itself
 				// (no point migrating OpenCode -> OpenCode)
-				setProviders(detections.filter((d) => d.found && d.provider !== "opencode"))
+				setProviders(detections.filter((d) => d.found && !isManagedRuntimeId(d.provider)))
 				setDetecting(false)
 			})
 			.catch(() => {

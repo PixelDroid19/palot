@@ -1,4 +1,5 @@
 import type { AgentCliDetection } from "../../preload/api"
+import { isManagedRuntimeId } from "../lib/session-runtimes"
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 
@@ -27,7 +28,7 @@ function normalizeRuntimeStatus(
 	cli: AgentCliDetection,
 	openCode: Awaited<ReturnType<typeof window.palot.onboarding.checkOpenCode>>,
 ): RuntimeSetupStatus {
-	if (cli.id === "opencode") {
+	if (isManagedRuntimeId(cli.id)) {
 		return {
 			id: cli.id,
 			displayName: cli.displayName,
