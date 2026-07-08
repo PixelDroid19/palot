@@ -1,5 +1,5 @@
 /**
- * Neutral facade over the current managed runtime implementation.
- * OpenCode backs this today, but renderer imports should prefer this module.
+ * Compatibility shim: legacy imports still resolve here, but the neutral
+ * surface lives in `project-runtime.ts`.
  */
-export * from "./opencode"
+export * from "./project-runtime"
