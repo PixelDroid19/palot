@@ -29,6 +29,7 @@ import {
 	replyOpenCodeQuestion,
 	respondOpenCodePermission,
 } from "../services/runtime-session-actions"
+import { createOpenCodeSession } from "../services/runtime-session-launch"
 
 const log = createLogger("use-server")
 
@@ -179,15 +180,9 @@ export function useAgentActions() {
 	)
 
 	const createSession = useCallback(async (directory: string, title?: string) => {
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("createSession", { directory, title })
 		try {
-			const result = await client.session.create({ title })
-			const session = result.data
-			if (session) {
-				appStore.set(upsertSessionAtom, { session, directory })
-			}
+			const session = await createOpenCodeSession(directory, title)
 			log.debug("createSession succeeded", { sessionId: session?.id })
 			return session
 		} catch (err) {

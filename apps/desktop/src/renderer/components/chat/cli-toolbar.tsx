@@ -21,13 +21,9 @@ import { useNavigate, useParams } from "@tanstack/react-router"
 import { CheckIcon, ChevronDownIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
-import { useAgentActions } from "../../hooks/use-server"
 import { useTranslation } from "../../i18n/use-translation"
 import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
-import {
-	switchCliRuntime,
-	switchCliSessionToOpenCode,
-} from "../../services/cli-chat"
+import { switchRuntimeSession } from "../../services/runtime-session-launch"
 import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
 const TOOLBAR_TRIGGER_BASE_CN =
@@ -243,7 +239,6 @@ export function SessionRuntimeSwitch({
 	const { t } = useTranslation()
 	const navigate = useNavigate()
 	const params = useParams({ strict: false }) as { projectSlug?: string }
-	const { createSession } = useAgentActions()
 	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
 	useEffect(() => {
 		loadRuntimeDescriptors().then((all) => setRuntimes(all.filter((d) => d.installed)))
@@ -252,19 +247,13 @@ export function SessionRuntimeSwitch({
 
 	const switchTo = async (target: string) => {
 		if (target === current) return
-		if (target === "opencode") {
-			const newId = await switchCliSessionToOpenCode(sessionId, (directory, title) =>
-				createSession(directory, title),
-			)
-			if (newId && params.projectSlug) {
-				navigate({
-					to: "/project/$projectSlug/session/$sessionId",
-					params: { projectSlug: params.projectSlug, sessionId: newId },
-				})
-			}
-			return
+		const nextId = await switchRuntimeSession(sessionId, target)
+		if (nextId && nextId !== sessionId && params.projectSlug) {
+			navigate({
+				to: "/project/$projectSlug/session/$sessionId",
+				params: { projectSlug: params.projectSlug, sessionId: nextId },
+			})
 		}
-		await switchCliRuntime(sessionId, target)
 	}
 
 	return (

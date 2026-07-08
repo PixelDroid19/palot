@@ -49,7 +49,6 @@ import {
 } from "../hooks/use-opencode-data"
 import { useAgentActions } from "../hooks/use-server"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../preload/api"
-import { createCliSession } from "../services/cli-chat"
 import type { FileAttachment } from "../lib/types"
 import { useTranslation } from "../i18n/use-translation"
 import {
@@ -67,6 +66,10 @@ import {
 	resolveRuntimeEffort,
 	resolveRuntimeModel,
 } from "../lib/runtime-model-selection"
+import {
+	createCliRuntimeSession,
+	createOpenCodeSession,
+} from "../services/runtime-session-launch"
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
@@ -263,7 +266,7 @@ function saveCliPrefs(runtimeId: string, prefs: CliRuntimePrefs): void {
 export function NewChat() {
 	const { projectSlug } = useParams({ strict: false })
 	const projects = useProjectList()
-	const { createSession, sendPrompt } = useAgentActions()
+	const { sendPrompt } = useAgentActions()
 	const navigate = useNavigate()
 
 	// Inject app name into the AppBar
@@ -627,7 +630,7 @@ export function NewChat() {
 	/** Launch a session in local mode (no worktree). */
 	const launchLocal = useCallback(
 		async (promptText: string, files?: FileAttachment[]) => {
-			const session = await createSession(selectedDirectory)
+			const session = await createOpenCodeSession(selectedDirectory)
 			if (!session) return
 
 			const currentBranch = vcs?.branch ?? ""
@@ -649,7 +652,6 @@ export function NewChat() {
 		},
 		[
 			selectedDirectory,
-			createSession,
 			sendPrompt,
 			effectiveModel,
 			selectedAgent,
@@ -710,7 +712,7 @@ export function NewChat() {
 						sessionId: stubId,
 						setupPhase: "starting-session",
 					})
-					const session = await createSession(sdkDirectory)
+					const session = await createOpenCodeSession(sdkDirectory)
 					if (!session) {
 						throw new Error("Failed to create session in worktree")
 					}
@@ -756,7 +758,6 @@ export function NewChat() {
 		},
 		[
 			selectedDirectory,
-			createSession,
 			sendPrompt,
 			effectiveModel,
 			selectedAgent,
@@ -772,7 +773,7 @@ export function NewChat() {
 		async (promptText: string, files?: FileAttachment[]) => {
 			if (!selectedDirectory || !promptText || !runtimeConfig) return
 			if (runtimeConfig.kind === "cli") {
-				const sessionId = createCliSession({
+				const sessionId = createCliRuntimeSession({
 					directory: selectedDirectory,
 					runtimeId: runtimeConfig.runtimeId,
 					sandbox: runtimeConfig.sandbox,
