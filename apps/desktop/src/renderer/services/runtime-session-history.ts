@@ -1,6 +1,6 @@
 import { readSessionRuntimeState, sessionRuntimeCapabilities } from "../lib/runtime-session-config"
 import type { Message, Part } from "../lib/types"
-import { getBaseClient, getProjectClient } from "./connection-manager"
+import { requireManagedRuntimeClient } from "./managed-runtime-client"
 
 export interface RuntimeSessionMessageBundle {
 	hasEarlier: boolean
@@ -10,12 +10,6 @@ export interface RuntimeSessionMessageBundle {
 
 function supportsServerHistory(sessionId: string): boolean {
 	return sessionRuntimeCapabilities(readSessionRuntimeState(sessionId)).supportsServerHistory
-}
-
-function requireHistoryClient(directory: string | null) {
-	const client = (directory ? getProjectClient(directory) : null) ?? getBaseClient()
-	if (!client) throw new Error("Not connected to OpenCode server")
-	return client
 }
 
 function toBundle(
@@ -39,7 +33,7 @@ export async function fetchRuntimeSessionMessages(args: {
 		return null
 	}
 
-	const client = requireHistoryClient(args.directory)
+	const client = requireManagedRuntimeClient(args.directory)
 	const result = await client.session.messages({
 		sessionID: args.sessionId,
 		...(args.limit ? { limit: args.limit } : {}),

@@ -4,7 +4,7 @@ import {
 	answerCliRuntimeQuestionRequest,
 	respondCliRuntimePermissionRequest,
 } from "./runtime-cli-store"
-import { getProjectClient } from "./connection-manager"
+import { requireManagedRuntimeProjectClient } from "./managed-runtime-client"
 import { runtimeSessionGateway } from "./runtime-session-gateway"
 
 export async function abortRuntimeSession(directory: string, sessionId: string): Promise<void> {
@@ -29,8 +29,7 @@ export async function respondRuntimePermission(
 	permissionId: string,
 	response: "once" | "always" | "reject",
 ): Promise<void> {
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
+	const client = requireManagedRuntimeProjectClient(directory)
 	await client.permission.respond({
 		sessionID: sessionId,
 		permissionID: permissionId,
@@ -43,8 +42,7 @@ export async function replyRuntimeQuestion(
 	requestId: string,
 	answers: QuestionAnswer[],
 ): Promise<void> {
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
+	const client = requireManagedRuntimeProjectClient(directory)
 	await client.question.reply({ requestID: requestId, answers })
 }
 
@@ -52,8 +50,7 @@ export async function rejectRuntimeQuestion(
 	directory: string,
 	requestId: string,
 ): Promise<void> {
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
+	const client = requireManagedRuntimeProjectClient(directory)
 	await client.question.reject({ requestID: requestId })
 }
 

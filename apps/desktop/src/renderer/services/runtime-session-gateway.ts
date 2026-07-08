@@ -22,7 +22,7 @@ import type {
 	TextPart,
 	UserMessage,
 } from "../lib/types"
-import { getProjectClient } from "./connection-manager"
+import { requireManagedRuntimeProjectClient } from "./managed-runtime-client"
 import {
 	createCliRuntimeSessionState,
 	switchCliRuntimeSession,
@@ -37,12 +37,6 @@ import {
 	interruptCliRuntimeTurn,
 	runCliRuntimeTurn,
 } from "./runtime-cli-turns"
-
-function requireOpenCodeClient(directory: string) {
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	return client
-}
 
 function shouldUseCliRuntime(
 	sessionId: string,
@@ -59,7 +53,7 @@ async function createOpenCodeSession(
 	directory: string,
 	title?: string,
 ): Promise<Session | undefined> {
-	const client = requireOpenCodeClient(directory)
+	const client = requireManagedRuntimeProjectClient(directory)
 	const result = await client.session.create({ title })
 	const session = result.data as Session | undefined
 	if (session) {
@@ -74,7 +68,7 @@ async function promptOpenCodeSession(
 	text: string,
 	options?: RuntimePromptOptions,
 ): Promise<void> {
-	const client = requireOpenCodeClient(directory)
+	const client = requireManagedRuntimeProjectClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
 	const openCodeOptions = resolveOpenCodePromptOptions(readSessionRuntimeState(sessionId), options)
 	const optimisticMessage: UserMessage & { variant?: string } = {
@@ -209,7 +203,7 @@ export const runtimeSessionGateway = {
 			return
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		await client.session.abort({ sessionID: sessionId })
 	},
 	async renameSession(
@@ -230,7 +224,7 @@ export const runtimeSessionGateway = {
 			return
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		await client.session.update({ sessionID: sessionId, title })
 	},
 	async deleteSession(directory: string, sessionId: string): Promise<void> {
@@ -241,7 +235,7 @@ export const runtimeSessionGateway = {
 			return
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		await client.session.delete({ sessionID: sessionId })
 	},
 	async revertSession(
@@ -253,7 +247,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Revert is not supported for CLI sessions")
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		const entry = appStore.get(sessionFamily(sessionId))
 		if (entry?.status?.type === "busy") {
 			await client.session.abort({ sessionID: sessionId })
@@ -265,7 +259,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Undo is not supported for CLI sessions")
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		await client.session.unrevert({ sessionID: sessionId })
 	},
 	async executeCommand(
@@ -278,7 +272,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Slash commands are not supported for CLI sessions")
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		await client.session.command({
 			sessionID: sessionId,
 			command,
@@ -294,7 +288,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Summarize is not supported for CLI sessions")
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		await client.session.summarize({
 			sessionID: sessionId,
 			providerID: model?.providerID,
@@ -311,7 +305,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Deleting parts is not supported for CLI sessions")
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		await client.part.delete({ sessionID: sessionId, messageID: messageId, partID: partId })
 	},
 	async forkSession(
@@ -323,7 +317,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Fork is not supported for CLI sessions")
 		}
 
-		const client = requireOpenCodeClient(directory)
+		const client = requireManagedRuntimeProjectClient(directory)
 		const result = await client.session.fork({
 			sessionID: sessionId,
 			messageID: messageId,
