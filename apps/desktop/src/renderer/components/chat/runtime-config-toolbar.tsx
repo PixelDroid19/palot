@@ -1,5 +1,7 @@
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import { useEffect, useState } from "react"
+import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-managed-runtime-data"
+import { useTranslation } from "../../i18n/use-translation"
 import {
 	availableRuntimeModels,
 	getRuntimeModelEfforts,
@@ -12,71 +14,164 @@ import {
 	useSessionRuntimeState,
 } from "../../lib/runtime-session-config"
 import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
-import { CliPromptToolbar } from "./cli-toolbar"
-import { type PromptToolbarProps, PromptToolbar } from "./prompt-toolbar"
+import { CliModelSelect, CliOptionSelect } from "./cli-toolbar"
+import { AgentSelector, ModelSelector, VariantSelector } from "./prompt-toolbar"
+import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
-interface CliRuntimeConfigToolbarProps {
-	kind: "cli"
+interface ToolbarOption {
+	value: string
+	label: string
+	muted?: boolean
+}
+
+function cliEffortOptions(
+	t: ReturnType<typeof useTranslation>["t"],
+	efforts: string[],
+): ToolbarOption[] {
+	return [
+		{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
+		...efforts.map((effort) => ({
+			value: effort,
+			label: t("runtimePicker.effortLevel", {
+				level: effort.charAt(0).toUpperCase() + effort.slice(1),
+			}),
+		})),
+	]
+}
+
+export interface RuntimeToolbarAgentSection {
+	agents: SdkAgent[]
+	selectedAgent: string | null
+	defaultAgent?: string
+	onSelectAgent: (agentName: string) => void
+	disabled?: boolean
+}
+
+export interface RuntimeToolbarManagedModelSection {
+	providers: ProvidersData | null
+	effectiveModel: ModelRef | null
+	hasOverride: boolean
+	onSelectModel: (model: ModelRef | null) => void
+	recentModels?: ModelRef[]
+	disabled?: boolean
+}
+
+export interface RuntimeToolbarVariantSection {
+	variants: string[]
+	selectedVariant: string | undefined
+	onSelectVariant: (variant: string | undefined) => void
+	disabled?: boolean
+}
+
+export interface RuntimeToolbarCliModelSection {
 	models: AgentRuntimeDescriptor["models"]
-	modelValue: string
-	onModelChange: (value: string) => void
-	sandboxValue: AgentSandbox
-	onSandboxChange: (value: AgentSandbox) => void
+	value: string
+	onValueChange: (value: string) => void
+}
+
+export interface RuntimeToolbarSandboxSection {
+	value: AgentSandbox
+	onValueChange: (value: AgentSandbox) => void
+}
+
+export interface RuntimeToolbarEffortSection {
 	efforts: string[]
-	effortValue: string
-	onEffortChange: (value: string) => void
+	value: string
+	onValueChange: (value: string) => void
 }
 
-interface ManagedRuntimeConfigToolbarProps extends PromptToolbarProps {
-	kind: "managed"
-}
-
-interface CliSessionRuntimeConfigToolbarProps {
-	kind: "cli-session"
-	sessionId: string
+export interface RuntimeToolbarSections {
+	agent?: RuntimeToolbarAgentSection
+	managedModel?: RuntimeToolbarManagedModelSection
+	variant?: RuntimeToolbarVariantSection
+	cliModel?: RuntimeToolbarCliModelSection
+	sandbox?: RuntimeToolbarSandboxSection
+	effort?: RuntimeToolbarEffortSection
 }
 
 export type RuntimeConfigToolbarProps =
-	| CliRuntimeConfigToolbarProps
-	| CliSessionRuntimeConfigToolbarProps
-	| ManagedRuntimeConfigToolbarProps
+	| {
+			sections: RuntimeToolbarSections
+	  }
+	| {
+			sessionId: string
+	  }
+
+function RuntimeToolbarSectionsView({ sections }: { sections: RuntimeToolbarSections }) {
+	const { t } = useTranslation()
+	const hasEffort = (sections.effort?.efforts.length ?? 0) > 0
+
+	return (
+		<SessionConfigToolbarRow
+			items={[
+				sections.agent && (
+					<AgentSelector
+						agents={sections.agent.agents}
+						selectedAgent={sections.agent.selectedAgent}
+						defaultAgent={sections.agent.defaultAgent}
+						onSelectAgent={sections.agent.onSelectAgent}
+						disabled={sections.agent.disabled}
+					/>
+				),
+				sections.managedModel && (
+					<ModelSelector
+						providers={sections.managedModel.providers}
+						effectiveModel={sections.managedModel.effectiveModel}
+						hasOverride={sections.managedModel.hasOverride}
+						onSelectModel={sections.managedModel.onSelectModel}
+						recentModels={sections.managedModel.recentModels}
+						disabled={sections.managedModel.disabled}
+					/>
+				),
+				sections.cliModel && (
+					<CliModelSelect
+						models={sections.cliModel.models}
+						value={sections.cliModel.value}
+						onValueChange={sections.cliModel.onValueChange}
+					/>
+				),
+				sections.variant && (
+					<VariantSelector
+						variants={sections.variant.variants}
+						selectedVariant={sections.variant.selectedVariant}
+						onSelectVariant={sections.variant.onSelectVariant}
+						disabled={sections.variant.disabled}
+					/>
+				),
+				sections.sandbox && (
+					<CliOptionSelect
+						aria-label={t("runtimePicker.sandbox")}
+						value={sections.sandbox.value}
+						onValueChange={(value) => sections.sandbox?.onValueChange(value as AgentSandbox)}
+						options={[
+							{ value: "plan", label: t("runtimePicker.sandboxPlan") },
+							{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
+							{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
+							{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
+						]}
+					/>
+				),
+				hasEffort && sections.effort && (
+					<CliOptionSelect
+						aria-label={t("runtimePicker.effort")}
+						value={sections.effort.value || "__default__"}
+						onValueChange={(value) =>
+							sections.effort?.onValueChange(value === "__default__" ? "" : value)
+						}
+						options={cliEffortOptions(t, sections.effort.efforts)}
+					/>
+				),
+			]}
+		/>
+	)
+}
 
 export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
-	if (props.kind === "cli-session") {
+	if ("sessionId" in props) {
 		return <CliSessionRuntimeConfigToolbar sessionId={props.sessionId} />
 	}
 
-	if (props.kind === "cli") {
-		return (
-			<CliPromptToolbar
-				models={props.models}
-				modelValue={props.modelValue}
-				onModelChange={props.onModelChange}
-				sandboxValue={props.sandboxValue}
-				onSandboxChange={props.onSandboxChange}
-				efforts={props.efforts}
-				effortValue={props.effortValue}
-				onEffortChange={props.onEffortChange}
-			/>
-		)
-	}
-
-	return (
-		<PromptToolbar
-			agents={props.agents}
-			selectedAgent={props.selectedAgent}
-			defaultAgent={props.defaultAgent}
-			onSelectAgent={props.onSelectAgent}
-			providers={props.providers}
-			effectiveModel={props.effectiveModel}
-			hasModelOverride={props.hasModelOverride}
-			onSelectModel={props.onSelectModel}
-			recentModels={props.recentModels}
-			selectedVariant={props.selectedVariant}
-			onSelectVariant={props.onSelectVariant}
-			disabled={props.disabled}
-		/>
-	)
+	return <RuntimeToolbarSectionsView sections={props.sections} />
 }
 
 function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
@@ -122,16 +217,25 @@ function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
 	}
 
 	return (
-		<RuntimeConfigToolbar
-			kind="cli"
-			models={models}
-			modelValue={currentSlug}
-			onModelChange={(value) => apply({ model: value, effort: "" })}
-			sandboxValue={meta.sandbox}
-			onSandboxChange={(value) => apply({ sandbox: value })}
-			efforts={descriptor.capabilities.reasoningEffort ? efforts : []}
-			effortValue={currentEffort}
-			onEffortChange={(value) => apply({ effort: value })}
+		<RuntimeToolbarSectionsView
+			sections={{
+				cliModel: {
+					models,
+					value: currentSlug,
+					onValueChange: (value) => apply({ model: value, effort: "" }),
+				},
+				sandbox: {
+					value: meta.sandbox,
+					onValueChange: (value) => apply({ sandbox: value }),
+				},
+				effort: descriptor.capabilities.reasoningEffort
+					? {
+							efforts,
+							value: currentEffort,
+							onValueChange: (value) => apply({ effort: value }),
+						}
+					: undefined,
+			}}
 		/>
 	)
 }
