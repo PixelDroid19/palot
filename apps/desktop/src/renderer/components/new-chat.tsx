@@ -68,9 +68,10 @@ import {
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
-import { CliOptionSelect, CliPromptToolbar } from "./chat/cli-toolbar"
+import { CliOptionSelect } from "./chat/cli-toolbar"
 import { PromptAttachmentPreview } from "./chat/prompt-attachments"
-import { PromptToolbar, StatusBar } from "./chat/prompt-toolbar"
+import { StatusBar } from "./chat/prompt-toolbar"
+import { RuntimeConfigToolbar } from "./chat/runtime-config-toolbar"
 import { PalotWordmark } from "./palot-wordmark"
 
 // ============================================================
@@ -882,35 +883,37 @@ export function NewChat() {
 							{hasToolbar && (
 								<PromptInputFooter>
 									<PromptInputTools>
-										{isCliSessionRuntime ? (
-											<CliPromptToolbar
-												models={cliModels}
-												modelValue={resolvedCliModel ?? ""}
-												onModelChange={(value) => {
-													setCliModel(value)
-													setCliEffort("")
-												}}
-												sandboxValue={cliSandbox}
-												onSandboxChange={setCliSandbox}
-												efforts={cliEfforts}
-												effortValue={cliEffort}
-												onEffortChange={setCliEffort}
-											/>
-										) : (
-											<PromptToolbar
-												agents={openCodeAgents ?? []}
-												selectedAgent={selectedAgent}
-												defaultAgent={config?.defaultAgent}
-												onSelectAgent={setSelectedAgent}
-												providers={providers}
-												effectiveModel={effectiveModel}
-												hasModelOverride={!!selectedModel}
-												onSelectModel={handleModelSelect}
-												recentModels={recentModels}
-												selectedVariant={selectedVariant}
-												onSelectVariant={setSelectedVariant}
-											/>
-										)}
+										<RuntimeConfigToolbar
+											{...(isCliSessionRuntime
+												? {
+														kind: "cli" as const,
+														models: cliModels,
+														modelValue: resolvedCliModel ?? "",
+														onModelChange: (value: string) => {
+															setCliModel(value)
+															setCliEffort("")
+														},
+														sandboxValue: cliSandbox,
+														onSandboxChange: setCliSandbox,
+														efforts: cliEfforts,
+														effortValue: cliEffort,
+														onEffortChange: setCliEffort,
+													}
+												: {
+														kind: "opencode" as const,
+														agents: openCodeAgents ?? [],
+														selectedAgent,
+														defaultAgent: config?.defaultAgent,
+														onSelectAgent: setSelectedAgent,
+														providers,
+														effectiveModel,
+														hasModelOverride: !!selectedModel,
+														onSelectModel: handleModelSelect,
+														recentModels,
+														selectedVariant,
+														onSelectVariant: setSelectedVariant,
+													})}
+										/>
 									</PromptInputTools>
 								</PromptInputFooter>
 							)}

@@ -92,8 +92,9 @@ import {
 } from "./prompt-mentions"
 import { CliApprovalBar } from "./cli-approval-bar"
 import { CliQuestionBar } from "./cli-question-bar"
-import { CliSessionToolbar, SessionRuntimeSwitch } from "./cli-toolbar"
-import { PromptToolbar, StatusBar } from "./prompt-toolbar"
+import { SessionRuntimeSwitch } from "./cli-toolbar"
+import { StatusBar } from "./prompt-toolbar"
+import { CliSessionToolbar, RuntimeConfigToolbar } from "./runtime-config-toolbar"
 import { SessionTaskList } from "./session-task-list"
 import { SkillPickerDialog } from "./skill-picker-dialog"
 import { SlashCommandPopover, type SlashCommandPopoverHandle } from "./slash-command-popover"
@@ -1457,7 +1458,8 @@ function ChatInputSection({
 												<>
 													<AttachButton disabled={!isConnected} />
 													<SessionRuntimeSwitch sessionId={agent.sessionId} current="opencode" />
-													<PromptToolbar
+													<RuntimeConfigToolbar
+														kind="opencode"
 														agents={openCodeAgents ?? []}
 														selectedAgent={selectedAgent}
 														defaultAgent={config?.defaultAgent}
