@@ -1,7 +1,7 @@
 import type { FileAttachment } from "../lib/types"
 import {
 	cancelCliTurn,
-	consumeManagedRuntimeHandoff,
+	consumeProjectRuntimeHandoff,
 	runCliTurn,
 } from "./cli-chat"
 
@@ -18,7 +18,7 @@ export function interruptCliRuntimeTurn(sessionId: string): void {
 }
 
 export function consumeCliToProjectRuntimeHandoff(sessionId: string): string | null {
-	return consumeManagedRuntimeHandoff(sessionId)
+	return consumeProjectRuntimeHandoff(sessionId)
 }
 
 export const consumeCliToManagedRuntimeHandoff = consumeCliToProjectRuntimeHandoff

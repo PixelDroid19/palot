@@ -85,17 +85,17 @@ export async function switchCliRuntime(
 	log.info("Switched session runtime", { sessionId, runtimeId })
 }
 
-const managedRuntimeHandoffs = new Map<string, string>()
+const projectRuntimeHandoffs = new Map<string, string>()
 
-export function consumeManagedRuntimeHandoff(sessionId: string): string | null {
-	const handoff = managedRuntimeHandoffs.get(sessionId)
-	if (handoff) managedRuntimeHandoffs.delete(sessionId)
+export function consumeProjectRuntimeHandoff(sessionId: string): string | null {
+	const handoff = projectRuntimeHandoffs.get(sessionId)
+	if (handoff) projectRuntimeHandoffs.delete(sessionId)
 	return handoff ?? null
 }
 
-export async function switchCliSessionToManagedRuntime(
+export async function switchCliSessionToProjectRuntime(
 	sessionId: string,
-	createManagedSession: (directory: string, title?: string) => Promise<Session | undefined>,
+	createProjectSession: (directory: string, title?: string) => Promise<Session | undefined>,
 ): Promise<string | null> {
 	const meta = getCliMeta(sessionId)
 	const entry = appStore.get(sessionFamily(sessionId))
@@ -104,7 +104,7 @@ export async function switchCliSessionToManagedRuntime(
 	cancelCliTurn(sessionId)
 	await closeCliSessionBackend(sessionId)
 
-	const created = await createManagedSession(entry.directory, entry.session.title)
+	const created = await createProjectSession(entry.directory, entry.session.title)
 	if (!created) return null
 
 	for (const message of appStore.get(messagesFamily(sessionId))) {
@@ -122,7 +122,7 @@ export async function switchCliSessionToManagedRuntime(
 
 	const history = buildConversationHandoff(sessionId)
 	if (history) {
-		managedRuntimeHandoffs.set(
+		projectRuntimeHandoffs.set(
 			created.id,
 			`Context: this conversation continues from another coding agent. History so far:\n\n<conversation-history>\n${history}\n</conversation-history>\n\nContinue seamlessly.`,
 		)
@@ -130,9 +130,12 @@ export async function switchCliSessionToManagedRuntime(
 
 	await forgetCliSession(sessionId)
 	appStore.set(removeSessionAtom, sessionId)
-	log.info("Switched CLI session to managed runtime", { from: sessionId, to: created.id })
+	log.info("Switched CLI session to project runtime", { from: sessionId, to: created.id })
 	return created.id
 }
+
+export const consumeManagedRuntimeHandoff = consumeProjectRuntimeHandoff
+export const switchCliSessionToManagedRuntime = switchCliSessionToProjectRuntime
 
 export function createCliSession(args: {
 	directory: string

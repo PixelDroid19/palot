@@ -3,7 +3,7 @@ import type { Session } from "../lib/types"
 import {
 	createCliSession,
 	switchCliRuntime,
-	switchCliSessionToManagedRuntime,
+	switchCliSessionToProjectRuntime,
 } from "./cli-chat"
 
 export function createCliRuntimeSessionState(args: {
@@ -28,7 +28,7 @@ export async function switchCliSessionIntoProjectRuntime(
 	sessionId: string,
 	createProjectSession: (directory: string, title?: string) => Promise<Session | undefined>,
 ): Promise<string | null> {
-	return switchCliSessionToManagedRuntime(sessionId, createProjectSession)
+	return switchCliSessionToProjectRuntime(sessionId, createProjectSession)
 }
 
 export const switchCliSessionIntoManagedRuntime = switchCliSessionIntoProjectRuntime
