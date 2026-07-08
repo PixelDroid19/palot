@@ -37,8 +37,7 @@ export function SetupSettings() {
 				<h2 className="text-xl font-semibold">Setup</h2>
 			</div>
 
-			<OpenCodeStatusSection />
-			<OtherClisSection />
+			<RuntimeStatusSection />
 			<MigrationSection />
 			<OnboardingSection />
 		</div>
@@ -46,18 +45,24 @@ export function SetupSettings() {
 }
 
 // ============================================================
-// Other coding-agent CLIs (Codex, Claude Code, Cursor, Gemini)
+// Runtime status
 // ============================================================
 
-function OtherClisSection() {
+function RuntimeStatusSection() {
 	const [clis, setClis] = useState<AgentCliDetection[] | null>(null)
+	const [openCodeResult, setOpenCodeResult] = useState<OpenCodeCheckResult | null>(null)
 	const [loading, setLoading] = useState(false)
 
 	const load = useCallback(async (force = false) => {
 		if (!isElectron) return
 		setLoading(true)
 		try {
-			setClis(await window.palot.agentClis.detect(force))
+			const [detections, opencode] = await Promise.all([
+				window.palot.agentClis.detect(force),
+				window.palot.onboarding.checkOpenCode(),
+			])
+			setClis(detections)
+			setOpenCodeResult(opencode)
 		} finally {
 			setLoading(false)
 		}
@@ -67,13 +72,12 @@ function OtherClisSection() {
 		load()
 	}, [load])
 
-	// OpenCode has its own section above; list the rest here.
-	const others = clis?.filter((c) => c.id !== "opencode") ?? []
+	const runtimes = clis ?? []
 
 	return (
 		<SettingsSection
-			title="Other coding CLIs"
-			description="Palot also detects other coding-agent CLIs on this machine. Installed ones can be used as subagents from Integrations."
+			title="Coding runtimes"
+			description="Palot works with multiple coding runtimes. OpenCode is managed locally; other CLIs are detected on this machine and can be used in runtime flows."
 		>
 			<div className="flex items-center justify-end px-4 pt-3">
 				<Button variant="outline" size="sm" onClick={() => load(true)} disabled={loading} className="gap-1.5">
@@ -81,93 +85,51 @@ function OtherClisSection() {
 					Rescan
 				</Button>
 			</div>
-			{others.map((cli) => (
-				<SettingsRow
-					key={cli.id}
-					label={cli.displayName}
-					description={cli.installed ? (cli.binaryPath ?? "") : cli.installHint}
-				>
-					<div className="flex items-center gap-2">
-						{cli.installed ? (
-							<>
-								{cli.version && (
-									<span className="text-sm text-muted-foreground">v{cli.version}</span>
+			{runtimes.map((cli) => {
+				const isOpenCode = cli.id === "opencode"
+				const description = isOpenCode
+					? (openCodeResult?.path ?? cli.binaryPath ?? "Checking...")
+					: cli.installed
+						? (cli.binaryPath ?? "")
+						: cli.installHint
+				const version = isOpenCode ? openCodeResult?.version : cli.version
+				const showCompatible = isOpenCode ? openCodeResult?.compatible : cli.installed
+				const isInstalled = isOpenCode ? (openCodeResult?.installed ?? cli.installed) : cli.installed
+				const warning = isOpenCode && openCodeResult && !openCodeResult.compatible
+					? openCodeResult.message
+					: null
+
+				return (
+					<div key={cli.id}>
+						<SettingsRow
+							label={cli.displayName}
+							description={description}
+						>
+							<div className="flex items-center gap-2">
+								{loading && !clis ? (
+									<Spinner className="size-3.5" />
+								) : isInstalled ? (
+									<>
+										{version && (
+											<span className="text-sm text-muted-foreground">
+												{version && /^\d+\.\d+/.test(version) ? `v${version}` : version}
+											</span>
+										)}
+										{showCompatible ? (
+											<CheckCircle2Icon className="size-4 text-emerald-500" />
+										) : (
+											<AlertCircleIcon className="size-4 text-amber-500" />
+										)}
+									</>
+								) : (
+									<span className="text-sm text-muted-foreground">Not installed</span>
 								)}
-								<CheckCircle2Icon className="size-4 text-emerald-500" />
-							</>
-						) : (
-							<span className="text-sm text-muted-foreground">Not installed</span>
-						)}
+							</div>
+						</SettingsRow>
+						{warning && <div className="px-4 py-2 text-xs text-amber-500">{warning}</div>}
 					</div>
-				</SettingsRow>
-			))}
-		</SettingsSection>
-	)
-}
-
-// ============================================================
-// OpenCode CLI status
-// ============================================================
-
-function OpenCodeStatusSection() {
-	const [checking, setChecking] = useState(false)
-	const [result, setResult] = useState<OpenCodeCheckResult | null>(null)
-
-	const checkStatus = useCallback(async () => {
-		if (!isElectron) return
-		setChecking(true)
-		try {
-			const r = await window.palot.onboarding.checkOpenCode()
-			setResult(r)
-		} catch {
-			// ignore
-		} finally {
-			setChecking(false)
-		}
-	}, [])
-
-	useEffect(() => {
-		checkStatus()
-	}, [checkStatus])
-
-	return (
-		<SettingsSection title="OpenCode CLI">
-			<SettingsRow label="Version" description={result?.path ?? "Checking..."}>
-				<div className="flex items-center gap-2">
-					{checking ? (
-						<Spinner className="size-3.5" />
-					) : result?.installed ? (
-						<>
-							<span className="text-sm text-muted-foreground">
-								{result.version && /^\d+\.\d+/.test(result.version)
-									? `v${result.version}`
-									: result.version}
-							</span>
-							{result.compatible ? (
-								<CheckCircle2Icon className="size-4 text-emerald-500" />
-							) : (
-								<AlertCircleIcon className="size-4 text-amber-500" />
-							)}
-						</>
-					) : (
-						<span className="text-sm text-red-500">Not found</span>
-					)}
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={checkStatus}
-						disabled={checking}
-						className="gap-1.5"
-					>
-						<RefreshCwIcon aria-hidden="true" className="size-3" />
-						Check
-					</Button>
-				</div>
-			</SettingsRow>
-
-			{result && !result.compatible && result.message && (
-				<div className="px-4 py-2 text-xs text-amber-500">{result.message}</div>
-			)}
+				)
+			})}
 		</SettingsSection>
 	)
 }
