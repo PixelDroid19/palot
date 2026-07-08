@@ -50,7 +50,7 @@ interface ChatInputProps {
 	onStop?: (agent: Agent) => Promise<void>
 	providers?: ProvidersData | null
 	config?: ConfigData | null
-	openCodeAgents?: SdkAgent[]
+	managedRuntimeAgents?: SdkAgent[]
 	onSkillsOpen: () => void
 	onScrollToBottom: (behavior?: "instant" | "smooth") => void
 	handleSlashCommand: (text: string) => Promise<boolean>
@@ -164,7 +164,7 @@ export function ChatInput({
 	onStop,
 	providers,
 	config,
-	openCodeAgents,
+	managedRuntimeAgents,
 	onSkillsOpen,
 	onScrollToBottom,
 	handleSlashCommand,
@@ -187,7 +187,7 @@ export function ChatInput({
 
 	const effectiveModel = resolveEffectiveModel(
 		selectedModel,
-		openCodeAgents?.find((a) => a.name === (selectedAgent ?? config?.defaultAgent)) ?? null,
+		managedRuntimeAgents?.find((a) => a.name === (selectedAgent ?? config?.defaultAgent)) ?? null,
 		config?.model,
 		providers?.defaults ?? {},
 		providers?.providers ?? [],
@@ -350,7 +350,7 @@ export function ChatInput({
 					query={mentionQuery}
 					open={mentionOpen}
 					directory={agent.directory}
-					agents={openCodeAgents ?? []}
+					agents={managedRuntimeAgents ?? []}
 					onSelect={handleMentionSelect}
 					onClose={() => setMentionOpen(false)}
 				/>
@@ -387,7 +387,7 @@ export function ChatInput({
 						<PromptInputTools>
 							<AttachButton disabled={!isConnected} />
 							<PromptToolbar
-								agents={openCodeAgents ?? []}
+								agents={managedRuntimeAgents ?? []}
 								selectedAgent={selectedAgent}
 								defaultAgent={config?.defaultAgent}
 								onSelectAgent={(a) => startTransition(() => setSelectedAgent(a))}

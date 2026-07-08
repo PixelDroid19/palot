@@ -24,7 +24,10 @@ import {
 	XCircleIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { OpenCodeCheckResult, RemoteServerConfig } from "../../../../preload/api"
+import type {
+	OpenCodeCheckResult as ManagedRuntimeCheckResult,
+	RemoteServerConfig,
+} from "../../../../preload/api"
 import { discoveredMdnsServersAtom } from "../../../atoms/connection"
 import { useServerActions } from "../../../hooks/use-servers"
 
@@ -55,7 +58,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		{ id: "locate", label: "Locating managed runtime CLI", status: "pending" },
 		{ id: "version", label: "Checking version compatibility", status: "pending" },
 	])
-	const [openCodeResult, setOpenCodeResult] = useState<OpenCodeCheckResult | null>(null)
+	const [managedRuntimeResult, setManagedRuntimeResult] = useState<ManagedRuntimeCheckResult | null>(null)
 	const [installing, setInstalling] = useState(false)
 	const [installOutput, setInstallOutput] = useState<string[]>([])
 	const [allDone, setAllDone] = useState(false)
@@ -89,7 +92,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 
 		// Reset
 		setAllDone(false)
-		setOpenCodeResult(null)
+		setManagedRuntimeResult(null)
 		setChecks([
 			{ id: "locate", label: "Locating managed runtime CLI", status: "running" },
 			{ id: "version", label: "Checking version compatibility", status: "pending" },
@@ -98,7 +101,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		try {
 			// Step 1: Check managed runtime installation
 			const result = await window.palot.onboarding.checkOpenCode()
-			setOpenCodeResult(result)
+			setManagedRuntimeResult(result)
 
 			if (!result.installed) {
 				updateCheck("locate", {
@@ -292,8 +295,8 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 
 	// --- Render ---
 
-	const needsInstall = openCodeResult && !openCodeResult.installed
-	const needsUpdate = openCodeResult?.compatibility === "too-old"
+	const needsInstall = managedRuntimeResult && !managedRuntimeResult.installed
+	const needsUpdate = managedRuntimeResult?.compatibility === "too-old"
 	const showInstallUI = needsInstall || needsUpdate
 	const showRemoteOption = showInstallUI && !installing
 	const manualUrlValid = manualUrl.trim().length > 0
@@ -577,7 +580,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 					{allDone && (
 						<Button
 							size="default"
-							onClick={() => onComplete(openCodeResult?.version ?? null)}
+							onClick={() => onComplete(managedRuntimeResult?.version ?? null)}
 							className="gap-2"
 						>
 							Continue

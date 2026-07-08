@@ -238,15 +238,15 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			options?: RuntimePromptOptions,
 		) => {
 			const promptRuntime = resolvePromptRuntime(runtimeState, options)
-			const openCodeOptions = resolveManagedRuntimePromptOptions(runtimeState, options)
+			const managedOptions = resolveManagedRuntimePromptOptions(runtimeState, options)
 			log.debug("handleSendMessage", {
 				sessionId: agent.sessionId,
 				directory: agent.directory,
 				messageLength: message.length,
 				runtime: promptRuntime,
-				model: openCodeOptions?.model,
-				agentName: openCodeOptions?.agentName,
-				variant: openCodeOptions?.variant,
+				model: managedOptions?.model,
+				agentName: managedOptions?.agentName,
+				variant: managedOptions?.variant,
 			})
 			try {
 				await sendPrompt(agent.directory, agent.sessionId, message, options)
