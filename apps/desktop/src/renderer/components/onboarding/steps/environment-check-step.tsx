@@ -1,8 +1,8 @@
 /**
  * Onboarding Step 2: Environment Check.
  *
- * Verifies OpenCode CLI is installed and compatible. Offers install/update
- * if needed. When OpenCode is not found locally, shows any mDNS-discovered
+ * Verifies the managed runtime CLI (OpenCode) is installed and compatible. Offers install/update
+ * if needed. When Managed runtime is not found locally, shows any mDNS-discovered
  * servers on the network as an alternative connection path.
  */
 
@@ -52,7 +52,7 @@ interface EnvironmentCheckStepProps {
 
 export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckStepProps) {
 	const [checks, setChecks] = useState<CheckItem[]>([
-		{ id: "locate", label: "Locating OpenCode CLI", status: "pending" },
+		{ id: "locate", label: "Locating managed runtime CLI", status: "pending" },
 		{ id: "version", label: "Checking version compatibility", status: "pending" },
 	])
 	const [openCodeResult, setOpenCodeResult] = useState<OpenCodeCheckResult | null>(null)
@@ -91,7 +91,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		setAllDone(false)
 		setOpenCodeResult(null)
 		setChecks([
-			{ id: "locate", label: "Locating OpenCode CLI", status: "running" },
+			{ id: "locate", label: "Locating managed runtime CLI", status: "running" },
 			{ id: "version", label: "Checking version compatibility", status: "pending" },
 		])
 
@@ -103,15 +103,15 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 			if (!result.installed) {
 				updateCheck("locate", {
 					status: "error",
-					label: "OpenCode CLI not found",
-					detail: "Install OpenCode to continue",
+					label: "Managed runtime CLI not found",
+					detail: "Install the managed runtime CLI to continue",
 				})
 				return
 			}
 
 			updateCheck("locate", {
 				status: "success",
-				label: `OpenCode ${result.version} found`,
+				label: `Managed runtime ${result.version} found`,
 				detail: result.path ?? undefined,
 			})
 
@@ -338,7 +338,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 						<p className="text-sm text-muted-foreground">
 							{needsUpdate
 								? "Your OpenCode version is too old. Update to continue."
-								: "Palot needs the OpenCode CLI to function. Install it to continue."}
+								: "Palot needs a managed runtime available for local managed sessions. Install OpenCode to continue."}
 						</p>
 						<div className="flex gap-2">
 							<Button size="sm" onClick={handleInstall} className="gap-2">
@@ -369,7 +369,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 							<p className="text-sm font-medium text-foreground">Or connect to a remote server</p>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Connect to an OpenCode server running on another machine instead of installing
+							Connect to a managed runtime running on another machine instead of installing locally
 							locally.
 						</p>
 

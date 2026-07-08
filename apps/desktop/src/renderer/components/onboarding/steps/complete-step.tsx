@@ -21,7 +21,7 @@ import { isManagedRuntimeId } from "../../../lib/session-runtimes"
 // ============================================================
 
 interface CompleteStepProps {
-	opencodeVersion: string | null
+	managedRuntimeVersion: string | null
 	migratedProviders: string[]
 	migrationResult: MigrationResult | null
 	onStartMigration: (provider: MigrationProvider) => void
@@ -36,7 +36,7 @@ const isElectron = typeof window !== "undefined" && "palot" in window
 const isMac = isElectron && window.palot.platform === "darwin"
 
 export function CompleteStep({
-	opencodeVersion,
+	managedRuntimeVersion,
 	migratedProviders,
 	migrationResult,
 	onStartMigration,
@@ -101,8 +101,8 @@ export function CompleteStep({
 				>
 					<h2 className="text-2xl font-semibold text-foreground">You're all set.</h2>
 					<p className="text-sm text-muted-foreground">
-						{opencodeVersion
-							? `Palot's managed runtime is ready (OpenCode ${formatVersion(opencodeVersion)})`
+						{managedRuntimeVersion
+							? `Palot's managed runtime is ready (OpenCode ${formatVersion(managedRuntimeVersion)})`
 							: "Palot is ready to go"}
 						{hasMigrated ? " and your configuration has been migrated." : "."}
 					</p>

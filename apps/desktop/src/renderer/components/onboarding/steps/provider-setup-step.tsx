@@ -92,9 +92,9 @@ export function ProviderSetupStep({ onComplete, onSkip }: ProviderSetupStepProps
 			<div className="flex h-full flex-col items-center justify-center space-y-6 text-center">
 				<div className="flex flex-col items-center space-y-2">
 					<Spinner className="size-8 text-muted-foreground" />
-					<h2 className="text-xl font-semibold">Waiting for OpenCode server...</h2>
+					<h2 className="text-xl font-semibold">Waiting for managed runtime...</h2>
 					<p className="max-w-md text-sm text-muted-foreground">
-						Palot is connecting to the OpenCode background process. This should only take a moment.
+						Palot is connecting to the managed runtime background process. This should only take a moment.
 					</p>
 				</div>
 				<div className="flex gap-3">
