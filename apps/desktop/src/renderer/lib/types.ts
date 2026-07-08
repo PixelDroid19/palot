@@ -38,6 +38,7 @@ export type {
 	UserMessage,
 } from "@opencode-ai/sdk/v2/client"
 
+export type { ProjectRuntimeProject }
 export type { ProjectRuntimeProject as ManagedRuntimeProject }
 
 /**
@@ -94,7 +95,7 @@ export type EnvironmentType = "local" | "cloud" | "vm"
 /** Derived agent status for UI display, mapped from SessionStatus */
 export type AgentStatus = "running" | "waiting" | "paused" | "completed" | "failed" | "idle"
 
-/** Project in the sidebar — aggregates from managed runtime projects */
+/** Project in the sidebar — aggregates from project runtime projects */
 export interface ProjectInfo {
 	id: string
 	name: string
@@ -104,7 +105,7 @@ export interface ProjectInfo {
 
 /** Enriched project for the unified sidebar (includes directory for auto-start) */
 export interface SidebarProject {
-	/** Managed runtime project ID (root commit hash) or hash of directory as fallback */
+	/** Project runtime project ID (root commit hash) or hash of directory as fallback */
 	id: string
 	/** URL-safe slug: always `{name}-{id.slice(0,12)}` for stability */
 	slug: string

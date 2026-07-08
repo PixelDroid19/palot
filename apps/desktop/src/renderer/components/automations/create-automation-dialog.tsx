@@ -41,9 +41,9 @@ import type { Automation } from "../../../preload/api"
 import { activeServerConfigAtom } from "../../atoms/connection"
 import { discoveryProjectsAtom } from "../../atoms/discovery"
 import {
-	useManagedRuntimeAgents,
-	useManagedRuntimeModelState,
-	useManagedRuntimeProviders,
+	useProjectRuntimeAgents,
+	useProjectRuntimeModelState,
+	useProjectRuntimeProviders,
 } from "../../hooks/use-project-runtime-data"
 import {
 	createAutomation,
@@ -123,9 +123,9 @@ export function CreateAutomationDialog({
 	// the same pattern used by the new-chat screen.
 	const directory = workspaces[0] ?? null
 
-	const { data: providers } = useManagedRuntimeProviders(directory)
-	const { agents } = useManagedRuntimeAgents(directory)
-	const { recentModels } = useManagedRuntimeModelState()
+	const { data: providers } = useProjectRuntimeProviders(directory)
+	const { agents } = useProjectRuntimeAgents(directory)
+	const { recentModels } = useProjectRuntimeModelState()
 
 	// Compute available variants for the selected model
 	const variants = useMemo(() => {
