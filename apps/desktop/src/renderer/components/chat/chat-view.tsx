@@ -69,7 +69,10 @@ import {
 } from "../../lib/runtime-session-config"
 import { computeTurnWorkTimeSplit, formatWorkDuration } from "../../lib/session-metrics"
 import type { Agent, FileAttachment, FilePart, QuestionAnswer, TextPart } from "../../lib/types"
-import { getProjectClient } from "../../services/connection-manager"
+import {
+	executeRuntimeCommand,
+	summarizeRuntimeSession,
+} from "../../services/runtime-session-actions"
 
 const log = createLogger("chat-view")
 
@@ -1075,18 +1078,14 @@ function ChatInputSection({
 					return true
 				case "compact":
 				case "summarize":
-					if (agent.directory && effectiveModel) {
-						const client = getProjectClient(agent.directory)
-						if (client) {
-							try {
-								await client.session.summarize({
-									sessionID: agent.sessionId,
-									providerID: effectiveModel.providerID,
-									modelID: effectiveModel.modelID,
-								})
-							} catch (err) {
-								log.error("session.summarize failed", { sessionId: agent.sessionId }, err)
-							}
+					if (runtimeState.runtime === "opencode" && agent.directory && effectiveModel) {
+						try {
+							await summarizeRuntimeSession(agent.directory, agent.sessionId, {
+								providerID: effectiveModel.providerID,
+								modelID: effectiveModel.modelID,
+							})
+						} catch (err) {
+							log.error("session.summarize failed", { sessionId: agent.sessionId }, err)
 						}
 					}
 					return true
@@ -1094,25 +1093,18 @@ function ChatInputSection({
 					break
 			}
 
-			if (agent.directory) {
-				const client = getProjectClient(agent.directory)
-				if (client) {
-					try {
-						await client.session.command({
-							sessionID: agent.sessionId,
-							command: cmdName,
-							arguments: cmdArgs,
-						})
-						return true
-					} catch {
-						// Not a recognized server command
-					}
+			if (runtimeState.runtime === "opencode" && agent.directory) {
+				try {
+					await executeRuntimeCommand(agent.directory, agent.sessionId, cmdName, cmdArgs)
+					return true
+				} catch {
+					// Not a recognized server command
 				}
 			}
 
 			return false
 		},
-		[agent, onUndo, onRedo, effectiveModel],
+		[agent, onUndo, onRedo, effectiveModel, runtimeState.runtime],
 	)
 
 	const handleSend = useCallback(

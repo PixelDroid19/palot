@@ -3,7 +3,6 @@ import { useCallback } from "react"
 import { connectionAtom } from "../atoms/connection"
 import { upsertMessageAtom } from "../atoms/messages"
 import { upsertPartAtom } from "../atoms/parts"
-import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
@@ -23,11 +22,17 @@ import type {
 import { getProjectClient } from "../services/connection-manager"
 import {
 	abortRuntimeSession,
+	deleteRuntimePart,
 	deleteRuntimeSession,
+	executeRuntimeCommand,
+	forkRuntimeSession,
 	rejectOpenCodeQuestion,
 	renameRuntimeSession,
+	revertRuntimeSession,
 	replyOpenCodeQuestion,
 	respondOpenCodePermission,
+	summarizeRuntimeSession,
+	unrevertRuntimeSession,
 } from "../services/runtime-session-actions"
 import { createOpenCodeSession } from "../services/runtime-session-launch"
 
@@ -254,16 +259,9 @@ export function useAgentActions() {
 	}, [])
 
 	const revert = useCallback(async (directory: string, sessionId: string, messageId: string) => {
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("revert", { sessionId, messageId })
 		try {
-			const entry = appStore.get(sessionFamily(sessionId))
-			if (entry?.status?.type === "busy") {
-				log.debug("revert: aborting busy session first", { sessionId })
-				await client.session.abort({ sessionID: sessionId })
-			}
-			await client.session.revert({ sessionID: sessionId, messageID: messageId })
+			await revertRuntimeSession(directory, sessionId, messageId)
 		} catch (err) {
 			log.error("revert failed", { sessionId, messageId }, err)
 			throw err
@@ -271,11 +269,9 @@ export function useAgentActions() {
 	}, [])
 
 	const unrevert = useCallback(async (directory: string, sessionId: string) => {
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("unrevert", { sessionId })
 		try {
-			await client.session.unrevert({ sessionID: sessionId })
+			await unrevertRuntimeSession(directory, sessionId)
 		} catch (err) {
 			log.error("unrevert failed", { sessionId }, err)
 			throw err
@@ -284,15 +280,9 @@ export function useAgentActions() {
 
 	const executeCommand = useCallback(
 		async (directory: string, sessionId: string, command: string, args: string) => {
-			const client = getProjectClient(directory)
-			if (!client) throw new Error("Not connected to OpenCode server")
 			log.debug("executeCommand", { sessionId, command })
 			try {
-				await client.session.command({
-					sessionID: sessionId,
-					command,
-					arguments: args,
-				})
+				await executeRuntimeCommand(directory, sessionId, command, args)
 			} catch (err) {
 				log.error("executeCommand failed", { sessionId, command }, err)
 				throw err
@@ -302,11 +292,9 @@ export function useAgentActions() {
 	)
 
 	const summarize = useCallback(async (directory: string, sessionId: string) => {
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("summarize", { sessionId })
 		try {
-			await client.session.summarize({ sessionID: sessionId })
+			await summarizeRuntimeSession(directory, sessionId)
 		} catch (err) {
 			log.error("summarize failed", { sessionId }, err)
 			throw err
@@ -315,11 +303,9 @@ export function useAgentActions() {
 
 	const deletePart = useCallback(
 		async (directory: string, sessionId: string, messageId: string, partId: string) => {
-			const client = getProjectClient(directory)
-			if (!client) throw new Error("Not connected to OpenCode server")
 			log.debug("deletePart", { sessionId, messageId, partId })
 			try {
-				await client.part.delete({ sessionID: sessionId, messageID: messageId, partID: partId })
+				await deleteRuntimePart(directory, sessionId, messageId, partId)
 			} catch (err) {
 				log.error("deletePart failed", { sessionId, messageId, partId }, err)
 				throw err
@@ -330,18 +316,9 @@ export function useAgentActions() {
 
 	const forkSession = useCallback(
 		async (directory: string, sessionId: string, messageId?: string): Promise<Session> => {
-			const client = getProjectClient(directory)
-			if (!client) throw new Error("Not connected to OpenCode server")
 			log.debug("forkSession", { sessionId, messageId })
 			try {
-				const result = await client.session.fork({
-					sessionID: sessionId,
-					messageID: messageId,
-				})
-				const session = result.data as Session
-				if (session) {
-					appStore.set(upsertSessionAtom, { session, directory })
-				}
+				const session = await forkRuntimeSession(directory, sessionId, messageId)
 				log.debug("forkSession succeeded", { forkedSessionId: session?.id })
 				return session
 			} catch (err) {
