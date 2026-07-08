@@ -22,18 +22,18 @@ import type {
 	TextPart,
 	UserMessage,
 } from "../lib/types"
-import { requireManagedRuntimeProjectClient } from "./managed-runtime-client"
+import { requireManagedRuntimeProjectClient as requireProjectRuntimeClient } from "./managed-runtime-client"
 import {
 	createCliRuntimeSessionState,
 	switchCliRuntimeSession,
-	switchCliSessionIntoManagedRuntime,
+	switchCliSessionIntoManagedRuntime as switchCliSessionIntoProjectRuntime,
 } from "./runtime-cli-session"
 import {
 	forgetCliRuntimeSession,
 	persistCliRuntimeSession,
 } from "./runtime-cli-store"
 import {
-	consumeCliToManagedRuntimeHandoff,
+	consumeCliToManagedRuntimeHandoff as consumeCliToProjectRuntimeHandoff,
 	interruptCliRuntimeTurn,
 	runCliRuntimeTurn,
 } from "./runtime-cli-turns"
@@ -49,11 +49,11 @@ function isCliSession(sessionId: string): boolean {
 	return isCliRuntimeState(readSessionRuntimeState(sessionId))
 }
 
-async function createManagedRuntimeSession(
+async function createProjectRuntimeSession(
 	directory: string,
 	title?: string,
 ): Promise<Session | undefined> {
-	const client = requireManagedRuntimeProjectClient(directory)
+	const client = requireProjectRuntimeClient(directory)
 	const result = await client.session.create({ title })
 	const session = result.data as Session | undefined
 	if (session) {
@@ -62,15 +62,15 @@ async function createManagedRuntimeSession(
 	return session
 }
 
-async function promptManagedRuntimeSession(
+async function promptProjectRuntimeSession(
 	directory: string,
 	sessionId: string,
 	text: string,
 	options?: RuntimePromptOptions,
 ): Promise<void> {
-	const client = requireManagedRuntimeProjectClient(directory)
+	const client = requireProjectRuntimeClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
-	const managedOptions = resolveProjectRuntimePromptOptions(
+	const projectOptions = resolveProjectRuntimePromptOptions(
 		readSessionRuntimeState(sessionId),
 		options,
 	)
@@ -79,9 +79,9 @@ async function promptManagedRuntimeSession(
 		sessionID: sessionId,
 		role: "user",
 		time: { created: Date.now() },
-		agent: managedOptions?.agentName ?? "build",
-		model: managedOptions?.model ?? { providerID: "", modelID: "" },
-		variant: managedOptions?.variant,
+		agent: projectOptions?.agentName ?? "build",
+		model: projectOptions?.model ?? { providerID: "", modelID: "" },
+		variant: projectOptions?.variant,
 	}
 	appStore.set(upsertMessageAtom, optimisticMessage as UserMessage)
 
@@ -109,7 +109,7 @@ async function promptManagedRuntimeSession(
 	}
 
 	const parts: Array<{ type: "text"; text: string } | FilePartInput> = [{ type: "text", text }]
-	const handoff = consumeCliToManagedRuntimeHandoff(sessionId)
+	const handoff = consumeCliToProjectRuntimeHandoff(sessionId)
 	if (handoff) parts.unshift({ type: "text", text: handoff })
 	for (const file of files) {
 		parts.push({
@@ -123,14 +123,14 @@ async function promptManagedRuntimeSession(
 	await client.session.promptAsync({
 		sessionID: sessionId,
 		parts,
-		model: managedOptions?.model
+		model: projectOptions?.model
 			? {
-					providerID: managedOptions.model.providerID,
-					modelID: managedOptions.model.modelID,
+					providerID: projectOptions.model.providerID,
+					modelID: projectOptions.model.modelID,
 				}
 			: undefined,
-		agent: managedOptions?.agentName,
-		variant: managedOptions?.variant,
+		agent: projectOptions?.agentName,
+		variant: projectOptions?.variant,
 	})
 }
 
@@ -138,7 +138,7 @@ export type RuntimeSessionCreateRequest =
 	| {
 			directory: string
 			title?: string
-			kind?: "managed"
+			kind?: "project"
 	  }
 	| {
 			directory: string
@@ -155,6 +155,100 @@ export interface RuntimeSessionCreateResult {
 	session?: Session
 }
 
+const projectRuntimeSessionGateway = {
+	createSession: createProjectRuntimeSession,
+	async promptSession(
+		directory: string,
+		sessionId: string,
+		text: string,
+		options?: RuntimePromptOptions,
+	): Promise<void> {
+		await promptProjectRuntimeSession(directory, sessionId, text, options)
+	},
+	async abortSession(directory: string, sessionId: string): Promise<void> {
+		const client = requireProjectRuntimeClient(directory)
+		await client.session.abort({ sessionID: sessionId })
+	},
+	async renameSession(
+		directory: string,
+		sessionId: string,
+		title: string,
+	): Promise<void> {
+		const client = requireProjectRuntimeClient(directory)
+		await client.session.update({ sessionID: sessionId, title })
+	},
+	async deleteSession(directory: string, sessionId: string): Promise<void> {
+		const client = requireProjectRuntimeClient(directory)
+		await client.session.delete({ sessionID: sessionId })
+	},
+	async revertSession(
+		directory: string,
+		sessionId: string,
+		messageId: string,
+	): Promise<void> {
+		const client = requireProjectRuntimeClient(directory)
+		const entry = appStore.get(sessionFamily(sessionId))
+		if (entry?.status?.type === "busy") {
+			await client.session.abort({ sessionID: sessionId })
+		}
+		await client.session.revert({ sessionID: sessionId, messageID: messageId })
+	},
+	async unrevertSession(directory: string, sessionId: string): Promise<void> {
+		const client = requireProjectRuntimeClient(directory)
+		await client.session.unrevert({ sessionID: sessionId })
+	},
+	async executeCommand(
+		directory: string,
+		sessionId: string,
+		command: string,
+		args: string,
+	): Promise<void> {
+		const client = requireProjectRuntimeClient(directory)
+		await client.session.command({
+			sessionID: sessionId,
+			command,
+			arguments: args,
+		})
+	},
+	async summarizeSession(
+		directory: string,
+		sessionId: string,
+		model?: { providerID: string; modelID: string },
+	): Promise<void> {
+		const client = requireProjectRuntimeClient(directory)
+		await client.session.summarize({
+			sessionID: sessionId,
+			providerID: model?.providerID,
+			modelID: model?.modelID,
+		})
+	},
+	async deletePart(
+		directory: string,
+		sessionId: string,
+		messageId: string,
+		partId: string,
+	): Promise<void> {
+		const client = requireProjectRuntimeClient(directory)
+		await client.part.delete({ sessionID: sessionId, messageID: messageId, partID: partId })
+	},
+	async forkSession(
+		directory: string,
+		sessionId: string,
+		messageId?: string,
+	): Promise<Session> {
+		const client = requireProjectRuntimeClient(directory)
+		const result = await client.session.fork({
+			sessionID: sessionId,
+			messageID: messageId,
+		})
+		const session = result.data as Session
+		if (session) {
+			appStore.set(upsertSessionAtom, { session, directory })
+		}
+		return session
+	},
+}
+
 export const runtimeSessionGateway = {
 	async createSession(
 		args: RuntimeSessionCreateRequest,
@@ -167,7 +261,7 @@ export const runtimeSessionGateway = {
 			}
 		}
 
-		const session = await createManagedRuntimeSession(args.directory, args.title)
+		const session = await projectRuntimeSessionGateway.createSession(args.directory, args.title)
 		if (!session) return null
 		return {
 			runtimeId: DEFAULT_SESSION_RUNTIME_ID,
@@ -181,7 +275,10 @@ export const runtimeSessionGateway = {
 		fallbackDirectory?: string,
 	): Promise<string | null> {
 		if (!isCliRuntime(targetRuntime)) {
-			return switchCliSessionIntoManagedRuntime(sessionId, createManagedRuntimeSession)
+			return switchCliSessionIntoProjectRuntime(
+				sessionId,
+				projectRuntimeSessionGateway.createSession,
+			)
 		}
 
 		await switchCliRuntimeSession(sessionId, targetRuntime, fallbackDirectory)
@@ -198,7 +295,7 @@ export const runtimeSessionGateway = {
 			return
 		}
 
-		await promptManagedRuntimeSession(directory, sessionId, text, options)
+		await projectRuntimeSessionGateway.promptSession(directory, sessionId, text, options)
 	},
 	async abortSession(directory: string, sessionId: string): Promise<void> {
 		if (isCliSession(sessionId)) {
@@ -206,8 +303,7 @@ export const runtimeSessionGateway = {
 			return
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		await client.session.abort({ sessionID: sessionId })
+		await projectRuntimeSessionGateway.abortSession(directory, sessionId)
 	},
 	async renameSession(
 		directory: string,
@@ -227,8 +323,7 @@ export const runtimeSessionGateway = {
 			return
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		await client.session.update({ sessionID: sessionId, title })
+		await projectRuntimeSessionGateway.renameSession(directory, sessionId, title)
 	},
 	async deleteSession(directory: string, sessionId: string): Promise<void> {
 		if (isCliSession(sessionId)) {
@@ -238,8 +333,7 @@ export const runtimeSessionGateway = {
 			return
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		await client.session.delete({ sessionID: sessionId })
+		await projectRuntimeSessionGateway.deleteSession(directory, sessionId)
 	},
 	async revertSession(
 		directory: string,
@@ -250,20 +344,14 @@ export const runtimeSessionGateway = {
 			throw new Error("Revert is not supported for CLI sessions")
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		const entry = appStore.get(sessionFamily(sessionId))
-		if (entry?.status?.type === "busy") {
-			await client.session.abort({ sessionID: sessionId })
-		}
-		await client.session.revert({ sessionID: sessionId, messageID: messageId })
+		await projectRuntimeSessionGateway.revertSession(directory, sessionId, messageId)
 	},
 	async unrevertSession(directory: string, sessionId: string): Promise<void> {
 		if (isCliSession(sessionId)) {
 			throw new Error("Undo is not supported for CLI sessions")
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		await client.session.unrevert({ sessionID: sessionId })
+		await projectRuntimeSessionGateway.unrevertSession(directory, sessionId)
 	},
 	async executeCommand(
 		directory: string,
@@ -275,12 +363,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Slash commands are not supported for CLI sessions")
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		await client.session.command({
-			sessionID: sessionId,
-			command,
-			arguments: args,
-		})
+		await projectRuntimeSessionGateway.executeCommand(directory, sessionId, command, args)
 	},
 	async summarizeSession(
 		directory: string,
@@ -291,12 +374,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Summarize is not supported for CLI sessions")
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		await client.session.summarize({
-			sessionID: sessionId,
-			providerID: model?.providerID,
-			modelID: model?.modelID,
-		})
+		await projectRuntimeSessionGateway.summarizeSession(directory, sessionId, model)
 	},
 	async deletePart(
 		directory: string,
@@ -308,8 +386,7 @@ export const runtimeSessionGateway = {
 			throw new Error("Deleting parts is not supported for CLI sessions")
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		await client.part.delete({ sessionID: sessionId, messageID: messageId, partID: partId })
+		await projectRuntimeSessionGateway.deletePart(directory, sessionId, messageId, partId)
 	},
 	async forkSession(
 		directory: string,
@@ -320,15 +397,6 @@ export const runtimeSessionGateway = {
 			throw new Error("Fork is not supported for CLI sessions")
 		}
 
-		const client = requireManagedRuntimeProjectClient(directory)
-		const result = await client.session.fork({
-			sessionID: sessionId,
-			messageID: messageId,
-		})
-		const session = result.data as Session
-		if (session) {
-			appStore.set(upsertSessionAtom, { session, directory })
-		}
-		return session
+		return projectRuntimeSessionGateway.forkSession(directory, sessionId, messageId)
 	},
 }

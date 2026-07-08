@@ -63,7 +63,7 @@ export async function launchRuntimeSession(args: {
 		return
 	}
 
-	await launchManagedRuntimeSession({
+	await launchProjectRuntimeSession({
 		currentBranch: args.currentBranch,
 		directory: args.directory,
 		files: args.files,
@@ -75,7 +75,7 @@ export async function launchRuntimeSession(args: {
 	})
 }
 
-export async function launchManagedRuntimeSession(args: {
+export async function launchProjectRuntimeSession(args: {
 	currentBranch?: string
 	directory: string
 	files?: FileAttachment[]
@@ -161,6 +161,8 @@ export async function launchManagedRuntimeSession(args: {
 	})
 	args.onNavigate(session.id)
 }
+
+export const launchManagedRuntimeSession = launchProjectRuntimeSession
 
 export async function switchRuntimeSession(
 	sessionId: string,
