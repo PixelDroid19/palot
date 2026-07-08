@@ -286,7 +286,7 @@ export interface SessionRuntimeCapabilities {
 	supportsServerHistory: boolean
 }
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
-	mode: "managed" | "cli"
+	mode: "project" | "cli"
 	sessionCapabilities: SessionRuntimeCapabilities
 	setup: {
 		description: string

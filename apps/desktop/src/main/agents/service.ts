@@ -74,7 +74,7 @@ export interface AgentImageAttachment {
 }
 
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
-	mode: "managed" | "cli"
+	mode: "project" | "cli"
 	sessionCapabilities: {
 		supportsSessionRevert: boolean
 		supportsSessionSummarize: boolean
@@ -92,8 +92,8 @@ export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 	}
 }
 
-const MANAGED_RUNTIME_DESCRIPTOR_LABEL = "OpenCode"
-const MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES: AgentRuntimeCapabilities = {
+const PROJECT_RUNTIME_DESCRIPTOR_LABEL = "OpenCode"
+const PROJECT_RUNTIME_DESCRIPTOR_CAPABILITIES: AgentRuntimeCapabilities = {
 	imageInput: true,
 	reasoningEffort: false,
 	resume: true,
@@ -101,7 +101,7 @@ const MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES: AgentRuntimeCapabilities = {
 	interrupt: true,
 	steering: false,
 }
-const MANAGED_RUNTIME_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabilities"] = {
+const PROJECT_RUNTIME_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabilities"] = {
 	supportsSessionRevert: true,
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
@@ -142,17 +142,17 @@ function writeImageFiles(images: AgentImageAttachment[]): { paths: string[]; cle
 	return { paths, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
-function describeManagedRuntime(detection?: {
+function describeProjectRuntime(detection?: {
 	binaryPath: string | null
 	installHint: string
 }): Promise<SessionRuntimeDescriptor> {
 	return checkManagedRuntime().then((runtime) => ({
 		id: PROJECT_RUNTIME_ID,
-		displayName: MANAGED_RUNTIME_DESCRIPTOR_LABEL,
-		mode: "managed",
+		displayName: PROJECT_RUNTIME_DESCRIPTOR_LABEL,
+		mode: "project",
 		installed: runtime.installed,
-		capabilities: MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES,
-		sessionCapabilities: MANAGED_RUNTIME_SESSION_CAPABILITIES,
+		capabilities: PROJECT_RUNTIME_DESCRIPTOR_CAPABILITIES,
+		sessionCapabilities: PROJECT_RUNTIME_SESSION_CAPABILITIES,
 		setup: {
 			description: runtime.path ?? detection?.binaryPath ?? detection?.installHint ?? "Checking...",
 			version: runtime.version,
@@ -170,9 +170,9 @@ export async function describeSessionRuntimes(): Promise<SessionRuntimeDescripto
 		getAgentHost().describeRuntimes(),
 	])
 	const detections = new Map(cliDetections.map((runtime) => [runtime.id, runtime]))
-	const managedRuntime = await describeManagedRuntime(detections.get(PROJECT_RUNTIME_ID))
+	const projectRuntime = await describeProjectRuntime(detections.get(PROJECT_RUNTIME_ID))
 	return [
-		managedRuntime,
+		projectRuntime,
 		...cliRuntimes.map((runtime) => ({
 			...runtime,
 			mode: "cli" as const,

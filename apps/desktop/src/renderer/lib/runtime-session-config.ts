@@ -40,7 +40,7 @@ export interface CliRuntimeSelection {
 }
 
 export type RuntimeSelectionPersistence = ProjectRuntimeSelection | CliRuntimeSelection
-export type SessionRuntimeMode = "managed" | "cli"
+export type SessionRuntimeMode = "project" | "cli"
 
 export type SessionRuntimeState =
 	| {
@@ -51,7 +51,7 @@ export type SessionRuntimeState =
 			modelPreference: PersistedModelRef | null
 	  }
 	| {
-			mode: "managed"
+			mode: "project"
 			sessionId: string
 			directory: string | null
 			modelPreference: PersistedModelRef | null
@@ -67,12 +67,12 @@ export interface SessionRuntimeCapabilities {
 	supportsServerHistory: boolean
 }
 
-export const MANAGED_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
+export const PROJECT_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 	supportsSessionRevert: true,
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
 	supportsFork: true,
-	supportsProjectRuntimeConfig: true,
+			supportsProjectRuntimeConfig: true,
 	supportsWorktreeLaunch: true,
 	supportsServerHistory: true,
 }
@@ -91,14 +91,14 @@ export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapab
 	return (
 		runtimeDescriptor(id)?.sessionCapabilities ??
 		(id === DEFAULT_SESSION_RUNTIME_ID
-			? MANAGED_SESSION_RUNTIME_CAPABILITIES
+			? PROJECT_SESSION_RUNTIME_CAPABILITIES
 			: CLI_SESSION_RUNTIME_CAPABILITIES)
 	)
 }
 
 export function runtimeModeCapabilities(mode: SessionRuntimeMode): SessionRuntimeCapabilities {
-	return mode === "managed"
-		? MANAGED_SESSION_RUNTIME_CAPABILITIES
+	return mode === "project"
+		? PROJECT_SESSION_RUNTIME_CAPABILITIES
 		: CLI_SESSION_RUNTIME_CAPABILITIES
 }
 
@@ -117,7 +117,7 @@ export function resolvePromptRuntime(
 	options?: RuntimePromptOptions,
 ): SessionRuntimeMode {
 	if (options?.runtime === "cli") return "cli"
-	return state?.mode ?? "managed"
+	return state?.mode ?? "project"
 }
 
 export function resolveProjectRuntimePromptOptions(
@@ -176,7 +176,7 @@ export function readSessionRuntimeState(
 		}
 	}
 	return {
-		mode: "managed",
+		mode: "project",
 		sessionId,
 		directory: directory ?? null,
 		modelPreference,
@@ -201,7 +201,7 @@ export function useSessionRuntimeState(
 		}
 	}
 	return {
-		mode: "managed",
+		mode: "project",
 		sessionId,
 		directory: directory ?? null,
 		modelPreference,

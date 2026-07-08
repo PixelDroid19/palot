@@ -75,7 +75,7 @@ function buildProjectRuntimeToolbarSections(args: {
 			onSelectAgent: args.onSelectAgent,
 			disabled: args.disabled,
 		},
-		managedModel: {
+		projectModel: {
 			providers: args.providers,
 			effectiveModel: args.effectiveModel,
 			hasOverride: args.hasModelOverride,

@@ -47,7 +47,7 @@ export interface RuntimeToolbarAgentSection {
 	disabled?: boolean
 }
 
-export interface RuntimeToolbarManagedModelSection {
+export interface RuntimeToolbarProjectModelSection {
 	providers: ProvidersData | null
 	effectiveModel: ModelRef | null
 	hasOverride: boolean
@@ -82,7 +82,7 @@ export interface RuntimeToolbarEffortSection {
 
 export interface RuntimeToolbarSections {
 	agent?: RuntimeToolbarAgentSection
-	managedModel?: RuntimeToolbarManagedModelSection
+	projectModel?: RuntimeToolbarProjectModelSection
 	variant?: RuntimeToolbarVariantSection
 	cliModel?: RuntimeToolbarCliModelSection
 	sandbox?: RuntimeToolbarSandboxSection
@@ -113,14 +113,14 @@ function RuntimeToolbarSectionsView({ sections }: { sections: RuntimeToolbarSect
 						disabled={sections.agent.disabled}
 					/>
 				),
-				sections.managedModel && (
+				sections.projectModel && (
 					<ModelSelector
-						providers={sections.managedModel.providers}
-						effectiveModel={sections.managedModel.effectiveModel}
-						hasOverride={sections.managedModel.hasOverride}
-						onSelectModel={sections.managedModel.onSelectModel}
-						recentModels={sections.managedModel.recentModels}
-						disabled={sections.managedModel.disabled}
+						providers={sections.projectModel.providers}
+						effectiveModel={sections.projectModel.effectiveModel}
+						hasOverride={sections.projectModel.hasOverride}
+						onSelectModel={sections.projectModel.onSelectModel}
+						recentModels={sections.projectModel.recentModels}
+						disabled={sections.projectModel.disabled}
 					/>
 				),
 				sections.cliModel && (
