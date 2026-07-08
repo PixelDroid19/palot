@@ -2,11 +2,6 @@ import type { AgentRuntimeDescriptor } from "../../preload/api"
 
 type RuntimeModel = AgentRuntimeDescriptor["models"][number]
 
-const PREFERRED_MODEL_ORDER: Partial<Record<string, readonly string[]>> = {
-	codex: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
-	claude: ["sonnet", "opus", "haiku", "fable"],
-}
-
 export function availableRuntimeModels(
 	descriptor: Pick<AgentRuntimeDescriptor, "models"> | null | undefined,
 ): RuntimeModel[] {
@@ -14,7 +9,7 @@ export function availableRuntimeModels(
 }
 
 export function getRuntimeModelEfforts(
-	descriptor: Pick<AgentRuntimeDescriptor, "id" | "models"> | null | undefined,
+	descriptor: Pick<AgentRuntimeDescriptor, "models"> | null | undefined,
 	modelSlug: string | null | undefined,
 ): string[] {
 	const resolved = resolveRuntimeModel(descriptor, modelSlug)
@@ -23,7 +18,7 @@ export function getRuntimeModelEfforts(
 }
 
 export function resolveRuntimeModel(
-	descriptor: Pick<AgentRuntimeDescriptor, "id" | "models"> | null | undefined,
+	descriptor: Pick<AgentRuntimeDescriptor, "models"> | null | undefined,
 	selectedModel: string | null | undefined,
 ): string | undefined {
 	const models = availableRuntimeModels(descriptor)
@@ -34,17 +29,11 @@ export function resolveRuntimeModel(
 		return trimmed
 	}
 
-	for (const slug of PREFERRED_MODEL_ORDER[descriptor?.id ?? ""] ?? []) {
-		if (models.some((model) => model.slug === slug)) {
-			return slug
-		}
-	}
-
 	return models[0]?.slug
 }
 
 export function resolveRuntimeEffort(
-	descriptor: Pick<AgentRuntimeDescriptor, "id" | "models"> | null | undefined,
+	descriptor: Pick<AgentRuntimeDescriptor, "models"> | null | undefined,
 	modelSlug: string | null | undefined,
 	selectedEffort: string | null | undefined,
 ): string | undefined {

@@ -38,7 +38,7 @@ describe("runtime-model-selection", () => {
 		expect(models.map((model) => model.slug)).toEqual(["gpt-5.5"])
 	})
 
-	test("prefers the concrete Codex default instead of an implicit runtime default", () => {
+	test("uses the first concrete Codex model from the runtime catalog", () => {
 		const models = descriptor("codex", [
 			{ slug: "", label: "Default", efforts: ["low", "medium"], defaultEffort: "medium" },
 			{ slug: "gpt-5.5", label: "GPT-5.5", efforts: ["low", "medium"], defaultEffort: "medium" },
@@ -57,14 +57,14 @@ describe("runtime-model-selection", () => {
 		expect(resolveRuntimeModel(models, "gpt-5.4-mini")).toBe("gpt-5.4-mini")
 	})
 
-	test("uses the concrete Claude default when no selection is stored", () => {
+	test("uses the first concrete Claude model from the runtime catalog", () => {
 		const models = descriptor("claude", [
 			{ slug: "fable", label: "Fable", efforts: ["low", "medium", "high"] },
 			{ slug: "sonnet", label: "Sonnet", efforts: ["low", "medium", "high"] },
 			{ slug: "opus", label: "Opus", efforts: ["low", "medium", "high"] },
 		])
 
-		expect(resolveRuntimeModel(models, undefined)).toBe("sonnet")
+		expect(resolveRuntimeModel(models, undefined)).toBe("fable")
 	})
 
 	test("drops invalid efforts when the resolved model does not support them", () => {
