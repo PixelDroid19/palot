@@ -4,7 +4,11 @@ import { upsertPartAtom } from "../atoms/parts"
 import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
-import { readSessionRuntimeState } from "../lib/runtime-session-config"
+import {
+	readSessionRuntimeState,
+	resolveOpenCodePromptOptions,
+	resolvePromptRuntime,
+} from "../lib/runtime-session-config"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
 	isCliRuntime,
@@ -43,7 +47,7 @@ function shouldUseCliRuntime(
 	sessionId: string,
 	options?: RuntimePromptOptions,
 ): boolean {
-	return options?.runtime === "cli" || readSessionRuntimeState(sessionId).runtime === "cli"
+	return resolvePromptRuntime(readSessionRuntimeState(sessionId), options) === "cli"
 }
 
 function isCliSession(sessionId: string): boolean {
@@ -71,7 +75,7 @@ async function promptOpenCodeSession(
 ): Promise<void> {
 	const client = requireOpenCodeClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
-	const openCodeOptions = options?.runtime === "cli" ? undefined : options
+	const openCodeOptions = resolveOpenCodePromptOptions(readSessionRuntimeState(sessionId), options)
 	const optimisticMessage: UserMessage & { variant?: string } = {
 		id: optimisticId,
 		sessionID: sessionId,

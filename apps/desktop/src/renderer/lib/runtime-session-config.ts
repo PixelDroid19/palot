@@ -92,6 +92,23 @@ export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapab
 		: CLI_SESSION_RUNTIME_CAPABILITIES
 }
 
+export function resolvePromptRuntime(
+	state: Pick<SessionRuntimeState, "runtime"> | null | undefined,
+	options?: RuntimePromptOptions,
+): SessionRuntimeState["runtime"] {
+	if (options?.runtime === "cli") return "cli"
+	return state?.runtime ?? "opencode"
+}
+
+export function resolveOpenCodePromptOptions(
+	state: Pick<SessionRuntimeState, "runtime"> | null | undefined,
+	options?: RuntimePromptOptions,
+): OpenCodePromptOptions | null {
+	return resolvePromptRuntime(state, options) === "cli"
+		? null
+		: ((options ?? {}) as OpenCodePromptOptions)
+}
+
 export function sessionRuntimeCapabilities(
 	state: Pick<SessionRuntimeState, "runtime">,
 ): SessionRuntimeCapabilities {
