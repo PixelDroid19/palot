@@ -60,10 +60,10 @@ import { type SkillSyncDirection, syncSkills } from "./skill-sync"
 import { type WebhookTarget, testWebhook } from "./webhooks"
 import type { MigrationProvider } from "./onboarding"
 import {
-	checkManagedRuntimeInstallation,
+	checkProjectRuntimeInstallation,
 	detectProviders,
 	executeMigration,
-	installManagedRuntime,
+	installProjectRuntime,
 	previewMigration,
 	restoreMigrationBackup,
 	scanProvider,
@@ -603,25 +603,25 @@ export function registerIpcHandlers(): void {
 
 	ipcMain.handle(
 		"onboarding:check-opencode",
-		withLogging("onboarding:check-opencode", async () => await checkManagedRuntimeInstallation()),
+		withLogging("onboarding:check-opencode", async () => await checkProjectRuntimeInstallation()),
 	)
 	ipcMain.handle(
 		"onboarding:check-project-runtime",
 		withLogging(
 			"onboarding:check-project-runtime",
-			async () => await checkManagedRuntimeInstallation(),
+			async () => await checkProjectRuntimeInstallation(),
 		),
 	)
 
 	ipcMain.handle(
 		"onboarding:install-opencode",
-		withLogging("onboarding:install-opencode", async () => await installManagedRuntime()),
+		withLogging("onboarding:install-opencode", async () => await installProjectRuntime()),
 	)
 	ipcMain.handle(
 		"onboarding:install-project-runtime",
 		withLogging(
 			"onboarding:install-project-runtime",
-			async () => await installManagedRuntime(),
+			async () => await installProjectRuntime(),
 		),
 	)
 

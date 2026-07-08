@@ -22,7 +22,7 @@ import {
 import { whichOnPath } from "@palot/cli-registry"
 import { app } from "electron"
 import { detectAgentClis } from "../agent-clis"
-import { checkManagedRuntime } from "../compatibility"
+import { checkProjectRuntime } from "../compatibility"
 import { createLogger } from "../logger"
 import { PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
 
@@ -146,7 +146,7 @@ function describeProjectRuntime(detection?: {
 	binaryPath: string | null
 	installHint: string
 }): Promise<SessionRuntimeDescriptor> {
-	return checkManagedRuntime().then((runtime) => ({
+	return checkProjectRuntime().then((runtime) => ({
 		id: PROJECT_RUNTIME_ID,
 		displayName: PROJECT_RUNTIME_DESCRIPTOR_LABEL,
 		mode: "project",

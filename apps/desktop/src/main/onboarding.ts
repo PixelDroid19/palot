@@ -15,8 +15,8 @@ import { createHash } from "node:crypto"
 import { homedir, tmpdir } from "node:os"
 import path from "node:path"
 import { BrowserWindow } from "electron"
-import type { ManagedRuntimeCheckResult } from "./compatibility"
-import { checkManagedRuntime } from "./compatibility"
+import type { ProjectRuntimeCheckResult } from "./compatibility"
+import { checkProjectRuntime } from "./compatibility"
 import {
 	conversionReportMessageToText as formatConversionReportMessage,
 } from "@palot/configconv"
@@ -152,25 +152,27 @@ const PROVIDER_LABELS: Record<MigrationProvider, string> = {
 }
 
 // ============================================================
-// Managed runtime check (delegates to compatibility module)
+// Project runtime check (delegates to compatibility module)
 // ============================================================
 
-export async function checkManagedRuntimeInstallation(): Promise<ManagedRuntimeCheckResult> {
-	return checkManagedRuntime()
+export async function checkProjectRuntimeInstallation(): Promise<ProjectRuntimeCheckResult> {
+	return checkProjectRuntime()
 }
 
+export const checkManagedRuntimeInstallation = checkProjectRuntimeInstallation
+
 // ============================================================
-// Managed runtime install
+// Project runtime install
 // ============================================================
 
 let installProcess: ChildProcess | null = null
 
 /**
- * Installs the managed runtime CLI by running the official install script.
+ * Installs the project runtime CLI by running the official install script.
  * Streams output lines to the renderer via the "onboarding:install-output" channel.
  * Returns when the install process exits.
  */
-export async function installManagedRuntime(): Promise<{ success: boolean; error?: string }> {
+export async function installProjectRuntime(): Promise<{ success: boolean; error?: string }> {
 	if (installProcess) {
 		return { success: false, error: "Installation already in progress" }
 	}
@@ -308,6 +310,8 @@ export async function installManagedRuntime(): Promise<{ success: boolean; error
 		await cleanupInstallFiles()
 	}
 }
+
+export const installManagedRuntime = installProjectRuntime
 
 // ============================================================
 // Multi-provider detection (lightweight, no configconv import)
