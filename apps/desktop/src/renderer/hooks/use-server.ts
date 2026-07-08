@@ -13,11 +13,11 @@ import {
 	deleteRuntimeSession,
 	executeRuntimeCommand,
 	forkRuntimeSession,
-	rejectOpenCodeQuestion,
+	rejectRuntimeQuestion,
 	renameRuntimeSession,
 	revertRuntimeSession,
-	replyOpenCodeQuestion,
-	respondOpenCodePermission,
+	replyRuntimeQuestion,
+	respondRuntimePermission,
 	summarizeRuntimeSession,
 	unrevertRuntimeSession,
 } from "../services/runtime-session-actions"
@@ -110,7 +110,7 @@ export function useAgentActions() {
 		) => {
 			log.debug("respondToPermission", { sessionId, permissionId, response })
 			try {
-				await respondOpenCodePermission(directory, sessionId, permissionId, response)
+				await respondRuntimePermission(directory, sessionId, permissionId, response)
 			} catch (err) {
 				log.error("respondToPermission failed", { sessionId, permissionId, response }, err)
 				throw err
@@ -123,7 +123,7 @@ export function useAgentActions() {
 		async (directory: string, requestId: string, answers: QuestionAnswer[]) => {
 			log.debug("replyToQuestion", { requestId })
 			try {
-				await replyOpenCodeQuestion(directory, requestId, answers)
+				await replyRuntimeQuestion(directory, requestId, answers)
 			} catch (err) {
 				log.error("replyToQuestion failed", { requestId }, err)
 				throw err
@@ -135,7 +135,7 @@ export function useAgentActions() {
 	const rejectQuestion = useCallback(async (directory: string, requestId: string) => {
 		log.debug("rejectQuestion", { requestId })
 		try {
-			await rejectOpenCodeQuestion(directory, requestId)
+			await rejectRuntimeQuestion(directory, requestId)
 		} catch (err) {
 			log.error("rejectQuestion failed", { requestId }, err)
 			throw err

@@ -9,7 +9,7 @@ import { useAtomValue } from "jotai"
 import { ShieldQuestion } from "lucide-react"
 import { cliPermissionsAtom } from "../../atoms/cli-sessions"
 import { useTranslation } from "../../i18n/use-translation"
-import { respondCliRuntimePermission } from "../../services/runtime-session-actions"
+import { respondRuntimePermissionRequest } from "../../services/runtime-session-actions"
 
 export function CliApprovalBar({ sessionId }: { sessionId: string }) {
 	const { t } = useTranslation()
@@ -43,7 +43,7 @@ export function CliApprovalBar({ sessionId }: { sessionId: string }) {
 						<Button
 							size="sm"
 							variant="outline"
-							onClick={() => respondCliRuntimePermission(sessionId, request.requestId, "decline")}
+							onClick={() => respondRuntimePermissionRequest(sessionId, request.requestId, "decline")}
 						>
 							{t("cliApprovals.deny")}
 						</Button>
@@ -52,7 +52,7 @@ export function CliApprovalBar({ sessionId }: { sessionId: string }) {
 								size="sm"
 								variant="outline"
 								onClick={() =>
-									respondCliRuntimePermission(
+									respondRuntimePermissionRequest(
 										sessionId,
 										request.requestId,
 										"acceptForSession",
@@ -64,7 +64,7 @@ export function CliApprovalBar({ sessionId }: { sessionId: string }) {
 						)}
 						<Button
 							size="sm"
-							onClick={() => respondCliRuntimePermission(sessionId, request.requestId, "accept")}
+							onClick={() => respondRuntimePermissionRequest(sessionId, request.requestId, "accept")}
 						>
 							{t("cliApprovals.allow")}
 						</Button>

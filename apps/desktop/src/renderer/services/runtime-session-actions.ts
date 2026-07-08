@@ -23,7 +23,7 @@ export async function deleteRuntimeSession(directory: string, sessionId: string)
 	await runtimeSessionGateway.deleteSession(directory, sessionId)
 }
 
-export async function respondOpenCodePermission(
+export async function respondRuntimePermission(
 	directory: string,
 	sessionId: string,
 	permissionId: string,
@@ -38,7 +38,7 @@ export async function respondOpenCodePermission(
 	})
 }
 
-export async function replyOpenCodeQuestion(
+export async function replyRuntimeQuestion(
 	directory: string,
 	requestId: string,
 	answers: QuestionAnswer[],
@@ -48,7 +48,7 @@ export async function replyOpenCodeQuestion(
 	await client.question.reply({ requestID: requestId, answers })
 }
 
-export async function rejectOpenCodeQuestion(
+export async function rejectRuntimeQuestion(
 	directory: string,
 	requestId: string,
 ): Promise<void> {
@@ -57,7 +57,7 @@ export async function rejectOpenCodeQuestion(
 	await client.question.reject({ requestID: requestId })
 }
 
-export function respondCliRuntimePermission(
+export function respondRuntimePermissionRequest(
 	sessionId: string,
 	requestId: string,
 	decision: AgentPermissionDecision,
@@ -65,7 +65,7 @@ export function respondCliRuntimePermission(
 	respondCliRuntimePermissionRequest(sessionId, requestId, decision)
 }
 
-export function answerCliRuntimeQuestion(
+export function answerRuntimeQuestionRequest(
 	sessionId: string,
 	requestId: string,
 	answers: Record<string, string>,

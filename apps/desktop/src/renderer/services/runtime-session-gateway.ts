@@ -154,16 +154,6 @@ export interface RuntimeSessionCreateResult {
 }
 
 export const runtimeSessionGateway = {
-	createOpenCodeSession,
-	createCliRuntimeSession(args: {
-		directory: string
-		runtimeId: AgentRuntimeId
-		sandbox: AgentSandbox
-		model?: string
-		effort?: string
-	}): string {
-		return createCliRuntimeSessionState(args)
-	},
 	async createSession(
 		args: RuntimeSessionCreateRequest,
 	): Promise<RuntimeSessionCreateResult | null> {

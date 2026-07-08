@@ -10,7 +10,7 @@ import { MessageCircleQuestion } from "lucide-react"
 import { useState } from "react"
 import type { AgentQuestionRequest } from "../../../preload/api"
 import { cliQuestionsAtom } from "../../atoms/cli-sessions"
-import { answerCliRuntimeQuestion } from "../../services/runtime-session-actions"
+import { answerRuntimeQuestionRequest } from "../../services/runtime-session-actions"
 
 function QuestionCard({
 	sessionId,
@@ -44,7 +44,7 @@ function QuestionCard({
 		for (const q of request.questions) {
 			answers[q.question] = (selected[q.question] ?? []).join(", ")
 		}
-		answerCliRuntimeQuestion(sessionId, request.requestId, answers)
+		answerRuntimeQuestionRequest(sessionId, request.requestId, answers)
 	}
 
 	return (
