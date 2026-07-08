@@ -8,9 +8,9 @@ import { createLogger } from "../lib/logger"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import { readSessionRuntimeState } from "../lib/runtime-session-config"
 import {
-	consumeOpencodeHandoff,
-	runCliTurn,
-} from "../services/cli-chat"
+	consumeCliToOpenCodeHandoff,
+	runCliRuntimeTurn,
+} from "../services/runtime-cli-turns"
 import type {
 	FilePart,
 	FilePartInput,
@@ -84,7 +84,7 @@ export function useAgentActions() {
 
 			// CLI-backed sessions run through the agent runtime, not the OpenCode client.
 			if (options?.runtime === "cli" || storedRuntime === "cli") {
-				await runCliTurn(sessionId, text, options?.files)
+				await runCliRuntimeTurn(sessionId, text, options?.files)
 				return
 			}
 
@@ -142,7 +142,7 @@ export function useAgentActions() {
 			// Build parts array for the API call. A runtime switch (CLI → OpenCode)
 			// leaves a one-shot history block that rides with the first prompt.
 			const parts: Array<{ type: "text"; text: string } | FilePartInput> = [{ type: "text", text }]
-			const handoff = consumeOpencodeHandoff(sessionId)
+			const handoff = consumeCliToOpenCodeHandoff(sessionId)
 			if (handoff) parts.unshift({ type: "text", text: handoff })
 			for (const file of files) {
 				parts.push({

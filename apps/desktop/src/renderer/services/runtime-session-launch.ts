@@ -3,15 +3,15 @@ import { upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import type { Session } from "../lib/types"
 import {
-	createCliSession,
-	restoreCliSessions,
-	switchCliRuntime,
-	switchCliSessionToOpenCode,
-} from "./cli-chat"
+	createCliRuntimeSessionState,
+	switchCliRuntimeSession,
+	switchCliSessionIntoOpenCode,
+} from "./runtime-cli-session"
+import { restoreCliRuntimeSessions } from "./runtime-cli-store"
 import { getProjectClient } from "./connection-manager"
 
 export function restoreRuntimeSessions(): void {
-	restoreCliSessions()
+	restoreCliRuntimeSessions()
 }
 
 export async function createOpenCodeSession(
@@ -35,7 +35,7 @@ export function createCliRuntimeSession(args: {
 	model?: string
 	effort?: string
 }): string {
-	return createCliSession(args)
+	return createCliRuntimeSessionState(args)
 }
 
 export async function switchRuntimeSession(
@@ -44,9 +44,9 @@ export async function switchRuntimeSession(
 	fallbackDirectory?: string,
 ): Promise<string | null> {
 	if (targetRuntime === "opencode") {
-		return switchCliSessionToOpenCode(sessionId, createOpenCodeSession)
+		return switchCliSessionIntoOpenCode(sessionId, createOpenCodeSession)
 	}
 
-	await switchCliRuntime(sessionId, targetRuntime, fallbackDirectory)
+	await switchCliRuntimeSession(sessionId, targetRuntime as AgentRuntimeId, fallbackDirectory)
 	return sessionId
 }

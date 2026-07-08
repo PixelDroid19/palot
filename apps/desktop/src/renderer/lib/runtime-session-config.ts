@@ -4,7 +4,7 @@ import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
 import { cliSessionsAtom, getCliMeta, patchCliMeta, type CliSessionMeta } from "../atoms/cli-sessions"
 import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-opencode-data"
-import { persistCliSession } from "../services/cli-chat"
+import { persistCliRuntimeSession } from "../services/runtime-cli-store"
 import type { FileAttachment } from "./types"
 
 export interface CliPromptOptions {
@@ -122,7 +122,7 @@ export function patchSessionRuntimeState(
 ): void {
 	patchCliMeta(sessionId, patch)
 	if (persist) {
-		persistCliSession(sessionId)
+		persistCliRuntimeSession(sessionId)
 	}
 }
 

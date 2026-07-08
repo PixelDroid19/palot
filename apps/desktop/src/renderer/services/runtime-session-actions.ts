@@ -4,17 +4,17 @@ import { appStore } from "../atoms/store"
 import { readSessionRuntimeState } from "../lib/runtime-session-config"
 import type { QuestionAnswer, Session } from "../lib/types"
 import {
-	answerCliQuestion,
-	cancelCliTurn,
-	forgetCliSession,
-	persistCliSession,
-	respondCliPermission,
-} from "./cli-chat"
+	answerCliRuntimeQuestionRequest,
+	forgetCliRuntimeSession,
+	persistCliRuntimeSession,
+	respondCliRuntimePermissionRequest,
+} from "./runtime-cli-store"
+import { interruptCliRuntimeTurn } from "./runtime-cli-turns"
 import { getProjectClient } from "./connection-manager"
 
 export async function abortRuntimeSession(directory: string, sessionId: string): Promise<void> {
 	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		cancelCliTurn(sessionId)
+		interruptCliRuntimeTurn(sessionId)
 		return
 	}
 
@@ -37,7 +37,7 @@ export async function renameRuntimeSession(
 	}
 
 	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		persistCliSession(sessionId)
+		persistCliRuntimeSession(sessionId)
 		return
 	}
 
@@ -48,8 +48,8 @@ export async function renameRuntimeSession(
 
 export async function deleteRuntimeSession(directory: string, sessionId: string): Promise<void> {
 	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		cancelCliTurn(sessionId)
-		await forgetCliSession(sessionId)
+		interruptCliRuntimeTurn(sessionId)
+		await forgetCliRuntimeSession(sessionId)
 		appStore.set(removeSessionAtom, sessionId)
 		return
 	}
@@ -98,7 +98,7 @@ export function respondCliRuntimePermission(
 	requestId: string,
 	decision: AgentPermissionDecision,
 ): void {
-	respondCliPermission(sessionId, requestId, decision)
+	respondCliRuntimePermissionRequest(sessionId, requestId, decision)
 }
 
 export function answerCliRuntimeQuestion(
@@ -106,7 +106,7 @@ export function answerCliRuntimeQuestion(
 	requestId: string,
 	answers: Record<string, string>,
 ): void {
-	answerCliQuestion(sessionId, requestId, answers)
+	answerCliRuntimeQuestionRequest(sessionId, requestId, answers)
 }
 
 export async function revertRuntimeSession(
