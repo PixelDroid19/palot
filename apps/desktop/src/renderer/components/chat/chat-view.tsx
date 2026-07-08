@@ -105,7 +105,7 @@ import { SessionRuntimeSwitch } from "./cli-toolbar"
 import { StatusBar } from "./prompt-toolbar"
 import {
 	buildCliChatRuntimeConfig,
-	buildProjectRuntimeChatRuntimeConfig,
+	buildConfigurableRuntimeChatRuntimeConfig,
 	type ChatRuntimeConfig,
 	useCliChatRuntimeToolbarProps,
 } from "./runtime-config-state"
@@ -421,8 +421,8 @@ interface ChatViewProps {
 	config?: ConfigData | null
 	/** VCS data for status bar */
 	vcs?: VcsData | null
-	/** Available project runtime agents */
-	projectRuntimeAgents?: SdkAgent[]
+	/** Available runtime agents */
+	runtimeAgents?: SdkAgent[]
 	/** Permission handlers */
 	onApprove?: (
 		agent: Agent,
@@ -472,7 +472,7 @@ export function ChatView({
 	providers,
 	config,
 	vcs,
-	projectRuntimeAgents,
+	runtimeAgents,
 	onApprove,
 	onDeny,
 	onReplyQuestion,
@@ -755,7 +755,7 @@ export function ChatView({
 					providers={providers}
 					config={config}
 					vcs={vcs}
-					projectRuntimeAgents={projectRuntimeAgents}
+					runtimeAgents={runtimeAgents}
 					onApprove={handleApprovePermission}
 					onDeny={handleDenyPermission}
 					onReplyQuestion={onReplyQuestion}
@@ -787,7 +787,7 @@ interface ChatInputSectionProps {
 	providers?: ProvidersData | null
 	config?: ConfigData | null
 	vcs?: VcsData | null
-	projectRuntimeAgents?: SdkAgent[]
+	runtimeAgents?: SdkAgent[]
 	onApprove?: (
 		agent: Agent,
 		permissionSessionId: string,
@@ -817,7 +817,7 @@ function ChatInputSection({
 	providers,
 	config,
 	vcs,
-	projectRuntimeAgents,
+	runtimeAgents,
 	onApprove,
 	onDeny,
 	onReplyQuestion,
@@ -960,21 +960,21 @@ function ChatInputSection({
 
 	const { recentModels, addRecent: addRecentModel } = useRuntimeModelState()
 
-	const activeProjectRuntimeAgent = useMemo(() => {
+	const activeRuntimeAgent = useMemo(() => {
 		const agentName = selectedAgent ?? config?.defaultAgent
-		return projectRuntimeAgents?.find((a) => a.name === agentName) ?? null
-	}, [selectedAgent, config?.defaultAgent, projectRuntimeAgents])
+		return runtimeAgents?.find((a) => a.name === agentName) ?? null
+	}, [selectedAgent, config?.defaultAgent, runtimeAgents])
 
 	const effectiveModel = useMemo(
 		() =>
 			resolveEffectiveModel(
 				selectedModel,
-				activeProjectRuntimeAgent,
+				activeRuntimeAgent,
 				config?.model,
 				providers?.defaults ?? {},
 				providers?.providers ?? [],
 			),
-		[selectedModel, activeProjectRuntimeAgent, config?.model, providers],
+		[selectedModel, activeRuntimeAgent, config?.model, providers],
 	)
 
 	useEffect(() => {
@@ -1010,8 +1010,8 @@ function ChatInputSection({
 						runtimeId: cliMeta?.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
 						toolbarProps: cliToolbarProps ?? { sections: {} },
 				  })
-				: buildProjectRuntimeChatRuntimeConfig({
-						agents: projectRuntimeAgents ?? [],
+				: buildConfigurableRuntimeChatRuntimeConfig({
+						agents: runtimeAgents ?? [],
 						selectedAgent,
 						defaultAgent: config?.defaultAgent,
 						onSelectAgent: setSelectedAgent,
@@ -1050,7 +1050,7 @@ function ChatInputSection({
 			handleModelSelect,
 			isCli,
 			isConnected,
-			projectRuntimeAgents,
+			runtimeAgents,
 			providers,
 			recentModels,
 			selectedAgent,
@@ -1450,7 +1450,7 @@ function ChatInputSection({
 									query={mentionQuery}
 									open={mentionOpen}
 									directory={agent.directory}
-									agents={projectRuntimeAgents ?? []}
+									agents={runtimeAgents ?? []}
 									onSelect={handleMentionSelect}
 									onClose={handleMentionClose}
 								/>

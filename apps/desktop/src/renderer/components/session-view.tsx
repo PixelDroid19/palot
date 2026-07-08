@@ -149,7 +149,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const { data: providers } = runtimeData.providers
 	const { data: config } = runtimeData.config
 	const { data: vcs } = runtimeData.vcs
-	const { agents: projectRuntimeAgents } = runtimeData.agents
+	const { agents: runtimeAgents } = runtimeData.agents
 
 	// Handlers
 	const handleStopAgent = useCallback(
@@ -297,7 +297,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			providers={providers}
 			config={config}
 			vcs={vcs}
-			projectRuntimeAgents={projectRuntimeAgents}
+			runtimeAgents={runtimeAgents}
 			canUndo={canUndo}
 			canRedo={canRedo}
 			onUndo={undo}

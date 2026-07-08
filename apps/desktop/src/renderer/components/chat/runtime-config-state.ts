@@ -61,7 +61,7 @@ export interface ChatRuntimeConfig {
 	sendOptions: RuntimePromptOptions
 }
 
-interface ProjectRuntimeModelOption {
+interface ConfigurableRuntimeModelOption {
 	value: string
 	providerID: string
 	modelID: string
@@ -70,9 +70,9 @@ interface ProjectRuntimeModelOption {
 	reasoning: boolean
 }
 
-function flattenProjectRuntimeModels(providers: ProvidersData | null): ProjectRuntimeModelOption[] {
+function flattenConfigurableRuntimeModels(providers: ProvidersData | null): ConfigurableRuntimeModelOption[] {
 	if (!providers) return []
-	const models: ProjectRuntimeModelOption[] = []
+	const models: ConfigurableRuntimeModelOption[] = []
 	for (const provider of providers.providers) {
 		for (const [key, model] of Object.entries(provider.models)) {
 			models.push({
@@ -88,11 +88,11 @@ function flattenProjectRuntimeModels(providers: ProvidersData | null): ProjectRu
 	return models
 }
 
-function buildProjectRuntimeModelItems(args: {
+function buildConfigurableRuntimeModelItems(args: {
 	providers: ProvidersData | null
 	recentModels?: ModelRef[]
 }): RuntimeModelSelectItem[] {
-	const models = flattenProjectRuntimeModels(args.providers)
+	const models = flattenConfigurableRuntimeModels(args.providers)
 	const modelItems = models.map((model) => ({
 		value: model.value,
 		label: model.displayName,
@@ -110,7 +110,7 @@ function buildProjectRuntimeModelItems(args: {
 	const recent = args.recentModels
 		.slice(0, 3)
 		.map((ref) => models.find((model) => model.providerID === ref.providerID && model.modelID === ref.modelID))
-		.filter((model): model is ProjectRuntimeModelOption => model != null)
+		.filter((model): model is ConfigurableRuntimeModelOption => model != null)
 		.map((model) => ({
 			value: model.value,
 			label: model.displayName,
@@ -127,7 +127,7 @@ function buildProjectRuntimeModelItems(args: {
 	return [...recent, ...modelItems]
 }
 
-function buildProjectRuntimeToolbarSections(args: {
+function buildConfigurableRuntimeToolbarSections(args: {
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -159,7 +159,7 @@ function buildProjectRuntimeToolbarSections(args: {
 			disabled: args.disabled,
 		},
 		model: {
-			items: buildProjectRuntimeModelItems({
+			items: buildConfigurableRuntimeModelItems({
 				providers: args.providers,
 				recentModels: args.recentModels,
 			}),
@@ -273,7 +273,7 @@ export function buildCliNewChatRuntimeConfig(args: {
 	}
 }
 
-export function buildProjectRuntimeNewChatRuntimeConfig(args: {
+export function buildConfigurableRuntimeNewChatRuntimeConfig(args: {
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -290,7 +290,7 @@ export function buildProjectRuntimeNewChatRuntimeConfig(args: {
 	return {
 		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
 		toolbarProps: {
-			sections: buildProjectRuntimeToolbarSections(args),
+			sections: buildConfigurableRuntimeToolbarSections(args),
 		},
 		launch: {
 			create: {
@@ -320,7 +320,7 @@ export function buildCliChatRuntimeConfig(args: {
 	})
 }
 
-export function buildProjectRuntimeChatRuntimeConfig(args: {
+export function buildConfigurableRuntimeChatRuntimeConfig(args: {
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -339,7 +339,7 @@ export function buildProjectRuntimeChatRuntimeConfig(args: {
 	return buildChatRuntimeConfig({
 		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
 		toolbarProps: {
-			sections: buildProjectRuntimeToolbarSections(args),
+			sections: buildConfigurableRuntimeToolbarSections(args),
 		},
 		persistedSelection: args.persistedSelection,
 		sendOptions: args.sendOptions,
