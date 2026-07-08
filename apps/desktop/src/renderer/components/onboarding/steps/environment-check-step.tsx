@@ -25,7 +25,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type {
-	ManagedRuntimeCheckResult,
+	ProjectRuntimeCheckResult,
 	RemoteServerConfig,
 } from "../../../../preload/api"
 import { discoveredMdnsServersAtom } from "../../../atoms/connection"
@@ -58,7 +58,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		{ id: "locate", label: "Locating project runtime CLI", status: "pending" },
 		{ id: "version", label: "Checking version compatibility", status: "pending" },
 	])
-	const [managedRuntimeResult, setManagedRuntimeResult] = useState<ManagedRuntimeCheckResult | null>(null)
+	const [projectRuntimeResult, setProjectRuntimeResult] = useState<ProjectRuntimeCheckResult | null>(null)
 	const [installing, setInstalling] = useState(false)
 	const [installOutput, setInstallOutput] = useState<string[]>([])
 	const [allDone, setAllDone] = useState(false)
@@ -92,7 +92,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 
 		// Reset
 		setAllDone(false)
-		setManagedRuntimeResult(null)
+		setProjectRuntimeResult(null)
 		setChecks([
 			{ id: "locate", label: "Locating project runtime CLI", status: "running" },
 			{ id: "version", label: "Checking version compatibility", status: "pending" },
@@ -101,12 +101,12 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		try {
 			// Step 1: Check project runtime installation
 			const result = await window.palot.onboarding.checkProjectRuntime()
-			setManagedRuntimeResult(result)
+			setProjectRuntimeResult(result)
 
 			if (!result.installed) {
 				updateCheck("locate", {
 					status: "error",
-					label: "Managed runtime CLI not found",
+					label: "Project runtime CLI not found",
 					detail: "Install the project runtime CLI to continue",
 				})
 				return
@@ -114,7 +114,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 
 			updateCheck("locate", {
 				status: "success",
-				label: `Managed runtime ${result.version} found`,
+				label: `Project runtime ${result.version} found`,
 				detail: result.path ?? undefined,
 			})
 
@@ -295,8 +295,8 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 
 	// --- Render ---
 
-	const needsInstall = managedRuntimeResult && !managedRuntimeResult.installed
-	const needsUpdate = managedRuntimeResult?.compatibility === "too-old"
+	const needsInstall = projectRuntimeResult && !projectRuntimeResult.installed
+	const needsUpdate = projectRuntimeResult?.compatibility === "too-old"
 	const showInstallUI = needsInstall || needsUpdate
 	const showRemoteOption = showInstallUI && !installing
 	const manualUrlValid = manualUrl.trim().length > 0
@@ -580,7 +580,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 					{allDone && (
 						<Button
 							size="default"
-							onClick={() => onComplete(managedRuntimeResult?.version ?? null)}
+							onClick={() => onComplete(projectRuntimeResult?.version ?? null)}
 							className="gap-2"
 						>
 							Continue

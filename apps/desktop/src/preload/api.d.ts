@@ -7,13 +7,15 @@ import type { ConversionCategory } from "@palot/configconv"
  * The renderer accesses these via `window.palot`.
  */
 
-export interface ManagedRuntimeServerInfo {
+export interface ProjectRuntimeServerInfo {
 	url: string
 	pid: number | null
 	managed: boolean
 }
 
-export interface OpenCodeServerInfo extends ManagedRuntimeServerInfo {}
+export type ManagedRuntimeServerInfo = ProjectRuntimeServerInfo
+
+export interface OpenCodeServerInfo extends ProjectRuntimeServerInfo {}
 
 export interface ModelRef {
 	providerID: string
@@ -330,7 +332,8 @@ export interface OpenCodeCheckResult {
 	message: string | null
 }
 
-export type ManagedRuntimeCheckResult = OpenCodeCheckResult
+export type ProjectRuntimeCheckResult = OpenCodeCheckResult
+export type ManagedRuntimeCheckResult = ProjectRuntimeCheckResult
 
 /** Supported migration source providers. */
 export type MigrationProvider = "claude-code" | "cursor" | "opencode"
@@ -517,10 +520,10 @@ export interface PalotAPI {
 	stopManagedRuntime: () => Promise<boolean>
 	restartManagedRuntime: () => Promise<ManagedRuntimeServerInfo>
 	projectRuntime: {
-		ensure: () => Promise<ManagedRuntimeServerInfo>
+		ensure: () => Promise<ProjectRuntimeServerInfo>
 		getServerUrl: () => Promise<string | null>
 		stop: () => Promise<boolean>
-		restart: () => Promise<ManagedRuntimeServerInfo>
+		restart: () => Promise<ProjectRuntimeServerInfo>
 	}
 	getModelState: () => Promise<ModelState>
 	updateModelRecent: (model: ModelRef) => Promise<ModelState>
@@ -746,7 +749,7 @@ export interface PalotAPI {
 
 	onboarding: {
 		checkManagedRuntime: () => Promise<ManagedRuntimeCheckResult>
-		checkProjectRuntime: () => Promise<ManagedRuntimeCheckResult>
+		checkProjectRuntime: () => Promise<ProjectRuntimeCheckResult>
 		installManagedRuntime: () => Promise<{ success: boolean; error?: string }>
 		installProjectRuntime: () => Promise<{ success: boolean; error?: string }>
 		onInstallOutput: (callback: (text: string) => void) => () => void
