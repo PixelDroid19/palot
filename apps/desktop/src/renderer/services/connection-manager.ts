@@ -27,7 +27,7 @@ import {
 	listProjects,
 	listSessions,
 	subscribeToGlobalEvents,
-} from "./opencode"
+} from "./managed-runtime"
 
 const log = createLogger("connection-manager")
 

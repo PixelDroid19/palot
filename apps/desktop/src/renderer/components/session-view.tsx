@@ -144,11 +144,11 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const directory = selectedAgent?.directory ?? null
 	const runtimeState = useSessionRuntimeState(selectedAgent?.sessionId ?? sessionId, directory)
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
-	const openCodeDataDirectory = runtimeCapabilities.supportsManagedPromptConfig ? directory : null
-	const { data: providers } = useManagedRuntimeProviders(openCodeDataDirectory)
-	const { data: config } = useManagedRuntimeConfig(openCodeDataDirectory)
+	const managedRuntimeDataDirectory = runtimeCapabilities.supportsManagedPromptConfig ? directory : null
+	const { data: providers } = useManagedRuntimeProviders(managedRuntimeDataDirectory)
+	const { data: config } = useManagedRuntimeConfig(managedRuntimeDataDirectory)
 	const { data: vcs } = useManagedRuntimeVcs(directory)
-	const { agents: openCodeAgents } = useManagedRuntimeAgents(openCodeDataDirectory)
+	const { agents: managedRuntimeAgents } = useManagedRuntimeAgents(managedRuntimeDataDirectory)
 
 	// Handlers
 	const handleStopAgent = useCallback(
@@ -302,7 +302,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			providers={providers}
 			config={config}
 			vcs={vcs}
-			openCodeAgents={openCodeAgents}
+			managedRuntimeAgents={managedRuntimeAgents}
 			canUndo={canUndo}
 			canRedo={canRedo}
 			onUndo={undo}

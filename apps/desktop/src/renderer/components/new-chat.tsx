@@ -403,13 +403,13 @@ export function NewChat() {
 		[projects, selectedDirectory],
 	)
 
-	const openCodeConfigDirectory = runtimeCapabilities.supportsManagedPromptConfig
+	const managedRuntimeConfigDirectory = runtimeCapabilities.supportsManagedPromptConfig
 		? (selectedDirectory || null)
 		: null
-	const { data: providers } = useManagedRuntimeProviders(openCodeConfigDirectory)
-	const { data: config } = useManagedRuntimeConfig(openCodeConfigDirectory)
+	const { data: providers } = useManagedRuntimeProviders(managedRuntimeConfigDirectory)
+	const { data: config } = useManagedRuntimeConfig(managedRuntimeConfigDirectory)
 	const { data: vcs, reload: reloadVcs } = useManagedRuntimeVcs(selectedDirectory || null)
-	const { agents: openCodeAgents } = useManagedRuntimeAgents(openCodeConfigDirectory)
+	const { agents: managedRuntimeAgents } = useManagedRuntimeAgents(managedRuntimeConfigDirectory)
 	const { recentModels, addRecent: addRecentModel } = useManagedRuntimeModelState()
 
 	// Handle model selection — set local state + persist to model.json.
@@ -478,10 +478,10 @@ export function NewChat() {
 	)
 
 	// Resolve active agent for model resolution
-	const activeOpenCodeAgent = useMemo(() => {
+	const activeManagedRuntimeAgent = useMemo(() => {
 		const agentName = selectedAgent ?? config?.defaultAgent
-		return openCodeAgents?.find((a) => a.name === agentName) ?? null
-	}, [selectedAgent, config?.defaultAgent, openCodeAgents])
+		return managedRuntimeAgents?.find((a) => a.name === agentName) ?? null
+	}, [selectedAgent, config?.defaultAgent, managedRuntimeAgents])
 
 	// Resolve effective model — selectedModel is seeded from the persisted project model
 	// on mount/project switch (above), so it already wins at step 1 of the resolution chain.
@@ -489,13 +489,13 @@ export function NewChat() {
 		() =>
 			resolveEffectiveModel(
 				selectedModel,
-				activeOpenCodeAgent,
+				activeManagedRuntimeAgent,
 				config?.model,
 				providers?.defaults ?? {},
 				providers?.providers ?? [],
 				recentModels,
 			),
-		[selectedModel, activeOpenCodeAgent, config?.model, providers, recentModels],
+		[selectedModel, activeManagedRuntimeAgent, config?.model, providers, recentModels],
 	)
 
 	// Validate variant against the effective model's available variants.
@@ -542,7 +542,7 @@ export function NewChat() {
 
 		if (runtimeCapabilities.supportsManagedPromptConfig) {
 			return buildManagedRuntimeNewChatRuntimeConfig({
-				agents: openCodeAgents ?? [],
+				agents: managedRuntimeAgents ?? [],
 				selectedAgent,
 				defaultAgent: config?.defaultAgent,
 				onSelectAgent: setSelectedAgent,
@@ -566,7 +566,7 @@ export function NewChat() {
 		config?.defaultAgent,
 		effectiveModel,
 		handleModelSelect,
-		openCodeAgents,
+		managedRuntimeAgents,
 		providers,
 		recentModels,
 		resolvedCliEffort,
@@ -786,7 +786,7 @@ export function NewChat() {
 								query={mentionQuery}
 								open={mentionOpen}
 								directory={selectedDirectory || null}
-								agents={openCodeAgents ?? []}
+								agents={managedRuntimeAgents ?? []}
 								onSelect={handleMentionSelect}
 								onClose={() => setMentionOpen(false)}
 							/>

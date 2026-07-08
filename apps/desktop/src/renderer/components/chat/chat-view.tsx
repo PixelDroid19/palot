@@ -420,7 +420,7 @@ interface ChatViewProps {
 	/** VCS data for status bar */
 	vcs?: VcsData | null
 	/** Available OpenCode agents */
-	openCodeAgents?: SdkAgent[]
+	managedRuntimeAgents?: SdkAgent[]
 	/** Permission handlers */
 	onApprove?: (
 		agent: Agent,
@@ -470,7 +470,7 @@ export function ChatView({
 	providers,
 	config,
 	vcs,
-	openCodeAgents,
+	managedRuntimeAgents,
 	onApprove,
 	onDeny,
 	onReplyQuestion,
@@ -753,7 +753,7 @@ export function ChatView({
 					providers={providers}
 					config={config}
 					vcs={vcs}
-					openCodeAgents={openCodeAgents}
+					managedRuntimeAgents={managedRuntimeAgents}
 					onApprove={handleApprovePermission}
 					onDeny={handleDenyPermission}
 					onReplyQuestion={onReplyQuestion}
@@ -785,7 +785,7 @@ interface ChatInputSectionProps {
 	providers?: ProvidersData | null
 	config?: ConfigData | null
 	vcs?: VcsData | null
-	openCodeAgents?: SdkAgent[]
+	managedRuntimeAgents?: SdkAgent[]
 	onApprove?: (
 		agent: Agent,
 		permissionSessionId: string,
@@ -815,7 +815,7 @@ function ChatInputSection({
 	providers,
 	config,
 	vcs,
-	openCodeAgents,
+	managedRuntimeAgents,
 	onApprove,
 	onDeny,
 	onReplyQuestion,
@@ -957,21 +957,21 @@ function ChatInputSection({
 
 	const { recentModels, addRecent: addRecentModel } = useManagedRuntimeModelState()
 
-	const activeOpenCodeAgent = useMemo(() => {
+	const activeManagedRuntimeAgent = useMemo(() => {
 		const agentName = selectedAgent ?? config?.defaultAgent
-		return openCodeAgents?.find((a) => a.name === agentName) ?? null
-	}, [selectedAgent, config?.defaultAgent, openCodeAgents])
+		return managedRuntimeAgents?.find((a) => a.name === agentName) ?? null
+	}, [selectedAgent, config?.defaultAgent, managedRuntimeAgents])
 
 	const effectiveModel = useMemo(
 		() =>
 			resolveEffectiveModel(
 				selectedModel,
-				activeOpenCodeAgent,
+				activeManagedRuntimeAgent,
 				config?.model,
 				providers?.defaults ?? {},
 				providers?.providers ?? [],
 			),
-		[selectedModel, activeOpenCodeAgent, config?.model, providers],
+		[selectedModel, activeManagedRuntimeAgent, config?.model, providers],
 	)
 
 	useEffect(() => {
@@ -1008,7 +1008,7 @@ function ChatInputSection({
 						runtimeId: cliMeta?.runtimeId ?? "opencode",
 					})
 				: buildManagedRuntimeChatRuntimeConfig({
-						agents: openCodeAgents ?? [],
+						agents: managedRuntimeAgents ?? [],
 						selectedAgent,
 						defaultAgent: config?.defaultAgent,
 						onSelectAgent: setSelectedAgent,
@@ -1047,7 +1047,7 @@ function ChatInputSection({
 			handleModelSelect,
 			isCli,
 			isConnected,
-			openCodeAgents,
+			managedRuntimeAgents,
 			providers,
 			recentModels,
 			selectedAgent,
@@ -1447,7 +1447,7 @@ function ChatInputSection({
 									query={mentionQuery}
 									open={mentionOpen}
 									directory={agent.directory}
-									agents={openCodeAgents ?? []}
+									agents={managedRuntimeAgents ?? []}
 									onSelect={handleMentionSelect}
 									onClose={handleMentionClose}
 								/>
