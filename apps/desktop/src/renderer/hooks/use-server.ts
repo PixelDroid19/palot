@@ -3,16 +3,13 @@ import { useCallback } from "react"
 import { connectionAtom } from "../atoms/connection"
 import { upsertMessageAtom } from "../atoms/messages"
 import { upsertPartAtom } from "../atoms/parts"
-import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
+import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import { readSessionRuntimeState } from "../lib/runtime-session-config"
 import {
-	cancelCliTurn,
 	consumeOpencodeHandoff,
-	forgetCliSession,
-	persistCliSession,
 	runCliTurn,
 } from "../services/cli-chat"
 import type {
@@ -24,6 +21,14 @@ import type {
 	UserMessage,
 } from "../lib/types"
 import { getProjectClient } from "../services/connection-manager"
+import {
+	abortRuntimeSession,
+	deleteRuntimeSession,
+	rejectOpenCodeQuestion,
+	renameRuntimeSession,
+	replyOpenCodeQuestion,
+	respondOpenCodePermission,
+} from "../services/runtime-session-actions"
 
 const log = createLogger("use-server")
 
@@ -43,15 +48,9 @@ export function useServerConnection() {
  */
 export function useAgentActions() {
 	const abort = useCallback(async (directory: string, sessionId: string) => {
-		if (readSessionRuntimeState(sessionId).runtime === "cli") {
-			cancelCliTurn(sessionId)
-			return
-		}
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("abort", { sessionId })
 		try {
-			await client.session.abort({ sessionID: sessionId })
+			await abortRuntimeSession(directory, sessionId)
 		} catch (err) {
 			log.error("abort failed", { sessionId }, err)
 			throw err
@@ -198,27 +197,10 @@ export function useAgentActions() {
 	}, [])
 
 	const renameSession = useCallback(async (directory: string, sessionId: string, title: string) => {
-		// Optimistic update
-		const entry = appStore.get(sessionFamily(sessionId))
-		if (entry) {
-			appStore.set(upsertSessionAtom, {
-				session: { ...entry.session, title },
-				directory: entry.directory,
-			})
-		}
-
-		// CLI-backed sessions only exist locally.
-		if (readSessionRuntimeState(sessionId).runtime === "cli") {
-			persistCliSession(sessionId)
-			return
-		}
-
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("renameSession", { sessionId, title })
 
 		try {
-			await client.session.update({ sessionID: sessionId, title })
+			await renameRuntimeSession(directory, sessionId, title)
 		} catch (err) {
 			log.error("renameSession failed", { sessionId, title }, err)
 			throw err
@@ -226,19 +208,9 @@ export function useAgentActions() {
 	}, [])
 
 	const deleteSession = useCallback(async (directory: string, sessionId: string) => {
-		// CLI-backed sessions only exist locally: drop them from the atoms and
-		// their persisted transcript, never from the OpenCode server.
-		if (readSessionRuntimeState(sessionId).runtime === "cli") {
-			cancelCliTurn(sessionId)
-			await forgetCliSession(sessionId)
-			appStore.set(removeSessionAtom, sessionId)
-			return
-		}
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("deleteSession", { sessionId })
 		try {
-			await client.session.delete({ sessionID: sessionId })
+			await deleteRuntimeSession(directory, sessionId)
 		} catch (err) {
 			log.error("deleteSession failed", { sessionId }, err)
 			throw err
@@ -252,15 +224,9 @@ export function useAgentActions() {
 			permissionId: string,
 			response: "once" | "always" | "reject",
 		) => {
-			const client = getProjectClient(directory)
-			if (!client) throw new Error("Not connected to OpenCode server")
 			log.debug("respondToPermission", { sessionId, permissionId, response })
 			try {
-				await client.permission.respond({
-					sessionID: sessionId,
-					permissionID: permissionId,
-					response,
-				})
+				await respondOpenCodePermission(directory, sessionId, permissionId, response)
 			} catch (err) {
 				log.error("respondToPermission failed", { sessionId, permissionId, response }, err)
 				throw err
@@ -271,11 +237,9 @@ export function useAgentActions() {
 
 	const replyToQuestion = useCallback(
 		async (directory: string, requestId: string, answers: QuestionAnswer[]) => {
-			const client = getProjectClient(directory)
-			if (!client) throw new Error("Not connected to OpenCode server")
 			log.debug("replyToQuestion", { requestId })
 			try {
-				await client.question.reply({ requestID: requestId, answers })
+				await replyOpenCodeQuestion(directory, requestId, answers)
 			} catch (err) {
 				log.error("replyToQuestion failed", { requestId }, err)
 				throw err
@@ -285,11 +249,9 @@ export function useAgentActions() {
 	)
 
 	const rejectQuestion = useCallback(async (directory: string, requestId: string) => {
-		const client = getProjectClient(directory)
-		if (!client) throw new Error("Not connected to OpenCode server")
 		log.debug("rejectQuestion", { requestId })
 		try {
-			await client.question.reject({ requestID: requestId })
+			await rejectOpenCodeQuestion(directory, requestId)
 		} catch (err) {
 			log.error("rejectQuestion failed", { requestId }, err)
 			throw err
