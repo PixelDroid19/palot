@@ -140,7 +140,7 @@ export function RootLayout() {
 			skippedSteps: string[]
 			migrationPerformed: boolean
 			migratedFrom: string[]
-			managedRuntimeVersion: string | null
+			projectRuntimeVersion: string | null
 			providersConnected: number
 		}) => {
 			setOnboardingState({
@@ -149,7 +149,7 @@ export function RootLayout() {
 				skippedSteps: state.skippedSteps,
 				migrationPerformed: state.migrationPerformed,
 				migratedFrom: state.migratedFrom,
-				managedRuntimeVersion: state.managedRuntimeVersion,
+				projectRuntimeVersion: state.projectRuntimeVersion,
 				providersConnected: state.providersConnected,
 			})
 		},

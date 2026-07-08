@@ -14,14 +14,14 @@ import { ArrowRightIcon, CheckCircle2Icon, CommandIcon, FlaskConicalIcon } from 
 import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import type { MigrationProvider, MigrationResult, ProviderDetection } from "../../../../preload/api"
-import { isManagedRuntimeId } from "../../../lib/session-runtimes"
+import { isProjectRuntimeId } from "../../../lib/session-runtimes"
 
 // ============================================================
 // Types
 // ============================================================
 
 interface CompleteStepProps {
-	managedRuntimeVersion: string | null
+	projectRuntimeVersion: string | null
 	migratedProviders: string[]
 	migrationResult: MigrationResult | null
 	onStartMigration: (provider: MigrationProvider) => void
@@ -36,7 +36,7 @@ const isElectron = typeof window !== "undefined" && "palot" in window
 const isMac = isElectron && window.palot.platform === "darwin"
 
 export function CompleteStep({
-	managedRuntimeVersion,
+	projectRuntimeVersion,
 	migratedProviders,
 	migrationResult,
 	onStartMigration,
@@ -58,7 +58,7 @@ export function CompleteStep({
 			.detectProviders()
 			.then((detections) => {
 				// Only show providers that were found and aren't the project runtime itself.
-				setProviders(detections.filter((d) => d.found && !isManagedRuntimeId(d.provider)))
+				setProviders(detections.filter((d) => d.found && !isProjectRuntimeId(d.provider)))
 				setDetecting(false)
 			})
 			.catch(() => {
@@ -100,8 +100,8 @@ export function CompleteStep({
 				>
 					<h2 className="text-2xl font-semibold text-foreground">You're all set.</h2>
 					<p className="text-sm text-muted-foreground">
-						{managedRuntimeVersion
-							? `Palot is ready (project runtime: OpenCode ${formatVersion(managedRuntimeVersion)})`
+						{projectRuntimeVersion
+							? `Palot is ready (project runtime: OpenCode ${formatVersion(projectRuntimeVersion)})`
 							: "Palot is ready to go"}
 						{hasMigrated ? " and your configuration has been migrated." : "."}
 					</p>

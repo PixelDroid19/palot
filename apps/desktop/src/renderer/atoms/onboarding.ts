@@ -18,7 +18,7 @@ export interface OnboardingState {
 	migrationPerformed: boolean
 	/** Which provider(s) were migrated from (e.g. ["claude-code", "cursor"]). */
 	migratedFrom: string[]
-	managedRuntimeVersion: string | null
+	projectRuntimeVersion: string | null
 	/** Number of AI providers connected during onboarding. */
 	providersConnected: number
 }
@@ -33,6 +33,6 @@ export const onboardingStateAtom = atomWithStorage<OnboardingState>("palot:onboa
 	skippedSteps: [],
 	migrationPerformed: false,
 	migratedFrom: [],
-	managedRuntimeVersion: null,
+	projectRuntimeVersion: null,
 	providersConnected: 0,
 })

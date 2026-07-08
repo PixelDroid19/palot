@@ -43,7 +43,7 @@ interface OnboardingOverlayProps {
 		skippedSteps: string[]
 		migrationPerformed: boolean
 		migratedFrom: string[]
-		managedRuntimeVersion: string | null
+		projectRuntimeVersion: string | null
 		providersConnected: number
 	}) => void
 }
@@ -69,7 +69,7 @@ const STEP_TRANSITION = {
 export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome")
 	const [skippedSteps, setSkippedSteps] = useState<string[]>([])
-	const [managedRuntimeVersion, setOpencodeVersion] = useState<string | null>(null)
+	const [projectRuntimeVersion, setProjectRuntimeVersion] = useState<string | null>(null)
 	const [providersConnected, setProvidersConnected] = useState(0)
 	const [migratedProviders, setMigratedProviders] = useState<string[]>([])
 
@@ -101,7 +101,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 
 	const handleEnvironmentComplete = useCallback(
 		(version: string | null) => {
-			setOpencodeVersion(version)
+			setProjectRuntimeVersion(version)
 			goToStep("providers")
 		},
 		[goToStep],
@@ -181,10 +181,10 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 			skippedSteps,
 			migrationPerformed: migratedProviders.length > 0,
 			migratedFrom: migratedProviders,
-			managedRuntimeVersion,
+			projectRuntimeVersion,
 			providersConnected,
 		})
-	}, [onComplete, skippedSteps, migratedProviders, managedRuntimeVersion, providersConnected])
+	}, [onComplete, skippedSteps, migratedProviders, projectRuntimeVersion, providersConnected])
 
 	return (
 		<div
@@ -257,7 +257,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 							{...STEP_TRANSITION}
 						>
 							<CompleteStep
-								managedRuntimeVersion={managedRuntimeVersion}
+								projectRuntimeVersion={projectRuntimeVersion}
 								migratedProviders={migratedProviders}
 								migrationResult={migrationResult}
 								onStartMigration={handleStartMigration}

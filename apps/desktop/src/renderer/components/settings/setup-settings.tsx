@@ -218,7 +218,7 @@ function OnboardingSection() {
 			skippedSteps: [],
 			migrationPerformed: false,
 			migratedFrom: [],
-			managedRuntimeVersion: null,
+			projectRuntimeVersion: null,
 			providersConnected: 0,
 		})
 		// Relaunch the app to show onboarding fresh
