@@ -94,7 +94,10 @@ import { CliApprovalBar } from "./cli-approval-bar"
 import { CliQuestionBar } from "./cli-question-bar"
 import { SessionRuntimeSwitch } from "./cli-toolbar"
 import { StatusBar } from "./prompt-toolbar"
-import { RuntimeConfigToolbar } from "./runtime-config-toolbar"
+import {
+	type RuntimeConfigToolbarProps,
+	RuntimeConfigToolbar,
+} from "./runtime-config-toolbar"
 import { SessionTaskList } from "./session-task-list"
 import { SkillPickerDialog } from "./skill-picker-dialog"
 import { SlashCommandPopover, type SlashCommandPopoverHandle } from "./slash-command-popover"
@@ -815,6 +818,29 @@ function ChatInputSection({
 	reviewPanelOpen,
 	onForkFromTurn,
 }: ChatInputSectionProps) {
+	type ChatRuntimeConfig =
+		| {
+				kind: "cli-session"
+				runtimeSwitchCurrent: string
+				toolbarProps: RuntimeConfigToolbarProps
+		  }
+		| {
+				kind: "opencode"
+				runtimeSwitchCurrent: "opencode"
+				toolbarProps: RuntimeConfigToolbarProps
+				projectModel:
+					| {
+							directory: string
+							model: ModelRef & { variant?: string; agent?: string }
+					  }
+					| null
+				sendOptions: {
+					model?: ModelRef
+					agentName?: string
+					variant?: string
+				}
+		  }
+
 	const [sending, setSending] = useState(false)
 	// CLI-backed sessions use their own model; hide the OpenCode agent/model
 	// picker. Reactive so a mid-session runtime switch swaps the toolbar live.
@@ -986,6 +1012,70 @@ function ChatInputSection({
 		[addRecentModel],
 	)
 
+	const chatRuntimeConfig = useMemo<ChatRuntimeConfig>(
+		() =>
+			isCli
+				? {
+						kind: "cli-session",
+						runtimeSwitchCurrent: cliMeta?.runtimeId ?? "opencode",
+						toolbarProps: {
+							kind: "cli-session",
+							sessionId: agent.sessionId,
+						},
+				  }
+				: {
+						kind: "opencode",
+						runtimeSwitchCurrent: "opencode",
+						toolbarProps: {
+							kind: "opencode",
+							agents: openCodeAgents ?? [],
+							selectedAgent,
+							defaultAgent: config?.defaultAgent,
+							onSelectAgent: setSelectedAgent,
+							providers: providers ?? null,
+							effectiveModel,
+							hasModelOverride: !!selectedModel,
+							onSelectModel: handleModelSelect,
+							recentModels,
+							selectedVariant,
+							onSelectVariant: setSelectedVariant,
+							disabled: !isConnected,
+						},
+						projectModel:
+							effectiveModel && agent.directory
+								? {
+										directory: agent.directory,
+										model: {
+											...effectiveModel,
+											variant: selectedVariant,
+											agent: selectedAgent || undefined,
+										},
+									}
+								: null,
+						sendOptions: {
+							model: effectiveModel ?? undefined,
+							agentName: selectedAgent || undefined,
+							variant: selectedVariant,
+						},
+				  },
+		[
+			agent.directory,
+			agent.sessionId,
+			cliMeta?.runtimeId,
+			config?.defaultAgent,
+			effectiveModel,
+			handleModelSelect,
+			isCli,
+			isConnected,
+			openCodeAgents,
+			providers,
+			recentModels,
+			selectedAgent,
+			selectedModel,
+			selectedVariant,
+		],
+	)
+
 	const slashCommandRef = useRef<{
 		setText: (text: string) => void
 		getText: () => string
@@ -1079,14 +1169,10 @@ function ChatInputSection({
 
 			setSending(true)
 			try {
-				if (effectiveModel && agent.directory) {
+				if (chatRuntimeConfig.kind === "opencode" && chatRuntimeConfig.projectModel) {
 					appStore.set(setProjectModelAtom, {
-						directory: agent.directory,
-						model: {
-							...effectiveModel,
-							variant: selectedVariant,
-							agent: selectedAgent || undefined,
-						},
+						directory: chatRuntimeConfig.projectModel.directory,
+						model: chatRuntimeConfig.projectModel.model,
 					})
 				}
 
@@ -1104,9 +1190,7 @@ function ChatInputSection({
 				const finalText = commentPrefix ? `${commentPrefix}${text.trim()}` : text.trim()
 
 				await onSendMessage(agent, finalText, {
-					model: effectiveModel ?? undefined,
-					agentName: selectedAgent || undefined,
-					variant: selectedVariant,
+					...(chatRuntimeConfig.kind === "opencode" ? chatRuntimeConfig.sendOptions : {}),
 					files,
 				})
 				log.debug("handleSend onSendMessage completed", { sessionId: agent.sessionId })
@@ -1129,9 +1213,7 @@ function ChatInputSection({
 			onSendMessage,
 			sending,
 			agent,
-			effectiveModel,
-			selectedAgent,
-			selectedVariant,
+			chatRuntimeConfig,
 			clearDraft,
 			handleSlashCommand,
 			scrollRef,
@@ -1447,30 +1529,9 @@ function ChatInputSection({
 											<AttachButton disabled={!isConnected} />
 											<SessionRuntimeSwitch
 												sessionId={agent.sessionId}
-												current={cliMeta?.runtimeId ?? "opencode"}
+												current={chatRuntimeConfig.runtimeSwitchCurrent}
 											/>
-											<RuntimeConfigToolbar
-												{...(isCli
-													? {
-															kind: "cli-session" as const,
-															sessionId: agent.sessionId,
-														}
-													: {
-															kind: "opencode" as const,
-															agents: openCodeAgents ?? [],
-															selectedAgent,
-															defaultAgent: config?.defaultAgent,
-															onSelectAgent: setSelectedAgent,
-															providers: providers ?? null,
-															effectiveModel,
-															hasModelOverride: !!selectedModel,
-															onSelectModel: handleModelSelect,
-															recentModels,
-															selectedVariant,
-															onSelectVariant: setSelectedVariant,
-															disabled: !isConnected,
-														})}
-											/>
+											<RuntimeConfigToolbar {...chatRuntimeConfig.toolbarProps} />
 										</PromptInputTools>
 										<PromptInputSubmit
 											disabled={!canSend}
