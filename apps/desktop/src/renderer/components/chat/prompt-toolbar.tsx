@@ -16,7 +16,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@palot/ui/components/select"
-import { Separator } from "@palot/ui/components/separator"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
 import { cn } from "@palot/ui/lib/utils"
 import { useAtomValue } from "jotai"
@@ -49,6 +48,7 @@ import {
 	shortModelName,
 } from "../../lib/session-metrics"
 import { ProviderIcon } from "../settings/provider-icon"
+import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
 // ============================================================
 // Shared toolbar trigger styles
@@ -497,39 +497,35 @@ export function PromptToolbar({
 	const hasVariants = variants.length > 0
 
 	return (
-		<div className="flex min-w-0 flex-wrap items-center gap-0.5">
-			{hasAgents && (
-				<AgentSelector
-					agents={agents}
-					selectedAgent={selectedAgent}
-					defaultAgent={defaultAgent}
-					onSelectAgent={onSelectAgent}
+		<SessionConfigToolbarRow
+			items={[
+				hasAgents && (
+					<AgentSelector
+						agents={agents}
+						selectedAgent={selectedAgent}
+						defaultAgent={defaultAgent}
+						onSelectAgent={onSelectAgent}
+						disabled={disabled}
+					/>
+				),
+				<ModelSelector
+					providers={providers}
+					effectiveModel={effectiveModel}
+					hasOverride={hasModelOverride}
+					onSelectModel={onSelectModel}
+					recentModels={recentModels}
 					disabled={disabled}
-				/>
-			)}
-
-			{hasAgents && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
-
-			<ModelSelector
-				providers={providers}
-				effectiveModel={effectiveModel}
-				hasOverride={hasModelOverride}
-				onSelectModel={onSelectModel}
-				recentModels={recentModels}
-				disabled={disabled}
-			/>
-
-			{hasVariants && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
-
-			{hasVariants && (
-				<VariantSelector
-					variants={variants}
-					selectedVariant={selectedVariant}
-					onSelectVariant={onSelectVariant}
-					disabled={disabled}
-				/>
-			)}
-		</div>
+				/>,
+				hasVariants && (
+					<VariantSelector
+						variants={variants}
+						selectedVariant={selectedVariant}
+						onSelectVariant={onSelectVariant}
+						disabled={disabled}
+					/>
+				),
+			]}
+		/>
 	)
 }
 

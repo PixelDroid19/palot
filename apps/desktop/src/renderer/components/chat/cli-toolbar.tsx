@@ -15,29 +15,20 @@ import {
 	SearchableListPopoverTrigger,
 	useSearchableListPopoverSearch,
 } from "@palot/ui/components/searchable-list-popover"
-import { Separator } from "@palot/ui/components/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@palot/ui/components/select"
 import { cn } from "@palot/ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
-import { useAtomValue } from "jotai"
 import { CheckIcon, ChevronDownIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
-import { cliSessionsAtom, patchCliMeta } from "../../atoms/cli-sessions"
 import { useAgentActions } from "../../hooks/use-server"
 import { useTranslation } from "../../i18n/use-translation"
-import {
-	availableRuntimeModels,
-	getRuntimeModelEfforts,
-	resolveRuntimeEffort,
-	resolveRuntimeModel,
-} from "../../lib/runtime-model-selection"
 import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
 import {
-	persistCliSession,
 	switchCliRuntime,
 	switchCliSessionToOpenCode,
 } from "../../services/cli-chat"
+import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
 const TOOLBAR_TRIGGER_BASE_CN =
 	"flex h-7 items-center gap-1 rounded-md border-none bg-transparent px-2 text-xs shadow-none transition-colors"
@@ -207,36 +198,32 @@ export function CliPromptToolbar({
 	const hasEffort = efforts.length > 0
 
 	return (
-		<div className="flex min-w-0 flex-wrap items-center gap-0.5">
-			{hasModel && (
-				<CliModelSelect models={models} value={modelValue} onValueChange={onModelChange} />
-			)}
-
-			{hasModel && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
-
-			<CliOptionSelect
-				aria-label={t("runtimePicker.sandbox")}
-				value={sandboxValue}
-				onValueChange={(value) => onSandboxChange(value as AgentSandbox)}
-				options={[
-					{ value: "plan", label: t("runtimePicker.sandboxPlan") },
-					{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
-					{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
-					{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
-				]}
-			/>
-
-			{hasEffort && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
-
-			{hasEffort && (
+		<SessionConfigToolbarRow
+			items={[
+				hasModel && (
+					<CliModelSelect models={models} value={modelValue} onValueChange={onModelChange} />
+				),
 				<CliOptionSelect
-					aria-label={t("runtimePicker.effort")}
-					value={effortValue || "__default__"}
-					onValueChange={(value) => onEffortChange(value === "__default__" ? "" : value)}
-					options={cliEffortOptions(t, efforts)}
-				/>
-			)}
-		</div>
+					aria-label={t("runtimePicker.sandbox")}
+					value={sandboxValue}
+					onValueChange={(value) => onSandboxChange(value as AgentSandbox)}
+					options={[
+						{ value: "plan", label: t("runtimePicker.sandboxPlan") },
+						{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
+						{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
+						{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
+					]}
+				/>,
+				hasEffort && (
+					<CliOptionSelect
+						aria-label={t("runtimePicker.effort")}
+						value={effortValue || "__default__"}
+						onValueChange={(value) => onEffortChange(value === "__default__" ? "" : value)}
+						options={cliEffortOptions(t, efforts)}
+					/>
+				),
+			]}
+		/>
 	)
 }
 
@@ -289,63 +276,6 @@ export function SessionRuntimeSwitch({
 				{ value: "opencode", label: "OpenCode" },
 				...runtimes.map((r) => ({ value: r.id, label: r.displayName })),
 			]}
-		/>
-	)
-}
-
-export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
-	const meta = useAtomValue(cliSessionsAtom)[sessionId]
-	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
-
-	const runtimeId = meta?.runtimeId
-	useEffect(() => {
-		if (!runtimeId) return
-		loadRuntimeDescriptors().then((all) => setRuntimes(all.filter((d) => d.installed)))
-	}, [runtimeId])
-
-	const descriptor = runtimes.find((d) => d.id === runtimeId)
-	const models = descriptor ? availableRuntimeModels(descriptor) : []
-	const currentSlug = descriptor ? (resolveRuntimeModel(descriptor, meta?.model) ?? "") : ""
-	const currentEffort = descriptor
-		? (resolveRuntimeEffort(descriptor, currentSlug, meta?.effort) ?? "")
-		: ""
-	const efforts = descriptor ? getRuntimeModelEfforts(descriptor, currentSlug) : []
-
-	useEffect(() => {
-		if (!meta || !descriptor) return
-		const normalizedModel = currentSlug || undefined
-		const normalizedEffort = currentEffort || undefined
-		if (meta.model === normalizedModel && meta.effort === normalizedEffort) return
-		patchCliMeta(sessionId, {
-			model: normalizedModel,
-			effort: normalizedEffort,
-		})
-		persistCliSession(sessionId)
-	}, [currentEffort, currentSlug, descriptor, meta, sessionId])
-
-	if (!meta || !descriptor) return null
-
-	const apply = (patch: { model?: string; effort?: string; sandbox?: AgentSandbox }) => {
-		const nextModel = resolveRuntimeModel(descriptor, patch.model ?? meta.model)
-		const nextEffort = resolveRuntimeEffort(descriptor, nextModel, patch.effort ?? meta.effort)
-		patchCliMeta(sessionId, {
-			model: nextModel,
-			effort: nextEffort,
-			sandbox: patch.sandbox ?? meta.sandbox,
-		})
-		persistCliSession(sessionId)
-	}
-
-	return (
-		<CliPromptToolbar
-			models={models}
-			modelValue={currentSlug}
-			onModelChange={(value) => apply({ model: value, effort: "" })}
-			sandboxValue={meta.sandbox}
-			onSandboxChange={(value) => apply({ sandbox: value })}
-			efforts={descriptor.capabilities.reasoningEffort ? efforts : []}
-			effortValue={currentEffort}
-			onEffortChange={(value) => apply({ effort: value })}
 		/>
 	)
 }
