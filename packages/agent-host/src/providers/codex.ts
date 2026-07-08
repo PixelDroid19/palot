@@ -32,8 +32,20 @@ import {
 
 const CODEX_FALLBACK_MODELS: AgentModelInfo[] = [
 	{
-		slug: "",
-		label: "Default",
+		slug: "gpt-5.5",
+		label: "GPT-5.5",
+		efforts: ["low", "medium", "high", "xhigh"],
+		defaultEffort: "medium",
+	},
+	{
+		slug: "gpt-5.4",
+		label: "GPT-5.4",
+		efforts: ["low", "medium", "high", "xhigh"],
+		defaultEffort: "medium",
+	},
+	{
+		slug: "gpt-5.4-mini",
+		label: "GPT-5.4-Mini",
 		efforts: ["low", "medium", "high", "xhigh"],
 		defaultEffort: "medium",
 	},
@@ -556,7 +568,7 @@ export class CodexProvider implements AgentSessionProvider {
 				})
 			}
 			if (!models.length) return CODEX_FALLBACK_MODELS
-			return [{ ...CODEX_FALLBACK_MODELS[0] }, ...models] as AgentModelInfo[]
+			return models
 		} catch {
 			return CODEX_FALLBACK_MODELS
 		}

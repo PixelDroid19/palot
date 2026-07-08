@@ -41,11 +41,10 @@ import {
 
 const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 const CLAUDE_FALLBACK_MODELS: AgentModelInfo[] = [
-	{ slug: "", label: "Default", efforts: CLAUDE_EFFORTS },
-	{ slug: "fable", label: "Fable", efforts: CLAUDE_EFFORTS },
-	{ slug: "opus", label: "Opus", efforts: CLAUDE_EFFORTS },
 	{ slug: "sonnet", label: "Sonnet", efforts: CLAUDE_EFFORTS },
+	{ slug: "opus", label: "Opus", efforts: CLAUDE_EFFORTS },
 	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS },
+	{ slug: "fable", label: "Fable", efforts: CLAUDE_EFFORTS },
 ]
 
 const TOOL_RESULT_MAX_CHARS = 4_000
