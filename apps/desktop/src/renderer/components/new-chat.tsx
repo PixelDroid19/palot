@@ -62,6 +62,12 @@ import {
 	loadRuntimeDescriptors,
 	type SessionRuntimeId,
 } from "../lib/session-runtimes"
+import {
+	availableRuntimeModels,
+	getRuntimeModelEfforts,
+	resolveRuntimeEffort,
+	resolveRuntimeModel,
+} from "../lib/runtime-model-selection"
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
@@ -320,9 +326,30 @@ export function NewChat() {
 	const activeCliRuntime = isCliRuntime(sessionRuntime)
 		? cliRuntimes.find((d) => d.id === sessionRuntime)
 		: undefined
-	const cliModels = activeCliRuntime?.models ?? []
-	// Efforts are per-model: switching models re-derives the effort choices.
-	const cliEfforts = cliModels.find((m) => m.slug === cliModel)?.efforts ?? []
+	const cliModels = useMemo(() => availableRuntimeModels(activeCliRuntime), [activeCliRuntime])
+	const resolvedCliModel = useMemo(
+		() => resolveRuntimeModel(activeCliRuntime, cliModel),
+		[activeCliRuntime, cliModel],
+	)
+	const cliEfforts = useMemo(
+		() => getRuntimeModelEfforts(activeCliRuntime, resolvedCliModel),
+		[activeCliRuntime, resolvedCliModel],
+	)
+	const resolvedCliEffort = useMemo(
+		() => resolveRuntimeEffort(activeCliRuntime, resolvedCliModel, cliEffort),
+		[activeCliRuntime, resolvedCliModel, cliEffort],
+	)
+	useEffect(() => {
+		if (!activeCliRuntime) return
+		const nextModel = resolveRuntimeModel(activeCliRuntime, cliModel) ?? ""
+		if (nextModel !== cliModel) {
+			setCliModel(nextModel)
+		}
+		const nextEffort = resolveRuntimeEffort(activeCliRuntime, nextModel, cliEffort) ?? ""
+		if (nextEffort !== cliEffort) {
+			setCliEffort(nextEffort)
+		}
+	}, [activeCliRuntime, cliEffort, cliModel])
 
 
 	// Draft persistence — survives page reloads.
@@ -683,8 +710,8 @@ export function NewChat() {
 					directory: selectedDirectory,
 					runtimeId: sessionRuntime,
 					sandbox: cliSandbox,
-					model: cliModel || undefined,
-					effort: cliEffort || undefined,
+					model: resolvedCliModel,
+					effort: resolvedCliEffort,
 				})
 				clearDraft()
 				// Fire the first turn (writes the user message into the atoms
@@ -719,8 +746,8 @@ export function NewChat() {
 			clearDraft,
 			navigateToSession,
 			sendPrompt,
-			cliModel,
-			cliEffort,
+			resolvedCliModel,
+			resolvedCliEffort,
 			cliSandbox,
 		],
 	)
@@ -930,12 +957,12 @@ export function NewChat() {
 												setCliEffort("")
 											}}
 										>
-											{cliModels.map((m) => (
-												<NativeSelectOption key={m.slug} value={m.slug}>
-													{m.slug === "" ? t("runtimePicker.defaultModel") : m.label}
-												</NativeSelectOption>
-											))}
-										</NativeSelect>
+										{cliModels.map((m) => (
+											<NativeSelectOption key={m.slug} value={m.slug}>
+												{m.label}
+											</NativeSelectOption>
+										))}
+									</NativeSelect>
 									)}
 									{isCliRuntime(sessionRuntime) && (
 										<NativeSelect

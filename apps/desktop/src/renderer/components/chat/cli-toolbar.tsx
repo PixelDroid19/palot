@@ -12,6 +12,12 @@ import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import { cliSessionsAtom, patchCliMeta } from "../../atoms/cli-sessions"
 import { useAgentActions } from "../../hooks/use-server"
 import { useTranslation } from "../../i18n/use-translation"
+import {
+	availableRuntimeModels,
+	getRuntimeModelEfforts,
+	resolveRuntimeEffort,
+	resolveRuntimeModel,
+} from "../../lib/runtime-model-selection"
 import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
 import {
 	persistCliSession,
@@ -90,18 +96,28 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 	const descriptor = runtimes.find((d) => d.id === runtimeId)
 	if (!meta || !descriptor) return null
 
-	// Sessions persisted before a catalog change may reference a slug that is
-	// no longer listed; keep it selectable so the select reflects reality.
-	const currentSlug = meta.model ?? ""
-	const models = descriptor.models.some((m) => m.slug === currentSlug)
-		? descriptor.models
-		: [...descriptor.models, { slug: currentSlug, label: currentSlug, efforts: [] }]
-	const efforts = models.find((m) => m.slug === currentSlug)?.efforts ?? []
+	const models = availableRuntimeModels(descriptor)
+	const currentSlug = resolveRuntimeModel(descriptor, meta.model) ?? ""
+	const currentEffort = resolveRuntimeEffort(descriptor, currentSlug, meta.effort) ?? ""
+	const efforts = getRuntimeModelEfforts(descriptor, currentSlug)
+
+	useEffect(() => {
+		const normalizedModel = currentSlug || undefined
+		const normalizedEffort = currentEffort || undefined
+		if (meta.model === normalizedModel && meta.effort === normalizedEffort) return
+		patchCliMeta(sessionId, {
+			model: normalizedModel,
+			effort: normalizedEffort,
+		})
+		persistCliSession(sessionId)
+	}, [currentEffort, currentSlug, meta.effort, meta.model, sessionId])
 
 	const apply = (patch: { model?: string; effort?: string; sandbox?: AgentSandbox }) => {
+		const nextModel = resolveRuntimeModel(descriptor, patch.model ?? meta.model)
+		const nextEffort = resolveRuntimeEffort(descriptor, nextModel, patch.effort ?? meta.effort)
 		patchCliMeta(sessionId, {
-			model: patch.model === "" ? undefined : (patch.model ?? meta.model),
-			effort: patch.effort === "" ? undefined : (patch.effort ?? meta.effort),
+			model: nextModel,
+			effort: nextEffort,
 			sandbox: patch.sandbox ?? meta.sandbox,
 		})
 		persistCliSession(sessionId)
@@ -119,7 +135,7 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 				>
 					{models.map((m) => (
 						<NativeSelectOption key={m.slug} value={m.slug}>
-							{m.slug === "" ? t("runtimePicker.defaultModel") : m.label}
+							{m.label}
 						</NativeSelectOption>
 					))}
 				</NativeSelect>
@@ -145,7 +161,7 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 				<NativeSelect
 					aria-label={t("runtimePicker.effort")}
 					size="sm"
-					value={meta.effort ?? ""}
+					value={currentEffort}
 					onChange={(e) => apply({ effort: e.target.value })}
 				>
 					<NativeSelectOption value="">{t("runtimePicker.effortDefault")}</NativeSelectOption>
