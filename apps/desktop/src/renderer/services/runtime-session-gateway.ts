@@ -45,7 +45,7 @@ function shouldUseCliRuntime(
 	return resolvePromptRuntime(readSessionRuntimeState(sessionId), options) === "cli"
 }
 
-function isCliSession(sessionId: string): boolean {
+function sessionUsesCliRuntime(sessionId: string): boolean {
 	return isCliRuntimeState(readSessionRuntimeState(sessionId))
 }
 
@@ -155,7 +155,45 @@ export interface RuntimeSessionCreateResult {
 	session?: Session
 }
 
-const projectRuntimeSessionGateway = {
+interface SessionRuntimeGateway {
+	promptSession(
+		directory: string,
+		sessionId: string,
+		text: string,
+		options?: RuntimePromptOptions,
+	): Promise<void>
+	abortSession(directory: string, sessionId: string): Promise<void>
+	renameSession(directory: string, sessionId: string, title: string): Promise<void>
+	deleteSession(directory: string, sessionId: string): Promise<void>
+	revertSession(directory: string, sessionId: string, messageId: string): Promise<void>
+	unrevertSession(directory: string, sessionId: string): Promise<void>
+	executeCommand(
+		directory: string,
+		sessionId: string,
+		command: string,
+		args: string,
+	): Promise<void>
+	summarizeSession(
+		directory: string,
+		sessionId: string,
+		model?: { providerID: string; modelID: string },
+	): Promise<void>
+	deletePart(
+		directory: string,
+		sessionId: string,
+		messageId: string,
+		partId: string,
+	): Promise<void>
+	forkSession(
+		directory: string,
+		sessionId: string,
+		messageId?: string,
+	): Promise<Session>
+}
+
+const projectRuntimeSessionGateway: SessionRuntimeGateway & {
+	createSession: (directory: string, title?: string) => Promise<Session | undefined>
+} = {
 	createSession: createProjectRuntimeSession,
 	async promptSession(
 		directory: string,
@@ -249,6 +287,61 @@ const projectRuntimeSessionGateway = {
 	},
 }
 
+const cliRuntimeSessionGateway: SessionRuntimeGateway = {
+	async promptSession(
+		_directory: string,
+		sessionId: string,
+		text: string,
+		options?: RuntimePromptOptions,
+	): Promise<void> {
+		await runCliRuntimeTurn(sessionId, text, options?.files)
+	},
+	async abortSession(_directory: string, sessionId: string): Promise<void> {
+		interruptCliRuntimeTurn(sessionId)
+	},
+	async renameSession(_directory: string, sessionId: string): Promise<void> {
+		persistCliRuntimeSession(sessionId)
+	},
+	async deleteSession(_directory: string, sessionId: string): Promise<void> {
+		interruptCliRuntimeTurn(sessionId)
+		await forgetCliRuntimeSession(sessionId)
+		appStore.set(removeSessionAtom, sessionId)
+	},
+	async revertSession(): Promise<void> {
+		throw new Error("Revert is not supported for CLI sessions")
+	},
+	async unrevertSession(): Promise<void> {
+		throw new Error("Undo is not supported for CLI sessions")
+	},
+	async executeCommand(): Promise<void> {
+		throw new Error("Slash commands are not supported for CLI sessions")
+	},
+	async summarizeSession(): Promise<void> {
+		throw new Error("Summarize is not supported for CLI sessions")
+	},
+	async deletePart(): Promise<void> {
+		throw new Error("Deleting parts is not supported for CLI sessions")
+	},
+	async forkSession(): Promise<Session> {
+		throw new Error("Fork is not supported for CLI sessions")
+	},
+}
+
+function runtimeGatewayForSession(sessionId: string): SessionRuntimeGateway {
+	return sessionUsesCliRuntime(sessionId)
+		? cliRuntimeSessionGateway
+		: projectRuntimeSessionGateway
+}
+
+function runtimeGatewayForPrompt(
+	sessionId: string,
+	options?: RuntimePromptOptions,
+): SessionRuntimeGateway {
+	return shouldUseCliRuntime(sessionId, options)
+		? cliRuntimeSessionGateway
+		: projectRuntimeSessionGateway
+}
+
 export const runtimeSessionGateway = {
 	async createSession(
 		args: RuntimeSessionCreateRequest,
@@ -290,20 +383,15 @@ export const runtimeSessionGateway = {
 		text: string,
 		options?: RuntimePromptOptions,
 	): Promise<void> {
-		if (shouldUseCliRuntime(sessionId, options)) {
-			await runCliRuntimeTurn(sessionId, text, options?.files)
-			return
-		}
-
-		await projectRuntimeSessionGateway.promptSession(directory, sessionId, text, options)
+		await runtimeGatewayForPrompt(sessionId, options).promptSession(
+			directory,
+			sessionId,
+			text,
+			options,
+		)
 	},
 	async abortSession(directory: string, sessionId: string): Promise<void> {
-		if (isCliSession(sessionId)) {
-			interruptCliRuntimeTurn(sessionId)
-			return
-		}
-
-		await projectRuntimeSessionGateway.abortSession(directory, sessionId)
+		await runtimeGatewayForSession(sessionId).abortSession(directory, sessionId)
 	},
 	async renameSession(
 		directory: string,
@@ -318,40 +406,20 @@ export const runtimeSessionGateway = {
 			})
 		}
 
-		if (isCliSession(sessionId)) {
-			persistCliRuntimeSession(sessionId)
-			return
-		}
-
-		await projectRuntimeSessionGateway.renameSession(directory, sessionId, title)
+		await runtimeGatewayForSession(sessionId).renameSession(directory, sessionId, title)
 	},
 	async deleteSession(directory: string, sessionId: string): Promise<void> {
-		if (isCliSession(sessionId)) {
-			interruptCliRuntimeTurn(sessionId)
-			await forgetCliRuntimeSession(sessionId)
-			appStore.set(removeSessionAtom, sessionId)
-			return
-		}
-
-		await projectRuntimeSessionGateway.deleteSession(directory, sessionId)
+		await runtimeGatewayForSession(sessionId).deleteSession(directory, sessionId)
 	},
 	async revertSession(
 		directory: string,
 		sessionId: string,
 		messageId: string,
 	): Promise<void> {
-		if (isCliSession(sessionId)) {
-			throw new Error("Revert is not supported for CLI sessions")
-		}
-
-		await projectRuntimeSessionGateway.revertSession(directory, sessionId, messageId)
+		await runtimeGatewayForSession(sessionId).revertSession(directory, sessionId, messageId)
 	},
 	async unrevertSession(directory: string, sessionId: string): Promise<void> {
-		if (isCliSession(sessionId)) {
-			throw new Error("Undo is not supported for CLI sessions")
-		}
-
-		await projectRuntimeSessionGateway.unrevertSession(directory, sessionId)
+		await runtimeGatewayForSession(sessionId).unrevertSession(directory, sessionId)
 	},
 	async executeCommand(
 		directory: string,
@@ -359,22 +427,19 @@ export const runtimeSessionGateway = {
 		command: string,
 		args: string,
 	): Promise<void> {
-		if (isCliSession(sessionId)) {
-			throw new Error("Slash commands are not supported for CLI sessions")
-		}
-
-		await projectRuntimeSessionGateway.executeCommand(directory, sessionId, command, args)
+		await runtimeGatewayForSession(sessionId).executeCommand(
+			directory,
+			sessionId,
+			command,
+			args,
+		)
 	},
 	async summarizeSession(
 		directory: string,
 		sessionId: string,
 		model?: { providerID: string; modelID: string },
 	): Promise<void> {
-		if (isCliSession(sessionId)) {
-			throw new Error("Summarize is not supported for CLI sessions")
-		}
-
-		await projectRuntimeSessionGateway.summarizeSession(directory, sessionId, model)
+		await runtimeGatewayForSession(sessionId).summarizeSession(directory, sessionId, model)
 	},
 	async deletePart(
 		directory: string,
@@ -382,21 +447,18 @@ export const runtimeSessionGateway = {
 		messageId: string,
 		partId: string,
 	): Promise<void> {
-		if (isCliSession(sessionId)) {
-			throw new Error("Deleting parts is not supported for CLI sessions")
-		}
-
-		await projectRuntimeSessionGateway.deletePart(directory, sessionId, messageId, partId)
+		await runtimeGatewayForSession(sessionId).deletePart(
+			directory,
+			sessionId,
+			messageId,
+			partId,
+		)
 	},
 	async forkSession(
 		directory: string,
 		sessionId: string,
 		messageId?: string,
 	): Promise<Session> {
-		if (isCliSession(sessionId)) {
-			throw new Error("Fork is not supported for CLI sessions")
-		}
-
-		return projectRuntimeSessionGateway.forkSession(directory, sessionId, messageId)
+		return runtimeGatewayForSession(sessionId).forkSession(directory, sessionId, messageId)
 	},
 }

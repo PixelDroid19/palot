@@ -24,8 +24,6 @@ import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"
 import {
-	resolveProjectRuntimePromptOptions,
-	resolvePromptRuntime,
 	sessionRuntimeCapabilities,
 	type RuntimePromptOptions,
 	useSessionRuntimeState,
@@ -240,16 +238,10 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			message: string,
 			options?: RuntimePromptOptions,
 		) => {
-			const promptRuntime = resolvePromptRuntime(runtimeState, options)
-			const managedOptions = resolveProjectRuntimePromptOptions(runtimeState, options)
 			log.debug("handleSendMessage", {
 				sessionId: agent.sessionId,
 				directory: agent.directory,
 				messageLength: message.length,
-				runtime: promptRuntime,
-				model: managedOptions?.model,
-				agentName: managedOptions?.agentName,
-				variant: managedOptions?.variant,
 			})
 			try {
 				await sendPrompt(agent.directory, agent.sessionId, message, options)
@@ -259,7 +251,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 				throw err
 			}
 		},
-		[runtimeState, sendPrompt],
+		[sendPrompt],
 	)
 
 	// Session not yet resolved — show spinner while the fallback fetch runs
