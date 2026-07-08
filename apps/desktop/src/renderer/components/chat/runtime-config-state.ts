@@ -1,10 +1,21 @@
-import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
+import type {
+	AgentRuntimeDescriptor,
+	AgentSandbox,
+	SessionRuntimeDescriptor,
+} from "../../../preload/api"
+import { useEffect, useState } from "react"
 import {
 	getModelVariants,
 	type ModelRef,
 	type ProvidersData,
 	type SdkAgent,
 } from "../../hooks/use-project-runtime-data"
+import {
+	availableRuntimeModels,
+	getRuntimeModelEfforts,
+	resolveRuntimeEffort,
+	resolveRuntimeModel,
+} from "../../lib/runtime-model-selection"
 import type {
 	ProjectRuntimePromptOptions,
 	ProjectRuntimeSelection,
@@ -12,8 +23,15 @@ import type {
 	RuntimeSelectionPersistence,
 } from "../../lib/runtime-session-config"
 import {
+	cliRuntimeMeta,
+	patchSessionRuntimeState,
+	useSessionRuntimeState,
+} from "../../lib/runtime-session-config"
+import {
 	DEFAULT_SESSION_RUNTIME_ID,
 	PROJECT_RUNTIME_ID,
+	installedCliRuntimeDescriptors,
+	loadRuntimeDescriptors,
 	type SessionRuntimeId,
 } from "../../lib/session-runtimes"
 import type {
@@ -94,6 +112,36 @@ function buildProjectRuntimeToolbarSections(args: {
 	}
 }
 
+function buildCliRuntimeToolbarSections(args: {
+	models: AgentRuntimeDescriptor["models"]
+	modelValue: string
+	onModelChange: (value: string) => void
+	sandboxValue: AgentSandbox
+	onSandboxChange: (value: AgentSandbox) => void
+	efforts: string[]
+	effortValue: string
+	onEffortChange: (value: string) => void
+}): RuntimeToolbarSections {
+	return {
+		cliModel: {
+			models: args.models,
+			value: args.modelValue,
+			onValueChange: args.onModelChange,
+		},
+		sandbox: {
+			value: args.sandboxValue,
+			onValueChange: args.onSandboxChange,
+		},
+		effort: args.efforts.length
+			? {
+					efforts: args.efforts,
+					value: args.effortValue,
+					onValueChange: args.onEffortChange,
+				}
+			: undefined,
+	}
+}
+
 function buildChatRuntimeConfig(args: {
 	runtimeId: SessionRuntimeId
 	toolbarProps: RuntimeConfigToolbarProps
@@ -125,24 +173,16 @@ export function buildCliNewChatRuntimeConfig(args: {
 	return {
 		runtimeId: args.runtimeId,
 		toolbarProps: {
-			sections: {
-				cliModel: {
-					models: args.models,
-					value: args.modelValue,
-					onValueChange: args.onModelChange,
-				},
-				sandbox: {
-					value: args.sandboxValue,
-					onValueChange: args.onSandboxChange,
-				},
-				effort: args.efforts.length
-					? {
-							efforts: args.efforts,
-							value: args.effortValue,
-							onValueChange: args.onEffortChange,
-						}
-					: undefined,
-			},
+			sections: buildCliRuntimeToolbarSections({
+				models: args.models,
+				modelValue: args.modelValue,
+				onModelChange: args.onModelChange,
+				sandboxValue: args.sandboxValue,
+				onSandboxChange: args.onSandboxChange,
+				efforts: args.efforts,
+				effortValue: args.effortValue,
+				onEffortChange: args.onEffortChange,
+			}),
 		},
 		launch: {
 			cli: {
@@ -187,14 +227,12 @@ export function buildProjectRuntimeNewChatRuntimeConfig(args: {
 }
 
 export function buildCliChatRuntimeConfig(args: {
-	sessionId: string
 	runtimeId: string
+	toolbarProps: RuntimeConfigToolbarProps
 }): ChatRuntimeConfig {
 	return buildChatRuntimeConfig({
 		runtimeId: args.runtimeId,
-		toolbarProps: {
-			sessionId: args.sessionId,
-		},
+		toolbarProps: args.toolbarProps,
 		persistedSelection: null,
 		sendOptions: {
 			runtime: "cli",
@@ -226,4 +264,62 @@ export function buildProjectRuntimeChatRuntimeConfig(args: {
 		persistedSelection: args.persistedSelection,
 		sendOptions: args.sendOptions,
 	})
+}
+
+export function useCliChatRuntimeToolbarProps(
+	sessionId: string,
+): RuntimeConfigToolbarProps | null {
+	const runtimeState = useSessionRuntimeState(sessionId)
+	const meta = cliRuntimeMeta(runtimeState)
+	const [runtimes, setRuntimes] = useState<SessionRuntimeDescriptor[]>([])
+
+	const runtimeId = meta?.runtimeId
+	useEffect(() => {
+		if (!runtimeId) return
+		loadRuntimeDescriptors().then((all) => setRuntimes(installedCliRuntimeDescriptors(all)))
+	}, [runtimeId])
+
+	const descriptor = runtimes.find((runtime) => runtime.id === runtimeId)
+	const models = descriptor ? availableRuntimeModels(descriptor) : []
+	const currentSlug = descriptor ? (resolveRuntimeModel(descriptor, meta?.model) ?? "") : ""
+	const currentEffort = descriptor
+		? (resolveRuntimeEffort(descriptor, currentSlug, meta?.effort) ?? "")
+		: ""
+	const efforts = descriptor ? getRuntimeModelEfforts(descriptor, currentSlug) : []
+
+	useEffect(() => {
+		if (!meta || !descriptor) return
+		const normalizedModel = currentSlug || undefined
+		const normalizedEffort = currentEffort || undefined
+		if (meta.model === normalizedModel && meta.effort === normalizedEffort) return
+		patchSessionRuntimeState(sessionId, {
+			model: normalizedModel,
+			effort: normalizedEffort,
+		})
+	}, [currentEffort, currentSlug, descriptor, meta, sessionId])
+
+	if (!meta || !descriptor) return null
+
+	const apply = (patch: { model?: string; effort?: string; sandbox?: AgentSandbox }) => {
+		const nextModel = resolveRuntimeModel(descriptor, patch.model ?? meta.model)
+		const nextEffort = resolveRuntimeEffort(descriptor, nextModel, patch.effort ?? meta.effort)
+		patchSessionRuntimeState(sessionId, {
+			model: nextModel,
+			effort: nextEffort,
+			sandbox: patch.sandbox ?? meta.sandbox,
+		})
+	}
+
+	return {
+		sections: buildCliRuntimeToolbarSections({
+			models,
+			modelValue: currentSlug,
+			onModelChange: (value) => apply({ model: value, effort: "" }),
+			sandboxValue: meta.sandbox,
+			onSandboxChange: (value) => apply({ sandbox: value }),
+			efforts,
+			effortValue: currentEffort,
+			onEffortChange: (value) => apply({ effort: value }),
+		}),
+	}
 }

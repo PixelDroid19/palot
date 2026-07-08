@@ -1,19 +1,6 @@
-import type { AgentRuntimeDescriptor, AgentSandbox, SessionRuntimeDescriptor } from "../../../preload/api"
-import { useEffect, useState } from "react"
+import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
 import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-project-runtime-data"
 import { useTranslation } from "../../i18n/use-translation"
-import {
-	availableRuntimeModels,
-	getRuntimeModelEfforts,
-	resolveRuntimeEffort,
-	resolveRuntimeModel,
-} from "../../lib/runtime-model-selection"
-import {
-	cliRuntimeMeta,
-	patchSessionRuntimeState,
-	useSessionRuntimeState,
-} from "../../lib/runtime-session-config"
-import { installedCliRuntimeDescriptors, loadRuntimeDescriptors } from "../../lib/session-runtimes"
 import { CliModelSelect, CliOptionSelect } from "./cli-toolbar"
 import { AgentSelector, ModelSelector, VariantSelector } from "./prompt-toolbar"
 import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
@@ -89,153 +76,80 @@ export interface RuntimeToolbarSections {
 	effort?: RuntimeToolbarEffortSection
 }
 
-export type RuntimeConfigToolbarProps =
-	| {
-			sections: RuntimeToolbarSections
-	  }
-	| {
-			sessionId: string
-	  }
+export interface RuntimeConfigToolbarProps {
+	sections: RuntimeToolbarSections
+}
 
 function RuntimeToolbarSectionsView({ sections }: { sections: RuntimeToolbarSections }) {
 	const { t } = useTranslation()
 	const hasEffort = (sections.effort?.efforts.length ?? 0) > 0
+	const items = [
+		sections.agent && (
+			<AgentSelector
+				agents={sections.agent.agents}
+				selectedAgent={sections.agent.selectedAgent}
+				defaultAgent={sections.agent.defaultAgent}
+				onSelectAgent={sections.agent.onSelectAgent}
+				disabled={sections.agent.disabled}
+			/>
+		),
+		sections.projectModel && (
+			<ModelSelector
+				providers={sections.projectModel.providers}
+				effectiveModel={sections.projectModel.effectiveModel}
+				hasOverride={sections.projectModel.hasOverride}
+				onSelectModel={sections.projectModel.onSelectModel}
+				recentModels={sections.projectModel.recentModels}
+				disabled={sections.projectModel.disabled}
+			/>
+		),
+		sections.cliModel && (
+			<CliModelSelect
+				models={sections.cliModel.models}
+				value={sections.cliModel.value}
+				onValueChange={sections.cliModel.onValueChange}
+			/>
+		),
+		sections.variant && (
+			<VariantSelector
+				variants={sections.variant.variants}
+				selectedVariant={sections.variant.selectedVariant}
+				onSelectVariant={sections.variant.onSelectVariant}
+				disabled={sections.variant.disabled}
+			/>
+		),
+		sections.sandbox && (
+			<CliOptionSelect
+				aria-label={t("runtimePicker.sandbox")}
+				value={sections.sandbox.value}
+				onValueChange={(value) => sections.sandbox?.onValueChange(value as AgentSandbox)}
+				options={[
+					{ value: "plan", label: t("runtimePicker.sandboxPlan") },
+					{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
+					{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
+					{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
+				]}
+			/>
+		),
+		hasEffort && sections.effort && (
+			<CliOptionSelect
+				aria-label={t("runtimePicker.effort")}
+				value={sections.effort.value || "__default__"}
+				onValueChange={(value) =>
+					sections.effort?.onValueChange(value === "__default__" ? "" : value)
+				}
+				options={cliEffortOptions(t, sections.effort.efforts)}
+			/>
+		),
+	]
+
+	if (!items.some(Boolean)) return null
 
 	return (
-		<SessionConfigToolbarRow
-			items={[
-				sections.agent && (
-					<AgentSelector
-						agents={sections.agent.agents}
-						selectedAgent={sections.agent.selectedAgent}
-						defaultAgent={sections.agent.defaultAgent}
-						onSelectAgent={sections.agent.onSelectAgent}
-						disabled={sections.agent.disabled}
-					/>
-				),
-				sections.projectModel && (
-					<ModelSelector
-						providers={sections.projectModel.providers}
-						effectiveModel={sections.projectModel.effectiveModel}
-						hasOverride={sections.projectModel.hasOverride}
-						onSelectModel={sections.projectModel.onSelectModel}
-						recentModels={sections.projectModel.recentModels}
-						disabled={sections.projectModel.disabled}
-					/>
-				),
-				sections.cliModel && (
-					<CliModelSelect
-						models={sections.cliModel.models}
-						value={sections.cliModel.value}
-						onValueChange={sections.cliModel.onValueChange}
-					/>
-				),
-				sections.variant && (
-					<VariantSelector
-						variants={sections.variant.variants}
-						selectedVariant={sections.variant.selectedVariant}
-						onSelectVariant={sections.variant.onSelectVariant}
-						disabled={sections.variant.disabled}
-					/>
-				),
-				sections.sandbox && (
-					<CliOptionSelect
-						aria-label={t("runtimePicker.sandbox")}
-						value={sections.sandbox.value}
-						onValueChange={(value) => sections.sandbox?.onValueChange(value as AgentSandbox)}
-						options={[
-							{ value: "plan", label: t("runtimePicker.sandboxPlan") },
-							{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
-							{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
-							{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
-						]}
-					/>
-				),
-				hasEffort && sections.effort && (
-					<CliOptionSelect
-						aria-label={t("runtimePicker.effort")}
-						value={sections.effort.value || "__default__"}
-						onValueChange={(value) =>
-							sections.effort?.onValueChange(value === "__default__" ? "" : value)
-						}
-						options={cliEffortOptions(t, sections.effort.efforts)}
-					/>
-				),
-			]}
-		/>
+		<SessionConfigToolbarRow items={items} />
 	)
 }
 
 export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
-	if ("sessionId" in props) {
-		return <CliSessionRuntimeConfigToolbar sessionId={props.sessionId} />
-	}
-
 	return <RuntimeToolbarSectionsView sections={props.sections} />
-}
-
-function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
-	const runtimeState = useSessionRuntimeState(sessionId)
-	const meta = cliRuntimeMeta(runtimeState)
-	const [runtimes, setRuntimes] = useState<SessionRuntimeDescriptor[]>([])
-
-	const runtimeId = meta?.runtimeId
-	useEffect(() => {
-		if (!runtimeId) return
-		loadRuntimeDescriptors().then((all) => setRuntimes(installedCliRuntimeDescriptors(all)))
-	}, [runtimeId])
-
-	const descriptor = runtimes.find((d) => d.id === runtimeId)
-	const models = descriptor ? availableRuntimeModels(descriptor) : []
-	const currentSlug = descriptor ? (resolveRuntimeModel(descriptor, meta?.model) ?? "") : ""
-	const currentEffort = descriptor
-		? (resolveRuntimeEffort(descriptor, currentSlug, meta?.effort) ?? "")
-		: ""
-	const efforts = descriptor ? getRuntimeModelEfforts(descriptor, currentSlug) : []
-
-	useEffect(() => {
-		if (!meta || !descriptor) return
-		const normalizedModel = currentSlug || undefined
-		const normalizedEffort = currentEffort || undefined
-		if (meta.model === normalizedModel && meta.effort === normalizedEffort) return
-		patchSessionRuntimeState(sessionId, {
-			model: normalizedModel,
-			effort: normalizedEffort,
-		})
-	}, [currentEffort, currentSlug, descriptor, meta, sessionId])
-
-	if (!meta || !descriptor) return null
-
-	const apply = (patch: { model?: string; effort?: string; sandbox?: AgentSandbox }) => {
-		const nextModel = resolveRuntimeModel(descriptor, patch.model ?? meta.model)
-		const nextEffort = resolveRuntimeEffort(descriptor, nextModel, patch.effort ?? meta.effort)
-		patchSessionRuntimeState(sessionId, {
-			model: nextModel,
-			effort: nextEffort,
-			sandbox: patch.sandbox ?? meta.sandbox,
-		})
-	}
-
-	return (
-		<RuntimeToolbarSectionsView
-			sections={{
-				cliModel: {
-					models,
-					value: currentSlug,
-					onValueChange: (value) => apply({ model: value, effort: "" }),
-				},
-				sandbox: {
-					value: meta.sandbox,
-					onValueChange: (value) => apply({ sandbox: value }),
-				},
-				effort: descriptor.capabilities.reasoningEffort
-					? {
-							efforts,
-							value: currentEffort,
-							onValueChange: (value) => apply({ effort: value }),
-						}
-					: undefined,
-			}}
-		/>
-	)
 }

@@ -107,6 +107,7 @@ import {
 	buildCliChatRuntimeConfig,
 	buildProjectRuntimeChatRuntimeConfig,
 	type ChatRuntimeConfig,
+	useCliChatRuntimeToolbarProps,
 } from "./runtime-config-state"
 import { RuntimeConfigToolbar } from "./runtime-config-toolbar"
 import { SessionTaskList } from "./session-task-list"
@@ -836,6 +837,7 @@ function ChatInputSection({
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
 	const cliMeta = cliRuntimeMeta(runtimeState)
 	const isCli = cliMeta != null
+	const cliToolbarProps = useCliChatRuntimeToolbarProps(agent.sessionId)
 
 	// Tree-scoped interactive requests — bubbles up from sub-agent sessions.
 	// These replace the direct `agent.permissions` / `agent.questions` arrays
@@ -1005,8 +1007,8 @@ function ChatInputSection({
 		() =>
 			isCli
 				? buildCliChatRuntimeConfig({
-						sessionId: agent.sessionId,
 						runtimeId: cliMeta?.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
+						toolbarProps: cliToolbarProps ?? { sections: {} },
 				  })
 				: buildProjectRuntimeChatRuntimeConfig({
 						agents: projectRuntimeAgents ?? [],
@@ -1041,8 +1043,8 @@ function ChatInputSection({
 					}),
 		[
 			agent.directory,
-			agent.sessionId,
 			cliMeta?.runtimeId,
+			cliToolbarProps,
 			config?.defaultAgent,
 			effectiveModel,
 			handleModelSelect,
