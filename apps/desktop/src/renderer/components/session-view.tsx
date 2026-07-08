@@ -19,7 +19,7 @@ import { viewedSessionIdAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
 	useRuntimeSessionData,
-} from "../hooks/use-project-runtime-data"
+} from "../hooks/use-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"

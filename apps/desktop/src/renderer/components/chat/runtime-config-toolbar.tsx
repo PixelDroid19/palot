@@ -1,5 +1,5 @@
 import type { AgentSandbox } from "../../../preload/api"
-import type { SdkAgent } from "../../hooks/use-project-runtime-data"
+import type { SdkAgent } from "../../hooks/use-runtime-data"
 import { useTranslation } from "../../i18n/use-translation"
 import { CliOptionSelect } from "./cli-toolbar"
 import { AgentSelector, VariantSelector } from "./prompt-toolbar"

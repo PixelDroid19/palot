@@ -53,13 +53,13 @@ import type {
 	ProvidersData,
 	SdkAgent,
 	VcsData,
-} from "../../hooks/use-project-runtime-data"
+} from "../../hooks/use-runtime-data"
 import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
 	useRuntimeModelState,
-} from "../../hooks/use-project-runtime-data"
+} from "../../hooks/use-runtime-data"
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
 import {

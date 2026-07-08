@@ -10,7 +10,7 @@ import {
 	type ModelRef,
 	type ProvidersData,
 	type SdkAgent,
-} from "../../hooks/use-project-runtime-data"
+} from "../../hooks/use-runtime-data"
 import {
 	availableRuntimeModels,
 	getRuntimeModelEfforts,

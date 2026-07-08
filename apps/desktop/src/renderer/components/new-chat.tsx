@@ -27,13 +27,13 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useAgents, useProjectList } from "../hooks/use-agents"
 import { NEW_CHAT_DRAFT_KEY, useDraftActions, useDraftSnapshot } from "../hooks/use-draft"
-import type { ModelRef } from "../hooks/use-project-runtime-data"
+import type { ModelRef } from "../hooks/use-runtime-data"
 import {
 	getModelInputCapabilities,
 	getModelVariants,
 	resolveEffectiveModel,
 	useRuntimeSessionData,
-} from "../hooks/use-project-runtime-data"
+} from "../hooks/use-runtime-data"
 import type { AgentSandbox, SessionRuntimeDescriptor } from "../../preload/api"
 import type { FileAttachment } from "../lib/types"
 import { useTranslation } from "../i18n/use-translation"
