@@ -604,8 +604,6 @@ export class ClaudeProvider implements AgentSessionProvider {
 	constructor(private readonly resolveBinary: () => Promise<string | null>) {}
 
 	async listModels(): Promise<AgentModelInfo[]> {
-		const binary = await this.resolveBinary().catch(() => null)
-		if (!binary) return []
 		return CLAUDE_MODEL_ALIASES
 	}
 

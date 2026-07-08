@@ -660,7 +660,7 @@ export function NewChat() {
 			vcs,
 		],
 	)
-	const hasToolbar = providers && runtimeConfig
+	const hasToolbar = runtimeConfig !== null
 
 	return (
 		<div className="relative flex h-full flex-col">
@@ -800,7 +800,7 @@ export function NewChat() {
 					</PromptInputProvider>
 
 					{/* Status bar — outside the card */}
-					{providers && (
+					{runtimeConfig && (
 						<StatusBar
 							vcs={vcs ?? null}
 							isConnected={true}
@@ -859,7 +859,7 @@ export function NewChat() {
 					{/* No projects warning */}
 					{projects.length === 0 && (
 						<p className="mt-2 text-center text-xs text-muted-foreground">
-							No managed runtime projects found. Check that OpenCode has indexed projects in
+							No project runtime workspaces found. Check that OpenCode has indexed projects in
 							~/.local/share/opencode/storage/.
 						</p>
 					)}
