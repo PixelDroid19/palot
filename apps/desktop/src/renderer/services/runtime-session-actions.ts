@@ -1,26 +1,17 @@
 import type { AgentPermissionDecision } from "../../preload/api"
-import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
+import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { readSessionRuntimeState } from "../lib/runtime-session-config"
 import type { QuestionAnswer, Session } from "../lib/types"
 import {
 	answerCliRuntimeQuestionRequest,
-	forgetCliRuntimeSession,
-	persistCliRuntimeSession,
 	respondCliRuntimePermissionRequest,
 } from "./runtime-cli-store"
-import { interruptCliRuntimeTurn } from "./runtime-cli-turns"
 import { getProjectClient } from "./connection-manager"
+import { runtimeSessionGateway } from "./runtime-session-gateway"
 
 export async function abortRuntimeSession(directory: string, sessionId: string): Promise<void> {
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		interruptCliRuntimeTurn(sessionId)
-		return
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	await client.session.abort({ sessionID: sessionId })
+	await runtimeSessionGateway.abortSession(directory, sessionId)
 }
 
 export async function renameRuntimeSession(
@@ -28,35 +19,11 @@ export async function renameRuntimeSession(
 	sessionId: string,
 	title: string,
 ): Promise<void> {
-	const entry = appStore.get(sessionFamily(sessionId))
-	if (entry) {
-		appStore.set(upsertSessionAtom, {
-			session: { ...entry.session, title },
-			directory: entry.directory,
-		})
-	}
-
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		persistCliRuntimeSession(sessionId)
-		return
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	await client.session.update({ sessionID: sessionId, title })
+	await runtimeSessionGateway.renameSession(directory, sessionId, title)
 }
 
 export async function deleteRuntimeSession(directory: string, sessionId: string): Promise<void> {
-	if (readSessionRuntimeState(sessionId).runtime === "cli") {
-		interruptCliRuntimeTurn(sessionId)
-		await forgetCliRuntimeSession(sessionId)
-		appStore.set(removeSessionAtom, sessionId)
-		return
-	}
-
-	const client = getProjectClient(directory)
-	if (!client) throw new Error("Not connected to OpenCode server")
-	await client.session.delete({ sessionID: sessionId })
+	await runtimeSessionGateway.deleteSession(directory, sessionId)
 }
 
 export async function respondOpenCodePermission(
