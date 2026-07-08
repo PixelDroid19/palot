@@ -23,8 +23,6 @@ import {
 	query,
 	type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk"
-import { execFile } from "node:child_process"
-import { promisify } from "node:util"
 import {
 	type AgentModelInfo,
 	type AgentPermissionDecision,
@@ -41,35 +39,15 @@ import {
 	readString,
 } from "../types"
 
-const execFileAsync = promisify(execFile)
-const CLAUDE_MODEL_LABELS: Record<string, string> = {
-	fable: "Fable",
-	opus: "Opus",
-	sonnet: "Sonnet",
-	haiku: "Haiku",
-}
-const CLAUDE_DOCUMENTED_MODEL_ALIASES = Object.keys(CLAUDE_MODEL_LABELS)
+const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
+const CLAUDE_MODEL_ALIASES: AgentModelInfo[] = [
+	{ slug: "sonnet", label: "Sonnet", efforts: CLAUDE_EFFORTS },
+	{ slug: "opus", label: "Opus", efforts: CLAUDE_EFFORTS },
+	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS },
+	{ slug: "fable", label: "Fable", efforts: CLAUDE_EFFORTS },
+]
 
 const TOOL_RESULT_MAX_CHARS = 4_000
-
-function parseClaudeModelAliases(help: string): string[] {
-	const modelSection = help.match(/--model <model>[\s\S]*?(?=\n\s+-n, --name|\n\s+--no-|\nCommands:)/)?.[0]
-	if (!modelSection) return []
-	const aliases = [...modelSection.matchAll(/'([a-z][a-z0-9]*)'/g)]
-		.map((match) => match[1])
-		.filter((alias) => alias in CLAUDE_MODEL_LABELS)
-	return [...new Set([...aliases, ...CLAUDE_DOCUMENTED_MODEL_ALIASES])]
-}
-
-function parseClaudeEfforts(help: string): string[] {
-	const effortSection = help.match(/--effort <level>[\s\S]*?(?=\n\s+--exclude|\n\s+--fallback|\nCommands:)/)?.[0]
-	const match = effortSection?.match(/\(([^)]+)\)/)
-	if (!match) return []
-	return match[1]
-		.split(",")
-		.map((effort) => effort.trim())
-		.filter(Boolean)
-}
 
 function permissionMode(sandbox: AgentSandbox | undefined): PermissionMode {
 	switch (sandbox) {
@@ -628,21 +606,7 @@ export class ClaudeProvider implements AgentSessionProvider {
 	async listModels(): Promise<AgentModelInfo[]> {
 		const binary = await this.resolveBinary().catch(() => null)
 		if (!binary) return []
-		try {
-			const { stdout, stderr } = await execFileAsync(binary, ["--help"], {
-				timeout: 5_000,
-				maxBuffer: 256 * 1024,
-			})
-			const help = `${stdout}\n${stderr}`
-			const efforts = parseClaudeEfforts(help)
-			return parseClaudeModelAliases(help).map((slug) => ({
-				slug,
-				label: CLAUDE_MODEL_LABELS[slug] ?? slug,
-				efforts,
-			}))
-		} catch {
-			return []
-		}
+		return CLAUDE_MODEL_ALIASES
 	}
 
 	async openSession(
