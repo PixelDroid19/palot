@@ -73,6 +73,15 @@ export interface AgentImageAttachment {
 
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 	mode: "managed" | "cli"
+	sessionCapabilities: {
+		supportsSessionRevert: boolean
+		supportsSessionSummarize: boolean
+		supportsServerSlashCommands: boolean
+		supportsFork: boolean
+		supportsProjectRuntimeConfig: boolean
+		supportsWorktreeLaunch: boolean
+		supportsServerHistory: boolean
+	}
 }
 
 const MANAGED_RUNTIME_DESCRIPTOR_ID = "opencode"
@@ -84,6 +93,24 @@ const MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES: AgentRuntimeCapabilities = {
 	permissions: true,
 	interrupt: true,
 	steering: false,
+}
+const MANAGED_RUNTIME_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabilities"] = {
+	supportsSessionRevert: true,
+	supportsSessionSummarize: true,
+	supportsServerSlashCommands: true,
+	supportsFork: true,
+	supportsProjectRuntimeConfig: true,
+	supportsWorktreeLaunch: true,
+	supportsServerHistory: true,
+}
+const CLI_RUNTIME_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabilities"] = {
+	supportsSessionRevert: false,
+	supportsSessionSummarize: false,
+	supportsServerSlashCommands: false,
+	supportsFork: false,
+	supportsProjectRuntimeConfig: false,
+	supportsWorktreeLaunch: false,
+	supportsServerHistory: false,
 }
 
 /**
@@ -115,6 +142,7 @@ function describeManagedRuntime(): Promise<SessionRuntimeDescriptor> {
 		mode: "managed",
 		installed: runtime.installed,
 		capabilities: MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES,
+		sessionCapabilities: MANAGED_RUNTIME_SESSION_CAPABILITIES,
 		models: [],
 	}))
 }
@@ -130,6 +158,7 @@ export async function describeSessionRuntimes(): Promise<SessionRuntimeDescripto
 		...cliRuntimes.map((runtime) => ({
 			...runtime,
 			mode: "cli" as const,
+			sessionCapabilities: CLI_RUNTIME_SESSION_CAPABILITIES,
 		})),
 	]
 }

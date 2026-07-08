@@ -6,6 +6,7 @@ import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-managed-runtime-data"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
+	runtimeDescriptor,
 	type SessionRuntimeId,
 } from "./session-runtimes"
 import { persistCliRuntimeSession } from "../services/runtime-cli-store"
@@ -87,9 +88,12 @@ export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 }
 
 export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapabilities {
-	return id === DEFAULT_SESSION_RUNTIME_ID
-		? MANAGED_SESSION_RUNTIME_CAPABILITIES
-		: CLI_SESSION_RUNTIME_CAPABILITIES
+	return (
+		runtimeDescriptor(id)?.sessionCapabilities ??
+		(id === DEFAULT_SESSION_RUNTIME_ID
+			? MANAGED_SESSION_RUNTIME_CAPABILITIES
+			: CLI_SESSION_RUNTIME_CAPABILITIES)
+	)
 }
 
 export function runtimeModeCapabilities(mode: SessionRuntimeMode): SessionRuntimeCapabilities {
@@ -125,10 +129,14 @@ export function resolveProjectRuntimePromptOptions(
 		: ((options ?? {}) as ProjectRuntimePromptOptions)
 }
 
+export function resolveSessionRuntimeId(state: SessionRuntimeState): SessionRuntimeId {
+	return isCliRuntimeState(state) ? state.meta.runtimeId : DEFAULT_SESSION_RUNTIME_ID
+}
+
 export function sessionRuntimeCapabilities(
-	state: Pick<SessionRuntimeState, "mode">,
+	state: SessionRuntimeState,
 ): SessionRuntimeCapabilities {
-	return runtimeModeCapabilities(state.mode)
+	return runtimeIdCapabilities(resolveSessionRuntimeId(state))
 }
 
 function isProjectRuntimeSelection(

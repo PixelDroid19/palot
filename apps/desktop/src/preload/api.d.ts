@@ -276,8 +276,18 @@ export type AgentRunResult = import("@palot/agent-host").AgentRunResult
 export type AgentUpdate = import("@palot/agent-host").AgentUpdate
 export type AgentModelInfo = import("@palot/agent-host").AgentModelInfo
 export type AgentRuntimeDescriptor = import("@palot/agent-host").AgentRuntimeDescriptor
+export interface SessionRuntimeCapabilities {
+	supportsSessionRevert: boolean
+	supportsSessionSummarize: boolean
+	supportsServerSlashCommands: boolean
+	supportsFork: boolean
+	supportsProjectRuntimeConfig: boolean
+	supportsWorktreeLaunch: boolean
+	supportsServerHistory: boolean
+}
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 	mode: "managed" | "cli"
+	sessionCapabilities: SessionRuntimeCapabilities
 }
 
 export interface AppSettings {
