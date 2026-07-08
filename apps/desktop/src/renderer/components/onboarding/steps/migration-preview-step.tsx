@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import type {
+	MigrationCategory,
 	MigrationPreview,
 	MigrationProgress,
 	MigrationProvider,
@@ -31,7 +32,7 @@ import type {
 interface MigrationPreviewStepProps {
 	provider: MigrationProvider
 	scanResult: unknown
-	categories: string[]
+	categories: MigrationCategory[]
 	preview: MigrationPreview | null
 	onComplete: (result: MigrationResult) => void
 	onBack: () => void

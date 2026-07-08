@@ -13,9 +13,7 @@ import {
 	ArrowRightIcon,
 	BotIcon,
 	CogIcon,
-	FileTextIcon,
 	FolderOpenIcon,
-	PlugIcon,
 	ScrollTextIcon,
 	ServerIcon,
 	ShieldIcon,
@@ -25,15 +23,17 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type {
 	MigrationPreview,
 	MigrationProvider,
+	MigrationCategory as UIssueMigrationCategory,
 	ProviderDetection,
 } from "../../../../preload/api"
+import type { ConversionCategory } from "@palot/configconv"
 
 // ============================================================
 // Types
 // ============================================================
 
 interface MigrationCategory {
-	id: string
+	id: ConversionCategory
 	label: string
 	description: string
 	icon: typeof CogIcon
@@ -43,7 +43,7 @@ interface MigrationCategory {
 
 interface MigrationOfferStepProps {
 	provider: MigrationProvider
-	onPreview: (scanResult: unknown, categories: string[], preview: MigrationPreview) => void
+	onPreview: (scanResult: unknown, categories: UIssueMigrationCategory[], preview: MigrationPreview) => void
 	onSkip: () => void
 }
 
@@ -304,6 +304,14 @@ function buildClaudeCodeCategories(detection: ProviderDetection): MigrationCateg
 			enabled: true,
 		},
 		{
+			id: "skills",
+			label: "Skills",
+			description: "Reusable skill folders and instructions",
+			icon: FolderOpenIcon,
+			count: detection.skillCount,
+			enabled: detection.skillCount > 0,
+		},
+		{
 			id: "rules",
 			label: "Project rules (CLAUDE.md)",
 			description: "Copied as AGENTS.md for OpenCode",
@@ -312,27 +320,19 @@ function buildClaudeCodeCategories(detection: ProviderDetection): MigrationCateg
 			enabled: true,
 		},
 		{
+			id: "hooks",
+			label: "Hooks",
+			description: "Claude Code hook plugins and lifecycle scripts",
+			icon: FolderOpenIcon,
+			count: detection.hasHooks ? 1 : 0,
+			enabled: detection.hasHooks,
+		},
+		{
 			id: "permissions",
 			label: "Permission settings",
 			description: "Tool allow/deny/ask rules",
 			icon: ShieldIcon,
-			count: detection.hasGlobalSettings ? 1 : 0,
-			enabled: true,
-		},
-		{
-			id: "hooks",
-			label: "Hooks",
-			description: "Converted to TypeScript plugin stubs (manual finishing needed)",
-			icon: PlugIcon,
-			count: detection.hasHooks ? 1 : 0,
-			enabled: true,
-		},
-		{
-			id: "skills",
-			label: "Skills",
-			description: "Verified for compatibility",
-			icon: FileTextIcon,
-			count: detection.skillCount,
+			count: detection.hasPermissions ? 1 : 0,
 			enabled: true,
 		},
 	]
@@ -393,6 +393,14 @@ function buildCursorCategories(detection: ProviderDetection): MigrationCategory[
 			enabled: true,
 		},
 		{
+			id: "skills",
+			label: "Skills",
+			description: "Skill folders from .cursor/skills/",
+			icon: FolderOpenIcon,
+			count: detection.skillCount,
+			enabled: detection.skillCount > 0,
+		},
+		{
 			id: "rules",
 			label: "Rules (.mdc files)",
 			description: "Cursor rules converted to AGENTS.md format",
@@ -406,14 +414,6 @@ function buildCursorCategories(detection: ProviderDetection): MigrationCategory[
 			description: "CLI agent permissions from cli-config.json",
 			icon: ShieldIcon,
 			count: detection.hasPermissions ? 1 : 0,
-			enabled: true,
-		},
-		{
-			id: "skills",
-			label: "Skills",
-			description: "Verified for compatibility",
-			icon: FileTextIcon,
-			count: detection.skillCount,
 			enabled: true,
 		},
 	]
@@ -454,19 +454,19 @@ function buildOpenCodeCategories(detection: ProviderDetection): MigrationCategor
 			enabled: true,
 		},
 		{
+			id: "skills",
+			label: "Skills",
+			description: "Skill folders from ~/.config/opencode/skills and project skills",
+			icon: FolderOpenIcon,
+			count: detection.skillCount,
+			enabled: detection.skillCount > 0,
+		},
+		{
 			id: "rules",
 			label: "Rules (AGENTS.md)",
 			description: "Agent instructions and project rules",
 			icon: ScrollTextIcon,
 			count: detection.ruleCount,
-			enabled: true,
-		},
-		{
-			id: "skills",
-			label: "Skills",
-			description: "Verified for compatibility",
-			icon: FileTextIcon,
-			count: detection.skillCount,
 			enabled: true,
 		},
 	]

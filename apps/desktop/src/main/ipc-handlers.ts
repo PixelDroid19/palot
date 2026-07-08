@@ -34,6 +34,9 @@ import {
 import { getResolvedChromeTier } from "./liquid-glass"
 import { createLogger } from "./logger"
 import { getDiscoveredServers } from "./mdns-scanner"
+import type { ConversionCategory } from "@palot/configconv"
+
+type MigrationCategory = ConversionCategory | "extra"
 
 import { readModelState, updateModelRecent } from "./model-state"
 import { dismissNotification, updateBadgeCount } from "./notifications"
@@ -607,7 +610,7 @@ export function registerIpcHandlers(): void {
 		"onboarding:preview-migration",
 		withLogging(
 			"onboarding:preview-migration",
-			async (_, provider: MigrationProvider, scanResult: unknown, categories: string[]) =>
+			async (_, provider: MigrationProvider, scanResult: unknown, categories: MigrationCategory[]) =>
 				await previewMigration(provider, scanResult, categories),
 		),
 	)
@@ -616,7 +619,7 @@ export function registerIpcHandlers(): void {
 		"onboarding:execute-migration",
 		withLogging(
 			"onboarding:execute-migration",
-			async (_, provider: MigrationProvider, scanResult: unknown, categories: string[]) =>
+			async (_, provider: MigrationProvider, scanResult: unknown, categories: MigrationCategory[]) =>
 				await executeMigration(provider, scanResult, categories),
 		),
 	)

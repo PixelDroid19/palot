@@ -69,6 +69,7 @@ export function CompleteStep({
 	// Filter out already-migrated providers
 	const availableProviders = providers.filter((p) => !migratedProviders.includes(p.provider))
 	const hasMigrated = migratedProviders.length > 0
+	const hasBlockingMigrationErrors = migrationResult?.errors && migrationResult.errors.length > 0
 
 	return (
 		<div className="flex h-full flex-col items-center justify-center px-6">
@@ -131,6 +132,11 @@ export function CompleteStep({
 							{migrationResult.manualActions.length > 0 && (
 								<p className="text-amber-500">
 									{migrationResult.manualActions.length} item(s) need manual attention
+								</p>
+							)}
+							{migrationResult.errors.length > 0 && (
+								<p className="text-red-500">
+									{migrationResult.errors.length} error(s) occurred during migration
 								</p>
 							)}
 						</div>
@@ -208,6 +214,12 @@ export function CompleteStep({
 					</div>
 				</motion.div>
 
+				{hasBlockingMigrationErrors && (
+					<p className="text-xs text-red-500">
+						Complete the migration and rerun it or resolve remaining errors before continuing.
+					</p>
+				)}
+
 				{/* CTA */}
 				<motion.div
 					initial={{ opacity: 0, y: 8 }}
@@ -215,7 +227,7 @@ export function CompleteStep({
 					transition={{ delay: 0.7, duration: 0.3 }}
 					className="flex items-center justify-center gap-3"
 				>
-					<Button size="lg" onClick={onFinish}>
+					<Button size="lg" onClick={onFinish} disabled={hasBlockingMigrationErrors}>
 						Start Building
 					</Button>
 				</motion.div>

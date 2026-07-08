@@ -350,7 +350,10 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 							</Button>
 						</div>
 						<p className="text-xs text-muted-foreground/60">
-							Or run: curl -fsSL https://opencode.ai/install | bash
+							Alternatively, run the installer from your terminal. In desktop install flow, this
+							downloads the installer script to a temp file and executes it locally.
+							If a hash is configured in desktop environment variables, it will be verified before
+							running.
 						</p>
 					</div>
 				)}

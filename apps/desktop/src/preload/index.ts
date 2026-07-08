@@ -1,4 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron"
+import type { ConversionCategory } from "@palot/configconv"
+
+type MigrationCategory = ConversionCategory | "extra"
 
 /**
  * Preload bridge — exposes a typed API from the main process to the renderer.
@@ -381,10 +384,10 @@ contextBridge.exposeInMainWorld("palot", {
 		/** Full scan of a specific provider's configuration. */
 		scanProvider: (provider: string) => ipcRenderer.invoke("onboarding:scan-provider", provider),
 		/** Dry-run migration preview for a provider. */
-		previewMigration: (provider: string, scanResult: unknown, categories: string[]) =>
+		previewMigration: (provider: string, scanResult: unknown, categories: MigrationCategory[]) =>
 			ipcRenderer.invoke("onboarding:preview-migration", provider, scanResult, categories),
 		/** Execute migration (writes files with backup). */
-		executeMigration: (provider: string, scanResult: unknown, categories: string[]) =>
+		executeMigration: (provider: string, scanResult: unknown, categories: MigrationCategory[]) =>
 			ipcRenderer.invoke("onboarding:execute-migration", provider, scanResult, categories),
 		/** Subscribe to migration progress updates (history writing). */
 		onMigrationProgress: (callback: (progress: unknown) => void) => {

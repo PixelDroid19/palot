@@ -1,3 +1,5 @@
+import type { ConversionCategory } from "@palot/configconv"
+
 /**
  * Type definitions for the Electron preload bridge.
  *
@@ -309,6 +311,7 @@ export interface OpenCodeCheckResult {
 
 /** Supported migration source providers. */
 export type MigrationProvider = "claude-code" | "cursor" | "opencode"
+export type MigrationCategory = ConversionCategory | "extra"
 
 /** Detection result for a single provider. */
 export interface ProviderDetection {
@@ -330,7 +333,7 @@ export interface ProviderDetection {
 }
 
 export interface MigrationCategoryPreview {
-	category: string
+	category: MigrationCategory
 	itemCount: number
 	files: MigrationFilePreview[]
 }
@@ -726,13 +729,13 @@ export interface PalotAPI {
 		previewMigration: (
 			provider: MigrationProvider,
 			scanResult: unknown,
-			categories: string[],
+			categories: MigrationCategory[],
 		) => Promise<MigrationPreview>
 		/** Execute migration (writes files with backup). */
 		executeMigration: (
 			provider: MigrationProvider,
 			scanResult: unknown,
-			categories: string[],
+			categories: MigrationCategory[],
 		) => Promise<MigrationResult>
 		/** Subscribe to migration progress updates (history writing). */
 		onMigrationProgress: (callback: (progress: MigrationProgress) => void) => () => void

@@ -9,12 +9,22 @@
  */
 
 import { type ChildProcess, spawn } from "node:child_process"
+import { mkdtemp, writeFile, rm } from "node:fs/promises"
 import { existsSync } from "node:fs"
-import { homedir } from "node:os"
+import { createHash } from "node:crypto"
+import { homedir, tmpdir } from "node:os"
 import path from "node:path"
 import { BrowserWindow } from "electron"
 import type { OpenCodeCheckResult } from "./compatibility"
 import { checkOpenCode } from "./compatibility"
+import {
+	conversionReportMessageToText as formatConversionReportMessage,
+} from "@palot/configconv"
+import type {
+	CanonicalConversionResult,
+	ConversionCategory,
+	ConversionReportMessageInput,
+} from "@palot/configconv"
 import { createLogger } from "./logger"
 
 const log = createLogger("onboarding")
@@ -22,6 +32,40 @@ const log = createLogger("onboarding")
 // ============================================================
 // Types
 // ============================================================
+
+const OPENCODE_INSTALL_URL = "https://opencode.ai/install"
+const OPENCODE_INSTALL_SHA256 = process.env.OPENCODE_INSTALLER_SHA256?.trim().toLowerCase()
+const ALLOW_UNVERIFIED_INSTALL = process.env.OPENCODE_ALLOW_UNVERIFIED_INSTALL === "1"
+const shouldVerifyInstallScript = !!OPENCODE_INSTALL_SHA256 && !ALLOW_UNVERIFIED_INSTALL
+const OPENCODE_INSTALL_TIMEOUT_MS = (() => {
+	const parsed = Number.parseInt(process.env.OPENCODE_INSTALL_TIMEOUT_MS ?? "", 10)
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : 10 * 60 * 1000
+})()
+
+/**
+ * Resolve a shell binary for running installer scripts.
+ * Uses the configured SHELL first, then common POSIX fallbacks.
+ */
+function resolveInstallShell(): string {
+	const shellCandidates = [
+		process.env.SHELL?.trim(),
+		"/bin/zsh",
+		"/usr/bin/zsh",
+		"/bin/bash",
+		"/usr/bin/bash",
+		"/bin/sh",
+		"/usr/bin/sh",
+	].filter((shell, index, items): shell is string =>
+		!!shell && items.indexOf(shell) === index,
+	)
+
+	for (const shell of shellCandidates) {
+		if (!shell.includes("/")) return shell
+		if (existsSync(shell)) return shell
+	}
+
+	return "/bin/sh"
+}
 
 /** Supported migration source providers. */
 export type MigrationProvider = "claude-code" | "cursor" | "opencode"
@@ -71,7 +115,7 @@ export interface MigrationPreview {
 }
 
 export interface MigrationCategoryPreview {
-	category: string
+	category: MigrationCategory
 	itemCount: number
 	files: MigrationFilePreview[]
 }
@@ -94,6 +138,8 @@ export interface MigrationResult {
 	/** Number of history sessions that were skipped as duplicates */
 	historyDuplicatesSkipped: number
 }
+
+type MigrationCategory = ConversionCategory | "extra"
 
 // ============================================================
 // Provider metadata
@@ -129,66 +175,138 @@ export async function installOpenCode(): Promise<{ success: boolean; error?: str
 		return { success: false, error: "Installation already in progress" }
 	}
 
-	return new Promise((resolve) => {
-		const isWindows = process.platform === "win32"
+	let tempDir: string | null = null
+	let timeoutHandle: NodeJS.Timeout | null = null
+	let fetchController: AbortController | null = null
+	let installTimedOut = false
 
-		if (isWindows) {
-			// Windows: use PowerShell to run the install script
-			installProcess = spawn(
-				"powershell",
-				["-Command", "irm https://opencode.ai/install.ps1 | iex"],
-				{
-					cwd: homedir(),
-					stdio: "pipe",
-					env: process.env,
-				},
-			)
-		} else {
-			// macOS/Linux: use bash + curl
-			installProcess = spawn("bash", ["-c", "curl -fsSL https://opencode.ai/install | bash"], {
+	const sendOutput = (text: string) => {
+		for (const win of BrowserWindow.getAllWindows()) {
+			win.webContents.send("onboarding:install-output", text)
+		}
+	}
+
+	const cleanupInstallFiles = async () => {
+		if (!tempDir) return
+		try {
+			await rm(tempDir, { recursive: true, force: true })
+		} catch {
+			// ignore cleanup errors
+		}
+	}
+
+	const clearInstallTimeout = () => {
+		if (!timeoutHandle) return
+		clearTimeout(timeoutHandle)
+		timeoutHandle = null
+	}
+
+	const waitForProcessExit = (proc: ChildProcess) => {
+		return new Promise<void>((resolve, reject) => {
+			proc.on("error", (err) => {
+				log.error("Install process error", err)
+				reject(err)
+			})
+			proc.on("exit", (code) => {
+				if (code === 0) {
+					log.info("OpenCode install completed successfully")
+					resolve()
+				} else {
+					log.warn("OpenCode install exited with code", code)
+					reject(new Error(`Install script exited with code ${code}`))
+				}
+			})
+		})
+	}
+
+	const killInstallProcess = () => {
+		if (!installProcess) return
+		try {
+			installProcess.kill("SIGKILL")
+		} catch {
+			installProcess.kill("SIGTERM")
+		}
+	}
+
+		try {
+			if (!OPENCODE_INSTALL_SHA256) {
+				sendOutput(
+					"[palot] Warning: OPENCODE_INSTALLER_SHA256 is not configured. Running installer without checksum verification.\n",
+				)
+			} else if (!shouldVerifyInstallScript) {
+				sendOutput(
+					"[palot] Warning: OPENCODE_ALLOW_UNVERIFIED_INSTALL is set. Running installer without checksum verification.\n",
+				)
+			}
+
+		const isWindows = process.platform === "win32"
+		const installerUrl = isWindows ? `${OPENCODE_INSTALL_URL}.ps1` : OPENCODE_INSTALL_URL
+		const installerFilename = isWindows ? "install-opencode.ps1" : "install-opencode.sh"
+
+		tempDir = await mkdtemp(path.join(tmpdir(), "palot-opencode-install-"))
+		const installScriptPath = path.join(tempDir, installerFilename)
+
+		timeoutHandle = setTimeout(() => {
+			installTimedOut = true
+			killInstallProcess()
+			fetchController?.abort()
+			sendOutput(`[palot] Installation timed out after ${OPENCODE_INSTALL_TIMEOUT_MS}ms.\n`)
+		}, OPENCODE_INSTALL_TIMEOUT_MS)
+
+		fetchController = new AbortController()
+		const response = await fetch(installerUrl, { signal: fetchController.signal })
+		if (!response.ok) {
+			throw new Error(`Failed to download installer script: HTTP ${response.status}`)
+		}
+
+		const script = await response.text()
+		const scriptDigest = createHash("sha256").update(script).digest("hex")
+		if (shouldVerifyInstallScript && scriptDigest.toLowerCase() !== OPENCODE_INSTALL_SHA256) {
+			throw new Error("Installer script checksum did not match OPENCODE_INSTALLER_SHA256")
+		}
+
+		await writeFile(installScriptPath, script, "utf8")
+		const installerShell = isWindows ? "powershell" : resolveInstallShell()
+		sendOutput(`[palot] Running installer with ${installerShell}.\n`)
+		installProcess = spawn(
+			installerShell,
+			isWindows ? ["-ExecutionPolicy", "Bypass", "-File", installScriptPath] : [installScriptPath],
+			{
 				cwd: homedir(),
 				stdio: "pipe",
 				env: process.env,
-			})
-		}
+			},
+		)
 
 		const proc = installProcess
-
-		const sendOutput = (text: string) => {
-			for (const win of BrowserWindow.getAllWindows()) {
-				win.webContents.send("onboarding:install-output", text)
-			}
-		}
-
 		proc.stdout?.on("data", (data: Buffer) => {
 			const text = data.toString()
 			sendOutput(text)
 			log.debug(`[install:stdout] ${text.trim()}`)
 		})
-
 		proc.stderr?.on("data", (data: Buffer) => {
 			const text = data.toString()
 			sendOutput(text)
 			log.debug(`[install:stderr] ${text.trim()}`)
 		})
 
-		proc.on("error", (err) => {
-			log.error("Install process error", err)
-			installProcess = null
-			resolve({ success: false, error: err.message })
-		})
-
-		proc.on("exit", (code) => {
-			installProcess = null
-			if (code === 0) {
-				log.info("OpenCode install completed successfully")
-				resolve({ success: true })
-			} else {
-				log.warn("OpenCode install exited with code", code)
-				resolve({ success: false, error: `Install script exited with code ${code}` })
-			}
-		})
-	})
+		await waitForProcessExit(proc)
+		sendOutput("[palot] OpenCode install completed.\n")
+		return { success: true }
+	} catch (err) {
+		if (installTimedOut) {
+			return { success: false, error: "Install timed out and was cancelled." }
+		}
+		if (err instanceof DOMException && err.name === "AbortError") {
+			return { success: false, error: "Install download timed out." }
+		}
+		return { success: false, error: err instanceof Error ? err.message : String(err) }
+	} finally {
+		clearInstallTimeout()
+		fetchController = null
+		installProcess = null
+		await cleanupInstallFiles()
+	}
 }
 
 // ============================================================
@@ -214,6 +332,7 @@ async function detectClaudeCode(): Promise<ProviderDetection> {
 
 	const hasGlobalSettings = existsSync(path.join(claudeSettingsDir, "settings.json"))
 	const hasUserState = existsSync(path.join(home, ".claude.json"))
+	let hasPermissions = false
 
 	// Check for projects directory to estimate project count
 	const projectsDir = path.join(claudeSettingsDir, "projects")
@@ -228,14 +347,46 @@ async function detectClaudeCode(): Promise<ProviderDetection> {
 
 	let ruleCount = 0
 	if (existsSync(path.join(home, ".claude", "CLAUDE.md"))) ruleCount++
-	if (existsSync("CLAUDE.md")) ruleCount++
+	if (existsSync(path.join(home, "CLAUDE.md"))) ruleCount++
+	if (existsSync(path.join(home, ".Claude", "CLAUDE.md"))) ruleCount++
 
-	const found = hasGlobalSettings || hasUserState || projectCount > 0
+	let skillCount = 0
+	const skillsDir = path.join(claudeSettingsDir, "skills")
+	if (existsSync(skillsDir)) {
+		try {
+			const { readdirSync } = await import("node:fs")
+			skillCount = readdirSync(skillsDir, { withFileTypes: true }).filter((e) =>
+				e.isDirectory(),
+			).length
+		} catch {
+			// ignore
+		}
+	}
+
+	const found =
+		hasGlobalSettings || hasUserState || projectCount > 0 || ruleCount > 0 || skillCount > 0
+
+	let hasHooks = false
+	if (hasGlobalSettings) {
+		const settingsPath = path.join(claudeSettingsDir, "settings.json")
+		try {
+			const { readFileSync } = await import("node:fs")
+			const globalSettings = JSON.parse(readFileSync(settingsPath, "utf-8"))
+			hasPermissions =
+				!!globalSettings?.permissions &&
+				Object.keys(globalSettings.permissions as Record<string, unknown>).length > 0
+			hasHooks = typeof globalSettings?.hooks === "object" && globalSettings.hooks !== null
+		} catch {
+			// ignore malformed config
+		}
+	}
 
 	const summaryParts: string[] = []
 	if (hasGlobalSettings) summaryParts.push("global settings")
+	if (hasPermissions) summaryParts.push("permissions")
 	if (projectCount > 0) summaryParts.push(`${projectCount} project${projectCount === 1 ? "" : "s"}`)
 	if (ruleCount > 0) summaryParts.push("rules")
+	if (skillCount > 0) summaryParts.push(`${skillCount} skill${skillCount === 1 ? "" : "s"}`)
 
 	return {
 		provider: "claude-code",
@@ -243,14 +394,14 @@ async function detectClaudeCode(): Promise<ProviderDetection> {
 		label: PROVIDER_LABELS["claude-code"],
 		summary: found ? `Found ${summaryParts.join(", ")}` : "No Claude Code configuration detected",
 		hasGlobalSettings: hasGlobalSettings || hasUserState,
-		hasPermissions: hasGlobalSettings,
+		hasPermissions,
 		projectCount,
 		mcpServerCount: 0,
 		agentCount: 0,
 		commandCount: 0,
 		ruleCount,
-		hasHooks: false,
-		skillCount: 0,
+		hasHooks,
+		skillCount,
 		totalSessions: 0,
 		totalMessages: 0,
 	}
@@ -420,7 +571,7 @@ async function detectOpenCodeProvider(): Promise<ProviderDetection> {
 	}
 
 	const ruleCount = hasAgentsMd ? 1 : 0
-	const found = hasConfig || hasAgentsMd || agentCount > 0 || commandCount > 0
+	const found = hasConfig || hasAgentsMd || agentCount > 0 || commandCount > 0 || skillCount > 0
 
 	const summaryParts: string[] = []
 	if (hasConfig) summaryParts.push("global config")
@@ -480,13 +631,18 @@ export async function scanProvider(provider: MigrationProvider): Promise<{
 export async function previewMigration(
 	provider: MigrationProvider,
 	scanResult: unknown,
-	categories: string[],
+	categories: MigrationCategory[],
 ): Promise<MigrationPreview> {
 	const { universalConvert } = await import("@palot/configconv")
+	const normalizedCategories = normalizeMigrationCategories(categories)
 
 	// Convert from source provider to OpenCode (the target for Palot)
 	// biome-ignore lint/suspicious/noExplicitAny: scanResult is dynamically typed from IPC
-	const conversion = universalConvert(scanResult as any, { to: "opencode" })
+	const conversion = universalConvert(scanResult as any, {
+		to: "opencode",
+		categories: normalizedCategories,
+	})
+	filterConversionForCategories(conversion, normalizedCategories)
 
 	const categoryPreviews: MigrationCategoryPreview[] = []
 
@@ -511,8 +667,9 @@ export async function previewMigration(
 	for (const [projectPath, config] of conversion.projectConfigs) {
 		if (Object.keys(config).length > 0) {
 			const content = JSON.stringify(config, null, 2)
+			const category = getProjectConfigPreviewCategory(config)
 			categoryPreviews.push({
-				category: "mcp",
+				category,
 				itemCount: 1,
 				files: [
 					{
@@ -568,6 +725,20 @@ export async function previewMigration(
 		categoryPreviews.push({ category: "rules", itemCount: files.length, files })
 	}
 
+	// Skills (written as linked directories)
+	if (conversion.linkedDirs.size > 0) {
+		const files: MigrationFilePreview[] = []
+		for (const [filePath, sourcePath] of conversion.linkedDirs) {
+			files.push({
+				path: filePath,
+				status: "new",
+				lineCount: 0,
+				content: `Symlink -> ${sourcePath}`,
+			})
+		}
+		categoryPreviews.push({ category: "skills", itemCount: files.length, files })
+	}
+
 	// Extra files (plugins etc.)
 	if (conversion.extraFiles.size > 0) {
 		const files: MigrationFilePreview[] = []
@@ -585,7 +756,7 @@ export async function previewMigration(
 	// History (Cursor or Claude Code)
 	let sessionCount = 0
 	let sessionProjectCount = 0
-	if (categories.includes("history")) {
+	if (normalizedCategories.includes("history")) {
 		const historyResult = await previewHistoryMigration(provider, scanResult)
 		if (historyResult) {
 			sessionCount = historyResult.sessionCount
@@ -611,9 +782,9 @@ export async function previewMigration(
 
 	return {
 		categories: categoryPreviews,
-		warnings: [...conversion.report.warnings],
-		manualActions: [...conversion.report.manualActions],
-		errors: [...conversion.report.errors],
+		warnings: [...conversion.report.warnings].map(convertReportMessageToText),
+		manualActions: [...conversion.report.manualActions].map(convertReportMessageToText),
+		errors: [...conversion.report.errors].map(convertReportMessageToText),
 		fileCount: totalFiles,
 		sessionCount,
 		sessionProjectCount,
@@ -656,26 +827,31 @@ async function previewHistoryMigration(
 export async function executeMigration(
 	provider: MigrationProvider,
 	scanResult: unknown,
-	categories: string[],
+	categories: MigrationCategory[],
 ): Promise<MigrationResult> {
 	const { universalConvert, universalWrite } = await import("@palot/configconv")
+	const normalizedCategories = normalizeMigrationCategories(categories)
 
 	// biome-ignore lint/suspicious/noExplicitAny: scanResult is dynamically typed from IPC
-	const conversion = universalConvert(scanResult as any, { to: "opencode" })
+	const conversion = universalConvert(scanResult as any, {
+		to: "opencode",
+		categories: normalizedCategories,
+	})
+	filterConversionForCategories(conversion, normalizedCategories)
 
 	const writeResult = await universalWrite(conversion, {
 		backup: true,
 		mergeStrategy: "preserve-existing",
 	})
 
-	const allWarnings = [...conversion.report.warnings]
-	const allManualActions = [...conversion.report.manualActions]
-	const allErrors = [...conversion.report.errors]
+	const allWarnings: ConversionReportMessageInput[] = [...conversion.report.warnings]
+	const allManualActions: ConversionReportMessageInput[] = [...conversion.report.manualActions]
+	const allErrors: ConversionReportMessageInput[] = [...conversion.report.errors]
 	const allFilesWritten = [...writeResult.filesWritten]
 	let historyDuplicatesSkipped = 0
 
 	// Write history sessions if selected
-	if (categories.includes("history")) {
+	if (normalizedCategories.includes("history")) {
 		try {
 			const historyResult = await executeHistoryMigration(provider, scanResult)
 			allFilesWritten.push(...historyResult.filesWritten)
@@ -693,16 +869,125 @@ export async function executeMigration(
 		}
 	}
 
+	const success = allErrors.length === 0
+
 	return {
-		success: true,
+		success,
 		filesWritten: allFilesWritten,
 		filesSkipped: writeResult.filesSkipped,
 		backupDir: writeResult.backupDir ?? null,
-		warnings: allWarnings,
-		manualActions: allManualActions,
-		errors: allErrors,
+		warnings: allWarnings.map(convertReportMessageToText),
+		manualActions: allManualActions.map(convertReportMessageToText),
+		errors: allErrors.map(convertReportMessageToText),
 		historyDuplicatesSkipped,
 	}
+}
+
+function normalizeMigrationCategories(categories: MigrationCategory[]): ConversionCategory[] {
+	const normalized: ConversionCategory[] = []
+	const seen = new Set<string>()
+
+	for (const category of categories) {
+		if (category === "extra" || seen.has(category)) continue
+		normalized.push(category)
+		seen.add(category)
+	}
+
+	return normalized
+}
+
+function getProjectConfigPreviewCategory(config: Record<string, unknown>): ConversionCategory {
+	const hasMcp = Object.prototype.hasOwnProperty.call(config, "mcp")
+	const hasPermission = Object.prototype.hasOwnProperty.call(config, "permission")
+
+	if (hasPermission && !hasMcp && Object.keys(config).length === 1) return "permissions"
+	if (hasMcp && !hasPermission && Object.keys(config).length === 1) return "mcp"
+	return "config"
+}
+
+function convertReportMessageToText(message: ConversionReportMessageInput): string {
+	return formatConversionReportMessage(message)
+}
+
+function isMessageRelevantForSelectedCategories(
+	message: ConversionReportMessageInput,
+	selected: Set<ConversionCategory>,
+): boolean {
+	if (typeof message === "string") return true
+	if (!message.category) return true
+	return selected.has(message.category as ConversionCategory)
+}
+
+function filterConversionForCategories(
+	conversion: CanonicalConversionResult & {
+		hookPlugins?: Map<string, string>
+	},
+	categories: ConversionCategory[],
+): void {
+	const selected = new Set(categories)
+	const keepConfig = selected.has("config")
+	const keepMcp = selected.has("mcp")
+	const keepPermissions = selected.has("permissions")
+	const keepAgents = selected.has("agents")
+	const keepCommands = selected.has("commands")
+	const keepSkills = selected.has("skills")
+	const keepRules = selected.has("rules")
+	const keepHooks = selected.has("hooks")
+
+	const filterConfig = (config: Record<string, unknown>): Record<string, unknown> => {
+		const filtered: Record<string, unknown> = {}
+		for (const [key, value] of Object.entries(config)) {
+			if (key === "mcp" && !keepMcp) continue
+			if (key === "permission" && !keepPermissions) continue
+			if (!keepConfig && key !== "mcp" && key !== "permission") continue
+			filtered[key] = value
+		}
+		return filtered
+	}
+
+	conversion.globalConfig = filterConfig(conversion.globalConfig)
+
+	const filteredProjectConfigs = new Map<string, Record<string, unknown>>()
+	for (const [projectPath, projectConfig] of conversion.projectConfigs) {
+		const filtered = filterConfig(projectConfig)
+		if (Object.keys(filtered).length > 0) {
+			filteredProjectConfigs.set(projectPath, filtered)
+		}
+	}
+	conversion.projectConfigs = filteredProjectConfigs
+
+	if (!keepAgents) {
+		conversion.agents = new Map()
+	}
+	if (!keepCommands) {
+		conversion.commands = new Map()
+	}
+	if (!keepSkills) {
+		conversion.linkedDirs = new Map()
+		conversion.report.converted = conversion.report.converted.filter((item) => item.category !== "skills")
+		conversion.report.skipped = conversion.report.skipped.filter((item) => item.category !== "skills")
+	}
+	if (!keepRules) {
+		conversion.rules = new Map()
+	}
+	if (!keepHooks) {
+		if (conversion.extraFiles) conversion.extraFiles = new Map()
+		if (conversion.hookPlugins) conversion.hookPlugins = new Map()
+	} else if (!conversion.extraFiles && conversion.hookPlugins) {
+		conversion.extraFiles = conversion.hookPlugins
+	}
+
+	conversion.report.converted = conversion.report.converted.filter((item) => selected.has(item.category))
+	conversion.report.skipped = conversion.report.skipped.filter((item) => selected.has(item.category))
+	conversion.report.warnings = conversion.report.warnings.filter((item) =>
+		isMessageRelevantForSelectedCategories(item, selected),
+	)
+	conversion.report.manualActions = conversion.report.manualActions.filter((item) =>
+		isMessageRelevantForSelectedCategories(item, selected),
+	)
+	conversion.report.errors = conversion.report.errors.filter((item) =>
+		isMessageRelevantForSelectedCategories(item, selected),
+	)
 }
 
 /**
@@ -832,7 +1117,37 @@ function buildClaudeCodeDetection(data: any): ProviderDetection {
 	for (const p of data.projects) {
 		if (p.claudeMd) ruleCount++
 	}
-	const hasHooks = !!(data.global.settings as Record<string, unknown> | undefined)?.hooks
+	const hasHooks =
+		!!(data.global.settings as Record<string, unknown> | undefined)?.hooks ||
+		data.projects.some(
+			(p: { settingsLocal?: Record<string, unknown> }) =>
+				!!p.settingsLocal && typeof p.settingsLocal.hooks === "object" && p.settingsLocal.hooks !== null,
+		)
+	const hasObjectContent = (value: unknown) =>
+		Boolean(
+			value &&
+				typeof value === "object" &&
+				!Array.isArray(value) &&
+				Object.keys(value as object).length > 0,
+		)
+	const hasProjectPermissions = data.projects.some(
+		(p: { settingsLocal?: Record<string, unknown>; allowedTools?: unknown[] }) =>
+			!!(hasObjectContent(p.settingsLocal?.permissions) || (p.allowedTools && p.allowedTools.length > 0)),
+	)
+	const globalPermissions =
+		(data.global.settings as { permissions?: Record<string, unknown> } | undefined)?.permissions
+	const globalPermissionsCount = globalPermissions ? Object.keys(globalPermissions).length : 0
+	const hasProjectConfig = data.projects.some(
+		(p: { settingsLocal?: Record<string, unknown>; allowedTools?: unknown[] }) =>
+			!!(
+				p.settingsLocal &&
+				(typeof p.settingsLocal.model === "string" ||
+					typeof p.settingsLocal.env === "object" ||
+					hasObjectContent(p.settingsLocal.permissions) ||
+					typeof p.settingsLocal.hooks === "object" ||
+					typeof p.settingsLocal.mcpServers === "object")
+			),
+	)
 	const skillCount =
 		data.global.skills.length +
 		data.projects.reduce((sum: number, p: { skills: unknown[] }) => sum + p.skills.length, 0)
@@ -844,14 +1159,17 @@ function buildClaudeCodeDetection(data: any): ProviderDetection {
 	if (mcpServerCount > 0)
 		summaryParts.push(`${mcpServerCount} MCP server${mcpServerCount === 1 ? "" : "s"}`)
 	if (agentCount > 0) summaryParts.push(`${agentCount} agent${agentCount === 1 ? "" : "s"}`)
+	if (commandCount > 0)
+		summaryParts.push(`${commandCount} command${commandCount === 1 ? "" : "s"}`)
+	if (skillCount > 0) summaryParts.push(`${skillCount} skill${skillCount === 1 ? "" : "s"}`)
 
 	return {
 		provider: "claude-code",
 		found: true,
 		label: PROVIDER_LABELS["claude-code"],
 		summary: `Found ${summaryParts.join(", ")}`,
-		hasGlobalSettings: !!data.global.settings || !!data.global.userState,
-		hasPermissions: !!data.global.settings,
+		hasGlobalSettings: !!data.global.settings || hasProjectConfig,
+		hasPermissions: globalPermissionsCount > 0 || hasProjectPermissions,
 		projectCount: data.projects.length,
 		mcpServerCount,
 		agentCount,
@@ -872,7 +1190,11 @@ function buildCursorDetection(data: any): ProviderDetection {
 	const agentCount = data.global.agents?.length ?? 0
 	const commandCount = data.global.commands?.length ?? 0
 	const skillCount = data.global.skills?.length ?? 0
-	const hasPermissions = !!data.global.cliConfig
+	const hasPermissions = (() => {
+		const permissions = data.global.cliConfig?.permissions
+		if (!permissions || typeof permissions !== "object") return false
+		return Object.values(permissions).some((value) => Array.isArray(value) && value.length > 0)
+	})()
 
 	let ruleCount = 0
 	for (const p of data.projects ?? []) {
@@ -931,6 +1253,9 @@ function buildOpenCodeDetection(data: any): ProviderDetection {
 		summaryParts.push(`${mcpServerCount} MCP server${mcpServerCount === 1 ? "" : "s"}`)
 	if (ruleCount > 0) summaryParts.push("rules")
 	if (agentCount > 0) summaryParts.push(`${agentCount} agent${agentCount === 1 ? "" : "s"}`)
+	if (commandCount > 0)
+		summaryParts.push(`${commandCount} command${commandCount === 1 ? "" : "s"}`)
+	if (skillCount > 0) summaryParts.push(`${skillCount} skill${skillCount === 1 ? "" : "s"}`)
 
 	return {
 		provider: "opencode",

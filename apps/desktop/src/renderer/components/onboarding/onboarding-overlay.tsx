@@ -11,7 +11,12 @@
 
 import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useState } from "react"
-import type { MigrationPreview, MigrationProvider, MigrationResult } from "../../../preload/api"
+import type {
+	MigrationCategory,
+	MigrationPreview,
+	MigrationProvider,
+	MigrationResult,
+} from "../../../preload/api"
 import { APP_BAR_HEIGHT } from "../app-bar"
 import { OnboardingProgress } from "./onboarding-progress"
 import { CompleteStep } from "./steps/complete-step"
@@ -71,7 +76,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 	// Migration state (only populated if user opts in from complete screen)
 	const [activeProvider, setActiveProvider] = useState<MigrationProvider | null>(null)
 	const [scanResult, setScanResult] = useState<unknown>(null)
-	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+	const [selectedCategories, setSelectedCategories] = useState<MigrationCategory[]>([])
 	const [migrationPreview, setMigrationPreview] = useState<MigrationPreview | null>(null)
 	const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null)
 
@@ -134,7 +139,7 @@ export function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 	)
 
 	const handleMigrationOfferPreview = useCallback(
-		(scan: unknown, categories: string[], preview: MigrationPreview) => {
+		(scan: unknown, categories: MigrationCategory[], preview: MigrationPreview) => {
 			setScanResult(scan)
 			setSelectedCategories(categories)
 			setMigrationPreview(preview)
