@@ -152,23 +152,21 @@ const PROVIDER_LABELS: Record<MigrationProvider, string> = {
 }
 
 // ============================================================
-// OpenCode check (delegates to compatibility module)
+// Managed runtime check (delegates to compatibility module)
 // ============================================================
 
 export async function checkManagedRuntimeInstallation(): Promise<ManagedRuntimeCheckResult> {
 	return checkManagedRuntime()
 }
 
-export const checkOpenCodeInstallation = checkManagedRuntimeInstallation
-
 // ============================================================
-// OpenCode install
+// Managed runtime install
 // ============================================================
 
 let installProcess: ChildProcess | null = null
 
 /**
- * Installs OpenCode CLI by running the official install script.
+ * Installs the managed runtime CLI by running the official install script.
  * Streams output lines to the renderer via the "onboarding:install-output" channel.
  * Returns when the install process exits.
  */
@@ -310,8 +308,6 @@ export async function installManagedRuntime(): Promise<{ success: boolean; error
 		await cleanupInstallFiles()
 	}
 }
-
-export const installOpenCode = installManagedRuntime
 
 // ============================================================
 // Multi-provider detection (lightweight, no configconv import)

@@ -6,9 +6,9 @@ import { getCredential } from "./credential-store"
 import { findFreePort } from "./find-free-port"
 import { createLogger } from "./logger"
 import {
-	buildOpenCodeAuthHeader,
-	probeOpenCodeServer,
-	startOpenCodeServerProcess,
+	buildManagedRuntimeAuthHeader,
+	probeManagedRuntimeServer,
+	startManagedRuntimeServerProcess,
 } from "./opencode-runtime"
 import { startNotificationWatcher, stopNotificationWatcher } from "./notification-watcher"
 import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./process-owner"
@@ -62,7 +62,7 @@ function getLocalServerConfig(): LocalServerConfig {
 }
 
 /**
- * Ensures the single OpenCode server is running.
+ * Ensures the single managed runtime server is running.
  * Starts it if not already running. Returns the server info.
  *
  * Performs ownership checks to prevent connecting to a server owned by a
@@ -80,14 +80,14 @@ export async function ensureManagedRuntimeServer(): Promise<ManagedRuntimeServer
 
 	// Ensure the full shell environment is available before spawning the server.
 	// startEnvResolution() fires early in app startup; by the time the renderer
-	// triggers ensureServer() the promise is usually already resolved.
+	// triggers ensureManagedRuntimeServer() the promise is usually already resolved.
 	await waitForEnv()
 
 	const config = getLocalServerConfig()
 	const hostname = config.hostname || DEFAULT_HOSTNAME
 	const port = config.port || DEFAULT_PORT
 	const localPassword = config.hasPassword ? getCredential("local") : null
-	const authHeader = localPassword ? buildOpenCodeAuthHeader(localPassword) : null
+	const authHeader = localPassword ? buildManagedRuntimeAuthHeader(localPassword) : null
 
 	// --- Fast-path: check our own lockfile first ---
 	const lockfile = readLockfile()
@@ -353,14 +353,14 @@ async function spawnServer(
 	password: string | null,
 	authHeader: string | null,
 ): Promise<OpenCodeServer> {
-	log.info("Starting managed OpenCode runtime", {
+	log.info("Starting managed runtime", {
 		hostname,
 		port,
 		hasPassword: !!password,
 		mdns: !!config.mdns,
 	})
 
-	const started = await startOpenCodeServerProcess({
+	const started = await startManagedRuntimeServerProcess({
 		hostname,
 		port,
 		password,
@@ -426,5 +426,5 @@ async function probeServer(
 	authHeader: string | null,
 	okStatuses?: number[],
 ): Promise<boolean> {
-	return probeOpenCodeServer(url, { authHeader, okStatuses })
+	return probeManagedRuntimeServer(url, { authHeader, okStatuses })
 }

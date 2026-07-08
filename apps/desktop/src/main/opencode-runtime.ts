@@ -157,7 +157,7 @@ export async function waitForManagedRuntimeServer(
 		await sleep(pollMs)
 	}
 
-	throw new Error(`OpenCode runtime at ${url} did not become ready within ${timeoutMs}ms`)
+	throw new Error(`Managed runtime at ${url} did not become ready within ${timeoutMs}ms`)
 }
 
 export const waitForOpenCodeServer = waitForManagedRuntimeServer
@@ -208,7 +208,7 @@ export async function startManagedRuntimeServerProcess(
 			cleanup()
 			reject(
 				new Error(
-					`OpenCode runtime exited before becoming ready (code=${code ?? "null"}, signal=${signal ?? "null"})${startupStderr.trim() ? `: ${startupStderr.trim()}` : ""}`,
+					`Managed runtime exited before becoming ready (code=${code ?? "null"}, signal=${signal ?? "null"})${startupStderr.trim() ? `: ${startupStderr.trim()}` : ""}`,
 				),
 			)
 		}
@@ -219,7 +219,7 @@ export async function startManagedRuntimeServerProcess(
 
 		proc.once("error", onError)
 		proc.once("exit", onExit)
-		void waitForOpenCodeServer(url, {
+		void waitForManagedRuntimeServer(url, {
 			authHeader: options.password ? buildManagedRuntimeAuthHeader(options.password) : null,
 			timeoutMs: options.timeoutMs,
 		}).then(
