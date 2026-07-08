@@ -1,6 +1,7 @@
 // Import SDK types we reference in our own interfaces
 import type {
 	PermissionRequest as SdkPermissionRequest,
+	Project as SdkProject,
 	QuestionRequest as SdkQuestionRequest,
 } from "@opencode-ai/sdk/v2/client"
 
@@ -22,7 +23,7 @@ export type {
 	Message,
 	Part,
 	PermissionRequest,
-	Project as OpenCodeProject,
+	Project as ManagedRuntimeProject,
 	QuestionAnswer,
 	QuestionInfo,
 	QuestionOption,
@@ -37,6 +38,8 @@ export type {
 	ToolStateCompleted,
 	UserMessage,
 } from "@opencode-ai/sdk/v2/client"
+
+export type OpenCodeProject = SdkProject
 
 /**
  * UI-facing diff model for review surfaces.
@@ -92,7 +95,7 @@ export type EnvironmentType = "local" | "cloud" | "vm"
 /** Derived agent status for UI display, mapped from SessionStatus */
 export type AgentStatus = "running" | "waiting" | "paused" | "completed" | "failed" | "idle"
 
-/** Project in the sidebar — aggregates from OpenCode projects */
+/** Project in the sidebar — aggregates from managed runtime projects */
 export interface ProjectInfo {
 	id: string
 	name: string
@@ -102,7 +105,7 @@ export interface ProjectInfo {
 
 /** Enriched project for the unified sidebar (includes directory for auto-start) */
 export interface SidebarProject {
-	/** OpenCode project ID (root commit hash) or hash of directory as fallback */
+	/** Managed runtime project ID (root commit hash) or hash of directory as fallback */
 	id: string
 	/** URL-safe slug: always `{name}-{id.slice(0,12)}` for stability */
 	slug: string
@@ -124,7 +127,7 @@ export interface Activity {
 }
 
 /**
- * Agent is our UI-facing representation of an OpenCode session.
+ * Agent is our UI-facing representation of a managed runtime session.
  * It merges Session data + SessionStatus + derived activity info.
  *
  * Note: Metrics (cost, tokens, work time, exchange count) are NOT included here.
@@ -151,7 +154,7 @@ export interface Agent {
 	duration: string
 	currentActivity?: string
 	activities: Activity[]
-	/** The underlying OpenCode session ID */
+	/** The underlying managed runtime session ID */
 	sessionId: string
 	/** Pending permission requests for this agent */
 	permissions: SdkPermissionRequest[]

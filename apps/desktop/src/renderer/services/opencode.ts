@@ -4,7 +4,7 @@ import { createLogger } from "../lib/logger"
 import type {
 	Event,
 	FileDiff,
-	OpenCodeProject,
+	ManagedRuntimeProject,
 	Session,
 	SessionStatus,
 } from "../lib/types"
@@ -234,9 +234,9 @@ function createBrowserFetch(authHeader?: string): FetchFn {
 /**
  * Fetch all projects known to the server.
  */
-export async function listProjects(client: OpencodeClient): Promise<OpenCodeProject[]> {
+export async function listProjects(client: OpencodeClient): Promise<ManagedRuntimeProject[]> {
 	const result = await client.project.list()
-	return (result.data as OpenCodeProject[]) ?? []
+	return (result.data as ManagedRuntimeProject[]) ?? []
 }
 
 /**
