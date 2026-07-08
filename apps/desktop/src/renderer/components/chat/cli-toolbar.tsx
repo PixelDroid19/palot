@@ -232,14 +232,15 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 	}, [runtimeId])
 
 	const descriptor = runtimes.find((d) => d.id === runtimeId)
-	if (!meta || !descriptor) return null
-
-	const models = availableRuntimeModels(descriptor)
-	const currentSlug = resolveRuntimeModel(descriptor, meta.model) ?? ""
-	const currentEffort = resolveRuntimeEffort(descriptor, currentSlug, meta.effort) ?? ""
-	const efforts = getRuntimeModelEfforts(descriptor, currentSlug)
+	const models = descriptor ? availableRuntimeModels(descriptor) : []
+	const currentSlug = descriptor ? (resolveRuntimeModel(descriptor, meta?.model) ?? "") : ""
+	const currentEffort = descriptor
+		? (resolveRuntimeEffort(descriptor, currentSlug, meta?.effort) ?? "")
+		: ""
+	const efforts = descriptor ? getRuntimeModelEfforts(descriptor, currentSlug) : []
 
 	useEffect(() => {
+		if (!meta || !descriptor) return
 		const normalizedModel = currentSlug || undefined
 		const normalizedEffort = currentEffort || undefined
 		if (meta.model === normalizedModel && meta.effort === normalizedEffort) return
@@ -248,7 +249,9 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 			effort: normalizedEffort,
 		})
 		persistCliSession(sessionId)
-	}, [currentEffort, currentSlug, meta.effort, meta.model, sessionId])
+	}, [currentEffort, currentSlug, descriptor, meta, sessionId])
+
+	if (!meta || !descriptor) return null
 
 	const apply = (patch: { model?: string; effort?: string; sandbox?: AgentSandbox }) => {
 		const nextModel = resolveRuntimeModel(descriptor, patch.model ?? meta.model)
