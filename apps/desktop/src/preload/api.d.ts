@@ -13,6 +13,8 @@ export interface OpenCodeServerInfo {
 	managed: boolean
 }
 
+export type ManagedRuntimeServerInfo = OpenCodeServerInfo
+
 export interface ModelRef {
 	providerID: string
 	modelID: string
@@ -491,13 +493,10 @@ export interface PalotAPI {
 	/** Get the current chrome tier (pull-based, avoids race with push event). */
 	getChromeTier: () => Promise<WindowChromeTier>
 
-	ensureOpenCode: () => Promise<OpenCodeServerInfo>
-	ensureManagedRuntime: () => Promise<OpenCodeServerInfo>
+	ensureManagedRuntime: () => Promise<ManagedRuntimeServerInfo>
 	getServerUrl: () => Promise<string | null>
-	stopOpenCode: () => Promise<boolean>
 	stopManagedRuntime: () => Promise<boolean>
-	restartOpenCode: () => Promise<OpenCodeServerInfo>
-	restartManagedRuntime: () => Promise<OpenCodeServerInfo>
+	restartManagedRuntime: () => Promise<ManagedRuntimeServerInfo>
 	getModelState: () => Promise<ModelState>
 	updateModelRecent: (model: ModelRef) => Promise<ModelState>
 
@@ -721,9 +720,7 @@ export interface PalotAPI {
 	onAutomationRunsUpdated: (callback: () => void) => () => void
 
 	onboarding: {
-		checkOpenCode: () => Promise<OpenCodeCheckResult>
 		checkManagedRuntime: () => Promise<ManagedRuntimeCheckResult>
-		installOpenCode: () => Promise<{ success: boolean; error?: string }>
 		installManagedRuntime: () => Promise<{ success: boolean; error?: string }>
 		onInstallOutput: (callback: (text: string) => void) => () => void
 		/** Quick-detect all supported providers (Claude Code, Cursor, OpenCode). */

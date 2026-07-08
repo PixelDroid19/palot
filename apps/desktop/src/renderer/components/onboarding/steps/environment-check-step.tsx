@@ -25,7 +25,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type {
-	OpenCodeCheckResult as ManagedRuntimeCheckResult,
+	ManagedRuntimeCheckResult,
 	RemoteServerConfig,
 } from "../../../../preload/api"
 import { discoveredMdnsServersAtom } from "../../../atoms/connection"

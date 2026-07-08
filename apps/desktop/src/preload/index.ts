@@ -34,21 +34,15 @@ contextBridge.exposeInMainWorld("palot", {
 	/** Get the current chrome tier (pull-based, avoids race with push event). */
 	getChromeTier: () => ipcRenderer.invoke("chrome-tier:get"),
 
-	/** Ensures the OpenCode server is running. Spawns it if not. */
-	ensureOpenCode: () => ipcRenderer.invoke("opencode:ensure"),
 	/** Ensures the managed runtime server is running. Spawns it if not. */
 	ensureManagedRuntime: () => ipcRenderer.invoke("opencode:ensure"),
 
 	/** Gets the URL of the running server, or null. */
 	getServerUrl: () => ipcRenderer.invoke("opencode:url"),
 
-	/** Stops the managed OpenCode server. */
-	stopOpenCode: () => ipcRenderer.invoke("opencode:stop"),
 	/** Stops the managed runtime server. */
 	stopManagedRuntime: () => ipcRenderer.invoke("opencode:stop"),
 
-	/** Restarts the managed OpenCode server (stops and re-starts with current settings). */
-	restartOpenCode: () => ipcRenderer.invoke("opencode:restart"),
 	/** Restarts the managed runtime server (stops and re-starts with current settings). */
 	restartManagedRuntime: () => ipcRenderer.invoke("opencode:restart"),
 
@@ -373,12 +367,8 @@ contextBridge.exposeInMainWorld("palot", {
 	// --- Onboarding ---
 
 	onboarding: {
-		/** Check if OpenCode CLI is installed and compatible. */
-		checkOpenCode: () => ipcRenderer.invoke("onboarding:check-opencode"),
 		/** Check if the managed runtime CLI is installed and compatible. */
 		checkManagedRuntime: () => ipcRenderer.invoke("onboarding:check-opencode"),
-		/** Install OpenCode CLI via the official install script. */
-		installOpenCode: () => ipcRenderer.invoke("onboarding:install-opencode"),
 		/** Install the managed runtime CLI via the official install script. */
 		installManagedRuntime: () => ipcRenderer.invoke("onboarding:install-opencode"),
 		/** Subscribe to install output lines (streamed from the install script). */
