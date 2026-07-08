@@ -100,7 +100,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 
 		try {
 			// Step 1: Check managed runtime installation
-			const result = await window.palot.onboarding.checkManagedRuntime()
+			const result = await window.palot.onboarding.checkProjectRuntime()
 			setManagedRuntimeResult(result)
 
 			if (!result.installed) {
@@ -178,7 +178,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		})
 
 		try {
-			const result = await window.palot.onboarding.installManagedRuntime()
+			const result = await window.palot.onboarding.installProjectRuntime()
 			cleanup()
 
 			if (result.success) {

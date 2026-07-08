@@ -516,6 +516,12 @@ export interface PalotAPI {
 	getServerUrl: () => Promise<string | null>
 	stopManagedRuntime: () => Promise<boolean>
 	restartManagedRuntime: () => Promise<ManagedRuntimeServerInfo>
+	projectRuntime: {
+		ensure: () => Promise<ManagedRuntimeServerInfo>
+		getServerUrl: () => Promise<string | null>
+		stop: () => Promise<boolean>
+		restart: () => Promise<ManagedRuntimeServerInfo>
+	}
 	getModelState: () => Promise<ModelState>
 	updateModelRecent: (model: ModelRef) => Promise<ModelState>
 
@@ -740,7 +746,9 @@ export interface PalotAPI {
 
 	onboarding: {
 		checkManagedRuntime: () => Promise<ManagedRuntimeCheckResult>
+		checkProjectRuntime: () => Promise<ManagedRuntimeCheckResult>
 		installManagedRuntime: () => Promise<{ success: boolean; error?: string }>
+		installProjectRuntime: () => Promise<{ success: boolean; error?: string }>
 		onInstallOutput: (callback: (text: string) => void) => () => void
 		/** Quick-detect all supported providers (Claude Code, Cursor, OpenCode). */
 		detectProviders: () => Promise<ProviderDetection[]>

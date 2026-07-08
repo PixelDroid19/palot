@@ -52,7 +52,7 @@ export async function fetchManagedRuntimeUrl(): Promise<{ url: string }> {
 	log.debug("fetchManagedRuntimeUrl", { via: isElectron ? "ipc" : "http" })
 	try {
 		if (isElectron) {
-			const info = await window.palot.ensureManagedRuntime()
+			const info = await window.palot.projectRuntime.ensure()
 			log.info("OpenCode server URL resolved", { url: info.url })
 			return { url: info.url }
 		}

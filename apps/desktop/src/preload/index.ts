@@ -46,6 +46,13 @@ contextBridge.exposeInMainWorld("palot", {
 	/** Restarts the managed runtime server (stops and re-starts with current settings). */
 	restartManagedRuntime: () => ipcRenderer.invoke("project-runtime:restart"),
 
+	projectRuntime: {
+		ensure: () => ipcRenderer.invoke("project-runtime:ensure"),
+		getServerUrl: () => ipcRenderer.invoke("project-runtime:url"),
+		stop: () => ipcRenderer.invoke("project-runtime:stop"),
+		restart: () => ipcRenderer.invoke("project-runtime:restart"),
+	},
+
 	// --- Credential storage (safeStorage-backed) ---
 
 	credential: {
@@ -369,8 +376,10 @@ contextBridge.exposeInMainWorld("palot", {
 	onboarding: {
 		/** Check if the managed runtime CLI is installed and compatible. */
 		checkManagedRuntime: () => ipcRenderer.invoke("onboarding:check-project-runtime"),
+		checkProjectRuntime: () => ipcRenderer.invoke("onboarding:check-project-runtime"),
 		/** Install the managed runtime CLI via the official install script. */
 		installManagedRuntime: () => ipcRenderer.invoke("onboarding:install-project-runtime"),
+		installProjectRuntime: () => ipcRenderer.invoke("onboarding:install-project-runtime"),
 		/** Subscribe to install output lines (streamed from the install script). */
 		onInstallOutput: (callback: (text: string) => void) => {
 			const listener = (_event: unknown, text: string) => callback(text)
