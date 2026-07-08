@@ -817,7 +817,8 @@ function ChatInputSection({
 	const [sending, setSending] = useState(false)
 	// CLI-backed sessions use their own model; hide the OpenCode agent/model
 	// picker. Reactive so a mid-session runtime switch swaps the toolbar live.
-	const isCli = !!useAtomValue(cliSessionsAtom)[agent.sessionId]
+	const cliMeta = useAtomValue(cliSessionsAtom)[agent.sessionId]
+	const isCli = !!cliMeta
 
 	// Tree-scoped interactive requests — bubbles up from sub-agent sessions.
 	// These replace the direct `agent.permissions` / `agent.questions` arrays
@@ -1445,6 +1446,10 @@ function ChatInputSection({
 											{isCli && (
 												<>
 													<AttachButton disabled={!isConnected} />
+													<SessionRuntimeSwitch
+														sessionId={agent.sessionId}
+														current={cliMeta?.runtimeId ?? "opencode"}
+													/>
 													<CliSessionToolbar sessionId={agent.sessionId} />
 												</>
 											)}

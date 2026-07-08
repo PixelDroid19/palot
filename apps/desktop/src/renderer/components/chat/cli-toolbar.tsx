@@ -266,7 +266,6 @@ export function CliSessionToolbar({ sessionId }: { sessionId: string }) {
 
 	return (
 		<div className="flex items-center gap-1.5">
-			<SessionRuntimeSwitch sessionId={sessionId} current={meta.runtimeId} />
 			{models.length > 0 && (
 				<CliModelSelect
 					models={models}
