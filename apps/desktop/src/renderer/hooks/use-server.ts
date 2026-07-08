@@ -228,7 +228,7 @@ export function useAgentActions() {
 		// their persisted transcript, never from the OpenCode server.
 		if (isCliSession(sessionId)) {
 			cancelCliTurn(sessionId)
-			forgetCliSession(sessionId)
+			await forgetCliSession(sessionId)
 			appStore.set(removeSessionAtom, sessionId)
 			return
 		}

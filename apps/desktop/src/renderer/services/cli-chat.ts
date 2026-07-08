@@ -161,12 +161,22 @@ export function restoreCliSessions(): void {
 	}
 }
 
+async function closeCliSessionBackend(sessionId: string): Promise<void> {
+	if (isElectron) {
+		try {
+			await window.palot.agentSession.close(sessionId)
+		} catch (err) {
+			log.warn("Failed to close CLI session in backend", { sessionId }, err)
+		}
+	}
+}
+
 /** Drop a CLI session from persistence (e.g. when the user deletes it). */
-export function forgetCliSession(sessionId: string): void {
+export async function forgetCliSession(sessionId: string): Promise<void> {
 	localStorage.removeItem(SESSION_KEY_PREFIX + sessionId)
 	const ids = readIndex().filter((id) => id !== sessionId)
 	localStorage.setItem(INDEX_KEY, JSON.stringify(ids))
-	if (isElectron) void window.palot.agentSession.close(sessionId)
+	await closeCliSessionBackend(sessionId)
 }
 
 /** Force the active session's chat view to recompute (mirrors the SSE path). */
@@ -249,7 +259,7 @@ export async function switchCliRuntime(
 	if (meta) {
 		if (isElectron) {
 			cancelCliTurn(sessionId)
-			void window.palot.agentSession.close(sessionId)
+			await closeCliSessionBackend(sessionId)
 		}
 		patchCliMeta(sessionId, {
 			runtimeId,
@@ -298,7 +308,7 @@ export async function switchCliSessionToOpenCode(
 	if (!meta || !entry) return null
 
 	cancelCliTurn(sessionId)
-	if (isElectron) void window.palot.agentSession.close(sessionId)
+	await closeCliSessionBackend(sessionId)
 
 	const created = await createServerSession(entry.directory, entry.session.title)
 	if (!created) return null
@@ -326,7 +336,7 @@ export async function switchCliSessionToOpenCode(
 		)
 	}
 
-	forgetCliSession(sessionId)
+	await forgetCliSession(sessionId)
 	appStore.set(removeSessionAtom, sessionId)
 	log.info("Switched CLI session to OpenCode", { from: sessionId, to: created.id })
 	return created.id

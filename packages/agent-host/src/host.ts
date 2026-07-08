@@ -122,7 +122,14 @@ export class AgentHost {
 		opts: Omit<AgentSessionOptions, "bridge">,
 	): Promise<AgentSession> {
 		const existing = this.sessions.get(sessionId)
-		if (existing) return existing.session
+		if (existing) {
+			if (existing.runtimeId !== runtimeId) {
+				throw new Error(
+					`Session ${sessionId} already exists for runtime ${existing.runtimeId}, not ${runtimeId}`,
+				)
+			}
+			return existing.session
+		}
 		const provider = this.providers.get(runtimeId)
 		if (!provider) throw new Error(`Unknown agent runtime: ${runtimeId}`)
 		const session = await provider.openSession(
@@ -212,6 +219,7 @@ export class AgentHost {
 		const provider = this.providers.get(args.runtimeId)
 		if (!provider) throw new Error(`Unknown agent runtime: ${args.runtimeId}`)
 		let sessionRef: AgentSession | null = null
+		let timeoutHandle: ReturnType<typeof setTimeout> | null = null
 		const session = await provider.openSession(
 			{ cwd: args.cwd, sandbox: args.sandbox ?? "read-only", model: args.model },
 			(update) => {
@@ -225,21 +233,23 @@ export class AgentHost {
 		sessionRef = session
 		const timeoutMs = args.timeoutMs ?? DELEGATE_TIMEOUT_MS
 		try {
-			return await Promise.race([
+			const sendResult = await Promise.race([
 				session.send({ text: args.prompt }),
 				new Promise<never>((_, reject) => {
-					const timer = setTimeout(async () => {
-						await session.interrupt().catch(() => {})
+					timeoutHandle = setTimeout(() => {
+						session.interrupt().catch(() => {})
 						reject(
 							new Error(
 								`${provider.displayName} delegate timed out after ${Math.round(timeoutMs / 1000)}s`,
 							),
 						)
 					}, timeoutMs)
-					timer.unref?.()
+					timeoutHandle?.unref?.()
 				}),
 			])
+			return sendResult
 		} finally {
+			if (timeoutHandle) clearTimeout(timeoutHandle)
 			await session.close().catch(() => {})
 		}
 	}
