@@ -1,7 +1,14 @@
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createLogger } from "../lib/logger"
-import type { Event, OpenCodeProject, QuestionAnswer, Session, SessionStatus } from "../lib/types"
+import type {
+	Event,
+	FileDiff,
+	OpenCodeProject,
+	QuestionAnswer,
+	Session,
+	SessionStatus,
+} from "../lib/types"
 
 export type { OpencodeClient }
 
@@ -341,9 +348,15 @@ export async function getSession(client: OpencodeClient, sessionId: string): Pro
 /**
  * Get file diffs for a session.
  */
-export async function getSessionDiff(client: OpencodeClient, sessionId: string) {
+export async function getSessionDiff(client: OpencodeClient, sessionId: string): Promise<FileDiff[]> {
 	const result = await client.session.diff({ sessionID: sessionId })
-	return result.data ?? []
+	return (result.data ?? []).map((diff) => ({
+		file: diff.file ?? "(unknown file)",
+		status: diff.status ?? "modified",
+		additions: diff.additions,
+		deletions: diff.deletions,
+		patch: diff.patch,
+	}))
 }
 
 /**

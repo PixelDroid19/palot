@@ -744,6 +744,7 @@ const FileDiffSection = memo(function FileDiffSection({
 	const generated = isGeneratedFile(diff.file)
 	const large = isLargeDiff(diff)
 	const [loadLargeDiff, setLoadLargeDiff] = useState(!large)
+	const hasStructuredContents = diff.before !== undefined || diff.after !== undefined
 
 	// Per-component options (only non-pool-controlled settings).
 	// theme and lineDiffType are managed by the WorkerPoolManager.
@@ -794,6 +795,8 @@ const FileDiffSection = memo(function FileDiffSection({
 					onLoad={handleLoadLarge}
 				/>
 			)
+		} else if (!hasStructuredContents) {
+			body = <PatchDiffPreview patch={diff.patch} />
 		} else {
 			// Worker pool renders plain text synchronously, then streams in
 			// syntax highlighting from the background -- no manual queue needed.
@@ -828,6 +831,22 @@ const FileDiffSection = memo(function FileDiffSection({
 		</div>
 	)
 })
+
+function PatchDiffPreview({ patch }: { patch?: string }) {
+	if (!patch) {
+		return (
+			<div className="px-4 py-6 text-sm text-muted-foreground">
+				The server returned metadata for this diff, but no textual patch.
+			</div>
+		)
+	}
+
+	return (
+		<pre className="overflow-x-auto bg-muted/20 px-4 py-3 font-mono text-xs leading-5 text-foreground">
+			<code>{patch}</code>
+		</pre>
+	)
+}
 
 // ============================================================
 // Large diff placeholder

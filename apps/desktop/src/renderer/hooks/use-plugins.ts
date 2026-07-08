@@ -2,6 +2,20 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { Config } from "../lib/types"
 import { getBaseClient } from "../services/connection-manager"
 
+type PluginConfigEntry = NonNullable<Config["plugin"]>[number]
+
+function getPluginName(plugin: PluginConfigEntry): string {
+	return typeof plugin === "string" ? plugin : plugin[0]
+}
+
+function getPluginEntries(config: Config): PluginConfigEntry[] {
+	return [...(config.plugin ?? [])]
+}
+
+function getPluginNames(config: Config): string[] {
+	return getPluginEntries(config).map(getPluginName)
+}
+
 // ============================================================
 // Plugin management
 //
@@ -36,7 +50,7 @@ export function usePlugins() {
 		try {
 			const config = await readConfig()
 			configRef.current = config
-			setPlugins([...(config.plugin ?? [])])
+			setPlugins(getPluginNames(config))
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to load plugins")
 		} finally {
@@ -44,14 +58,14 @@ export function usePlugins() {
 		}
 	}, [])
 
-	const persist = useCallback(async (next: string[]) => {
+	const persist = useCallback(async (next: PluginConfigEntry[]) => {
 		setSaving(true)
 		setError(null)
 		try {
 			const config: Config = { ...configRef.current, plugin: next }
 			await writeConfig(config)
 			configRef.current = config
-			setPlugins(next)
+			setPlugins(getPluginNames(config))
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to save plugins")
 			// Re-read to reflect the true on-disk state after a failed write.
@@ -69,16 +83,16 @@ export function usePlugins() {
 				setError(`"${trimmed}" is already installed`)
 				return
 			}
-			await persist([...plugins, trimmed])
+			await persist([...getPluginEntries(configRef.current), trimmed])
 		},
 		[plugins, persist],
 	)
 
 	const removePlugin = useCallback(
 		async (name: string) => {
-			await persist(plugins.filter((p) => p !== name))
+			await persist(getPluginEntries(configRef.current).filter((plugin) => getPluginName(plugin) !== name))
 		},
-		[plugins, persist],
+		[persist],
 	)
 
 	useEffect(() => {

@@ -17,7 +17,6 @@ export type {
 	EventSessionError,
 	EventSessionStatus,
 	EventSessionUpdated,
-	FileDiff,
 	FilePart,
 	FilePartInput,
 	Message,
@@ -38,6 +37,23 @@ export type {
 	ToolStateCompleted,
 	UserMessage,
 } from "@opencode-ai/sdk/v2/client"
+
+/**
+ * UI-facing diff model for review surfaces.
+ *
+ * OpenCode session diff payloads currently provide file path, counts, status,
+ * and an optional unified patch. Mock data and richer local flows may also
+ * provide `before` / `after` full contents for side-by-side rendering.
+ */
+export interface FileDiff {
+	file: string
+	status: "added" | "modified" | "deleted"
+	additions: number
+	deletions: number
+	patch?: string
+	before?: string
+	after?: string
+}
 
 // ============================================================
 // File attachment types
