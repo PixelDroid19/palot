@@ -144,7 +144,7 @@ function SkillSyncPanel() {
 	return (
 		<SettingsSection
 			title="SSH skill sync"
-			description="Sync your user-level OpenCode skills (~/.config/opencode/skills) to or from a remote host over SSH. Requires rsync and ssh with key-based auth."
+			description="Sync your user-level managed runtime skills (~/.config/opencode/skills) to or from a remote host over SSH. Requires rsync and ssh with key-based auth."
 		>
 			<div className="flex flex-col gap-3 px-4 py-3">
 				<Input
@@ -278,7 +278,7 @@ function RemoteAccessPanel() {
 	return (
 		<SettingsSection
 			title="Remote & mobile access"
-			description="Connect another device (a laptop's Palot, the web build, or a phone browser) to this machine's running OpenCode server. Scan the QR code from a phone on the same network — or via Tailscale from anywhere."
+			description="Connect another device (a laptop's Palot, the web build, or a phone browser) to this machine's running managed runtime server. Scan the QR code from a phone on the same network — or via Tailscale from anywhere."
 		>
 			<div className="flex items-center justify-between px-4 py-3">
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -381,7 +381,7 @@ const AUTH_LABEL: Record<AgentCliDetection["auth"], string> = {
 /**
  * Map a detected CLI to the migration source provider understood by the
  * onboarding/config-migration system. Only CLIs with a supported config
- * migration path to OpenCode appear here.
+ * migration path to the managed runtime appear here.
  */
 const MIGRATION_PROVIDER: Partial<Record<AgentCliDetection["id"], MigrationProvider>> = {
 	claude: "claude-code",
@@ -470,7 +470,7 @@ function AgentCliRow({ cli }: { cli: AgentCliDetection }) {
 					{canMigrate &&
 						(migrate.status === "idle" ? (
 							<Button variant="outline" size="sm" onClick={() => setMigrate({ status: "confirm" })}>
-								Migrate to OpenCode
+								Import into managed runtime
 							</Button>
 						) : migrate.status === "confirm" ? (
 							<div className="flex items-center gap-1">
@@ -501,19 +501,19 @@ function AgentCliRow({ cli }: { cli: AgentCliDetection }) {
 			{migrate.status === "confirm" && (
 				<p className="text-xs text-muted-foreground">
 					Imports {cli.displayName}'s config (settings, MCP servers, agents, commands, rules,
-					sessions) into OpenCode. Existing files are preserved and a backup is created — you can
-					undo it from the Setup tab.
+					sessions) into the managed runtime. Existing files are preserved and a backup is
+					created — you can undo it from the Setup tab.
 				</p>
 			)}
 			{migrate.status === "done" && (
 				<p className="text-xs text-green-600 dark:text-green-500">
-					Migrated {migrate.result.filesWritten.length} file
-					{migrate.result.filesWritten.length === 1 ? "" : "s"} to OpenCode
+					Imported {migrate.result.filesWritten.length} file
+					{migrate.result.filesWritten.length === 1 ? "" : "s"} into the managed runtime
 					{migrate.result.errors.length > 0
 						? ` · ${migrate.result.errors.length} error(s)`
 						: ""}
-					{migrate.result.backupDir ? " · backup created" : ""}. Restart the OpenCode server to
-					load the imported config.
+					{migrate.result.backupDir ? " · backup created" : ""}. Restart the managed runtime
+					server to load the imported config.
 				</p>
 			)}
 			{migrate.status === "error" && (
@@ -544,7 +544,7 @@ function AgentClisPanel() {
 	return (
 		<SettingsSection
 			title="Coding CLIs"
-			description="Palot works with multiple coding-agent CLIs. These are detected on this machine — OpenCode runs as a managed backend today; the others are recognized for config migration and quick access."
+			description="Palot works with multiple coding-agent CLIs. These are detected on this machine — the managed runtime is bundled locally today, and the others are recognized for config migration and quick access."
 		>
 			<div className="flex items-center justify-between px-4 py-3">
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">

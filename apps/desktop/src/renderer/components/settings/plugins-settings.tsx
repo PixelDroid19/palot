@@ -21,8 +21,8 @@ export function PluginsSettings() {
 				<div>
 					<h2 className="text-xl font-semibold">Plugins</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Manage OpenCode plugins. Add an npm package name (e.g. <code>opencode-plugin-x</code>)
-						or a local file path.
+						Manage plugins for the managed runtime. Add an npm package name (e.g.
+						<code>opencode-plugin-x</code>) or a local file path.
 					</p>
 				</div>
 				<Button variant="outline" size="sm" onClick={refresh} disabled={loading || saving}>
@@ -43,7 +43,7 @@ export function PluginsSettings() {
 
 			<SettingsSection
 				title="Add a plugin"
-				description="Changes are written to the global OpenCode config and take effect after the server restarts."
+				description="Changes are written to the global managed runtime config and take effect after the server restarts."
 			>
 				<div className="flex items-center gap-2 px-4 py-3">
 					<Input
