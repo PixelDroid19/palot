@@ -71,7 +71,10 @@ import { BranchPicker } from "./branch-picker"
 import { CliOptionSelect } from "./chat/cli-toolbar"
 import { PromptAttachmentPreview } from "./chat/prompt-attachments"
 import { StatusBar } from "./chat/prompt-toolbar"
-import { RuntimeConfigToolbar } from "./chat/runtime-config-toolbar"
+import {
+	type RuntimeConfigToolbarProps,
+	RuntimeConfigToolbar,
+} from "./chat/runtime-config-toolbar"
 import { PalotWordmark } from "./palot-wordmark"
 
 // ============================================================
@@ -231,6 +234,22 @@ interface CliRuntimePrefs {
 	effort: string
 	sandbox: AgentSandbox
 }
+
+type NewChatRuntimeConfig =
+	| {
+			kind: "cli"
+			runtimeId: Exclude<SessionRuntimeId, "opencode">
+			toolbarProps: RuntimeConfigToolbarProps
+			model?: string
+			effort?: string
+			sandbox: AgentSandbox
+	  }
+	| {
+			kind: "opencode"
+			toolbarProps: RuntimeConfigToolbarProps
+			worktreeMode: "local" | "worktree"
+	  }
+
 const CLI_PREFS_KEY = "palot:cliRuntimePrefs"
 
 function loadCliPrefs(runtimeId: string): CliRuntimePrefs | null {
@@ -274,8 +293,7 @@ export function NewChat() {
 
 	const { t } = useTranslation()
 
-	// Session runtime: OpenCode (built-in) or a detected coding-agent CLI.
-	// The last choice is remembered — no runtime is privileged over another.
+	// Session runtime is a first-class user choice, remembered across launches.
 	const [sessionRuntime, setSessionRuntimeState] = useState<SessionRuntimeId>(
 		() => localStorage.getItem("palot:lastSessionRuntime") || "opencode",
 	)
@@ -511,6 +529,73 @@ export function NewChat() {
 		[effectiveModel, providers],
 	)
 
+	const runtimeConfig = useMemo<NewChatRuntimeConfig | null>(() => {
+		if (activeCliRuntime) {
+			return {
+				kind: "cli",
+				runtimeId: activeCliRuntime.id,
+				toolbarProps: {
+					kind: "cli",
+					models: cliModels,
+					modelValue: resolvedCliModel ?? "",
+					onModelChange: (value: string) => {
+						setCliModel(value)
+						setCliEffort("")
+					},
+					sandboxValue: cliSandbox,
+					onSandboxChange: setCliSandbox,
+					efforts: cliEfforts,
+					effortValue: cliEffort,
+					onEffortChange: setCliEffort,
+				},
+				model: resolvedCliModel,
+				effort: resolvedCliEffort,
+				sandbox: cliSandbox,
+			}
+		}
+
+		if (sessionRuntime === "opencode") {
+			return {
+				kind: "opencode",
+				toolbarProps: {
+					kind: "opencode",
+					agents: openCodeAgents ?? [],
+					selectedAgent,
+					defaultAgent: config?.defaultAgent,
+					onSelectAgent: setSelectedAgent,
+					providers,
+					effectiveModel,
+					hasModelOverride: !!selectedModel,
+					onSelectModel: handleModelSelect,
+					recentModels,
+					selectedVariant,
+					onSelectVariant: setSelectedVariant,
+				},
+				worktreeMode,
+			}
+		}
+
+		return null
+	}, [
+		activeCliRuntime,
+		cliEffort,
+		cliEfforts,
+		cliSandbox,
+		config?.defaultAgent,
+		effectiveModel,
+		handleModelSelect,
+		openCodeAgents,
+		providers,
+		recentModels,
+		resolvedCliEffort,
+		resolvedCliModel,
+		selectedAgent,
+		selectedModel,
+		selectedVariant,
+		sessionRuntime,
+		worktreeMode,
+	])
+
 	useEffect(() => {
 		if (projects.length === 0) return
 
@@ -701,20 +786,16 @@ export function NewChat() {
 
 	const handleLaunch = useCallback(
 		async (promptText: string, files?: FileAttachment[]) => {
-			if (!selectedDirectory || !promptText) return
-			// CLI runtimes create a CLI-backed session that renders in the same chat
-			// view; the prompt is sent as the first turn once we navigate to it.
-			if (isCliRuntime(sessionRuntime)) {
+			if (!selectedDirectory || !promptText || !runtimeConfig) return
+			if (runtimeConfig.kind === "cli") {
 				const sessionId = createCliSession({
 					directory: selectedDirectory,
-					runtimeId: sessionRuntime,
-					sandbox: cliSandbox,
-					model: resolvedCliModel,
-					effort: resolvedCliEffort,
+					runtimeId: runtimeConfig.runtimeId,
+					sandbox: runtimeConfig.sandbox,
+					model: runtimeConfig.model,
+					effort: runtimeConfig.effort,
 				})
 				clearDraft()
-				// Fire the first turn (writes the user message into the atoms
-				// synchronously), then open the session in the standard chat view.
 				void sendPrompt(selectedDirectory, sessionId, promptText)
 				navigateToSession(sessionId)
 				return
@@ -722,9 +803,7 @@ export function NewChat() {
 			setLaunching(true)
 			setError(null)
 			try {
-				if (worktreeMode === "worktree") {
-					// Worktree mode navigates immediately and runs setup in the background.
-					// The launching state is cleared right away since the chat view takes over.
+				if (runtimeConfig.worktreeMode === "worktree") {
 					launchWorktree(promptText, files)
 					setLaunching(false)
 				} else {
@@ -738,21 +817,15 @@ export function NewChat() {
 		},
 		[
 			selectedDirectory,
-			worktreeMode,
+			runtimeConfig,
 			launchLocal,
 			launchWorktree,
-			sessionRuntime,
 			clearDraft,
 			navigateToSession,
 			sendPrompt,
-			resolvedCliModel,
-			resolvedCliEffort,
-			cliSandbox,
 		],
 	)
-
-	const isCliSessionRuntime = isCliRuntime(sessionRuntime)
-	const hasToolbar = providers && (!isCliSessionRuntime || activeCliRuntime)
+	const hasToolbar = providers && runtimeConfig
 
 	return (
 		<div className="relative flex h-full flex-col">
@@ -879,41 +952,11 @@ export function NewChat() {
 								onKeyDown={handleTextareaKeyDown}
 							/>
 
-							{/* Toolbar inside the card — runtime-specific session controls */}
+							{/* Toolbar inside the card — driven by the active runtime config */}
 							{hasToolbar && (
 								<PromptInputFooter>
 									<PromptInputTools>
-										<RuntimeConfigToolbar
-											{...(isCliSessionRuntime
-												? {
-														kind: "cli" as const,
-														models: cliModels,
-														modelValue: resolvedCliModel ?? "",
-														onModelChange: (value: string) => {
-															setCliModel(value)
-															setCliEffort("")
-														},
-														sandboxValue: cliSandbox,
-														onSandboxChange: setCliSandbox,
-														efforts: cliEfforts,
-														effortValue: cliEffort,
-														onEffortChange: setCliEffort,
-													}
-												: {
-														kind: "opencode" as const,
-														agents: openCodeAgents ?? [],
-														selectedAgent,
-														defaultAgent: config?.defaultAgent,
-														onSelectAgent: setSelectedAgent,
-														providers,
-														effectiveModel,
-														hasModelOverride: !!selectedModel,
-														onSelectModel: handleModelSelect,
-														recentModels,
-														selectedVariant,
-														onSelectVariant: setSelectedVariant,
-													})}
-										/>
+										{runtimeConfig && <RuntimeConfigToolbar {...runtimeConfig.toolbarProps} />}
 									</PromptInputTools>
 								</PromptInputFooter>
 							)}
@@ -963,7 +1006,7 @@ export function NewChat() {
 											]}
 										/>
 									)}
-									{vcs && !isCliSessionRuntime && (
+									{vcs && runtimeConfig?.kind === "opencode" && (
 										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
 									)}
 								</div>
