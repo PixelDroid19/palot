@@ -72,7 +72,7 @@ function RuntimeStatusSection() {
 	return (
 		<SettingsSection
 			title="Coding runtimes"
-			description="Palot works with multiple coding runtimes. OpenCode is managed locally; other CLIs are detected on this machine and can be used in runtime flows."
+			description="Palot works with multiple coding runtimes. A managed runtime is bundled locally today through OpenCode; other CLIs are detected on this machine and can be used in runtime flows."
 		>
 			<div className="flex items-center justify-end px-4 pt-3">
 				<Button variant="outline" size="sm" onClick={() => load(true)} disabled={loading} className="gap-1.5">
@@ -151,8 +151,8 @@ function MigrationSection() {
 
 	if (!onboardingState.migrationPerformed || migratedFrom.length === 0) {
 		return (
-			<SettingsSection title="Configuration Migration">
-				<SettingsRow label="Status" description="No migration has been performed">
+			<SettingsSection title="Configuration Import">
+				<SettingsRow label="Status" description="No import has been performed">
 					<span className="text-sm text-muted-foreground">N/A</span>
 				</SettingsRow>
 			</SettingsSection>
@@ -162,12 +162,12 @@ function MigrationSection() {
 	const migratedLabels = migratedFrom.map((p) => PROVIDER_LABELS[p] ?? p).join(", ")
 
 	return (
-		<SettingsSection title="Configuration Migration">
-			<SettingsRow label="Migrated from" description={migratedLabels}>
+		<SettingsSection title="Configuration Import">
+			<SettingsRow label="Imported from" description={migratedLabels}>
 				<CheckCircle2Icon className="size-4 text-emerald-500" />
 			</SettingsRow>
 			<SettingsRow
-				label="Last migrated"
+				label="Last import"
 				description={
 					onboardingState.completedAt
 						? new Date(onboardingState.completedAt).toLocaleString()
@@ -180,7 +180,7 @@ function MigrationSection() {
 			</SettingsRow>
 			<SettingsRow
 				label="Restore backup"
-				description="Undo the migration and restore original files"
+				description="Undo the import and restore original files"
 			>
 				<div className="flex items-center gap-2">
 					{restoreResult && <span className="text-xs text-muted-foreground">{restoreResult}</span>}

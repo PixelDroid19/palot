@@ -1,9 +1,9 @@
 /**
- * Migration Preview & Execute step.
+ * Import Preview & Execute step.
  *
  * Shows a file tree of what will be created/modified, a diff preview of
- * selected files, and executes the migration with backup on confirmation.
- * Supports all migration providers (Claude Code, Cursor, OpenCode).
+ * selected files, and executes the import with backup on confirmation.
+ * Supports all import providers (Claude Code, Cursor, OpenCode).
  */
 
 import { Button } from "@palot/ui/components/button"
@@ -93,7 +93,7 @@ export function MigrationPreviewStep({
 			)
 			onComplete(result)
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Migration failed")
+			setError(err instanceof Error ? err.message : "Import failed")
 			setExecuting(false)
 		}
 	}, [isElectron, provider, scanResult, categories, onComplete])
@@ -115,9 +115,10 @@ export function MigrationPreviewStep({
 			<div className="mx-auto w-full max-w-3xl space-y-4">
 				{/* Header */}
 				<div className="text-center">
-					<h2 className="text-xl font-semibold text-foreground">{label} Migration Preview</h2>
+					<h2 className="text-xl font-semibold text-foreground">{label} Import Preview</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						{preview.fileCount} file(s) will be created. Review the changes below.
+						{preview.fileCount} file(s) will be created or updated. Review what will be imported
+						below.
 					</p>
 				</div>
 
@@ -213,7 +214,7 @@ export function MigrationPreviewStep({
 				{preview.manualActions.length > 0 && (
 					<div className="space-y-1 rounded-lg border border-border bg-muted/20 p-3">
 						<div className="text-xs font-medium text-muted-foreground">
-							Needs manual attention after migration:
+							Needs manual attention after import:
 						</div>
 						{preview.manualActions.map((a) => (
 							<p key={a} className="text-xs text-muted-foreground">
@@ -232,7 +233,7 @@ export function MigrationPreviewStep({
 
 				{/* Backup notice */}
 				<p className="text-center text-xs text-muted-foreground/60">
-					A backup will be saved to ~/.config/opencode/backups/ before any changes.
+					A backup will be saved to ~/.config/opencode/backups/ before the import is applied.
 				</p>
 
 				{/* Actions */}
@@ -253,7 +254,7 @@ export function MigrationPreviewStep({
 						) : (
 							<>
 								<PlayIcon aria-hidden="true" className="size-3.5" />
-								Apply Migration
+								Apply Import
 							</>
 						)}
 					</Button>
@@ -269,7 +270,7 @@ export function MigrationPreviewStep({
 
 /** Format migration progress into a short label for the button. */
 function formatProgressLabel(progress: MigrationProgress | null): string {
-	if (!progress) return "Migrating..."
+	if (!progress) return "Importing..."
 
 	switch (progress.phase) {
 		case "converting":
@@ -282,9 +283,9 @@ function formatProgressLabel(progress: MigrationProgress | null): string {
 			}
 			return "Writing sessions..."
 		case "complete":
-			return "Finishing..."
+			return "Finishing import..."
 		default:
-			return "Migrating..."
+			return "Importing..."
 	}
 }
 
