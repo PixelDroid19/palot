@@ -6,8 +6,8 @@ import {
 	type SdkAgent,
 } from "../../hooks/use-managed-runtime-data"
 import type {
-	ManagedRuntimePromptOptions,
-	ManagedRuntimeSelection,
+	ProjectRuntimePromptOptions,
+	ProjectRuntimeSelection,
 	RuntimePromptOptions,
 	RuntimeSelectionPersistence,
 } from "../../lib/runtime-session-config"
@@ -186,8 +186,8 @@ export function buildManagedRuntimeChatRuntimeConfig(args: {
 	selectedVariant: string | undefined
 	onSelectVariant: (variant: string | undefined) => void
 	disabled?: boolean
-	persistedSelection: ManagedRuntimeSelection | null
-	sendOptions: ManagedRuntimePromptOptions
+	persistedSelection: ProjectRuntimeSelection | null
+	sendOptions: ProjectRuntimePromptOptions
 }): ChatRuntimeConfig {
 	return {
 		kind: "managed",

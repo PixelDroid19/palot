@@ -27,7 +27,7 @@ import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"
 import {
-	resolveManagedRuntimePromptOptions,
+	resolveProjectRuntimePromptOptions,
 	resolvePromptRuntime,
 	sessionRuntimeCapabilities,
 	type RuntimePromptOptions,
@@ -144,7 +144,9 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const directory = selectedAgent?.directory ?? null
 	const runtimeState = useSessionRuntimeState(selectedAgent?.sessionId ?? sessionId, directory)
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
-	const managedRuntimeDataDirectory = runtimeCapabilities.supportsManagedPromptConfig ? directory : null
+	const managedRuntimeDataDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
+		? directory
+		: null
 	const { data: providers } = useManagedRuntimeProviders(managedRuntimeDataDirectory)
 	const { data: config } = useManagedRuntimeConfig(managedRuntimeDataDirectory)
 	const { data: vcs } = useManagedRuntimeVcs(directory)
@@ -238,7 +240,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			options?: RuntimePromptOptions,
 		) => {
 			const promptRuntime = resolvePromptRuntime(runtimeState, options)
-			const managedOptions = resolveManagedRuntimePromptOptions(runtimeState, options)
+			const managedOptions = resolveProjectRuntimePromptOptions(runtimeState, options)
 			log.debug("handleSendMessage", {
 				sessionId: agent.sessionId,
 				directory: agent.directory,

@@ -16,16 +16,16 @@ export interface CliPromptOptions {
 	files?: FileAttachment[]
 }
 
-export interface ManagedRuntimePromptOptions {
+export interface ProjectRuntimePromptOptions {
 	model?: ModelRef
 	agentName?: string
 	variant?: string
 	files?: FileAttachment[]
 }
 
-export type RuntimePromptOptions = CliPromptOptions | ManagedRuntimePromptOptions
+export type RuntimePromptOptions = CliPromptOptions | ProjectRuntimePromptOptions
 
-export interface ManagedRuntimeSelection {
+export interface ProjectRuntimeSelection {
 	kind: "managed"
 	directory: string
 	model: PersistedModelRef
@@ -38,7 +38,7 @@ export interface CliRuntimeSelection {
 	persist?: boolean
 }
 
-export type RuntimeSelectionPersistence = ManagedRuntimeSelection | CliRuntimeSelection
+export type RuntimeSelectionPersistence = ProjectRuntimeSelection | CliRuntimeSelection
 export type SessionRuntimeMode = "managed" | "cli"
 
 export type SessionRuntimeState =
@@ -61,7 +61,7 @@ export interface SessionRuntimeCapabilities {
 	supportsSessionSummarize: boolean
 	supportsServerSlashCommands: boolean
 	supportsFork: boolean
-	supportsManagedPromptConfig: boolean
+	supportsProjectRuntimeConfig: boolean
 	supportsWorktreeLaunch: boolean
 	supportsServerHistory: boolean
 }
@@ -71,7 +71,7 @@ export const MANAGED_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = 
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
 	supportsFork: true,
-	supportsManagedPromptConfig: true,
+	supportsProjectRuntimeConfig: true,
 	supportsWorktreeLaunch: true,
 	supportsServerHistory: true,
 }
@@ -81,7 +81,7 @@ export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 	supportsSessionSummarize: false,
 	supportsServerSlashCommands: false,
 	supportsFork: false,
-	supportsManagedPromptConfig: false,
+	supportsProjectRuntimeConfig: false,
 	supportsWorktreeLaunch: false,
 	supportsServerHistory: false,
 }
@@ -116,13 +116,13 @@ export function resolvePromptRuntime(
 	return state?.mode ?? "managed"
 }
 
-export function resolveManagedRuntimePromptOptions(
+export function resolveProjectRuntimePromptOptions(
 	state: Pick<SessionRuntimeState, "mode"> | null | undefined,
 	options?: RuntimePromptOptions,
-): ManagedRuntimePromptOptions | null {
+): ProjectRuntimePromptOptions | null {
 	return resolvePromptRuntime(state, options) === "cli"
 		? null
-		: ((options ?? {}) as ManagedRuntimePromptOptions)
+		: ((options ?? {}) as ProjectRuntimePromptOptions)
 }
 
 export function sessionRuntimeCapabilities(
@@ -131,9 +131,9 @@ export function sessionRuntimeCapabilities(
 	return runtimeModeCapabilities(state.mode)
 }
 
-function isManagedRuntimeSelection(
+function isProjectRuntimeSelection(
 	selection: RuntimeSelectionPersistence,
-): selection is ManagedRuntimeSelection {
+): selection is ProjectRuntimeSelection {
 	return selection.kind === "managed"
 }
 
@@ -216,7 +216,7 @@ export function persistRuntimeSelection(
 ): void {
 	if (!selection) return
 
-	if (isManagedRuntimeSelection(selection)) {
+	if (isProjectRuntimeSelection(selection)) {
 		appStore.set(setProjectModelAtom, {
 			directory: selection.directory,
 			model: selection.model,

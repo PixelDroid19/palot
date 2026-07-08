@@ -7,7 +7,7 @@ import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import {
 	isCliRuntimeState,
 	readSessionRuntimeState,
-	resolveManagedRuntimePromptOptions,
+	resolveProjectRuntimePromptOptions,
 	resolvePromptRuntime,
 } from "../lib/runtime-session-config"
 import {
@@ -70,7 +70,10 @@ async function promptManagedRuntimeSession(
 ): Promise<void> {
 	const client = requireManagedRuntimeProjectClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
-	const managedOptions = resolveManagedRuntimePromptOptions(readSessionRuntimeState(sessionId), options)
+	const managedOptions = resolveProjectRuntimePromptOptions(
+		readSessionRuntimeState(sessionId),
+		options,
+	)
 	const optimisticMessage: UserMessage & { variant?: string } = {
 		id: optimisticId,
 		sessionID: sessionId,

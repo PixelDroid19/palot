@@ -310,7 +310,7 @@ export function NewChat() {
 			setCliRuntimes(installed)
 			// The remembered runtime may have been uninstalled since last use.
 			setSessionRuntimeState((current) =>
-				!runtimeIdCapabilities(current).supportsManagedPromptConfig &&
+				!runtimeIdCapabilities(current).supportsProjectRuntimeConfig &&
 				  !installed.some((d) => d.id === current)
 					? DEFAULT_SESSION_RUNTIME_ID
 					: current,
@@ -403,7 +403,7 @@ export function NewChat() {
 		[projects, selectedDirectory],
 	)
 
-	const managedRuntimeConfigDirectory = runtimeCapabilities.supportsManagedPromptConfig
+	const managedRuntimeConfigDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
 		? (selectedDirectory || null)
 		: null
 	const { data: providers } = useManagedRuntimeProviders(managedRuntimeConfigDirectory)
@@ -540,7 +540,7 @@ export function NewChat() {
 			})
 		}
 
-		if (runtimeCapabilities.supportsManagedPromptConfig) {
+		if (runtimeCapabilities.supportsProjectRuntimeConfig) {
 			return buildManagedRuntimeNewChatRuntimeConfig({
 				agents: managedRuntimeAgents ?? [],
 				selectedAgent,
@@ -574,7 +574,7 @@ export function NewChat() {
 		selectedAgent,
 		selectedModel,
 		selectedVariant,
-		runtimeCapabilities.supportsManagedPromptConfig,
+		runtimeCapabilities.supportsProjectRuntimeConfig,
 		worktreeMode,
 	])
 
