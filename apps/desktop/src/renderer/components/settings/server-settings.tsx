@@ -1,5 +1,5 @@
 /**
- * Settings tab for managing managed runtime server connections.
+ * Settings tab for managing project runtime server connections.
  *
  * Lists all configured servers (local + remote), allows adding/editing/removing
  * remote servers, testing connections, and switching the active server.
@@ -98,7 +98,7 @@ export function ServerSettings() {
 				<div>
 					<h2 className="text-xl font-semibold">Servers</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Connect to local or remote managed runtime servers
+						Connect to local or remote project runtime servers
 					</p>
 				</div>
 				<AddServerDialog />
@@ -187,7 +187,7 @@ export function ServerSettings() {
 							Discovered on Network
 						</h3>
 						<p className="mt-1 text-sm text-muted-foreground">
-							Managed runtime servers found via mDNS on your local network
+							Project runtime servers found via mDNS on your local network
 						</p>
 					</div>
 
@@ -375,7 +375,7 @@ function LocalServerSettings() {
 					Local Server Configuration
 				</h3>
 				<p className="mt-1 text-sm text-muted-foreground">
-					Configure how the local managed runtime server is started. OpenCode powers this server
+					Configure how the local project runtime server is started. OpenCode powers this server
 					today. Changes require a server restart.
 				</p>
 			</div>
@@ -574,7 +574,7 @@ function ServerFormDialog({ mode, server, open, onOpenChange, children }: Server
 				<DialogTitle>{mode === "add" ? "Add Remote Server" : "Edit Server"}</DialogTitle>
 				<DialogDescription>
 					{mode === "add"
-						? "Connect to a remote managed runtime server"
+						? "Connect to a remote project runtime server"
 						: `Edit connection settings for ${server?.name}`}
 				</DialogDescription>
 			</DialogHeader>
@@ -601,7 +601,7 @@ function ServerFormDialog({ mode, server, open, onOpenChange, children }: Server
 						onChange={(e) => setUrl(e.target.value)}
 					/>
 					<p className="text-xs text-muted-foreground">
-						Full base URL of the managed runtime server
+						Full base URL of the project runtime server
 					</p>
 				</div>
 

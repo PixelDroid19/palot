@@ -128,7 +128,7 @@ function WorktreeToggle({
 }
 
 // ============================================================
-// Mention support helpers (mirrors the pattern in ChatInput)
+// Mention support helpers (mirrors the shared chat composer pattern)
 // ============================================================
 
 /**

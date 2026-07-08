@@ -322,7 +322,7 @@ export function VariantSelector({
 // ============================================================
 
 export interface PromptToolbarProps {
-	/** Available agents from OpenCode */
+	/** Available agents from the project runtime */
 	agents: SdkAgent[]
 	/** Currently selected agent name */
 	selectedAgent: string | null

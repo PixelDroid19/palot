@@ -21,7 +21,7 @@ export function PluginsSettings() {
 				<div>
 					<h2 className="text-xl font-semibold">Plugins</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Manage plugins for the managed runtime. Add an npm package name (e.g.
+						Manage plugins for the project runtime. Add an npm package name (e.g.
 						<code>opencode-plugin-x</code>) or a local file path.
 					</p>
 				</div>
@@ -43,7 +43,7 @@ export function PluginsSettings() {
 
 			<SettingsSection
 				title="Add a plugin"
-				description="Changes are written to the global managed runtime config and take effect after the server restarts."
+				description="Changes are written to the global project runtime config and take effect after the server restarts."
 			>
 				<div className="flex items-center gap-2 px-4 py-3">
 					<Input

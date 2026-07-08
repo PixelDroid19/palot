@@ -137,7 +137,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 		selectedAgent?.sessionId ?? null,
 	)
 
-	// Toolbar data -- providers, config, VCS, and OpenCode agents
+	// Toolbar data -- providers, config, VCS, and project runtime agents
 	const directory = selectedAgent?.directory ?? null
 	const runtimeState = useSessionRuntimeState(selectedAgent?.sessionId ?? sessionId, directory)
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
