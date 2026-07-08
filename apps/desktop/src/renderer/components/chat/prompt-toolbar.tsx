@@ -39,7 +39,6 @@ import {
 	SearchableOptionSelect,
 	type SearchableOptionSelectItem,
 } from "./searchable-option-select"
-import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
 // ============================================================
 // Shared toolbar trigger styles
@@ -314,97 +313,6 @@ export function VariantSelector({
 				))}
 			</SelectContent>
 		</Select>
-	)
-}
-
-// ============================================================
-// Combined Prompt Toolbar
-// ============================================================
-
-export interface PromptToolbarProps {
-	/** Available agents from the project runtime */
-	agents: SdkAgent[]
-	/** Currently selected agent name */
-	selectedAgent: string | null
-	/** Default agent from config */
-	defaultAgent?: string
-	onSelectAgent: (agentName: string) => void
-
-	/** Provider data for model selector */
-	providers: ProvidersData | null
-	/** The resolved effective model */
-	effectiveModel: ModelRef | null
-	/** Whether the user has explicitly overridden the model */
-	hasModelOverride: boolean
-	onSelectModel: (model: ModelRef | null) => void
-
-	/** Recent models from model.json */
-	recentModels?: ModelRef[]
-
-	/** Currently selected variant */
-	selectedVariant: string | undefined
-	onSelectVariant: (variant: string | undefined) => void
-
-	disabled?: boolean
-}
-
-/**
- * Combined toolbar with agent, model, and variant selectors.
- * Renders inside the PromptInputFooter > PromptInputTools slot.
- */
-export function PromptToolbar({
-	agents,
-	selectedAgent,
-	defaultAgent,
-	onSelectAgent,
-	providers,
-	effectiveModel,
-	hasModelOverride,
-	onSelectModel,
-	recentModels,
-	selectedVariant,
-	onSelectVariant,
-	disabled,
-}: PromptToolbarProps) {
-	// Compute variants for the current effective model
-	const variants = useMemo(() => {
-		if (!effectiveModel || !providers) return []
-		return getModelVariants(effectiveModel.providerID, effectiveModel.modelID, providers.providers)
-	}, [effectiveModel, providers])
-
-	const hasAgents = agents.length > 0
-	const hasVariants = variants.length > 0
-
-	return (
-		<SessionConfigToolbarRow
-			items={[
-				hasAgents && (
-					<AgentSelector
-						agents={agents}
-						selectedAgent={selectedAgent}
-						defaultAgent={defaultAgent}
-						onSelectAgent={onSelectAgent}
-						disabled={disabled}
-					/>
-				),
-				<ModelSelector
-					providers={providers}
-					effectiveModel={effectiveModel}
-					hasOverride={hasModelOverride}
-					onSelectModel={onSelectModel}
-					recentModels={recentModels}
-					disabled={disabled}
-				/>,
-				hasVariants && (
-					<VariantSelector
-						variants={variants}
-						selectedVariant={selectedVariant}
-						onSelectVariant={onSelectVariant}
-						disabled={disabled}
-					/>
-				),
-			]}
-		/>
 	)
 }
 

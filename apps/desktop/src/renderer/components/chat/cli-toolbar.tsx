@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@palot/ui/comp
 import { cn } from "@palot/ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
-import type { AgentRuntimeDescriptor, AgentSandbox, SessionRuntimeDescriptor } from "../../../preload/api"
+import type { AgentRuntimeDescriptor, SessionRuntimeDescriptor } from "../../../preload/api"
 import { useTranslation } from "../../i18n/use-translation"
 import { installedSessionRuntimeOptions, loadRuntimeDescriptors } from "../../lib/session-runtimes"
 import { switchRuntimeSession } from "../../services/runtime-session-launch"
@@ -16,7 +16,6 @@ import {
 	SearchableOptionSelect,
 	type SearchableOptionSelectItem,
 } from "./searchable-option-select"
-import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
 const TOOLBAR_TRIGGER_CN =
 	"h-7! gap-1 border-none bg-transparent! hover:bg-muted! px-2! py-0! text-xs shadow-none transition-colors"
@@ -111,59 +110,6 @@ export function CliModelSelect({
 			placeholder="Select model..."
 			searchPlaceholder="Search models..."
 			emptyLabel="No models found"
-		/>
-	)
-}
-
-export function CliPromptToolbar({
-	models,
-	modelValue,
-	onModelChange,
-	sandboxValue,
-	onSandboxChange,
-	efforts,
-	effortValue,
-	onEffortChange,
-}: {
-	models: AgentRuntimeDescriptor["models"]
-	modelValue: string
-	onModelChange: (value: string) => void
-	sandboxValue: AgentSandbox
-	onSandboxChange: (value: AgentSandbox) => void
-	efforts: string[]
-	effortValue: string
-	onEffortChange: (value: string) => void
-}) {
-	const { t } = useTranslation()
-	const hasModel = models.length > 0
-	const hasEffort = efforts.length > 0
-
-	return (
-		<SessionConfigToolbarRow
-			items={[
-				hasModel && (
-					<CliModelSelect models={models} value={modelValue} onValueChange={onModelChange} />
-				),
-				<CliOptionSelect
-					aria-label={t("runtimePicker.sandbox")}
-					value={sandboxValue}
-					onValueChange={(value) => onSandboxChange(value as AgentSandbox)}
-					options={[
-						{ value: "plan", label: t("runtimePicker.sandboxPlan") },
-						{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
-						{ value: "workspace-write", label: t("runtimePicker.sandboxWorkspaceWrite") },
-						{ value: "danger-full-access", label: t("runtimePicker.sandboxFullAccess") },
-					]}
-				/>,
-				hasEffort && (
-					<CliOptionSelect
-						aria-label={t("runtimePicker.effort")}
-						value={effortValue || "__default__"}
-						onValueChange={(value) => onEffortChange(value === "__default__" ? "" : value)}
-						options={cliEffortOptions(t, efforts)}
-					/>
-				),
-			]}
 		/>
 	)
 }
