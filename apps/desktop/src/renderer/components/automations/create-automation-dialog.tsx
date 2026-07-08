@@ -42,7 +42,7 @@ import { activeServerConfigAtom } from "../../atoms/connection"
 import { discoveryProjectsAtom } from "../../atoms/discovery"
 import {
 	useModelState,
-	useOpenCodeAgents,
+	useManagedRuntimeAgents,
 	useProviders,
 } from "../../hooks/use-managed-runtime-data"
 import {
@@ -124,7 +124,7 @@ export function CreateAutomationDialog({
 	const directory = workspaces[0] ?? null
 
 	const { data: providers } = useProviders(directory)
-	const { agents } = useOpenCodeAgents(directory)
+	const { agents } = useManagedRuntimeAgents(directory)
 	const { recentModels } = useModelState()
 
 	// Compute available variants for the selected model

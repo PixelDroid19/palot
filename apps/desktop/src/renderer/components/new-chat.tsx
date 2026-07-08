@@ -34,7 +34,7 @@ import {
 	resolveEffectiveModel,
 	useConfig,
 	useModelState,
-	useOpenCodeAgents,
+	useManagedRuntimeAgents,
 	useProviders,
 	useVcs,
 } from "../hooks/use-managed-runtime-data"
@@ -409,7 +409,7 @@ export function NewChat() {
 	const { data: providers } = useProviders(openCodeConfigDirectory)
 	const { data: config } = useConfig(openCodeConfigDirectory)
 	const { data: vcs, reload: reloadVcs } = useVcs(selectedDirectory || null)
-	const { agents: openCodeAgents } = useOpenCodeAgents(openCodeConfigDirectory)
+	const { agents: openCodeAgents } = useManagedRuntimeAgents(openCodeConfigDirectory)
 	const { recentModels, addRecent: addRecentModel } = useModelState()
 
 	// Handle model selection — set local state + persist to model.json.

@@ -17,7 +17,7 @@ import { upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { viewedSessionIdAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
-import { useConfig, useOpenCodeAgents, useProviders, useVcs } from "../hooks/use-managed-runtime-data"
+import { useConfig, useManagedRuntimeAgents, useProviders, useVcs } from "../hooks/use-managed-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
 import { useSessionChat } from "../hooks/use-session-chat"
 import { createLogger } from "../lib/logger"
@@ -143,7 +143,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const { data: providers } = useProviders(openCodeDataDirectory)
 	const { data: config } = useConfig(openCodeDataDirectory)
 	const { data: vcs } = useVcs(directory)
-	const { agents: openCodeAgents } = useOpenCodeAgents(openCodeDataDirectory)
+	const { agents: openCodeAgents } = useManagedRuntimeAgents(openCodeDataDirectory)
 
 	// Handlers
 	const handleStopAgent = useCallback(

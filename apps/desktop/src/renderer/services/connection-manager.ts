@@ -104,13 +104,16 @@ function setGlobalAbort(controller: AbortController | null) {
 // ============================================================
 
 /**
- * Connect to an OpenCode server.
+ * Connect to the managed runtime server.
  * Starts SSE subscription for all-project events.
  *
- * @param url       Base URL of the OpenCode server
+ * @param url       Base URL of the managed runtime server
  * @param authHeader  Optional HTTP Authorization header for remote servers
  */
-export async function connectToOpenCode(url: string, authHeader?: string | null): Promise<void> {
+export async function connectToManagedRuntime(
+	url: string,
+	authHeader?: string | null,
+): Promise<void> {
 	// Disconnect existing connection if any
 	if (connection) {
 		log.info("Disconnecting previous connection", { url: connection.url })
@@ -141,7 +144,11 @@ export async function connectToOpenCode(url: string, authHeader?: string | null)
 	connection = { url, authHeader: resolvedAuth, baseClient, abortController }
 	setGlobalAbort(abortController)
 
-	log.info("Connecting to OpenCode server", { url, authenticated: !!resolvedAuth, generation: gen })
+	log.info("Connecting to managed runtime server", {
+		url,
+		authenticated: !!resolvedAuth,
+		generation: gen,
+	})
 
 	// Ping the server to check if it's reachable before starting the event loop.
 	// This sets the initial connected state accurately instead of optimistically.
@@ -157,6 +164,8 @@ export async function connectToOpenCode(url: string, authHeader?: string | null)
 	// Connected state is updated when the SSE stream opens or fails.
 	startEventLoop(baseClient, abortController.signal, gen)
 }
+
+export const connectToOpenCode = connectToManagedRuntime
 
 /**
  * List all projects known to the OpenCode server via the API.
