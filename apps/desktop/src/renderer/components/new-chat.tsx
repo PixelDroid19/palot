@@ -34,7 +34,6 @@ import {
 	resolveEffectiveModel,
 	useProjectRuntimeSessionData,
 } from "../hooks/use-project-runtime-data"
-import { useAgentActions } from "../hooks/use-server"
 import type { AgentSandbox, SessionRuntimeDescriptor } from "../../preload/api"
 import type { FileAttachment } from "../lib/types"
 import { useTranslation } from "../i18n/use-translation"
@@ -57,10 +56,7 @@ import {
 	resolveRuntimeEffort,
 	resolveRuntimeModel,
 } from "../lib/runtime-model-selection"
-import {
-	createRuntimeSession,
-	launchManagedRuntimeSession,
-} from "../services/runtime-session-launch"
+import { launchRuntimeSession } from "../services/runtime-session-launch"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
 import { CliOptionSelect } from "./chat/cli-toolbar"
@@ -256,7 +252,6 @@ function saveCliPrefs(runtimeId: string, prefs: CliRuntimePrefs): void {
 export function NewChat() {
 	const { projectSlug } = useParams({ strict: false })
 	const projects = useProjectList()
-	const { sendPrompt } = useAgentActions()
 	const navigate = useNavigate()
 
 	// Inject app name into the AppBar
@@ -629,46 +624,25 @@ export function NewChat() {
 	const handleLaunch = useCallback(
 		async (promptText: string, files?: FileAttachment[]) => {
 			if (!selectedDirectory || !promptText || !runtimeConfig) return
-			if (runtimeConfig.kind === "cli") {
-				const result = await createRuntimeSession({
-					kind: "cli",
-					directory: selectedDirectory,
-					runtimeId: runtimeConfig.runtimeId,
-					sandbox: runtimeConfig.sandbox,
-					model: runtimeConfig.model,
-					effort: runtimeConfig.effort,
-				})
-				const sessionId = result?.sessionId
-				if (!sessionId) return
-				clearDraft()
-				void sendPrompt(selectedDirectory, sessionId, promptText, {
-					runtime: "cli",
-					files,
-				})
-				navigateToSession(sessionId)
-				return
-			}
 			setLaunching(true)
 			setError(null)
 			try {
-				persistProjectModel()
 				clearDraft()
-				await launchManagedRuntimeSession({
+				if (runtimeConfig.launch.project) {
+					persistProjectModel()
+				}
+				await launchRuntimeSession({
 					currentBranch: vcs?.branch ?? "",
 					directory: selectedDirectory,
 					files,
-					mode: runtimeConfig.worktreeMode,
 					onFailure: (message) => {
 						setError(message)
 						navigate({ to: "/" })
 					},
 					onNavigate: navigateToSession,
-					promptOptions: {
-						model: effectiveModel ?? undefined,
-						agentName: selectedAgent ?? undefined,
-						variant: selectedVariant,
-					},
 					promptText,
+					runtimeId: runtimeConfig.runtimeId,
+					launch: runtimeConfig.launch,
 				})
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Failed to create session")
@@ -678,14 +652,11 @@ export function NewChat() {
 		},
 		[
 			clearDraft,
-			effectiveModel,
 			navigate,
 			navigateToSession,
 			persistProjectModel,
 			runtimeConfig,
-			selectedAgent,
 			selectedDirectory,
-			selectedVariant,
 			vcs,
 		],
 	)
@@ -868,7 +839,9 @@ export function NewChat() {
 										}))}
 									/>
 									)}
-									{vcs && runtimeCapabilities.supportsWorktreeLaunch && runtimeConfig?.kind === "managed" && (
+									{vcs &&
+										runtimeCapabilities.supportsWorktreeLaunch &&
+										runtimeConfig?.launch.project && (
 										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
 									)}
 								</div>

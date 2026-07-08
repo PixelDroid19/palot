@@ -17,20 +17,21 @@ import type {
 	RuntimeToolbarSections,
 } from "./runtime-config-toolbar"
 
-export type NewChatRuntimeConfig =
-	| {
-			kind: "cli"
-			runtimeId: Exclude<SessionRuntimeId, "opencode">
-			toolbarProps: RuntimeConfigToolbarProps
+export interface NewChatRuntimeConfig {
+	runtimeId: SessionRuntimeId
+	toolbarProps: RuntimeConfigToolbarProps
+	launch: {
+		cli?: {
+			sandbox: AgentSandbox
 			model?: string
 			effort?: string
-			sandbox: AgentSandbox
-	  }
-	| {
-			kind: "managed"
-			toolbarProps: RuntimeConfigToolbarProps
+		}
+		project?: {
 			worktreeMode: "local" | "worktree"
-	  }
+			promptOptions: ProjectRuntimePromptOptions
+		}
+	}
+}
 
 export interface ChatRuntimeConfig {
 	kind: "cli-session" | "managed"
@@ -105,7 +106,6 @@ export function buildCliNewChatRuntimeConfig(args: {
 	sandbox: AgentSandbox
 }): NewChatRuntimeConfig {
 	return {
-		kind: "cli",
 		runtimeId: args.runtimeId,
 		toolbarProps: {
 			sections: {
@@ -127,9 +127,13 @@ export function buildCliNewChatRuntimeConfig(args: {
 					: undefined,
 			},
 		},
-		model: args.model,
-		effort: args.effort,
-		sandbox: args.sandbox,
+		launch: {
+			cli: {
+				model: args.model,
+				effort: args.effort,
+				sandbox: args.sandbox,
+			},
+		},
 	}
 }
 
@@ -148,11 +152,20 @@ export function buildManagedRuntimeNewChatRuntimeConfig(args: {
 	worktreeMode: "local" | "worktree"
 }): NewChatRuntimeConfig {
 	return {
-		kind: "managed",
+		runtimeId: "opencode",
 		toolbarProps: {
 			sections: buildManagedRuntimeToolbarSections(args),
 		},
-		worktreeMode: args.worktreeMode,
+		launch: {
+			project: {
+				worktreeMode: args.worktreeMode,
+				promptOptions: {
+					model: args.effectiveModel ?? undefined,
+					agentName: args.selectedAgent ?? undefined,
+					variant: args.selectedVariant,
+				},
+			},
+		},
 	}
 }
 

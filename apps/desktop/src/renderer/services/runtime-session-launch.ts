@@ -1,5 +1,6 @@
 import { removeSessionAtom, setSessionBranchAtom, setSessionSetupPhaseAtom, setSessionWorktreeAtom, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
+import type { AgentSandbox } from "../../preload/api"
 import type { ProjectRuntimePromptOptions } from "../lib/runtime-session-config"
 import type { SessionRuntimeId } from "../lib/session-runtimes"
 import type { FileAttachment } from "../lib/types"
@@ -21,6 +22,57 @@ export async function createRuntimeSession(
 	args: RuntimeSessionCreateRequest,
 ): Promise<RuntimeSessionCreateResult | null> {
 	return runtimeSessionGateway.createSession(args)
+}
+
+export async function launchRuntimeSession(args: {
+	currentBranch?: string
+	directory: string
+	files?: FileAttachment[]
+	onFailure: (message: string) => void
+	onNavigate: (sessionId: string) => void
+	promptText: string
+	runtimeId: SessionRuntimeId
+	launch: {
+		cli?: {
+			sandbox: AgentSandbox
+			model?: string
+			effort?: string
+		}
+		project?: {
+			worktreeMode: "local" | "worktree"
+			promptOptions: ProjectRuntimePromptOptions
+		}
+	}
+}): Promise<void> {
+	if (args.launch.cli) {
+		const result = await createRuntimeSession({
+			kind: "cli",
+			directory: args.directory,
+			runtimeId: args.runtimeId,
+			sandbox: args.launch.cli.sandbox,
+			model: args.launch.cli.model,
+			effort: args.launch.cli.effort,
+		})
+		const sessionId = result?.sessionId
+		if (!sessionId) return
+		await sendRuntimePrompt(args.directory, sessionId, args.promptText, {
+			runtime: "cli",
+			files: args.files,
+		})
+		args.onNavigate(sessionId)
+		return
+	}
+
+	await launchManagedRuntimeSession({
+		currentBranch: args.currentBranch,
+		directory: args.directory,
+		files: args.files,
+		mode: args.launch.project?.worktreeMode ?? "local",
+		onFailure: args.onFailure,
+		onNavigate: args.onNavigate,
+		promptOptions: args.launch.project?.promptOptions,
+		promptText: args.promptText,
+	})
 }
 
 export async function launchManagedRuntimeSession(args: {
