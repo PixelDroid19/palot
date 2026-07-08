@@ -21,7 +21,7 @@ import {
 	type SdkProvider,
 	type SdkProviderAuthMethod,
 	type VcsData,
-} from "./use-opencode-data"
+} from "./project-runtime-data-source"
 
 export type {
 	ConfigData,
