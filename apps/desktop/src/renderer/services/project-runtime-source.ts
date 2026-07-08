@@ -3,4 +3,4 @@
  * OpenCode backs this today; neutral consumers should import via
  * `project-runtime`.
  */
-export * from "./opencode"
+export * from "./project-runtime-sdk"

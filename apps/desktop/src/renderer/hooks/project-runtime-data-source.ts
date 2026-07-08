@@ -3,4 +3,4 @@
  * OpenCode backs this today; neutral consumers should import via
  * `use-project-runtime-data`.
  */
-export * from "./use-opencode-data"
+export * from "./use-project-runtime-sdk-data"
