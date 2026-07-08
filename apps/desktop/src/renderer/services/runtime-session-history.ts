@@ -1,6 +1,6 @@
 import { readSessionRuntimeState, sessionRuntimeCapabilities } from "../lib/runtime-session-config"
 import type { Message, Part } from "../lib/types"
-import { requireProjectRuntimeClient } from "./project-runtime-client"
+import { requireRuntimeClient } from "./project-runtime-client"
 
 export interface RuntimeSessionMessageBundle {
 	hasEarlier: boolean
@@ -33,7 +33,7 @@ export async function fetchRuntimeSessionMessages(args: {
 		return null
 	}
 
-	const client = requireProjectRuntimeClient(args.directory)
+	const client = requireRuntimeClient(args.directory)
 	const result = await client.session.messages({
 		sessionID: args.sessionId,
 		...(args.limit ? { limit: args.limit } : {}),

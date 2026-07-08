@@ -4,7 +4,7 @@ import {
 	answerCliRuntimeQuestionRequest,
 	respondCliRuntimePermissionRequest,
 } from "./runtime-cli-store"
-import { requireProjectRuntimeSessionClient } from "./project-runtime-client"
+import { requireRuntimeSessionClient } from "./project-runtime-client"
 import { runtimeSessionGateway } from "./runtime-session-gateway"
 
 export async function abortRuntimeSession(directory: string, sessionId: string): Promise<void> {
@@ -29,7 +29,7 @@ export async function respondRuntimePermission(
 	permissionId: string,
 	response: "once" | "always" | "reject",
 ): Promise<void> {
-	const client = requireProjectRuntimeSessionClient(directory)
+	const client = requireRuntimeSessionClient(directory)
 	await client.permission.respond({
 		sessionID: sessionId,
 		permissionID: permissionId,
@@ -42,7 +42,7 @@ export async function replyRuntimeQuestion(
 	requestId: string,
 	answers: QuestionAnswer[],
 ): Promise<void> {
-	const client = requireProjectRuntimeSessionClient(directory)
+	const client = requireRuntimeSessionClient(directory)
 	await client.question.reply({ requestID: requestId, answers })
 }
 
@@ -50,7 +50,7 @@ export async function rejectRuntimeQuestion(
 	directory: string,
 	requestId: string,
 ): Promise<void> {
-	const client = requireProjectRuntimeSessionClient(directory)
+	const client = requireRuntimeSessionClient(directory)
 	await client.question.reject({ requestID: requestId })
 }
 

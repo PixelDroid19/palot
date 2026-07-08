@@ -3,7 +3,7 @@ import { atomFamily } from "jotai-family"
 import type {
 	Agent,
 	AgentStatus,
-	ProjectRuntimeProject,
+	RuntimeProject,
 	SessionStatus,
 	SidebarProject,
 } from "../../lib/types"
@@ -135,7 +135,7 @@ function buildProjectSlugMap(projects: ProjectEntry[]): Map<string, { id: string
  * A "sandbox" is a worktree directory that belongs to a parent project.
  * These should not appear as top-level projects in the sidebar.
  */
-function buildSandboxDirSet(projects: ProjectRuntimeProject[]): Set<string> {
+function buildSandboxDirSet(projects: RuntimeProject[]): Set<string> {
 	const sandboxDirs = new Set<string>()
 	for (const project of projects) {
 		if (project.sandboxes) {
@@ -151,7 +151,7 @@ function buildSandboxDirSet(projects: ProjectRuntimeProject[]): Set<string> {
  * Builds a map from sandbox directory -> parent project worktree directory.
  * Used to remap sessions running in a sandbox back to their parent project.
  */
-function buildSandboxToParentMap(projects: ProjectRuntimeProject[]): Map<string, string> {
+function buildSandboxToParentMap(projects: RuntimeProject[]): Map<string, string> {
 	const map = new Map<string, string>()
 	for (const project of projects) {
 		if (!project.worktree || !project.sandboxes) continue
@@ -166,7 +166,7 @@ function buildSandboxToParentMap(projects: ProjectRuntimeProject[]): Map<string,
  * Builds a map from parent project directory -> set of its sandbox directories.
  * Used by projectSessionIdsFamily to include sandbox sessions under the parent.
  */
-function buildParentToSandboxesMap(projects: ProjectRuntimeProject[]): Map<string, Set<string>> {
+function buildParentToSandboxesMap(projects: RuntimeProject[]): Map<string, Set<string>> {
 	const map = new Map<string, Set<string>>()
 	for (const project of projects) {
 		if (!project.worktree || !project.sandboxes?.length) continue
@@ -179,7 +179,7 @@ function collectAllProjects(
 	liveSessionDirs: Map<string, string>,
 	discovery: {
 		loaded: boolean
-		projects: ProjectRuntimeProject[]
+		projects: RuntimeProject[]
 	},
 ): ProjectEntry[] {
 	const entries: ProjectEntry[] = []

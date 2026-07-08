@@ -1,5 +1,5 @@
 import { atom } from "jotai"
-import type { ProjectRuntimeProject } from "../lib/types"
+import type { RuntimeProject } from "../lib/types"
 
 // ============================================================
 // Types
@@ -40,7 +40,7 @@ export interface DiscoveryState {
 	/** Granular startup phase for loading UI */
 	phase: DiscoveryPhase
 	/** Projects discovered from the project runtime API (Project type from SDK) */
-	projects: ProjectRuntimeProject[]
+	projects: RuntimeProject[]
 }
 
 // ============================================================
