@@ -5,7 +5,7 @@ import {
 	parseModelRef,
 	resolveEffectiveModel,
 	useConfig,
-	useManagedRuntimeAgents,
+	useProjectRuntimeAgents as useProjectRuntimeAgentsSource,
 	useModelState,
 	useProviders,
 	useServerCommands,
@@ -47,7 +47,7 @@ export {
 
 export const useProjectRuntimeConfig = useConfig
 export const useProjectRuntimeProviders = useProviders
-export const useProjectRuntimeAgents = useManagedRuntimeAgents
+export const useProjectRuntimeAgents = useProjectRuntimeAgentsSource
 export const useProjectRuntimeCommands = useServerCommands
 export const useProjectRuntimeVcs = useVcs
 export const useProjectRuntimeModelState = useModelState

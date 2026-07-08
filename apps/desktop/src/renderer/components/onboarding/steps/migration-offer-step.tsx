@@ -247,7 +247,7 @@ function buildCategories(
 		case "cursor":
 			return buildCursorCategories(detection)
 		case "opencode":
-			return buildManagedRuntimeCategories(detection)
+			return buildProjectRuntimeCategories(detection)
 	}
 }
 
@@ -419,7 +419,7 @@ function buildCursorCategories(detection: ProviderDetection): MigrationCategory[
 	]
 }
 
-function buildManagedRuntimeCategories(detection: ProviderDetection): MigrationCategory[] {
+function buildProjectRuntimeCategories(detection: ProviderDetection): MigrationCategory[] {
 	return [
 		{
 			id: "config",

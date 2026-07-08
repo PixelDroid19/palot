@@ -307,7 +307,7 @@ export function useVcs(directory: string | null): {
 	}
 }
 
-export function useManagedRuntimeAgents(directory: string | null): {
+export function useProjectRuntimeAgents(directory: string | null): {
 	agents: SdkAgent[]
 	loading: boolean
 	error: string | null
@@ -352,6 +352,8 @@ export function useManagedRuntimeAgents(directory: string | null): {
 		reload,
 	}
 }
+
+export const useManagedRuntimeAgents = useProjectRuntimeAgents
 
 export function useModelState(): {
 	recentModels: ModelRef[]
