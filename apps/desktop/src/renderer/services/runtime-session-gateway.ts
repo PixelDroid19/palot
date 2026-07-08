@@ -22,18 +22,18 @@ import type {
 	TextPart,
 	UserMessage,
 } from "../lib/types"
-import { requireManagedRuntimeProjectClient as requireProjectRuntimeClient } from "./managed-runtime-client"
+import { requireProjectRuntimeSessionClient } from "./project-runtime-client"
 import {
 	createCliRuntimeSessionState,
 	switchCliRuntimeSession,
-	switchCliSessionIntoManagedRuntime as switchCliSessionIntoProjectRuntime,
+	switchCliSessionIntoProjectRuntime,
 } from "./runtime-cli-session"
 import {
 	forgetCliRuntimeSession,
 	persistCliRuntimeSession,
 } from "./runtime-cli-store"
 import {
-	consumeCliToManagedRuntimeHandoff as consumeCliToProjectRuntimeHandoff,
+	consumeCliToProjectRuntimeHandoff,
 	interruptCliRuntimeTurn,
 	runCliRuntimeTurn,
 } from "./runtime-cli-turns"
@@ -53,7 +53,7 @@ async function createProjectRuntimeSession(
 	directory: string,
 	title?: string,
 ): Promise<Session | undefined> {
-	const client = requireProjectRuntimeClient(directory)
+	const client = requireProjectRuntimeSessionClient(directory)
 	const result = await client.session.create({ title })
 	const session = result.data as Session | undefined
 	if (session) {
@@ -68,7 +68,7 @@ async function promptProjectRuntimeSession(
 	text: string,
 	options?: RuntimePromptOptions,
 ): Promise<void> {
-	const client = requireProjectRuntimeClient(directory)
+	const client = requireProjectRuntimeSessionClient(directory)
 	const optimisticId = `optimistic-${Date.now()}`
 	const projectOptions = resolveProjectRuntimePromptOptions(
 		readSessionRuntimeState(sessionId),
@@ -166,7 +166,7 @@ const projectRuntimeSessionGateway = {
 		await promptProjectRuntimeSession(directory, sessionId, text, options)
 	},
 	async abortSession(directory: string, sessionId: string): Promise<void> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		await client.session.abort({ sessionID: sessionId })
 	},
 	async renameSession(
@@ -174,11 +174,11 @@ const projectRuntimeSessionGateway = {
 		sessionId: string,
 		title: string,
 	): Promise<void> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		await client.session.update({ sessionID: sessionId, title })
 	},
 	async deleteSession(directory: string, sessionId: string): Promise<void> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		await client.session.delete({ sessionID: sessionId })
 	},
 	async revertSession(
@@ -186,7 +186,7 @@ const projectRuntimeSessionGateway = {
 		sessionId: string,
 		messageId: string,
 	): Promise<void> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		const entry = appStore.get(sessionFamily(sessionId))
 		if (entry?.status?.type === "busy") {
 			await client.session.abort({ sessionID: sessionId })
@@ -194,7 +194,7 @@ const projectRuntimeSessionGateway = {
 		await client.session.revert({ sessionID: sessionId, messageID: messageId })
 	},
 	async unrevertSession(directory: string, sessionId: string): Promise<void> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		await client.session.unrevert({ sessionID: sessionId })
 	},
 	async executeCommand(
@@ -203,7 +203,7 @@ const projectRuntimeSessionGateway = {
 		command: string,
 		args: string,
 	): Promise<void> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		await client.session.command({
 			sessionID: sessionId,
 			command,
@@ -215,7 +215,7 @@ const projectRuntimeSessionGateway = {
 		sessionId: string,
 		model?: { providerID: string; modelID: string },
 	): Promise<void> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		await client.session.summarize({
 			sessionID: sessionId,
 			providerID: model?.providerID,
@@ -228,7 +228,7 @@ const projectRuntimeSessionGateway = {
 		messageId: string,
 		partId: string,
 	): Promise<void> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		await client.part.delete({ sessionID: sessionId, messageID: messageId, partID: partId })
 	},
 	async forkSession(
@@ -236,7 +236,7 @@ const projectRuntimeSessionGateway = {
 		sessionId: string,
 		messageId?: string,
 	): Promise<Session> {
-		const client = requireProjectRuntimeClient(directory)
+		const client = requireProjectRuntimeSessionClient(directory)
 		const result = await client.session.fork({
 			sessionID: sessionId,
 			messageID: messageId,

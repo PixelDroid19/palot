@@ -17,6 +17,8 @@ export function interruptCliRuntimeTurn(sessionId: string): void {
 	cancelCliTurn(sessionId)
 }
 
-export function consumeCliToManagedRuntimeHandoff(sessionId: string): string | null {
+export function consumeCliToProjectRuntimeHandoff(sessionId: string): string | null {
 	return consumeManagedRuntimeHandoff(sessionId)
 }
+
+export const consumeCliToManagedRuntimeHandoff = consumeCliToProjectRuntimeHandoff

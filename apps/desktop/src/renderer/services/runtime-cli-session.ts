@@ -24,9 +24,11 @@ export async function switchCliRuntimeSession(
 	await switchCliRuntime(sessionId, runtimeId, fallbackCwd)
 }
 
-export async function switchCliSessionIntoManagedRuntime(
+export async function switchCliSessionIntoProjectRuntime(
 	sessionId: string,
-	createManagedSession: (directory: string, title?: string) => Promise<Session | undefined>,
+	createProjectSession: (directory: string, title?: string) => Promise<Session | undefined>,
 ): Promise<string | null> {
-	return switchCliSessionToManagedRuntime(sessionId, createManagedSession)
+	return switchCliSessionToManagedRuntime(sessionId, createProjectSession)
 }
+
+export const switchCliSessionIntoManagedRuntime = switchCliSessionIntoProjectRuntime
