@@ -20,7 +20,7 @@ import {
 } from "../../hooks/use-managed-runtime-data"
 
 import {
-	OPENCODE_SESSION_RUNTIME_CAPABILITIES,
+	MANAGED_SESSION_RUNTIME_CAPABILITIES,
 	persistRuntimeSelection,
 	type RuntimePromptOptions,
 } from "../../lib/runtime-session-config"
@@ -322,7 +322,7 @@ export function ChatInput({
 					open={slashOpen}
 					enabled={isConnected}
 					directory={agent.directory}
-					capabilities={OPENCODE_SESSION_RUNTIME_CAPABILITIES}
+					capabilities={MANAGED_SESSION_RUNTIME_CAPABILITIES}
 					onSelect={(cmd) => {
 						setSlashOpen(false)
 						// Use the command string directly instead of setText + setTimeout

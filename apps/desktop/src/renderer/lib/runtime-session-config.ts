@@ -6,7 +6,6 @@ import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-managed-runtime-data"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
-	isManagedRuntimeId,
 	type SessionRuntimeId,
 } from "./session-runtimes"
 import { persistCliRuntimeSession } from "../services/runtime-cli-store"
@@ -40,17 +39,18 @@ export interface CliRuntimeSelection {
 }
 
 export type RuntimeSelectionPersistence = ManagedRuntimeSelection | CliRuntimeSelection
+export type SessionRuntimeMode = "managed" | "cli"
 
 export type SessionRuntimeState =
 	| {
-			runtime: "cli"
+			mode: "cli"
 			sessionId: string
 			directory: string | null
 			meta: CliSessionMeta
 			modelPreference: PersistedModelRef | null
 	  }
 	| {
-			runtime: "opencode"
+			mode: "managed"
 			sessionId: string
 			directory: string | null
 			modelPreference: PersistedModelRef | null
@@ -66,7 +66,7 @@ export interface SessionRuntimeCapabilities {
 	supportsServerHistory: boolean
 }
 
-export const OPENCODE_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
+export const MANAGED_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 	supportsSessionRevert: true,
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
@@ -88,14 +88,20 @@ export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 
 export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapabilities {
 	return id === DEFAULT_SESSION_RUNTIME_ID
-		? OPENCODE_SESSION_RUNTIME_CAPABILITIES
+		? MANAGED_SESSION_RUNTIME_CAPABILITIES
+		: CLI_SESSION_RUNTIME_CAPABILITIES
+}
+
+export function runtimeModeCapabilities(mode: SessionRuntimeMode): SessionRuntimeCapabilities {
+	return mode === "managed"
+		? MANAGED_SESSION_RUNTIME_CAPABILITIES
 		: CLI_SESSION_RUNTIME_CAPABILITIES
 }
 
 export function isCliRuntimeState(
-	state: Pick<SessionRuntimeState, "runtime">,
-): state is Extract<SessionRuntimeState, { runtime: "cli" }> {
-	return state.runtime === "cli"
+	state: Pick<SessionRuntimeState, "mode">,
+): state is Extract<SessionRuntimeState, { mode: "cli" }> {
+	return state.mode === "cli"
 }
 
 export function cliRuntimeMeta(state: SessionRuntimeState): CliSessionMeta | null {
@@ -103,15 +109,15 @@ export function cliRuntimeMeta(state: SessionRuntimeState): CliSessionMeta | nul
 }
 
 export function resolvePromptRuntime(
-	state: Pick<SessionRuntimeState, "runtime"> | null | undefined,
+	state: Pick<SessionRuntimeState, "mode"> | null | undefined,
 	options?: RuntimePromptOptions,
-): SessionRuntimeState["runtime"] {
+): SessionRuntimeMode {
 	if (options?.runtime === "cli") return "cli"
-	return state?.runtime ?? "opencode"
+	return state?.mode ?? "managed"
 }
 
 export function resolveManagedRuntimePromptOptions(
-	state: Pick<SessionRuntimeState, "runtime"> | null | undefined,
+	state: Pick<SessionRuntimeState, "mode"> | null | undefined,
 	options?: RuntimePromptOptions,
 ): ManagedRuntimePromptOptions | null {
 	return resolvePromptRuntime(state, options) === "cli"
@@ -120,9 +126,9 @@ export function resolveManagedRuntimePromptOptions(
 }
 
 export function sessionRuntimeCapabilities(
-	state: Pick<SessionRuntimeState, "runtime">,
+	state: Pick<SessionRuntimeState, "mode">,
 ): SessionRuntimeCapabilities {
-	return runtimeIdCapabilities(state.runtime)
+	return runtimeModeCapabilities(state.mode)
 }
 
 function isManagedRuntimeSelection(
@@ -154,7 +160,7 @@ export function readSessionRuntimeState(
 	const modelPreference = readProjectRuntimePreference(directory)
 	if (meta) {
 		return {
-			runtime: "cli",
+			mode: "cli",
 			sessionId,
 			directory: directory ?? null,
 			meta,
@@ -162,7 +168,7 @@ export function readSessionRuntimeState(
 		}
 	}
 	return {
-		runtime: "opencode",
+		mode: "managed",
 		sessionId,
 		directory: directory ?? null,
 		modelPreference,
@@ -179,7 +185,7 @@ export function useSessionRuntimeState(
 	const modelPreference = directory ? (projectModels[directory] ?? null) : null
 	if (meta) {
 		return {
-			runtime: "cli",
+			mode: "cli",
 			sessionId,
 			directory: directory ?? null,
 			meta,
@@ -187,7 +193,7 @@ export function useSessionRuntimeState(
 		}
 	}
 	return {
-		runtime: "opencode",
+		mode: "managed",
 		sessionId,
 		directory: directory ?? null,
 		modelPreference,
