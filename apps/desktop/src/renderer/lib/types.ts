@@ -1,7 +1,6 @@
 // Import SDK types we reference in our own interfaces
 import type {
 	PermissionRequest as SdkPermissionRequest,
-	Project as SdkProject,
 	QuestionRequest as SdkQuestionRequest,
 } from "@opencode-ai/sdk/v2/client"
 
@@ -38,8 +37,6 @@ export type {
 	ToolStateCompleted,
 	UserMessage,
 } from "@opencode-ai/sdk/v2/client"
-
-export type OpenCodeProject = SdkProject
 
 /**
  * UI-facing diff model for review surfaces.

@@ -66,8 +66,6 @@ export async function fetchManagedRuntimeUrl(): Promise<{ url: string }> {
 	}
 }
 
-export const fetchOpenCodeUrl = fetchManagedRuntimeUrl
-
 /**
  * Resolve the connection URL for a server config.
  * For local servers, spawns/attaches via the existing IPC mechanism.

@@ -165,8 +165,6 @@ export async function connectToManagedRuntime(
 	startEventLoop(baseClient, abortController.signal, gen)
 }
 
-export const connectToOpenCode = connectToManagedRuntime
-
 /**
  * List all projects known to the OpenCode server via the API.
  * Uses the base client (no directory scope) since project.list() is global.

@@ -307,7 +307,7 @@ export function useVcs(directory: string | null): {
 	}
 }
 
-export function useOpenCodeAgents(directory: string | null): {
+export function useManagedRuntimeAgents(directory: string | null): {
 	agents: SdkAgent[]
 	loading: boolean
 	error: string | null

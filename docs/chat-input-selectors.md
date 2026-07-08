@@ -227,7 +227,7 @@ This is the value that seeds Phase 1 initialization when the user opens a new se
 
 ### Agents
 
-Fetched via `useOpenCodeAgents` hook (`use-opencode-data.ts:297-341`):
+Fetched via `useManagedRuntimeAgents` hook (`use-managed-runtime-data.ts` facade over `use-opencode-data.ts`):
 - Calls OpenCode SDK: `client.app.agents()`
 - Filtered to `mode === "primary" || mode === "all"` and `!hidden`
 - Query key: `["agents", directory]`
@@ -276,7 +276,7 @@ Fetched via `useModelState` hook (`use-opencode-data.ts:343-404`):
 | `renderer/components/chat/chat-view.tsx` | Orchestration: local state, initialization, persistence, `handleSend` |
 | `renderer/components/chat/prompt-toolbar.tsx` | UI: `AgentSelector`, `ModelSelector`, `VariantSelector`, `PromptToolbar` |
 | `renderer/atoms/preferences.ts` | `projectModelsAtom` (localStorage), `PersistedModelRef` type, `setProjectModelAtom` |
-| `renderer/hooks/use-opencode-data.ts` | `resolveEffectiveModel()`, `useProviders`, `useConfig`, `useOpenCodeAgents`, `useModelState`, `getModelVariants` |
+| `renderer/hooks/use-managed-runtime-data.ts` | `resolveEffectiveModel()`, `useManagedRuntimeProviders`, `useManagedRuntimeConfig`, `useManagedRuntimeAgents`, `useManagedRuntimeModelState`, `getModelVariants` |
 | `renderer/services/backend.ts` | `fetchModelState()`, `updateModelRecent()` -- Electron/browser routing layer |
 | `renderer/services/palot-server.ts` | HTTP implementations for model state (browser mode) |
 | `main/model-state.ts` | `readModelState()`, `updateModelRecent()` -- reads/writes `model.json` on disk |

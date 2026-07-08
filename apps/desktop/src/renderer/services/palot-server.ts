@@ -40,8 +40,6 @@ export async function fetchManagedRuntimeUrl(): Promise<{ url: string }> {
 	return res.json()
 }
 
-export const fetchOpenCodeUrl = fetchManagedRuntimeUrl
-
 /**
  * Fetches the OpenCode model state (recent models, favorites, variants)
  * from the backend, which reads ~/.local/state/opencode/model.json.
