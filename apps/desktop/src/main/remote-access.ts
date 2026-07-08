@@ -1,7 +1,7 @@
 import os from "node:os"
 import { buildEndpoints, parsePort, type RemoteEndpoint } from "./lan-endpoints"
 import { createLogger } from "./logger"
-import { getServerUrl } from "./opencode-manager"
+import { getManagedRuntimeUrl } from "./opencode-manager"
 
 export type { EndpointType, RemoteEndpoint } from "./lan-endpoints"
 
@@ -60,7 +60,7 @@ function endpointAddresses(url: string): string[] {
  * and sorted best-first so the UI can highlight the most useful address.
  */
 export function getRemoteAccessInfo(): RemoteAccessInfo {
-	const url = getServerUrl()
+	const url = getManagedRuntimeUrl()
 	if (!url) {
 		return { url: null, lanUrls: [], endpoints: [], port: null }
 	}

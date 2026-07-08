@@ -22,8 +22,8 @@ import {
 	onStateChanged,
 	type SessionState,
 } from "./notification-watcher"
-import { createMainProcessOpenCodeClient } from "./opencode-runtime"
-import { getServerAuthHeader, getServerUrl } from "./opencode-manager"
+import { createMainProcessManagedRuntimeClient } from "./opencode-runtime"
+import { getManagedRuntimeAuthHeader, getManagedRuntimeUrl } from "./opencode-manager"
 
 const log = createLogger("tray")
 
@@ -199,7 +199,7 @@ function rebuildMenu(): void {
 	})
 
 	// Server status indicator
-	const serverUrl = getServerUrl()
+	const serverUrl = getManagedRuntimeUrl()
 	if (serverUrl) {
 		template.push({
 			label: `Server Running`,
@@ -466,13 +466,13 @@ function updateTrayTitle(
 // ============================================================
 
 async function refreshDiscovery(): Promise<void> {
-	const serverUrl = getServerUrl()
+	const serverUrl = getManagedRuntimeUrl()
 	if (!serverUrl) return
 
 	try {
-		const client = createMainProcessOpenCodeClient({
+		const client = createMainProcessManagedRuntimeClient({
 			baseUrl: serverUrl,
-			authHeader: getServerAuthHeader(),
+			authHeader: getManagedRuntimeAuthHeader(),
 		})
 		const [projectsResult, sessionsResult] = await Promise.all([
 			client.project.list(),

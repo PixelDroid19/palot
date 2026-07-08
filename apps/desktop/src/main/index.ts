@@ -11,7 +11,7 @@ import { terminalManager } from "./terminal"
 import { installLiquidGlass, resolveWindowChrome } from "./liquid-glass"
 import { createLogger } from "./logger"
 import { startMdnsScanner, stopMdnsScanner } from "./mdns-scanner"
-import { stopServer } from "./opencode-manager"
+import { stopManagedRuntimeServer } from "./opencode-manager"
 import { initSettingsStore } from "./settings-store"
 import { startEnvResolution } from "./shell-env"
 import { createTray, destroyTray } from "./tray"
@@ -329,7 +329,7 @@ if (!gotLock) {
 		destroyTray()
 		shutdownAutomations()
 		stopMdnsScanner()
-		stopServer()
+		stopManagedRuntimeServer()
 		stopAutoUpdater()
 		// Tear down CLI agent sessions/processes (app-server, SDK children).
 		void stopAgentBridge()

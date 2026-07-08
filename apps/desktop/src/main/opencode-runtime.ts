@@ -19,6 +19,8 @@ export interface OpenCodeServerProcess {
 	binary: string
 }
 
+export type ManagedRuntimeServerProcess = OpenCodeServerProcess
+
 export interface StartOpenCodeServerOptions {
 	hostname: string
 	port: number
@@ -29,9 +31,13 @@ export interface StartOpenCodeServerOptions {
 	timeoutMs?: number
 }
 
+export type StartManagedRuntimeServerOptions = StartOpenCodeServerOptions
+
 export function getOpenCodeBinDir(): string {
 	return path.join(homedir(), ".opencode", "bin")
 }
+
+export const getManagedRuntimeBinDir = getOpenCodeBinDir
 
 export function getOpenCodeAugmentedPath(basePath = process.env.PATH ?? ""): string {
 	const sep = process.platform === "win32" ? ";" : ":"
@@ -40,6 +46,8 @@ export function getOpenCodeAugmentedPath(basePath = process.env.PATH ?? ""): str
 	if (segments.includes(binDir)) return basePath
 	return basePath ? `${binDir}${sep}${basePath}` : binDir
 }
+
+export const getManagedRuntimeAugmentedPath = getOpenCodeAugmentedPath
 
 export async function resolveOpenCodeBinary(
 	augmentedPath = getOpenCodeAugmentedPath(),
@@ -51,12 +59,16 @@ export async function resolveOpenCodeBinary(
 	)
 }
 
+export const resolveManagedRuntimeBinary = resolveOpenCodeBinary
+
 export function buildOpenCodeAuthHeader(
 	password: string,
 	username = DEFAULT_AUTH_USERNAME,
 ): string {
 	return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`
 }
+
+export const buildManagedRuntimeAuthHeader = buildOpenCodeAuthHeader
 
 function createHeaders(authHeader?: string | null): Record<string, string> | undefined {
 	if (!authHeader) return undefined
@@ -74,6 +86,8 @@ export function createMainProcessOpenCodeClient(args: {
 		...(args.authHeader ? { headers: createHeaders(args.authHeader) } : {}),
 	})
 }
+
+export const createMainProcessManagedRuntimeClient = createMainProcessOpenCodeClient
 
 export async function probeOpenCodeServer(
 	url: string,
@@ -100,6 +114,8 @@ export async function probeOpenCodeServer(
 	}
 	return false
 }
+
+export const probeManagedRuntimeServer = probeOpenCodeServer
 
 export async function waitForOpenCodeServer(
 	url: string,
@@ -143,6 +159,8 @@ export async function waitForOpenCodeServer(
 
 	throw new Error(`OpenCode runtime at ${url} did not become ready within ${timeoutMs}ms`)
 }
+
+export const waitForManagedRuntimeServer = waitForOpenCodeServer
 
 export async function startOpenCodeServerProcess(
 	options: StartOpenCodeServerOptions,
@@ -218,3 +236,5 @@ export async function startOpenCodeServerProcess(
 
 	return { url, process: proc, binary }
 }
+
+export const startManagedRuntimeServerProcess = startOpenCodeServerProcess

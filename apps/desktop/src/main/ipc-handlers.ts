@@ -60,10 +60,10 @@ import { type SkillSyncDirection, syncSkills } from "./skill-sync"
 import { type WebhookTarget, testWebhook } from "./webhooks"
 import type { MigrationProvider } from "./onboarding"
 import {
-	checkOpenCodeInstallation,
+	checkManagedRuntimeInstallation,
 	detectProviders,
 	executeMigration,
-	installOpenCode,
+	installManagedRuntime,
 	previewMigration,
 	restoreMigrationBackup,
 	scanProvider,
@@ -74,7 +74,12 @@ import {
 	openInTarget,
 	setPreferredTarget,
 } from "./open-in-targets"
-import { ensureServer, getServerUrl, restartServer, stopServer } from "./opencode-manager"
+import {
+	ensureManagedRuntimeServer,
+	getManagedRuntimeUrl,
+	restartManagedRuntimeServer,
+	stopManagedRuntimeServer,
+} from "./opencode-manager"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
 	checkForUpdates,
@@ -197,19 +202,19 @@ export function registerIpcHandlers(): void {
 
 	ipcMain.handle(
 		"opencode:ensure",
-		withLogging("opencode:ensure", async () => await ensureServer()),
+		withLogging("opencode:ensure", async () => await ensureManagedRuntimeServer()),
 	)
 
-	ipcMain.handle("opencode:url", () => getServerUrl())
+	ipcMain.handle("opencode:url", () => getManagedRuntimeUrl())
 
 	ipcMain.handle(
 		"opencode:stop",
-		withLogging("opencode:stop", () => stopServer()),
+		withLogging("opencode:stop", () => stopManagedRuntimeServer()),
 	)
 
 	ipcMain.handle(
 		"opencode:restart",
-		withLogging("opencode:restart", async () => await restartServer()),
+		withLogging("opencode:restart", async () => await restartManagedRuntimeServer()),
 	)
 
 	// --- Model state ---
@@ -585,12 +590,12 @@ export function registerIpcHandlers(): void {
 
 	ipcMain.handle(
 		"onboarding:check-opencode",
-		withLogging("onboarding:check-opencode", async () => await checkOpenCodeInstallation()),
+		withLogging("onboarding:check-opencode", async () => await checkManagedRuntimeInstallation()),
 	)
 
 	ipcMain.handle(
 		"onboarding:install-opencode",
-		withLogging("onboarding:install-opencode", async () => await installOpenCode()),
+		withLogging("onboarding:install-opencode", async () => await installManagedRuntime()),
 	)
 
 	ipcMain.handle(

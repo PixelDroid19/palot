@@ -28,6 +28,8 @@ export interface OpenCodeServer {
 	managed: boolean
 }
 
+export type ManagedRuntimeServer = OpenCodeServer
+
 /** Result of detecting an existing server on the target port. */
 type DetectionResult =
 	| { kind: "found"; server: OpenCodeServer }
@@ -121,6 +123,8 @@ export async function ensureServer(): Promise<OpenCodeServer> {
 	return spawnServer(hostname, port, config, localPassword, authHeader)
 }
 
+export const ensureManagedRuntimeServer = ensureServer
+
 /**
  * Gets the single server URL, or null if not running.
  */
@@ -128,9 +132,13 @@ export function getServerUrl(): string | null {
 	return singleServer?.server.url ?? null
 }
 
+export const getManagedRuntimeUrl = getServerUrl
+
 export function getServerAuthHeader(): string | null {
 	return singleServer?.authHeader ?? null
 }
+
+export const getManagedRuntimeAuthHeader = getServerAuthHeader
 
 /**
  * Stops the single server if we manage it and removes the lockfile.
@@ -150,6 +158,8 @@ export function stopServer(): boolean {
 	return true
 }
 
+export const stopManagedRuntimeServer = stopServer
+
 /**
  * Restarts the managed server (stop + start). Used when local server
  * settings (hostname, port, password) change.
@@ -159,6 +169,8 @@ export async function restartServer(): Promise<OpenCodeServer> {
 	stopServer()
 	return ensureServer()
 }
+
+export const restartManagedRuntimeServer = restartServer
 
 // ============================================================
 // Internal -- lockfile handling

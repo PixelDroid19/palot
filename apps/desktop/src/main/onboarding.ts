@@ -15,8 +15,8 @@ import { createHash } from "node:crypto"
 import { homedir, tmpdir } from "node:os"
 import path from "node:path"
 import { BrowserWindow } from "electron"
-import type { OpenCodeCheckResult } from "./compatibility"
-import { checkOpenCode } from "./compatibility"
+import type { ManagedRuntimeCheckResult } from "./compatibility"
+import { checkManagedRuntime } from "./compatibility"
 import {
 	conversionReportMessageToText as formatConversionReportMessage,
 } from "@palot/configconv"
@@ -155,8 +155,8 @@ const PROVIDER_LABELS: Record<MigrationProvider, string> = {
 // OpenCode check (delegates to compatibility module)
 // ============================================================
 
-export async function checkOpenCodeInstallation(): Promise<OpenCodeCheckResult> {
-	return checkOpenCode()
+export async function checkOpenCodeInstallation(): Promise<ManagedRuntimeCheckResult> {
+	return checkManagedRuntime()
 }
 
 export const checkManagedRuntimeInstallation = checkOpenCodeInstallation
