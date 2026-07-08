@@ -42,7 +42,7 @@ function shouldUseCliRuntime(
 	sessionId: string,
 	options?: RuntimePromptOptions,
 ): boolean {
-	return resolvePromptRuntime(readSessionRuntimeState(sessionId), options) === "cli"
+	return isCliRuntime(resolvePromptRuntime(readSessionRuntimeState(sessionId), options))
 }
 
 function sessionUsesCliRuntime(sessionId: string): boolean {

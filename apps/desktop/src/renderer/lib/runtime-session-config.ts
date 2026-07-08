@@ -6,6 +6,7 @@ import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-project-runtime-data"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
+	isCliRuntime,
 	runtimeDescriptor,
 	type SessionRuntimeId,
 } from "./session-runtimes"
@@ -40,22 +41,14 @@ export interface CliRuntimeSelection {
 }
 
 export type RuntimeSelectionPersistence = ProjectRuntimeSelection | CliRuntimeSelection
-export type SessionRuntimeMode = "project" | "cli"
 
-export type SessionRuntimeState =
-	| {
-			mode: "cli"
-			sessionId: string
-			directory: string | null
-			meta: CliSessionMeta
-			modelPreference: PersistedModelRef | null
-	  }
-	| {
-			mode: "project"
-			sessionId: string
-			directory: string | null
-			modelPreference: PersistedModelRef | null
-	  }
+export interface SessionRuntimeState {
+	sessionId: string
+	directory: string | null
+	runtimeId: SessionRuntimeId
+	meta: CliSessionMeta | null
+	modelPreference: PersistedModelRef | null
+}
 
 export interface SessionRuntimeCapabilities {
 	supportsSessionRevert: boolean
@@ -96,47 +89,43 @@ export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapab
 	)
 }
 
-export function runtimeModeCapabilities(mode: SessionRuntimeMode): SessionRuntimeCapabilities {
-	return mode === "project"
-		? PROJECT_SESSION_RUNTIME_CAPABILITIES
-		: CLI_SESSION_RUNTIME_CAPABILITIES
-}
-
 export function isCliRuntimeState(
-	state: Pick<SessionRuntimeState, "mode">,
-): state is Extract<SessionRuntimeState, { mode: "cli" }> {
-	return state.mode === "cli"
+	state: Pick<SessionRuntimeState, "runtimeId">,
+): state is SessionRuntimeState & { meta: CliSessionMeta } {
+	return isCliRuntime(state.runtimeId)
 }
 
 export function cliRuntimeMeta(state: SessionRuntimeState): CliSessionMeta | null {
-	return isCliRuntimeState(state) ? state.meta : null
+	return state.meta
 }
 
 export function resolvePromptRuntime(
-	state: Pick<SessionRuntimeState, "mode"> | null | undefined,
+	state: Pick<SessionRuntimeState, "runtimeId"> | null | undefined,
 	options?: RuntimePromptOptions,
-): SessionRuntimeMode {
-	if (options?.runtime === "cli") return "cli"
-	return state?.mode ?? "project"
+): SessionRuntimeId {
+	if (options?.runtime === "cli" && state && isCliRuntimeState(state)) {
+		return state.runtimeId
+	}
+	return state?.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID
 }
 
 export function resolveProjectRuntimePromptOptions(
-	state: Pick<SessionRuntimeState, "mode"> | null | undefined,
+	state: Pick<SessionRuntimeState, "runtimeId"> | null | undefined,
 	options?: RuntimePromptOptions,
 ): ProjectRuntimePromptOptions | null {
-	return resolvePromptRuntime(state, options) === "cli"
+	return isCliRuntime(resolvePromptRuntime(state, options))
 		? null
 		: ((options ?? {}) as ProjectRuntimePromptOptions)
 }
 
 export function resolveSessionRuntimeId(state: SessionRuntimeState): SessionRuntimeId {
-	return isCliRuntimeState(state) ? state.meta.runtimeId : DEFAULT_SESSION_RUNTIME_ID
+	return state.runtimeId
 }
 
 export function sessionRuntimeCapabilities(
 	state: SessionRuntimeState,
 ): SessionRuntimeCapabilities {
-	return runtimeIdCapabilities(resolveSessionRuntimeId(state))
+	return runtimeIdCapabilities(state.runtimeId)
 }
 
 function isProjectRuntimeSelection(
@@ -168,17 +157,18 @@ export function readSessionRuntimeState(
 	const modelPreference = readProjectRuntimePreference(directory)
 	if (meta) {
 		return {
-			mode: "cli",
 			sessionId,
 			directory: directory ?? null,
+			runtimeId: meta.runtimeId,
 			meta,
 			modelPreference,
 		}
 	}
 	return {
-		mode: "project",
 		sessionId,
 		directory: directory ?? null,
+		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+		meta: null,
 		modelPreference,
 	}
 }
@@ -193,17 +183,18 @@ export function useSessionRuntimeState(
 	const modelPreference = directory ? (projectModels[directory] ?? null) : null
 	if (meta) {
 		return {
-			mode: "cli",
 			sessionId,
 			directory: directory ?? null,
+			runtimeId: meta.runtimeId,
 			meta,
 			modelPreference,
 		}
 	}
 	return {
-		mode: "project",
 		sessionId,
 		directory: directory ?? null,
+		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+		meta: null,
 		modelPreference,
 	}
 }
