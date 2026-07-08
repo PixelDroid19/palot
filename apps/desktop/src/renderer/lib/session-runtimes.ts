@@ -30,12 +30,13 @@ let inflight: Promise<SessionRuntimeDescriptor[]> | null = null
  * or a catalog refreshed mid-session shows up). Safe to call from any
  * component; resolves to [] in browser mode.
  */
-export function loadRuntimeDescriptors(): Promise<SessionRuntimeDescriptor[]> {
-	if (descriptorCache && Date.now() - descriptorCache.at < DESCRIPTOR_TTL_MS) {
+export function loadRuntimeDescriptors(force = false): Promise<SessionRuntimeDescriptor[]> {
+	if (!force && descriptorCache && Date.now() - descriptorCache.at < DESCRIPTOR_TTL_MS) {
 		return Promise.resolve(descriptorCache.value)
 	}
 	if (!isElectron) return Promise.resolve([])
-	inflight ??= window.palot.agentSession
+	if (!force && inflight) return inflight
+	inflight = window.palot.agentSession
 		.describeRuntimes()
 		.then((descriptors) => {
 			descriptorCache = { at: Date.now(), value: descriptors }

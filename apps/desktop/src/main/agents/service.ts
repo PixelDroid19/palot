@@ -21,6 +21,7 @@ import {
 } from "@palot/agent-host"
 import { whichOnPath } from "@palot/cli-registry"
 import { app } from "electron"
+import { detectAgentClis } from "../agent-clis"
 import { checkManagedRuntime } from "../compatibility"
 import { createLogger } from "../logger"
 
@@ -82,6 +83,12 @@ export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 		supportsWorktreeLaunch: boolean
 		supportsServerHistory: boolean
 	}
+	setup: {
+		description: string
+		version: string | null
+		compatible: boolean
+		warning: string | null
+	}
 }
 
 const MANAGED_RUNTIME_DESCRIPTOR_ID = "opencode"
@@ -135,7 +142,10 @@ function writeImageFiles(images: AgentImageAttachment[]): { paths: string[]; cle
 	return { paths, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
-function describeManagedRuntime(): Promise<SessionRuntimeDescriptor> {
+function describeManagedRuntime(detection?: {
+	binaryPath: string | null
+	installHint: string
+}): Promise<SessionRuntimeDescriptor> {
 	return checkManagedRuntime().then((runtime) => ({
 		id: MANAGED_RUNTIME_DESCRIPTOR_ID,
 		displayName: MANAGED_RUNTIME_DESCRIPTOR_LABEL,
@@ -143,22 +153,38 @@ function describeManagedRuntime(): Promise<SessionRuntimeDescriptor> {
 		installed: runtime.installed,
 		capabilities: MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES,
 		sessionCapabilities: MANAGED_RUNTIME_SESSION_CAPABILITIES,
+		setup: {
+			description: runtime.path ?? detection?.binaryPath ?? detection?.installHint ?? "Checking...",
+			version: runtime.version,
+			compatible: runtime.compatible,
+			warning: runtime.compatible ? null : runtime.message,
+		},
 		models: [],
 	}))
 }
 
 /** Session runtime descriptors (managed + CLI) for runtime pickers and setup UI. */
 export async function describeSessionRuntimes(): Promise<SessionRuntimeDescriptor[]> {
-	const [managedRuntime, cliRuntimes] = await Promise.all([
-		describeManagedRuntime(),
+	const [cliDetections, cliRuntimes] = await Promise.all([
+		detectAgentClis(),
 		getAgentHost().describeRuntimes(),
 	])
+	const detections = new Map(cliDetections.map((runtime) => [runtime.id, runtime]))
+	const managedRuntime = await describeManagedRuntime(detections.get(MANAGED_RUNTIME_DESCRIPTOR_ID))
 	return [
 		managedRuntime,
 		...cliRuntimes.map((runtime) => ({
 			...runtime,
 			mode: "cli" as const,
 			sessionCapabilities: CLI_RUNTIME_SESSION_CAPABILITIES,
+			setup: {
+				description: detections.get(runtime.id)?.installed
+					? (detections.get(runtime.id)?.binaryPath ?? "")
+					: (detections.get(runtime.id)?.installHint ?? ""),
+				version: detections.get(runtime.id)?.version ?? null,
+				compatible: detections.get(runtime.id)?.installed ?? false,
+				warning: null,
+			},
 		})),
 	]
 }

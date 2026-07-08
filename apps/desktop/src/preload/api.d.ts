@@ -288,6 +288,12 @@ export interface SessionRuntimeCapabilities {
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 	mode: "managed" | "cli"
 	sessionCapabilities: SessionRuntimeCapabilities
+	setup: {
+		description: string
+		version: string | null
+		compatible: boolean
+		warning: string | null
+	}
 }
 
 export interface AppSettings {

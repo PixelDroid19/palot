@@ -1,5 +1,5 @@
-import type { AgentCliDetection } from "../../preload/api"
-import { isManagedRuntimeId } from "../lib/session-runtimes"
+import type { SessionRuntimeDescriptor } from "../../preload/api"
+import { loadRuntimeDescriptors } from "../lib/session-runtimes"
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 
@@ -16,37 +16,17 @@ export interface RuntimeSetupStatus {
 export async function loadRuntimeSetupStatuses(force = false): Promise<RuntimeSetupStatus[]> {
 	if (!isElectron) return []
 
-	const [detections, managedRuntime] = await Promise.all([
-		window.palot.agentClis.detect(force),
-		window.palot.onboarding.checkManagedRuntime(),
-	])
-
-	return detections.map((cli) => normalizeRuntimeStatus(cli, managedRuntime))
+	return (await loadRuntimeDescriptors(force)).map((runtime) => normalizeRuntimeStatus(runtime))
 }
 
-function normalizeRuntimeStatus(
-	cli: AgentCliDetection,
-	managedRuntime: Awaited<ReturnType<typeof window.palot.onboarding.checkManagedRuntime>>,
-): RuntimeSetupStatus {
-	if (isManagedRuntimeId(cli.id)) {
-		return {
-			id: cli.id,
-			displayName: cli.displayName,
-			description: managedRuntime.path ?? cli.binaryPath ?? "Checking...",
-			installed: managedRuntime.installed,
-			version: managedRuntime.version,
-			compatible: managedRuntime.compatible,
-			warning: managedRuntime.compatible ? null : (managedRuntime.message ?? null),
-		}
-	}
-
+function normalizeRuntimeStatus(runtime: SessionRuntimeDescriptor): RuntimeSetupStatus {
 	return {
-		id: cli.id,
-		displayName: cli.displayName,
-		description: cli.installed ? (cli.binaryPath ?? "") : cli.installHint,
-		installed: cli.installed,
-		version: cli.version,
-		compatible: cli.installed,
-		warning: null,
+		id: runtime.id,
+		displayName: runtime.displayName,
+		description: runtime.setup.description,
+		installed: runtime.installed,
+		version: runtime.setup.version,
+		compatible: runtime.setup.compatible,
+		warning: runtime.setup.warning,
 	}
 }
