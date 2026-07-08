@@ -10,10 +10,8 @@ import { messagesFamily, setMessagesAtom } from "../atoms/messages"
 import { isMockModeAtom } from "../atoms/mock-mode"
 import { partsFamily } from "../atoms/parts"
 import { appStore } from "../atoms/store"
-import { readSessionRuntimeState } from "../lib/runtime-session-config"
 import { streamingVersionFamily } from "../atoms/streaming"
-import type { Message, Part } from "../lib/types"
-import { getBaseClient, getProjectClient } from "../services/connection-manager"
+import { fetchRuntimeSessionMessages } from "../services/runtime-session-history"
 
 // Re-export types for consumers
 export type { ChatMessageEntry, ChatTurn }
@@ -73,12 +71,6 @@ export function useSessionChat(
 	// One-time fetch to hydrate the store when session changes
 	const fetchAndHydrate = useCallback(
 		async (sid: string) => {
-			// CLI-backed sessions have no OpenCode server history; their transcript
-			// lives entirely in the atoms, so skip the REST hydrate.
-			if (readSessionRuntimeState(sid).runtime === "cli") {
-				setLoading(false)
-				return
-			}
 			// Only show the loading spinner if the session has no cached data yet.
 			// When switching back to a previously-visited session the existing messages
 			// remain visible while the background refresh runs, avoiding a jarring flash.
@@ -88,27 +80,23 @@ export function useSessionChat(
 			}
 			setError(null)
 			try {
-				// Use a directory-scoped client when available, otherwise fall back to the base client
-				const client = (directory ? getProjectClient(directory) : null) ?? getBaseClient()
-				if (!client) {
-					setError("Not connected to OpenCode server")
-					return
-				}
-
-				const result = await client.session.messages({
-					sessionID: sid,
+				const bundle = await fetchRuntimeSessionMessages({
+					directory,
+					sessionId: sid,
 					limit: INITIAL_LIMIT,
 				})
-				const raw = (result.data ?? []) as Array<{ info: Message; parts: Part[] }>
-				hasEarlierRef.current = raw.length >= INITIAL_LIMIT
+				if (!bundle) {
+					setLoading(false)
+					return
+				}
+				hasEarlierRef.current = bundle.hasEarlier
 
 				// Hydrate the Jotai store
-				const messages = raw.map((m) => m.info)
-				const parts: Record<string, Part[]> = {}
-				for (const m of raw) {
-					parts[m.info.id] = m.parts
-				}
-				appStore.set(setMessagesAtom, { sessionId: sid, messages, parts })
+				appStore.set(setMessagesAtom, {
+					sessionId: sid,
+					messages: bundle.messages,
+					parts: bundle.parts,
+				})
 			} catch (err) {
 				console.error("Failed to fetch session messages:", err)
 				setError(err instanceof Error ? err.message : "Failed to load messages")
@@ -121,24 +109,22 @@ export function useSessionChat(
 
 	// Load all messages (for "load earlier" button)
 	const loadEarlier = useCallback(async () => {
-		if (!sessionId || !directory || loadingEarlier) return
-		const client = getProjectClient(directory)
-		if (!client) return
+		if (!sessionId || loadingEarlier) return
 
 		setLoadingEarlier(true)
 		try {
-			const result = await client.session.messages({
-				sessionID: sessionId,
+			const bundle = await fetchRuntimeSessionMessages({
+				directory,
+				sessionId,
 			})
-			const raw = (result.data ?? []) as Array<{ info: Message; parts: Part[] }>
+			if (!bundle) return
 			hasEarlierRef.current = false
 
-			const messages = raw.map((m) => m.info)
-			const parts: Record<string, Part[]> = {}
-			for (const m of raw) {
-				parts[m.info.id] = m.parts
-			}
-			appStore.set(setMessagesAtom, { sessionId, messages, parts })
+			appStore.set(setMessagesAtom, {
+				sessionId,
+				messages: bundle.messages,
+				parts: bundle.parts,
+			})
 		} catch (err) {
 			console.error("Failed to load earlier messages:", err)
 		} finally {

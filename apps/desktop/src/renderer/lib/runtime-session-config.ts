@@ -63,6 +63,7 @@ export interface SessionRuntimeCapabilities {
 	supportsFork: boolean
 	supportsOpenCodePromptConfig: boolean
 	supportsWorktreeLaunch: boolean
+	supportsServerHistory: boolean
 }
 
 export const OPENCODE_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
@@ -72,6 +73,7 @@ export const OPENCODE_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities =
 	supportsFork: true,
 	supportsOpenCodePromptConfig: true,
 	supportsWorktreeLaunch: true,
+	supportsServerHistory: true,
 }
 
 export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
@@ -81,6 +83,7 @@ export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 	supportsFork: false,
 	supportsOpenCodePromptConfig: false,
 	supportsWorktreeLaunch: false,
+	supportsServerHistory: false,
 }
 
 export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapabilities {
