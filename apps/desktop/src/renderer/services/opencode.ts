@@ -5,7 +5,6 @@ import type {
 	Event,
 	FileDiff,
 	OpenCodeProject,
-	QuestionAnswer,
 	Session,
 	SessionStatus,
 } from "../lib/types"
@@ -274,65 +273,6 @@ export async function getSessionStatuses(
 }
 
 /**
- * Create a new session (= new agent).
- */
-export async function createSession(client: OpencodeClient, title?: string): Promise<Session> {
-	const result = await client.session.create({ title })
-	return result.data as Session
-}
-
-/**
- * Send a prompt to a session (async — returns immediately, track via events).
- */
-export async function sendPrompt(
-	client: OpencodeClient,
-	sessionId: string,
-	text: string,
-	options?: {
-		providerID?: string
-		modelID?: string
-		agent?: string
-		variant?: string
-	},
-): Promise<void> {
-	await client.session.promptAsync({
-		sessionID: sessionId,
-		parts: [{ type: "text", text }],
-		model:
-			options?.providerID && options?.modelID
-				? { providerID: options.providerID, modelID: options.modelID }
-				: undefined,
-		agent: options?.agent,
-		variant: options?.variant,
-	})
-}
-
-/**
- * Abort a running session.
- */
-export async function abortSession(client: OpencodeClient, sessionId: string): Promise<void> {
-	await client.session.abort({ sessionID: sessionId })
-}
-
-/**
- * Rename a session (update its title).
- */
-export async function renameSession(
-	client: OpencodeClient,
-	sessionId: string,
-	title: string,
-): Promise<void> {
-	await client.session.update({ sessionID: sessionId, title })
-}
-
-/**
- * Delete a session.
- */
-export async function deleteSession(client: OpencodeClient, sessionId: string): Promise<void> {
-	await client.session.delete({ sessionID: sessionId })
-}
-
-/**
  * Fetch a single session by ID.
  * Returns null if the session is not found or the request fails.
  */
@@ -357,40 +297,6 @@ export async function getSessionDiff(client: OpencodeClient, sessionId: string):
 		deletions: diff.deletions,
 		patch: diff.patch,
 	}))
-}
-
-/**
- * Respond to a permission request.
- */
-export async function respondToPermission(
-	client: OpencodeClient,
-	sessionId: string,
-	permissionId: string,
-	response: "once" | "always" | "reject",
-): Promise<void> {
-	await client.permission.respond({
-		sessionID: sessionId,
-		permissionID: permissionId,
-		response,
-	})
-}
-
-/**
- * Reply to a question request from the AI assistant.
- */
-export async function replyToQuestion(
-	client: OpencodeClient,
-	requestId: string,
-	answers: QuestionAnswer[],
-): Promise<void> {
-	await client.question.reply({ requestID: requestId, answers })
-}
-
-/**
- * Reject a question request from the AI assistant.
- */
-export async function rejectQuestion(client: OpencodeClient, requestId: string): Promise<void> {
-	await client.question.reject({ requestID: requestId })
 }
 
 /**
@@ -436,50 +342,6 @@ export async function subscribeToGlobalEvents(
 }
 
 /**
- * Revert a session to a specific message (undo).
- * Rolls back filesystem changes and marks messages after the revert point.
- */
-export async function revertSession(
-	client: OpencodeClient,
-	sessionId: string,
-	messageId: string,
-): Promise<Session> {
-	const result = await client.session.revert({
-		sessionID: sessionId,
-		messageID: messageId,
-	})
-	return result.data as Session
-}
-
-/**
- * Unrevert a session (redo).
- * Restores previously reverted messages and filesystem state.
- */
-export async function unrevertSession(client: OpencodeClient, sessionId: string): Promise<Session> {
-	const result = await client.session.unrevert({
-		sessionID: sessionId,
-	})
-	return result.data as Session
-}
-
-/**
- * Execute a named command on a session.
- * Server-side commands like /init, /review, or user-defined commands.
- */
-export async function executeCommand(
-	client: OpencodeClient,
-	sessionId: string,
-	command: string,
-	args: string,
-): Promise<void> {
-	await client.session.command({
-		sessionID: sessionId,
-		command,
-		arguments: args,
-	})
-}
-
-/**
  * List available commands from the server.
  */
 export async function listCommands(
@@ -496,30 +358,6 @@ export async function listCommands(
 export async function findFiles(client: OpencodeClient, query: string): Promise<string[]> {
 	const result = await client.find.files({ query })
 	return (result.data ?? []) as string[]
-}
-
-/**
- * Fork a session, optionally at a specific message boundary.
- * Copies all messages up to (but not including) the given messageId.
- * If no messageId is provided, copies the entire conversation.
- */
-export async function forkSession(
-	client: OpencodeClient,
-	sessionId: string,
-	messageId?: string,
-): Promise<Session> {
-	const result = await client.session.fork({
-		sessionID: sessionId,
-		messageID: messageId,
-	})
-	return result.data as Session
-}
-
-/**
- * Summarize/compact a session conversation.
- */
-export async function summarizeSession(client: OpencodeClient, sessionId: string): Promise<void> {
-	await client.session.summarize({ sessionID: sessionId })
 }
 
 /**

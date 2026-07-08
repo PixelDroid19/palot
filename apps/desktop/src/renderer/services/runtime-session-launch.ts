@@ -4,10 +4,15 @@ import { appStore } from "../atoms/store"
 import type { Session } from "../lib/types"
 import {
 	createCliSession,
+	restoreCliSessions,
 	switchCliRuntime,
 	switchCliSessionToOpenCode,
 } from "./cli-chat"
 import { getProjectClient } from "./connection-manager"
+
+export function restoreRuntimeSessions(): void {
+	restoreCliSessions()
+}
 
 export async function createOpenCodeSession(
 	directory: string,
