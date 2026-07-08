@@ -1,7 +1,7 @@
 import { removeSessionAtom, setSessionBranchAtom, setSessionSetupPhaseAtom, setSessionWorktreeAtom, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import type { AgentSandbox } from "../../preload/api"
-import type { ProjectRuntimePromptOptions } from "../lib/runtime-session-config"
+import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import type { SessionRuntimeId } from "../lib/session-runtimes"
 import type { FileAttachment } from "../lib/types"
 import { createUuidV7 } from "../../shared/uuid"
@@ -33,59 +33,16 @@ export async function launchRuntimeSession(args: {
 	promptText: string
 	runtimeId: SessionRuntimeId
 	launch: {
-		cli?: {
+		create: {
 			sandbox: AgentSandbox
 			model?: string
 			effort?: string
 		}
-		project?: {
-			worktreeMode: "local" | "worktree"
-			promptOptions: ProjectRuntimePromptOptions
-		}
+		promptOptions?: RuntimePromptOptions
+		worktreeMode?: "local" | "worktree"
 	}
 }): Promise<void> {
-	if (args.launch.cli) {
-		const result = await createRuntimeSession({
-			kind: "cli",
-			directory: args.directory,
-			runtimeId: args.runtimeId,
-			sandbox: args.launch.cli.sandbox,
-			model: args.launch.cli.model,
-			effort: args.launch.cli.effort,
-		})
-		const sessionId = result?.sessionId
-		if (!sessionId) return
-		await sendRuntimePrompt(args.directory, sessionId, args.promptText, {
-			runtime: "cli",
-			files: args.files,
-		})
-		args.onNavigate(sessionId)
-		return
-	}
-
-	await launchProjectRuntimeSession({
-		currentBranch: args.currentBranch,
-		directory: args.directory,
-		files: args.files,
-		mode: args.launch.project?.worktreeMode ?? "local",
-		onFailure: args.onFailure,
-		onNavigate: args.onNavigate,
-		promptOptions: args.launch.project?.promptOptions,
-		promptText: args.promptText,
-	})
-}
-
-export async function launchProjectRuntimeSession(args: {
-	currentBranch?: string
-	directory: string
-	files?: FileAttachment[]
-	mode: "local" | "worktree"
-	onFailure: (message: string) => void
-	onNavigate: (sessionId: string) => void
-	promptOptions?: ProjectRuntimePromptOptions
-	promptText: string
-}): Promise<void> {
-	if (args.mode === "worktree") {
+	if (args.launch.worktreeMode === "worktree") {
 		const sessionSlug = randomWorktreeName()
 		const stubId = createUuidV7()
 		const now = Date.now()
@@ -115,7 +72,13 @@ export async function launchProjectRuntimeSession(args: {
 					sessionId: stubId,
 					setupPhase: "starting-session",
 				})
-				const session = (await createRuntimeSession({ directory: sdkDirectory }))?.session
+				const session = (
+					await createRuntimeSession({
+						directory: sdkDirectory,
+						runtimeId: args.runtimeId,
+						...args.launch.create,
+					})
+				)?.session
 				if (!session) {
 					throw new Error("Failed to create session in worktree")
 				}
@@ -137,7 +100,7 @@ export async function launchProjectRuntimeSession(args: {
 				appStore.set(removeSessionAtom, stubId)
 
 				await sendRuntimePrompt(sdkDirectory, session.id, args.promptText, {
-					...(args.promptOptions ?? {}),
+					...(args.launch.promptOptions ?? {}),
 					files: args.files,
 				})
 			} catch (err) {
@@ -150,19 +113,22 @@ export async function launchProjectRuntimeSession(args: {
 		return
 	}
 
-	const session = (await createRuntimeSession({ directory: args.directory }))?.session
-	if (!session) return
-	if (args.currentBranch) {
-		appStore.set(setSessionBranchAtom, { sessionId: session.id, branch: args.currentBranch })
+	const result = await createRuntimeSession({
+		directory: args.directory,
+		runtimeId: args.runtimeId,
+		...args.launch.create,
+	})
+	const sessionId = result?.session?.id ?? result?.sessionId
+	if (!sessionId) return
+	if (args.currentBranch && result.session) {
+		appStore.set(setSessionBranchAtom, { sessionId: result.session.id, branch: args.currentBranch })
 	}
-	await sendRuntimePrompt(args.directory, session.id, args.promptText, {
-		...(args.promptOptions ?? {}),
+	await sendRuntimePrompt(args.directory, sessionId, args.promptText, {
+		...(args.launch.promptOptions ?? {}),
 		files: args.files,
 	})
-	args.onNavigate(session.id)
+	args.onNavigate(sessionId)
 }
-
-export const launchManagedRuntimeSession = launchProjectRuntimeSession
 
 export async function switchRuntimeSession(
 	sessionId: string,

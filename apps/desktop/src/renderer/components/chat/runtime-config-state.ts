@@ -45,15 +45,13 @@ export interface NewChatRuntimeConfig {
 	runtimeId: SessionRuntimeId
 	toolbarProps: RuntimeConfigToolbarProps
 	launch: {
-		cli?: {
+		create: {
 			sandbox: AgentSandbox
 			model?: string
 			effort?: string
 		}
-		project?: {
-			worktreeMode: "local" | "worktree"
-			promptOptions: ProjectRuntimePromptOptions
-		}
+		promptOptions?: RuntimePromptOptions
+		worktreeMode?: "local" | "worktree"
 	}
 }
 
@@ -264,10 +262,13 @@ export function buildCliNewChatRuntimeConfig(args: {
 			}),
 		},
 		launch: {
-			cli: {
+			create: {
 				model: args.model,
 				effort: args.effort,
 				sandbox: args.sandbox,
+			},
+			promptOptions: {
+				runtime: "cli",
 			},
 		},
 	}
@@ -293,13 +294,14 @@ export function buildProjectRuntimeNewChatRuntimeConfig(args: {
 			sections: buildProjectRuntimeToolbarSections(args),
 		},
 		launch: {
-			project: {
-				worktreeMode: args.worktreeMode,
-				promptOptions: {
-					model: args.effectiveModel ?? undefined,
-					agentName: args.selectedAgent ?? undefined,
-					variant: args.selectedVariant,
-				},
+			create: {
+				sandbox: "read-only",
+			},
+			worktreeMode: args.worktreeMode,
+			promptOptions: {
+				model: args.effectiveModel ?? undefined,
+				agentName: args.selectedAgent ?? undefined,
+				variant: args.selectedVariant,
 			},
 		},
 	}

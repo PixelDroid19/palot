@@ -1,4 +1,4 @@
-import type { AgentRuntimeId, AgentSandbox } from "../../preload/api"
+import type { AgentSandbox } from "../../preload/api"
 import { upsertMessageAtom } from "../atoms/messages"
 import { upsertPartAtom } from "../atoms/parts"
 import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
@@ -134,20 +134,14 @@ async function promptProjectRuntimeSession(
 	})
 }
 
-export type RuntimeSessionCreateRequest =
-	| {
-			directory: string
-			title?: string
-			kind?: "project"
-	  }
-	| {
-			directory: string
-			kind: "cli"
-			runtimeId: AgentRuntimeId
-			sandbox: AgentSandbox
-			model?: string
-			effort?: string
-	  }
+export interface RuntimeSessionCreateRequest {
+	directory: string
+	runtimeId: SessionRuntimeId
+	title?: string
+	sandbox?: AgentSandbox
+	model?: string
+	effort?: string
+}
 
 export interface RuntimeSessionCreateResult {
 	runtimeId: SessionRuntimeId
@@ -346,8 +340,15 @@ export const runtimeSessionGateway = {
 	async createSession(
 		args: RuntimeSessionCreateRequest,
 	): Promise<RuntimeSessionCreateResult | null> {
-		if (args.kind === "cli") {
-			const sessionId = createCliRuntimeSessionState(args)
+		if (isCliRuntime(args.runtimeId)) {
+			const sessionId = createCliRuntimeSessionState({
+				kind: "cli",
+				directory: args.directory,
+				runtimeId: args.runtimeId,
+				sandbox: args.sandbox ?? "read-only",
+				model: args.model,
+				effort: args.effort,
+			})
 			return {
 				runtimeId: args.runtimeId,
 				sessionId,

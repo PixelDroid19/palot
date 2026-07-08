@@ -628,7 +628,7 @@ export function NewChat() {
 			setError(null)
 			try {
 				clearDraft()
-				if (runtimeConfig.launch.project) {
+				if (runtimeCapabilities.supportsRuntimeConfiguration) {
 					persistProjectModel()
 				}
 				await launchRuntimeSession({
@@ -839,11 +839,11 @@ export function NewChat() {
 										}))}
 									/>
 									)}
-									{vcs &&
-										runtimeCapabilities.supportsWorktreeLaunch &&
-										runtimeConfig?.launch.project && (
-										<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
-									)}
+							{vcs &&
+								runtimeCapabilities.supportsWorktreeLaunch &&
+								runtimeConfig?.launch.worktreeMode && (
+								<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
+							)}
 								</div>
 							}
 						/>
