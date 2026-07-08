@@ -110,15 +110,6 @@ const PROJECT_RUNTIME_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCap
 	supportsWorktreeLaunch: true,
 	supportsServerHistory: true,
 }
-const CLI_RUNTIME_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabilities"] = {
-	supportsSessionRevert: false,
-	supportsSessionSummarize: false,
-	supportsServerSlashCommands: false,
-	supportsFork: false,
-	supportsProjectRuntimeConfig: false,
-	supportsWorktreeLaunch: false,
-	supportsServerHistory: false,
-}
 
 /**
  * Materialize renderer image attachments (data URLs) as temp files the CLI can
@@ -176,7 +167,6 @@ export async function describeSessionRuntimes(): Promise<SessionRuntimeDescripto
 		...cliRuntimes.map((runtime) => ({
 			...runtime,
 			mode: "cli" as const,
-			sessionCapabilities: CLI_RUNTIME_SESSION_CAPABILITIES,
 			setup: {
 				description: detections.get(runtime.id)?.installed
 					? (detections.get(runtime.id)?.binaryPath ?? "")

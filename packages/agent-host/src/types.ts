@@ -139,12 +139,24 @@ export interface AgentRuntimeCapabilities {
 	steering: boolean
 }
 
+/** Session-level UX affordances a runtime can back in Palot. */
+export interface AgentSessionCapabilities {
+	supportsSessionRevert: boolean
+	supportsSessionSummarize: boolean
+	supportsServerSlashCommands: boolean
+	supportsFork: boolean
+	supportsProjectRuntimeConfig: boolean
+	supportsWorktreeLaunch: boolean
+	supportsServerHistory: boolean
+}
+
 /** Full description of a runtime for pickers and settings UIs. */
 export interface AgentRuntimeDescriptor {
 	id: AgentRuntimeId
 	displayName: string
 	installed: boolean
 	capabilities: AgentRuntimeCapabilities
+	sessionCapabilities: AgentSessionCapabilities
 	models: AgentModelInfo[]
 }
 
@@ -252,6 +264,7 @@ export interface AgentSessionProvider {
 	/** Executable name to resolve on PATH (install detection). */
 	binary: string
 	capabilities: AgentRuntimeCapabilities
+	sessionCapabilities: AgentSessionCapabilities
 	/**
 	 * Discover the models this CLI can run from the CLI's own source of truth.
 	 * Never throws; returns a fallback on any error. First entry = default.

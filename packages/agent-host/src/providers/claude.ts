@@ -600,6 +600,15 @@ export class ClaudeProvider implements AgentSessionProvider {
 		interrupt: true,
 		steering: true,
 	}
+	readonly sessionCapabilities = {
+		supportsSessionRevert: false,
+		supportsSessionSummarize: false,
+		supportsServerSlashCommands: false,
+		supportsFork: false,
+		supportsProjectRuntimeConfig: false,
+		supportsWorktreeLaunch: false,
+		supportsServerHistory: false,
+	}
 
 	constructor(private readonly resolveBinary: () => Promise<string | null>) {}
 

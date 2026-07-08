@@ -107,6 +107,7 @@ export class AgentHost {
 					displayName: provider.displayName,
 					installed: !!binary,
 					capabilities: provider.capabilities,
+					sessionCapabilities: provider.sessionCapabilities,
 					models,
 				}
 			}),

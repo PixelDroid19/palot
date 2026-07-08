@@ -460,6 +460,15 @@ export class CodexProvider implements AgentSessionProvider {
 		interrupt: true,
 		steering: true,
 	}
+	readonly sessionCapabilities = {
+		supportsSessionRevert: false,
+		supportsSessionSummarize: false,
+		supportsServerSlashCommands: false,
+		supportsFork: false,
+		supportsProjectRuntimeConfig: false,
+		supportsWorktreeLaunch: false,
+		supportsServerHistory: false,
+	}
 
 	private rpc: JsonRpcConnection | null = null
 	private connecting: Promise<JsonRpcConnection> | null = null
