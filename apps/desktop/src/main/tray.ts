@@ -22,8 +22,8 @@ import {
 	onStateChanged,
 	type SessionState,
 } from "./notification-watcher"
-import { getManagedRuntimeAuthHeader, getManagedRuntimeUrl } from "./project-runtime-manager"
-import { createMainProcessManagedRuntimeClient } from "./project-runtime-sdk"
+import { getProjectRuntimeAuthHeader, getProjectRuntimeUrl } from "./project-runtime-manager"
+import { createMainProcessProjectRuntimeClient } from "./project-runtime-sdk"
 
 const log = createLogger("tray")
 
@@ -199,7 +199,7 @@ function rebuildMenu(): void {
 	})
 
 	// Server status indicator
-	const serverUrl = getManagedRuntimeUrl()
+	const serverUrl = getProjectRuntimeUrl()
 	if (serverUrl) {
 		template.push({
 			label: `Server Running`,
@@ -466,13 +466,13 @@ function updateTrayTitle(
 // ============================================================
 
 async function refreshDiscovery(): Promise<void> {
-	const serverUrl = getManagedRuntimeUrl()
+	const serverUrl = getProjectRuntimeUrl()
 	if (!serverUrl) return
 
 	try {
-		const client = createMainProcessManagedRuntimeClient({
+		const client = createMainProcessProjectRuntimeClient({
 			baseUrl: serverUrl,
-			authHeader: getManagedRuntimeAuthHeader(),
+			authHeader: getProjectRuntimeAuthHeader(),
 		})
 		const [projectsResult, sessionsResult] = await Promise.all([
 			client.project.list(),

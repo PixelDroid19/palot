@@ -11,8 +11,8 @@
 
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createLogger } from "../logger"
-import { getManagedRuntimeAuthHeader, getManagedRuntimeUrl } from "../project-runtime-manager"
-import { createMainProcessManagedRuntimeClient } from "../project-runtime-sdk"
+import { getProjectRuntimeAuthHeader, getProjectRuntimeUrl } from "../project-runtime-manager"
+import { createMainProcessProjectRuntimeClient } from "../project-runtime-sdk"
 
 const log = createLogger("automation-client")
 
@@ -23,17 +23,17 @@ const log = createLogger("automation-client")
  * @returns SDK client, or null if no server is running
  */
 export function createAutomationClient(directory: string): OpencodeClient | null {
-	const url = getManagedRuntimeUrl()
+	const url = getProjectRuntimeUrl()
 	if (!url) {
 		log.warn("Cannot create automation client: no OpenCode server running")
 		return null
 	}
 
 	log.debug("Creating automation SDK client", { url, directory })
-	return createMainProcessManagedRuntimeClient({
+	return createMainProcessProjectRuntimeClient({
 		baseUrl: url,
 		directory,
-		authHeader: getManagedRuntimeAuthHeader(),
+		authHeader: getProjectRuntimeAuthHeader(),
 	})
 }
 
@@ -42,14 +42,14 @@ export function createAutomationClient(directory: string): OpencodeClient | null
  * Used for global operations like subscribing to SSE events.
  */
 export function createBaseAutomationClient(): OpencodeClient | null {
-	const url = getManagedRuntimeUrl()
+	const url = getProjectRuntimeUrl()
 	if (!url) {
 		log.warn("Cannot create base automation client: no OpenCode server running")
 		return null
 	}
 
-	return createMainProcessManagedRuntimeClient({
+	return createMainProcessProjectRuntimeClient({
 		baseUrl: url,
-		authHeader: getManagedRuntimeAuthHeader(),
+		authHeader: getProjectRuntimeAuthHeader(),
 	})
 }

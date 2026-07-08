@@ -75,10 +75,10 @@ import {
 	setPreferredTarget,
 } from "./open-in-targets"
 import {
-	ensureManagedRuntimeServer,
-	getManagedRuntimeUrl,
-	restartManagedRuntimeServer,
-	stopManagedRuntimeServer,
+	ensureProjectRuntimeServer,
+	getProjectRuntimeUrl,
+	restartProjectRuntimeServer,
+	stopProjectRuntimeServer,
 } from "./project-runtime-manager"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
@@ -202,32 +202,32 @@ export function registerIpcHandlers(): void {
 
 	ipcMain.handle(
 		"opencode:ensure",
-		withLogging("opencode:ensure", async () => await ensureManagedRuntimeServer()),
+		withLogging("opencode:ensure", async () => await ensureProjectRuntimeServer()),
 	)
 	ipcMain.handle(
 		"project-runtime:ensure",
-		withLogging("project-runtime:ensure", async () => await ensureManagedRuntimeServer()),
+		withLogging("project-runtime:ensure", async () => await ensureProjectRuntimeServer()),
 	)
 
-	ipcMain.handle("opencode:url", () => getManagedRuntimeUrl())
-	ipcMain.handle("project-runtime:url", () => getManagedRuntimeUrl())
+	ipcMain.handle("opencode:url", () => getProjectRuntimeUrl())
+	ipcMain.handle("project-runtime:url", () => getProjectRuntimeUrl())
 
 	ipcMain.handle(
 		"opencode:stop",
-		withLogging("opencode:stop", () => stopManagedRuntimeServer()),
+		withLogging("opencode:stop", () => stopProjectRuntimeServer()),
 	)
 	ipcMain.handle(
 		"project-runtime:stop",
-		withLogging("project-runtime:stop", () => stopManagedRuntimeServer()),
+		withLogging("project-runtime:stop", () => stopProjectRuntimeServer()),
 	)
 
 	ipcMain.handle(
 		"opencode:restart",
-		withLogging("opencode:restart", async () => await restartManagedRuntimeServer()),
+		withLogging("opencode:restart", async () => await restartProjectRuntimeServer()),
 	)
 	ipcMain.handle(
 		"project-runtime:restart",
-		withLogging("project-runtime:restart", async () => await restartManagedRuntimeServer()),
+		withLogging("project-runtime:restart", async () => await restartProjectRuntimeServer()),
 	)
 
 	// --- Model state ---

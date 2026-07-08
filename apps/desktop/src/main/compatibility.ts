@@ -9,7 +9,7 @@
 import { execFile } from "node:child_process"
 import { coerce, satisfies, valid } from "semver"
 import { createLogger } from "./logger"
-import { getManagedRuntimeAugmentedPath } from "./project-runtime-sdk"
+import { getProjectRuntimeAugmentedPath } from "./project-runtime-sdk"
 import { waitForEnv } from "./shell-env"
 
 const log = createLogger("compatibility")
@@ -46,7 +46,7 @@ export interface ManagedRuntimeCheckResult {
 
 /** Build the augmented PATH that includes ~/.opencode/bin. */
 function getAugmentedPath(): string {
-	return getManagedRuntimeAugmentedPath()
+	return getProjectRuntimeAugmentedPath()
 }
 
 /** Run a command and return stdout, or null on failure. */
