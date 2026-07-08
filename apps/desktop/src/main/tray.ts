@@ -14,7 +14,6 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import type { Project, Session } from "@opencode-ai/sdk/v2/client"
-import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { app, type BrowserWindow, Menu, nativeImage, Tray } from "electron"
 import { createLogger } from "./logger"
 import {
@@ -23,7 +22,8 @@ import {
 	onStateChanged,
 	type SessionState,
 } from "./notification-watcher"
-import { getServerUrl } from "./opencode-manager"
+import { createMainProcessOpenCodeClient } from "./opencode-runtime"
+import { getServerAuthHeader, getServerUrl } from "./opencode-manager"
 
 const log = createLogger("tray")
 
@@ -470,7 +470,10 @@ async function refreshDiscovery(): Promise<void> {
 	if (!serverUrl) return
 
 	try {
-		const client = createOpencodeClient({ baseUrl: serverUrl })
+		const client = createMainProcessOpenCodeClient({
+			baseUrl: serverUrl,
+			authHeader: getServerAuthHeader(),
+		})
 		const [projectsResult, sessionsResult] = await Promise.all([
 			client.project.list(),
 			client.session.list({ roots: true }),

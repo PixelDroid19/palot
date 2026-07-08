@@ -1,14 +1,15 @@
-import { type ChildProcess, spawn } from "node:child_process"
-import { homedir } from "node:os"
-import path from "node:path"
-import { setTimeout as sleep } from "node:timers/promises"
+import type { ChildProcess } from "node:child_process"
 import { dialog } from "electron"
-import { whichOnPath } from "@palot/cli-registry"
 import type { LocalServerConfig } from "../preload/api"
 import { DEFAULT_LOCAL_SERVER } from "../shared/server-config"
 import { getCredential } from "./credential-store"
 import { findFreePort } from "./find-free-port"
 import { createLogger } from "./logger"
+import {
+	buildOpenCodeAuthHeader,
+	probeOpenCodeServer,
+	startOpenCodeServerProcess,
+} from "./opencode-runtime"
 import { startNotificationWatcher, stopNotificationWatcher } from "./notification-watcher"
 import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./process-owner"
 import { readLockfile, removeLockfile, writeLockfile } from "./server-lockfile"
@@ -30,6 +31,7 @@ export interface OpenCodeServer {
 /** Result of detecting an existing server on the target port. */
 type DetectionResult =
 	| { kind: "found"; server: OpenCodeServer }
+	| { kind: "auth-failed"; url: string }
 	| { kind: "conflict"; url: string; ownerUid: number | null }
 	| { kind: "none" }
 
@@ -40,6 +42,7 @@ type DetectionResult =
 let singleServer: {
 	server: OpenCodeServer
 	process: ChildProcess | null
+	authHeader: string | null
 } | null = null
 
 const DEFAULT_PORT = 4101
@@ -81,31 +84,41 @@ export async function ensureServer(): Promise<OpenCodeServer> {
 	const config = getLocalServerConfig()
 	const hostname = config.hostname || DEFAULT_HOSTNAME
 	const port = config.port || DEFAULT_PORT
+	const localPassword = config.hasPassword ? getCredential("local") : null
+	const authHeader = localPassword ? buildOpenCodeAuthHeader(localPassword) : null
 
 	// --- Fast-path: check our own lockfile first ---
 	const lockfile = readLockfile()
 	if (lockfile) {
-		const lockResult = await handleLockfile(lockfile, hostname)
+		const lockResult = await handleLockfile(lockfile, hostname, authHeader)
 		if (lockResult) return lockResult
 	}
 
 	// --- Probe the target port for an existing server ---
 	log.info("Checking for existing server on port", port)
-	const detection = await detectExistingServer(hostname, port)
+	const detection = await detectExistingServer(hostname, port, authHeader)
 
 	if (detection.kind === "found") {
 		log.info("Detected existing same-user server", { url: detection.server.url })
-		singleServer = { server: detection.server, process: null }
-		startNotificationWatcher(detection.server.url)
+		singleServer = { server: detection.server, process: null, authHeader }
+		startNotificationWatcher(detection.server.url, authHeader)
 		return detection.server
 	}
 
+	if (detection.kind === "auth-failed") {
+		throw new Error(
+			authHeader
+				? "An OpenCode server is already running on this port, but the saved local password did not authenticate. Update the local server password or stop the running server."
+				: "An OpenCode server is already running on this port and requires a password. Save the local server password or stop the running server.",
+		)
+	}
+
 	if (detection.kind === "conflict") {
-		return handleConflict(detection, hostname, port, config)
+		return handleConflict(detection, hostname, port, config, localPassword, authHeader)
 	}
 
 	// --- No existing server: spawn one on the configured port ---
-	return spawnServer(hostname, port, config)
+	return spawnServer(hostname, port, config, localPassword, authHeader)
 }
 
 /**
@@ -115,6 +128,10 @@ export function getServerUrl(): string | null {
 	return singleServer?.server.url ?? null
 }
 
+export function getServerAuthHeader(): string | null {
+	return singleServer?.authHeader ?? null
+}
+
 /**
  * Stops the single server if we manage it and removes the lockfile.
  */
@@ -122,6 +139,7 @@ export function stopServer(): boolean {
 	stopNotificationWatcher()
 	if (!singleServer?.process) {
 		log.debug("No managed server to stop")
+		singleServer = null
 		removeLockfile()
 		return false
 	}
@@ -155,6 +173,7 @@ export async function restartServer(): Promise<OpenCodeServer> {
 async function handleLockfile(
 	lockfile: { port: number; pid: number; startedAt: string },
 	hostname: string,
+	authHeader: string | null,
 ): Promise<OpenCodeServer | null> {
 	if (!isProcessAlive(lockfile.pid)) {
 		log.info("Stale lockfile detected (PID dead), cleaning up", {
@@ -178,11 +197,11 @@ async function handleLockfile(
 
 	// PID alive + same user: probe to confirm it's actually an opencode server
 	const url = `http://${hostname}:${lockfile.port}`
-	if (await probeServer(url)) {
+	if (await probeServer(url, authHeader)) {
 		log.info("Reconnecting to server from lockfile", { url, pid: lockfile.pid })
 		const server: OpenCodeServer = { url, pid: lockfile.pid, managed: false }
-		singleServer = { server, process: null }
-		startNotificationWatcher(url)
+		singleServer = { server, process: null, authHeader }
+		startNotificationWatcher(url, authHeader)
 		return server
 	}
 
@@ -206,9 +225,12 @@ async function handleLockfile(
 async function detectExistingServer(
 	hostname: string,
 	port: number,
+	authHeader: string | null,
 ): Promise<DetectionResult> {
 	const url = `http://${hostname}:${port}`
-	const isResponding = await probeServer(url)
+	const isReadyWithAuth = await probeServer(url, authHeader, [200])
+	const isResponding =
+		isReadyWithAuth || (await probeServer(url, null, [200, 401, 403]))
 	if (!isResponding) {
 		return { kind: "none" }
 	}
@@ -229,6 +251,14 @@ async function detectExistingServer(
 	}
 
 	if (isCurrentUser(owner.uid)) {
+		if (!isReadyWithAuth) {
+			log.warn("Existing server belongs to current user but authentication failed", {
+				url,
+				pid: owner.pid,
+				uid: owner.uid,
+			})
+			return { kind: "auth-failed", url }
+		}
 		log.debug("Existing server belongs to current user", { url, pid: owner.pid, uid: owner.uid })
 		return { kind: "found", server: { url, pid: owner.pid, managed: false } }
 	}
@@ -251,6 +281,8 @@ async function handleConflict(
 	hostname: string,
 	_configuredPort: number,
 	config: LocalServerConfig,
+	password: string | null,
+	authHeader: string | null,
 ): Promise<OpenCodeServer> {
 	const ownerText =
 		conflict.ownerUid !== null
@@ -277,15 +309,16 @@ async function handleConflict(
 		log.info("User chose to start own server on a different port")
 		const freePort = await findFreePort(hostname)
 		log.info("Found free port", { freePort })
-		return spawnServer(hostname, freePort, config)
+		return spawnServer(hostname, freePort, config, password, authHeader)
 	}
 
 	if (response === 1) {
 		// Connect anyway (user accepts the risk)
 		log.warn("User chose to connect to foreign server anyway", { url: conflict.url })
 		const server: OpenCodeServer = { url: conflict.url, pid: null, managed: false }
-		singleServer = { server, process: null }
-		startNotificationWatcher(conflict.url)
+		// Do not leak the locally configured password to a foreign server.
+		singleServer = { server, process: null, authHeader: null }
+		startNotificationWatcher(conflict.url, null)
 		return server
 	}
 
@@ -305,59 +338,32 @@ async function spawnServer(
 	hostname: string,
 	port: number,
 	config: LocalServerConfig,
+	password: string | null,
+	authHeader: string | null,
 ): Promise<OpenCodeServer> {
-	// Build PATH with ~/.opencode/bin prepended so we find the opencode binary
-	const opencodeBinDir = path.join(homedir(), ".opencode", "bin")
-	const sep = process.platform === "win32" ? ";" : ":"
-	const augmentedPath = `${opencodeBinDir}${sep}${process.env.PATH ?? ""}`
-
-	// Build CLI args
-	const args = ["serve", `--hostname=${hostname}`, `--port=${port}`]
-
-	// Add password if configured
-	if (config.hasPassword) {
-		const password = getCredential("local")
-		if (password) {
-			args.push(`--password=${password}`)
-		}
-	}
-
-	// Add mDNS flags if enabled
-	if (config.mdns) {
-		args.push("--mdns")
-		if (config.mdnsDomain) {
-			args.push(`--mdns-domain=${config.mdnsDomain}`)
-		}
-	}
-
-	log.info("Spawning opencode server", {
+	log.info("Starting managed OpenCode runtime", {
 		hostname,
 		port,
-		hasPassword: !!config.hasPassword,
+		hasPassword: !!password,
 		mdns: !!config.mdns,
-		binDir: opencodeBinDir,
 	})
 
-	// Some install methods name the binary `opencode-cli` (#107).
-	const binary =
-		(await whichOnPath("opencode", augmentedPath)) ??
-		(await whichOnPath("opencode-cli", augmentedPath)) ??
-		"opencode"
-
-	const proc = spawn(binary, args, {
-		cwd: homedir(),
-		stdio: "pipe",
-		env: { ...process.env, PATH: augmentedPath },
+	const started = await startOpenCodeServerProcess({
+		hostname,
+		port,
+		password,
+		mdns: config.mdns,
+		mdnsDomain: config.mdnsDomain ?? undefined,
 	})
+	const proc = started.process
 
-	const url = `http://${hostname}:${port}`
 	const server: OpenCodeServer = {
-		url,
+		url: started.url,
 		pid: proc.pid ?? null,
 		managed: true,
 	}
 
-	singleServer = { server, process: proc }
+	singleServer = { server, process: proc, authHeader }
 
 	// Capture stdout/stderr for diagnostics
 	proc.stdout?.on("data", (data: Buffer) => {
@@ -388,16 +394,13 @@ async function spawnServer(
 		}
 	})
 
-	// Wait for the server to be ready
-	await waitForReady(url, 15_000)
-
 	// Write lockfile after successful start
 	if (proc.pid) {
 		writeLockfile(port, proc.pid)
 	}
 
-	log.info("Server started successfully", { url, pid: proc.pid })
-	startNotificationWatcher(url)
+	log.info("Server started successfully", { url: started.url, pid: proc.pid, binary: started.binary })
+	startNotificationWatcher(started.url, authHeader)
 	return server
 }
 
@@ -406,42 +409,10 @@ async function spawnServer(
 // ============================================================
 
 /** Quick probe to check if a server responds on the given URL. */
-async function probeServer(url: string): Promise<boolean> {
-	try {
-		const res = await fetch(`${url}/session`, {
-			signal: AbortSignal.timeout(2000),
-		})
-		if (res.ok) {
-			log.debug("Server probe OK", { url })
-			return true
-		}
-		log.debug("Server probe returned error status", { url, status: res.status })
-	} catch (err) {
-		log.debug("Server probe failed", { url, reason: String(err) })
-	}
-	return false
-}
-
-async function waitForReady(url: string, timeoutMs: number): Promise<void> {
-	const start = Date.now()
-	let attempts = 0
-	while (Date.now() - start < timeoutMs) {
-		attempts++
-		try {
-			const res = await fetch(`${url}/session`, {
-				signal: AbortSignal.timeout(1000),
-			})
-			if (res.ok) {
-				log.debug("Server ready", { url, attempts, elapsed: Date.now() - start })
-				return
-			}
-			log.debug("Server not ready yet", { url, status: res.status, attempts })
-		} catch (err) {
-			log.debug("Server not ready yet", { url, reason: String(err), attempts })
-		}
-		await sleep(250)
-	}
-	const error = new Error(`Server at ${url} did not become ready within ${timeoutMs}ms`)
-	log.error(error.message, { attempts })
-	throw error
+async function probeServer(
+	url: string,
+	authHeader: string | null,
+	okStatuses?: number[],
+): Promise<boolean> {
+	return probeOpenCodeServer(url, { authHeader, okStatuses })
 }

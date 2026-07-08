@@ -25,10 +25,12 @@ export interface NotificationRequest {
 
 /** The OpenCode server URL, set by the notification watcher when it connects. */
 let serverUrl: string | null = null
+let serverAuthHeader: string | null = null
 
 /** Set the OpenCode server URL for use in notification action replies. */
-export function setServerUrl(url: string | null): void {
+export function setServerUrl(url: string | null, authHeader?: string | null): void {
 	serverUrl = url
+	serverAuthHeader = authHeader ?? null
 }
 
 // ============================================================
@@ -231,6 +233,9 @@ async function replyToPermission(
 	try {
 		const endpoint = `${url}/session/${sessionId}/permissions/${permissionId}`
 		const headers: Record<string, string> = { "Content-Type": "application/json" }
+		if (serverAuthHeader) {
+			headers.Authorization = serverAuthHeader
+		}
 		if (directory) {
 			headers["x-opencode-directory"] = directory
 		}

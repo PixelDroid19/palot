@@ -10,9 +10,9 @@
  */
 
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
-import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createLogger } from "../logger"
-import { getServerUrl } from "../opencode-manager"
+import { createMainProcessOpenCodeClient } from "../opencode-runtime"
+import { getServerAuthHeader, getServerUrl } from "../opencode-manager"
 
 const log = createLogger("automation-client")
 
@@ -30,9 +30,10 @@ export function createAutomationClient(directory: string): OpencodeClient | null
 	}
 
 	log.debug("Creating automation SDK client", { url, directory })
-	return createOpencodeClient({
+	return createMainProcessOpenCodeClient({
 		baseUrl: url,
 		directory,
+		authHeader: getServerAuthHeader(),
 	})
 }
 
@@ -47,5 +48,8 @@ export function createBaseAutomationClient(): OpencodeClient | null {
 		return null
 	}
 
-	return createOpencodeClient({ baseUrl: url })
+	return createMainProcessOpenCodeClient({
+		baseUrl: url,
+		authHeader: getServerAuthHeader(),
+	})
 }

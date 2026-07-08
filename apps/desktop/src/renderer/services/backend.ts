@@ -97,7 +97,12 @@ export async function resolveServerUrl(
 export async function resolveAuthHeader(
 	server: import("../../preload/api").ServerConfig,
 ): Promise<string | null> {
-	if (server.type === "local") return null
+	if (server.type === "local") {
+		if (!server.hasPassword || !isElectron) return null
+		const password = await window.palot.credential.get("local")
+		if (!password) return null
+		return `Basic ${btoa(`opencode:${password}`)}`
+	}
 	if (server.type === "remote" || server.type === "ssh") {
 		if (!server.hasPassword) return null
 		if (!isElectron) return null

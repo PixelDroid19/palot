@@ -21,6 +21,7 @@ export interface SessionState {
 // ============================================================
 
 let abortController: AbortController | null = null
+let currentAuthHeader: string | null = null
 
 /** Minimal session state for transition detection. */
 const sessions = new Map<string, SessionState>()
@@ -42,17 +43,18 @@ const changeListeners = new Set<() => void>()
  * This runs in the main process (Node.js) and is never throttled
  * by Chromium's background tab restrictions or macOS App Nap.
  */
-export function startNotificationWatcher(url: string): void {
+export function startNotificationWatcher(url: string, authHeader?: string | null): void {
 	if (abortController) {
 		log.debug("Stopping existing watcher before restart")
 		abortController.abort()
 	}
 
 	abortController = new AbortController()
+	currentAuthHeader = authHeader ?? null
 	pendingCount = 0
 
 	// Make the server URL available for notification action replies
-	setServerUrl(url)
+	setServerUrl(url, currentAuthHeader)
 
 	log.info("Starting notification watcher", { url })
 	connectWithRetry(url, abortController.signal)
@@ -69,7 +71,8 @@ export function stopNotificationWatcher(): void {
 	sessions.clear()
 	pendingCount = 0
 	updateBadgeCount(0)
-	setServerUrl(null)
+	currentAuthHeader = null
+	setServerUrl(null, null)
 	log.info("Notification watcher stopped")
 }
 
@@ -136,7 +139,10 @@ async function consumeSSE(url: string, signal: AbortSignal): Promise<void> {
 	const sseUrl = `${url}/global/event`
 
 	const response = await net.fetch(sseUrl, {
-		headers: { Accept: "text/event-stream" },
+		headers: {
+			Accept: "text/event-stream",
+			...(currentAuthHeader ? { Authorization: currentAuthHeader } : {}),
+		},
 		signal,
 	})
 
