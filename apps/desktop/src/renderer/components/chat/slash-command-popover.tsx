@@ -35,7 +35,7 @@ import {
 	useRef,
 	useState,
 } from "react"
-import { useProjectRuntimeCommands } from "../../hooks/use-project-runtime-data"
+import { useRuntimeCommands } from "../../hooks/use-runtime-data"
 import type { SessionRuntimeCapabilities } from "../../lib/runtime-session-config"
 
 // ============================================================
@@ -167,7 +167,7 @@ export const SlashCommandPopover = memo(
 		const listRef = useRef<HTMLDivElement>(null)
 
 		// --- Server commands (skills excluded, matching TUI pattern) ---
-		const rawServerCommands = useProjectRuntimeCommands(
+		const rawServerCommands = useRuntimeCommands(
 			capabilities.supportsServerSlashCommands ? directory : null,
 		)
 		const serverCommands = useMemo<SlashCommand[]>(

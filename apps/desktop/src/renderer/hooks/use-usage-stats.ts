@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { computeSessionCost, computeSessionTokens } from "../lib/session-metrics"
 import type { Message } from "../lib/types"
 import { getBaseClient, getProjectClient } from "../services/connection-manager"
-import { listRuntimeProjects, listSessions } from "../services/project-runtime"
+import { listRuntimeProjects, listSessions } from "../services/runtime-sdk"
 
 // ============================================================
 // Types

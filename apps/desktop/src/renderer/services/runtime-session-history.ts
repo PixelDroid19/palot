@@ -1,6 +1,6 @@
 import { readSessionRuntimeState, sessionRuntimeCapabilities } from "../lib/runtime-session-config"
 import type { Message, Part } from "../lib/types"
-import { requireRuntimeClient } from "./project-runtime-client"
+import { requireRuntimeClient } from "./runtime-client"
 
 export interface RuntimeSessionMessageBundle {
 	hasEarlier: boolean

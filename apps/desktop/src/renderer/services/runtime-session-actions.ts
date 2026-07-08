@@ -4,7 +4,7 @@ import {
 	answerCliRuntimeQuestionRequest,
 	respondCliRuntimePermissionRequest,
 } from "./runtime-cli-store"
-import { requireRuntimeSessionClient } from "./project-runtime-client"
+import { requireRuntimeSessionClient } from "./runtime-client"
 import { runtimeSessionGateway } from "./runtime-session-gateway"
 
 export async function abortRuntimeSession(directory: string, sessionId: string): Promise<void> {

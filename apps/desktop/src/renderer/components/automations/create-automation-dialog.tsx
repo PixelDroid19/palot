@@ -41,21 +41,15 @@ import type { Automation } from "../../../preload/api"
 import { activeServerConfigAtom } from "../../atoms/connection"
 import { discoveryProjectsAtom } from "../../atoms/discovery"
 import {
-	useProjectRuntimeAgents,
-	useProjectRuntimeModelState,
-	useProjectRuntimeProviders,
-} from "../../hooks/use-project-runtime-data"
-import {
-	createAutomation,
-	deleteAutomation,
-	pickDirectory,
-	runAutomationNow,
-	updateAutomation,
-} from "../../services/backend"
-import type { ModelRef } from "../../hooks/use-project-runtime-data"
+	useRuntimeAgents,
+	useRuntimeModelState,
+	useRuntimeProviders,
+} from "../../hooks/use-runtime-data"
+import { createAutomation, deleteAutomation, pickDirectory, runAutomationNow, updateAutomation } from "../../services/backend"
+import type { ModelRef } from "../../hooks/use-runtime-data"
 import { AgentSelector, ModelSelector, VariantSelector } from "../chat/prompt-toolbar"
 import { SchedulePicker } from "./schedule-picker"
-import { getModelVariants } from "../../hooks/use-project-runtime-data"
+import { getModelVariants } from "../../hooks/use-runtime-data"
 
 interface CreateAutomationDialogProps {
 	open: boolean
@@ -123,9 +117,9 @@ export function CreateAutomationDialog({
 	// the same pattern used by the new-chat screen.
 	const directory = workspaces[0] ?? null
 
-	const { data: providers } = useProjectRuntimeProviders(directory)
-	const { agents } = useProjectRuntimeAgents(directory)
-	const { recentModels } = useProjectRuntimeModelState()
+	const { data: providers } = useRuntimeProviders(directory)
+	const { agents } = useRuntimeAgents(directory)
+	const { recentModels } = useRuntimeModelState()
 
 	// Compute available variants for the selected model
 	const variants = useMemo(() => {

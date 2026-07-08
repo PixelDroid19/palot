@@ -15,7 +15,7 @@ import {
 	summarizeRuntimeSession,
 	unrevertRuntimeSession,
 } from "../services/runtime-session-actions"
-import { useProjectRuntimeCommands } from "./use-project-runtime-data"
+import { useRuntimeCommands } from "./use-runtime-data"
 
 // ============================================================
 // Types
@@ -158,7 +158,7 @@ export function useCommands(
 	const { canUndo, canRedo, undo, redo } = useSessionRevert(directory, sessionId)
 	const runtimeState = useSessionRuntimeState(sessionId ?? "", directory)
 	const capabilities = sessionRuntimeCapabilities(runtimeState)
-	const serverCommands = useProjectRuntimeCommands(
+	const serverCommands = useRuntimeCommands(
 		capabilities.supportsServerSlashCommands ? directory : null,
 	)
 	const entry = useAtomValue(sessionFamily(sessionId ?? ""))

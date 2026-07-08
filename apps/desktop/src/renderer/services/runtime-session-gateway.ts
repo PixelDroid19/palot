@@ -22,7 +22,7 @@ import type {
 	TextPart,
 	UserMessage,
 } from "../lib/types"
-import { requireRuntimeSessionClient } from "./project-runtime-client"
+import { requireRuntimeSessionClient } from "./runtime-client"
 import {
 	createCliRuntimeSessionState,
 	switchCliRuntimeSession,
