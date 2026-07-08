@@ -64,7 +64,7 @@ export function runtimeDescriptor(id: SessionRuntimeId): SessionRuntimeDescripto
 export function cliRuntimeDescriptors(
 	descriptors: SessionRuntimeDescriptor[] = runtimeDescriptors(),
 ): SessionRuntimeDescriptor[] {
-	return descriptors.filter((descriptor) => descriptor.mode === "cli")
+	return descriptors.filter((descriptor) => !descriptor.sessionCapabilities.supportsRuntimeConfiguration)
 }
 
 export function installedCliRuntimeDescriptors(

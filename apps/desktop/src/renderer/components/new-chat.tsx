@@ -302,7 +302,7 @@ export function NewChat() {
 			setCliRuntimes(installed)
 			// The remembered runtime may have been uninstalled since last use.
 			setSessionRuntimeState((current) =>
-				!runtimeIdCapabilities(current).supportsProjectRuntimeConfig &&
+				!runtimeIdCapabilities(current).supportsRuntimeConfiguration &&
 				  !installed.some((d) => d.id === current)
 					? DEFAULT_SESSION_RUNTIME_ID
 					: current,
@@ -395,11 +395,11 @@ export function NewChat() {
 		[projects, selectedDirectory],
 	)
 
-	const projectRuntimeConfigDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
+	const runtimeConfigDirectory = runtimeCapabilities.supportsRuntimeConfiguration
 		? (selectedDirectory || null)
 		: null
 	const projectRuntimeData = useProjectRuntimeSessionData({
-		configDirectory: projectRuntimeConfigDirectory,
+		configDirectory: runtimeConfigDirectory,
 		workspaceDirectory: selectedDirectory || null,
 	})
 	const { data: providers } = projectRuntimeData.providers
@@ -536,7 +536,7 @@ export function NewChat() {
 			})
 		}
 
-		if (runtimeCapabilities.supportsProjectRuntimeConfig) {
+		if (runtimeCapabilities.supportsRuntimeConfiguration) {
 			return buildProjectRuntimeNewChatRuntimeConfig({
 				agents: projectRuntimeAgents ?? [],
 				selectedAgent,
@@ -570,7 +570,7 @@ export function NewChat() {
 		selectedAgent,
 		selectedModel,
 		selectedVariant,
-		runtimeCapabilities.supportsProjectRuntimeConfig,
+		runtimeCapabilities.supportsRuntimeConfiguration,
 		worktreeMode,
 	])
 

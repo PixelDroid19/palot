@@ -74,13 +74,12 @@ export interface AgentImageAttachment {
 }
 
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
-	mode: "project" | "cli"
 	sessionCapabilities: {
 		supportsSessionRevert: boolean
 		supportsSessionSummarize: boolean
 		supportsServerSlashCommands: boolean
 		supportsFork: boolean
-		supportsProjectRuntimeConfig: boolean
+		supportsRuntimeConfiguration: boolean
 		supportsWorktreeLaunch: boolean
 		supportsServerHistory: boolean
 	}
@@ -106,7 +105,7 @@ const PROJECT_RUNTIME_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCap
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
 	supportsFork: true,
-	supportsProjectRuntimeConfig: true,
+	supportsRuntimeConfiguration: true,
 	supportsWorktreeLaunch: true,
 	supportsServerHistory: true,
 }
@@ -140,7 +139,6 @@ function describeProjectRuntime(detection?: {
 	return checkProjectRuntime().then((runtime) => ({
 		id: PROJECT_RUNTIME_ID,
 		displayName: PROJECT_RUNTIME_DESCRIPTOR_LABEL,
-		mode: "project",
 		installed: runtime.installed,
 		capabilities: PROJECT_RUNTIME_DESCRIPTOR_CAPABILITIES,
 		sessionCapabilities: PROJECT_RUNTIME_SESSION_CAPABILITIES,
@@ -166,7 +164,6 @@ export async function describeSessionRuntimes(): Promise<SessionRuntimeDescripto
 		projectRuntime,
 		...cliRuntimes.map((runtime) => ({
 			...runtime,
-			mode: "cli" as const,
 			setup: {
 				description: detections.get(runtime.id)?.installed
 					? (detections.get(runtime.id)?.binaryPath ?? "")

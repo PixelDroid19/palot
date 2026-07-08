@@ -465,7 +465,7 @@ export class CodexProvider implements AgentSessionProvider {
 		supportsSessionSummarize: false,
 		supportsServerSlashCommands: false,
 		supportsFork: false,
-		supportsProjectRuntimeConfig: false,
+		supportsRuntimeConfiguration: false,
 		supportsWorktreeLaunch: false,
 		supportsServerHistory: false,
 	}

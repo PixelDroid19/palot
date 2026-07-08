@@ -139,11 +139,11 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const directory = selectedAgent?.directory ?? null
 	const runtimeState = useSessionRuntimeState(selectedAgent?.sessionId ?? sessionId, directory)
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
-	const projectRuntimeDataDirectory = runtimeCapabilities.supportsProjectRuntimeConfig
+	const runtimeDataDirectory = runtimeCapabilities.supportsRuntimeConfiguration
 		? directory
 		: null
 	const projectRuntimeData = useProjectRuntimeSessionData({
-		configDirectory: projectRuntimeDataDirectory,
+		configDirectory: runtimeDataDirectory,
 		workspaceDirectory: directory,
 	})
 	const { data: providers } = projectRuntimeData.providers

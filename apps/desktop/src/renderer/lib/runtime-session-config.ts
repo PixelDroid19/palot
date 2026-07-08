@@ -62,7 +62,7 @@ export interface SessionRuntimeCapabilities {
 	supportsSessionSummarize: boolean
 	supportsServerSlashCommands: boolean
 	supportsFork: boolean
-	supportsProjectRuntimeConfig: boolean
+	supportsRuntimeConfiguration: boolean
 	supportsWorktreeLaunch: boolean
 	supportsServerHistory: boolean
 }
@@ -72,7 +72,7 @@ export const PROJECT_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = 
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
 	supportsFork: true,
-			supportsProjectRuntimeConfig: true,
+			supportsRuntimeConfiguration: true,
 	supportsWorktreeLaunch: true,
 	supportsServerHistory: true,
 }
@@ -82,7 +82,7 @@ export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 	supportsSessionSummarize: false,
 	supportsServerSlashCommands: false,
 	supportsFork: false,
-	supportsProjectRuntimeConfig: false,
+	supportsRuntimeConfiguration: false,
 	supportsWorktreeLaunch: false,
 	supportsServerHistory: false,
 }

@@ -145,7 +145,7 @@ export interface AgentSessionCapabilities {
 	supportsSessionSummarize: boolean
 	supportsServerSlashCommands: boolean
 	supportsFork: boolean
-	supportsProjectRuntimeConfig: boolean
+	supportsRuntimeConfiguration: boolean
 	supportsWorktreeLaunch: boolean
 	supportsServerHistory: boolean
 }

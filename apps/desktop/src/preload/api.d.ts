@@ -283,12 +283,11 @@ export interface SessionRuntimeCapabilities {
 	supportsSessionSummarize: boolean
 	supportsServerSlashCommands: boolean
 	supportsFork: boolean
-	supportsProjectRuntimeConfig: boolean
+	supportsRuntimeConfiguration: boolean
 	supportsWorktreeLaunch: boolean
 	supportsServerHistory: boolean
 }
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
-	mode: "project" | "cli"
 	sessionCapabilities: SessionRuntimeCapabilities
 	setup: {
 		description: string
