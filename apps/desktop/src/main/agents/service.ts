@@ -12,6 +12,7 @@ import {
 	AgentBridge,
 	AgentHost,
 	MCP_PROXY_SOURCE,
+	type AgentRuntimeCapabilities,
 	type AgentPermissionDecision,
 	type AgentRunResult,
 	type AgentRuntimeDescriptor,
@@ -20,6 +21,7 @@ import {
 } from "@palot/agent-host"
 import { whichOnPath } from "@palot/cli-registry"
 import { app } from "electron"
+import { checkManagedRuntime } from "../compatibility"
 import { createLogger } from "../logger"
 
 const log = createLogger("agent-host")
@@ -69,6 +71,21 @@ export interface AgentImageAttachment {
 	filename?: string
 }
 
+export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
+	mode: "managed" | "cli"
+}
+
+const MANAGED_RUNTIME_DESCRIPTOR_ID = "opencode"
+const MANAGED_RUNTIME_DESCRIPTOR_LABEL = "OpenCode"
+const MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES: AgentRuntimeCapabilities = {
+	imageInput: true,
+	reasoningEffort: false,
+	resume: true,
+	permissions: true,
+	interrupt: true,
+	steering: false,
+}
+
 /**
  * Materialize renderer image attachments (data URLs) as temp files the CLI can
  * read. Returns the paths plus a cleanup function.
@@ -91,9 +108,30 @@ function writeImageFiles(images: AgentImageAttachment[]): { paths: string[]; cle
 	return { paths, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
-/** Runtime descriptors (install state, capabilities, model catalog) for pickers. */
-export function describeAgentRuntimes(): Promise<AgentRuntimeDescriptor[]> {
-	return getAgentHost().describeRuntimes()
+function describeManagedRuntime(): Promise<SessionRuntimeDescriptor> {
+	return checkManagedRuntime().then((runtime) => ({
+		id: MANAGED_RUNTIME_DESCRIPTOR_ID,
+		displayName: MANAGED_RUNTIME_DESCRIPTOR_LABEL,
+		mode: "managed",
+		installed: runtime.installed,
+		capabilities: MANAGED_RUNTIME_DESCRIPTOR_CAPABILITIES,
+		models: [],
+	}))
+}
+
+/** Session runtime descriptors (managed + CLI) for runtime pickers and setup UI. */
+export async function describeSessionRuntimes(): Promise<SessionRuntimeDescriptor[]> {
+	const [managedRuntime, cliRuntimes] = await Promise.all([
+		describeManagedRuntime(),
+		getAgentHost().describeRuntimes(),
+	])
+	return [
+		managedRuntime,
+		...cliRuntimes.map((runtime) => ({
+			...runtime,
+			mode: "cli" as const,
+		})),
+	]
 }
 
 export interface AgentSessionOpenOptions {

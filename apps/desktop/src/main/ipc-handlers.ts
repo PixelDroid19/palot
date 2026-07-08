@@ -47,7 +47,7 @@ import {
 	type AgentSessionOpenOptions,
 	answerAgentQuestion,
 	closeAgentSession,
-	describeAgentRuntimes,
+	describeSessionRuntimes,
 	getAgentHost,
 	interruptAgent,
 	openAgentSession,
@@ -419,7 +419,7 @@ export function registerIpcHandlers(): void {
 	)
 	// Runtime descriptors: install state, capabilities, and each CLI's own
 	// model catalog — the UI never hardcodes model lists.
-	ipcMain.handle("agent-session:runtimes", () => describeAgentRuntimes())
+	ipcMain.handle("agent-session:runtimes", () => describeSessionRuntimes())
 
 	// --- Embedded terminal (real PTY, opened in the chat's directory) ---
 

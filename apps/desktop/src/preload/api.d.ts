@@ -276,6 +276,9 @@ export type AgentRunResult = import("@palot/agent-host").AgentRunResult
 export type AgentUpdate = import("@palot/agent-host").AgentUpdate
 export type AgentModelInfo = import("@palot/agent-host").AgentModelInfo
 export type AgentRuntimeDescriptor = import("@palot/agent-host").AgentRuntimeDescriptor
+export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
+	mode: "managed" | "cli"
+}
 
 export interface AppSettings {
 	notifications: NotificationSettings
@@ -685,8 +688,8 @@ export interface PalotAPI {
 		) => Promise<boolean>
 		/** Tear down the persistent session. */
 		close: (sessionId: string) => Promise<void>
-		/** Runtime descriptors: install state, capabilities, model catalog. */
-		describeRuntimes: () => Promise<AgentRuntimeDescriptor[]>
+		/** Session runtime descriptors: managed + CLI install state, capabilities, model catalog. */
+		describeRuntimes: () => Promise<SessionRuntimeDescriptor[]>
 		/** Subscribe to streamed updates for any session. Returns an unsubscribe function. */
 		onUpdate: (callback: (sessionId: string, update: AgentUpdate) => void) => () => void
 	}

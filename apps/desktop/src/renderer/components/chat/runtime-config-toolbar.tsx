@@ -1,4 +1,4 @@
-import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
+import type { AgentRuntimeDescriptor, AgentSandbox, SessionRuntimeDescriptor } from "../../../preload/api"
 import { useEffect, useState } from "react"
 import type { ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-managed-runtime-data"
 import { useTranslation } from "../../i18n/use-translation"
@@ -13,7 +13,7 @@ import {
 	patchSessionRuntimeState,
 	useSessionRuntimeState,
 } from "../../lib/runtime-session-config"
-import { loadRuntimeDescriptors } from "../../lib/session-runtimes"
+import { installedCliRuntimeDescriptors, loadRuntimeDescriptors } from "../../lib/session-runtimes"
 import { CliModelSelect, CliOptionSelect } from "./cli-toolbar"
 import { AgentSelector, ModelSelector, VariantSelector } from "./prompt-toolbar"
 import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
@@ -177,12 +177,12 @@ export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
 function CliSessionRuntimeConfigToolbar({ sessionId }: { sessionId: string }) {
 	const runtimeState = useSessionRuntimeState(sessionId)
 	const meta = cliRuntimeMeta(runtimeState)
-	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
+	const [runtimes, setRuntimes] = useState<SessionRuntimeDescriptor[]>([])
 
 	const runtimeId = meta?.runtimeId
 	useEffect(() => {
 		if (!runtimeId) return
-		loadRuntimeDescriptors().then((all) => setRuntimes(all.filter((d) => d.installed)))
+		loadRuntimeDescriptors().then((all) => setRuntimes(installedCliRuntimeDescriptors(all)))
 	}, [runtimeId])
 
 	const descriptor = runtimes.find((d) => d.id === runtimeId)

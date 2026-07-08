@@ -1,18 +1,18 @@
 /**
  * Session runtimes Palot can start a conversation with. Every runtime renders
  * through the same chat surfaces; some runtimes happen to execute through the
- * OpenCode SDK and others through the generic agent-host bridge.
+ * managed runtime SDK and others through the generic agent-host bridge.
  *
- * CLI model catalogs are NOT hardcoded here: they come from the agent-host
- * core (`describeRuntimes`), which reads each runtime's own source of truth.
- * This module keeps a small cache the UI reads synchronously after
+ * Runtime descriptors are sourced in main (`describeRuntimes`): the managed
+ * runtime is described there alongside CLI-backed runtimes, so the renderer
+ * does not inject a special OpenCode option by hand anymore. This module keeps
+ * a small cache the UI reads synchronously after
  * `loadRuntimeDescriptors()` resolves.
  */
-import type { AgentRuntimeDescriptor, AgentRuntimeId } from "../../preload/api"
+import type { AgentRuntimeId, SessionRuntimeDescriptor } from "../../preload/api"
 
 export type SessionRuntimeId = "opencode" | AgentRuntimeId
 export const DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = "opencode"
-export const MANAGED_RUNTIME_LABEL = "OpenCode"
 export interface SessionRuntimeOption {
 	value: SessionRuntimeId
 	label: string
@@ -22,15 +22,15 @@ const isElectron = typeof window !== "undefined" && "palot" in window
 
 const DESCRIPTOR_TTL_MS = 60_000
 
-let descriptorCache: { at: number; value: AgentRuntimeDescriptor[] } | null = null
-let inflight: Promise<AgentRuntimeDescriptor[]> | null = null
+let descriptorCache: { at: number; value: SessionRuntimeDescriptor[] } | null = null
+let inflight: Promise<SessionRuntimeDescriptor[]> | null = null
 
 /**
  * Fetch runtime descriptors from the core (cached briefly, so a CLI installed
  * or a catalog refreshed mid-session shows up). Safe to call from any
  * component; resolves to [] in browser mode.
  */
-export function loadRuntimeDescriptors(): Promise<AgentRuntimeDescriptor[]> {
+export function loadRuntimeDescriptors(): Promise<SessionRuntimeDescriptor[]> {
 	if (descriptorCache && Date.now() - descriptorCache.at < DESCRIPTOR_TTL_MS) {
 		return Promise.resolve(descriptorCache.value)
 	}
@@ -50,12 +50,24 @@ export function loadRuntimeDescriptors(): Promise<AgentRuntimeDescriptor[]> {
 }
 
 /** Synchronous view of the loaded descriptors ([] until loaded). */
-export function runtimeDescriptors(): AgentRuntimeDescriptor[] {
+export function runtimeDescriptors(): SessionRuntimeDescriptor[] {
 	return descriptorCache?.value ?? []
 }
 
-export function runtimeDescriptor(id: SessionRuntimeId): AgentRuntimeDescriptor | undefined {
+export function runtimeDescriptor(id: SessionRuntimeId): SessionRuntimeDescriptor | undefined {
 	return runtimeDescriptors().find((d) => d.id === id)
+}
+
+export function cliRuntimeDescriptors(
+	descriptors: SessionRuntimeDescriptor[] = runtimeDescriptors(),
+): SessionRuntimeDescriptor[] {
+	return descriptors.filter((descriptor) => descriptor.mode === "cli")
+}
+
+export function installedCliRuntimeDescriptors(
+	descriptors: SessionRuntimeDescriptor[] = runtimeDescriptors(),
+): SessionRuntimeDescriptor[] {
+	return cliRuntimeDescriptors(descriptors).filter((descriptor) => descriptor.installed)
 }
 
 export function isManagedRuntimeId(id: string): id is typeof DEFAULT_SESSION_RUNTIME_ID {
@@ -68,23 +80,16 @@ export function isCliRuntime(id: SessionRuntimeId): id is AgentRuntimeId {
 
 /** Human label for a runtime id (falls back to the id itself). */
 export function runtimeLabel(id: SessionRuntimeId): string {
-	if (isManagedRuntimeId(id)) return MANAGED_RUNTIME_LABEL
 	return runtimeDescriptor(id)?.displayName ?? id
 }
 
 export function installedSessionRuntimeOptions(
-	descriptors: AgentRuntimeDescriptor[] = runtimeDescriptors(),
+	descriptors: SessionRuntimeDescriptor[] = runtimeDescriptors(),
 ): SessionRuntimeOption[] {
-	return [
-		{
-			value: DEFAULT_SESSION_RUNTIME_ID,
-			label: runtimeLabel(DEFAULT_SESSION_RUNTIME_ID),
-		},
-		...descriptors
-			.filter((descriptor) => descriptor.installed)
-			.map((descriptor) => ({
-				value: descriptor.id,
-				label: descriptor.displayName,
-			})),
-	]
+	return descriptors
+		.filter((descriptor) => descriptor.installed)
+		.map((descriptor) => ({
+			value: descriptor.id,
+			label: descriptor.displayName,
+		}))
 }

@@ -39,7 +39,7 @@ import {
 	useManagedRuntimeVcs,
 } from "../hooks/use-managed-runtime-data"
 import { useAgentActions } from "../hooks/use-server"
-import type { AgentRuntimeDescriptor, AgentSandbox } from "../../preload/api"
+import type { AgentSandbox, SessionRuntimeDescriptor } from "../../preload/api"
 import type { FileAttachment } from "../lib/types"
 import { useTranslation } from "../i18n/use-translation"
 import {
@@ -49,6 +49,7 @@ import {
 } from "../lib/runtime-session-config"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
+	installedCliRuntimeDescriptors,
 	installedSessionRuntimeOptions,
 	isCliRuntime,
 	loadRuntimeDescriptors,
@@ -300,13 +301,13 @@ export function NewChat() {
 	}, [cliModel, cliEffort, cliSandbox, sessionRuntime])
 	// Runtime descriptors come from the agent-host core: install state,
 	// capabilities, and each CLI's own model catalog (never hardcoded here).
-	const [cliRuntimes, setCliRuntimes] = useState<AgentRuntimeDescriptor[]>([])
+	const [cliRuntimes, setCliRuntimes] = useState<SessionRuntimeDescriptor[]>([])
 	// Auth state per runtime from the CLI detection layer, so the picker can
 	// flag CLIs that are installed but not logged in before a run fails.
 	const [cliAuth, setCliAuth] = useState<Record<string, string>>({})
 	useEffect(() => {
 		loadRuntimeDescriptors().then((all) => {
-			const installed = all.filter((d) => d.installed)
+			const installed = installedCliRuntimeDescriptors(all)
 			setCliRuntimes(installed)
 			// The remembered runtime may have been uninstalled since last use.
 			setSessionRuntimeState((current) =>

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@palot/ui/comp
 import { cn } from "@palot/ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
-import type { AgentRuntimeDescriptor, AgentSandbox } from "../../../preload/api"
+import type { AgentRuntimeDescriptor, AgentSandbox, SessionRuntimeDescriptor } from "../../../preload/api"
 import { useTranslation } from "../../i18n/use-translation"
 import { installedSessionRuntimeOptions, loadRuntimeDescriptors } from "../../lib/session-runtimes"
 import { switchRuntimeSession } from "../../services/runtime-session-launch"
@@ -184,9 +184,9 @@ export function SessionRuntimeSwitch({
 	const { t } = useTranslation()
 	const navigate = useNavigate()
 	const params = useParams({ strict: false }) as { projectSlug?: string }
-	const [runtimes, setRuntimes] = useState<AgentRuntimeDescriptor[]>([])
+	const [runtimes, setRuntimes] = useState<SessionRuntimeDescriptor[]>([])
 	useEffect(() => {
-		loadRuntimeDescriptors().then((all) => setRuntimes(all.filter((d) => d.installed)))
+		loadRuntimeDescriptors().then((all) => setRuntimes(all))
 	}, [])
 	if (runtimes.length === 0) return null
 	const runtimeOptions = installedSessionRuntimeOptions(runtimes)
