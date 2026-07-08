@@ -4,6 +4,8 @@ import os from "node:os"
 import path from "node:path"
 import type { DetectionHost } from "./types"
 
+const VERSION_PROBE_TIMEOUT_MS = 1_500
+
 /** Expand a leading `~` to the current user's home directory. */
 export function expandHome(p: string): string {
 	if (p === "~") return os.homedir()
@@ -49,7 +51,7 @@ export function runCapture(binary: string, args: string[]): Promise<string> {
 		execFile(
 			binary,
 			args,
-			{ timeout: 5_000, maxBuffer: 1024 * 1024, windowsHide: true },
+			{ timeout: VERSION_PROBE_TIMEOUT_MS, maxBuffer: 1024 * 1024, windowsHide: true },
 			(_err, stdout, stderr) => {
 				resolve(`${stdout ?? ""}${stderr ?? ""}`.trim())
 			},
