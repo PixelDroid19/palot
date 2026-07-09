@@ -4,6 +4,8 @@ export { type ContextEntry, SharedContextStore } from "./context"
 export { EventBus } from "./events"
 export { AgentHost, type AgentHostOptions, type HostEvents } from "./host"
 export {
+	getHostSubagentRole,
+	HOST_SUBAGENT_ROLES,
 	type HostSubagentRole,
 	type HostSubagentRoleId,
 	type HostToolCategory,
@@ -11,9 +13,7 @@ export {
 	type HostToolDefinition,
 	type HostToolDescriptor,
 	type HostToolInputSchema,
-	HOST_SUBAGENT_ROLES,
 	HostToolRegistry,
-	getHostSubagentRole,
 	listHostSubagentRoles,
 	registerCoreAgentTools,
 	registerDefaultPlatformTools,

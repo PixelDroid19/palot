@@ -317,10 +317,9 @@ export function registerSubagentTools(
 					"No worker runtime available for subagents. Install Codex or Claude Code, or register a harness.",
 				)
 			}
-			const rolePreamble =
-				role.readOnly
-					? "[Explore subagent — read-only. Do not create, modify, or delete files. Search and report evidence only.]\n\n"
-					: "[General-purpose subagent — complete the task in this isolated context and summarize results.]\n\n"
+			const rolePreamble = role.readOnly
+				? "[Explore subagent — read-only. Do not create, modify, or delete files. Search and report evidence only.]\n\n"
+				: "[General-purpose subagent — complete the task in this isolated context and summarize results.]\n\n"
 			const result = await deps.delegate({
 				runtimeId,
 				prompt: `${rolePreamble}${prompt}`,

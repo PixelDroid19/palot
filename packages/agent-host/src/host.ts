@@ -259,10 +259,7 @@ export class AgentHost {
 		return this.enqueueSessionTurn(sessionId, () => this.runPromptTurn(sessionId, input))
 	}
 
-	private async runPromptTurn(
-		sessionId: string,
-		input: AgentTurnInput,
-	): Promise<AgentRunResult> {
+	private async runPromptTurn(sessionId: string, input: AgentTurnInput): Promise<AgentRunResult> {
 		const entry = this.sessions.get(sessionId)
 		if (!entry) throw new Error(`No open session: ${sessionId}`)
 		this.events.emit("turn:start", { sessionId, runtimeId: entry.runtimeId })
