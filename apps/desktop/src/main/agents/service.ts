@@ -48,10 +48,7 @@ import {
 	type SessionRuntimeDescriptor,
 } from "./descriptor-registry"
 import { installDesktopHostToolBackends } from "./host-tool-backends"
-import {
-	REQUIRED_HOST_TOOLS,
-	ensureHostToolPlaneComplete as healHostToolPlane,
-} from "./host-tool-plane"
+import { ensureHostToolPlaneComplete as healHostToolPlane } from "./host-tool-plane"
 
 export type { SessionRuntimeDescriptor } from "./descriptor-registry"
 export { REQUIRED_HOST_TOOLS, listMissingHostTools } from "./host-tool-plane"
