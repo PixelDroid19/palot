@@ -19,8 +19,8 @@ import {
 	type CanUseTool,
 	type Options,
 	type PermissionMode,
-	query,
 	type Query,
+	query,
 	type SDKUserMessage,
 	type Settings,
 } from "@anthropic-ai/claude-agent-sdk"
@@ -59,8 +59,13 @@ export const CLAUDE_MODEL_FALLBACK: AgentModelInfo[] = [
 	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS, defaultEffort: "medium" },
 ]
 
-async function* emptyPrompt(): AsyncIterable<SDKUserMessage> {
-	return
+/** Empty async iterable for resume-only Claude queries (no new user message). */
+function emptyPrompt(): AsyncIterable<SDKUserMessage> {
+	return {
+		[Symbol.asyncIterator]: () => ({
+			next: async () => ({ done: true as const, value: undefined as unknown as SDKUserMessage }),
+		}),
+	}
 }
 
 function uniqueClaudeModels(models: AgentModelInfo[]): AgentModelInfo[] {

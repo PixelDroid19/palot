@@ -241,9 +241,7 @@ export type RuntimeTransportInput = {
 	transport?: RuntimeTransport
 	capabilities?: Partial<Pick<AgentRuntimeCapabilities, "managedLocalServer">> &
 		Partial<AgentRuntimeCapabilities>
-	sessionCapabilities?: Partial<
-		Pick<AgentSessionCapabilities, "supportsRuntimeConfiguration">
-	> &
+	sessionCapabilities?: Partial<Pick<AgentSessionCapabilities, "supportsRuntimeConfiguration">> &
 		Partial<AgentSessionCapabilities>
 	managedLocalServer?: boolean
 	supportsRuntimeConfiguration?: boolean

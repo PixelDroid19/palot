@@ -1,8 +1,11 @@
 /**
  * The Palot bridge: a loopback-only HTTP server that lets a running CLI agent
- * use the platform — delegate work to other agents and share context. CLIs
- * reach it through the stdio MCP proxy (see `mcp-proxy.ts`), which the
- * adapters wire in as an MCP server named "palot".
+ * use the platform — host tools, peer agents, and shared context. CLIs reach
+ * it through the stdio MCP proxy (see `mcp-proxy.ts`), which adapters wire in
+ * as an MCP server named "palot".
+ *
+ * Host tools (automation, system, browser, agents, context) are registered on
+ * {@link AgentHost.tools} and exposed generically — not reimplemented per CLI.
  *
  * Security: binds 127.0.0.1 only and requires a per-bridge bearer token that
  * is handed to CLIs via environment, never written to disk.
@@ -95,6 +98,41 @@ export class AgentBridge {
 		}
 		const url = new URL(req.url ?? "/", "http://127.0.0.1")
 		const route = `${req.method} ${url.pathname}`
+
+		// --- Host tool plane (primary surface for all harnesses) ---
+
+		if (route === "GET /v1/tools") {
+			json(res, 200, { tools: this.host.tools.listForMcp() })
+			return
+		}
+
+		if (route === "POST /v1/tools/call") {
+			const body = JSON.parse((await readBody(req)) || "{}") as {
+				name?: string
+				arguments?: Record<string, unknown>
+				cwd?: string
+				callerRuntimeId?: string
+			}
+			if (!body.name || typeof body.name !== "string") {
+				json(res, 400, { error: "name is required" })
+				return
+			}
+			try {
+				const result = await this.host.tools.call(body.name, body.arguments ?? {}, {
+					cwd: body.cwd,
+					callerRuntimeId: body.callerRuntimeId,
+				})
+				json(res, 200, { result })
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err)
+				// Fail closed: unknown tool / backend errors return 404/502 with message
+				const status = /Unknown host tool/i.test(message) ? 404 : 502
+				json(res, status, { error: message })
+			}
+			return
+		}
+
+		// --- Legacy convenience routes (still used by older proxies / tests) ---
 
 		if (route === "GET /v1/agents") {
 			json(res, 200, { agents: this.host.listRuntimes() })

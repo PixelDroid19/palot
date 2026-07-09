@@ -1,15 +1,11 @@
 /**
  * Source of the stdio MCP proxy that agent CLIs launch to reach the Palot
- * bridge. It is a dependency-free plain-Node script (exported as a string so
- * the embedder can write it anywhere — Electron's asar can't be spawned from
- * directly). It implements just enough of MCP over stdio: initialize,
- * tools/list, tools/call; each tool call is a bearer-authenticated HTTP
- * request to the bridge.
+ * bridge. Dependency-free plain-Node script (exported as a string so the
+ * embedder can write it anywhere).
  *
- * Tools exposed to every agent:
- *   palot_list_agents           — discover peer agents
- *   palot_delegate              — run a task on another agent, get its answer
- *   palot_context_get / _set / _list — shared context between agents
+ * Tools are **dynamic**: tools/list and tools/call hit the host tool plane
+ * (`GET /v1/tools`, `POST /v1/tools/call`). The host registers automation,
+ * system, browser, agents, and context tools — adapters never own that list.
  */
 
 export const MCP_PROXY_SOURCE = `#!/usr/bin/env node
@@ -29,78 +25,18 @@ async function bridge(method, path, body) {
 	return data;
 }
 
-const TOOLS = [
-	{
-		name: "palot_list_agents",
-		description: "List the other AI agents available on this machine that you can delegate tasks to.",
-		inputSchema: { type: "object", properties: {}, additionalProperties: false },
-	},
-	{
-		name: "palot_delegate",
-		description:
-			"Delegate a task to another AI agent (e.g. 'codex' for image generation or coding, 'claude' for reasoning) and return its answer. Use palot_list_agents to see valid agent ids.",
-		inputSchema: {
-			type: "object",
-			properties: {
-				agent: { type: "string", description: "Target agent id (e.g. codex, claude)" },
-				prompt: { type: "string", description: "The task for the target agent" },
-				cwd: { type: "string", description: "Working directory (defaults to current)" },
-			},
-			required: ["agent", "prompt"],
-		},
-	},
-	{
-		name: "palot_context_get",
-		description: "Read a value from the shared context store that agents use to collaborate.",
-		inputSchema: {
-			type: "object",
-			properties: { key: { type: "string" } },
-			required: ["key"],
-		},
-	},
-	{
-		name: "palot_context_set",
-		description: "Write a value to the shared context store so other agents can read it.",
-		inputSchema: {
-			type: "object",
-			properties: { key: { type: "string" }, value: { type: "string" } },
-			required: ["key", "value"],
-		},
-	},
-	{
-		name: "palot_context_list",
-		description: "List all keys in the shared context store.",
-		inputSchema: { type: "object", properties: {}, additionalProperties: false },
-	},
-];
+async function listTools() {
+	const data = await bridge("GET", "/v1/tools");
+	return data.tools || [];
+}
 
 async function callTool(name, args) {
-	if (name === "palot_list_agents") {
-		const data = await bridge("GET", "/v1/agents");
-		return JSON.stringify(data.agents);
-	}
-	if (name === "palot_delegate") {
-		const data = await bridge("POST", "/v1/delegate", {
-			agent: args.agent,
-			prompt: args.prompt,
-			cwd: args.cwd || process.cwd(),
-		});
-		return data.message || "(no output)";
-	}
-	if (name === "palot_context_get") {
-		const data = await bridge("GET", "/v1/context");
-		const entry = (data.entries || []).find((e) => e.key === args.key);
-		return entry ? entry.value : "(not set)";
-	}
-	if (name === "palot_context_set") {
-		await bridge("POST", "/v1/context", { key: args.key, value: args.value });
-		return "ok";
-	}
-	if (name === "palot_context_list") {
-		const data = await bridge("GET", "/v1/context");
-		return JSON.stringify((data.entries || []).map((e) => e.key));
-	}
-	throw new Error("Unknown tool: " + name);
+	const data = await bridge("POST", "/v1/tools/call", {
+		name: name,
+		arguments: args || {},
+		cwd: process.cwd(),
+	});
+	return typeof data.result === "string" ? data.result : JSON.stringify(data.result);
 }
 
 function reply(id, result) {
@@ -141,11 +77,16 @@ async function handle(msg) {
 	} else if (msg.method === "notifications/initialized") {
 		// Notification — no response.
 	} else if (msg.method === "tools/list") {
-		reply(msg.id, { tools: TOOLS });
+		try {
+			const tools = await listTools();
+			reply(msg.id, { tools: tools });
+		} catch (err) {
+			replyError(msg.id, err && err.message ? err.message : String(err));
+		}
 	} else if (msg.method === "tools/call") {
 		try {
 			const text = await callTool(msg.params.name, msg.params.arguments || {});
-			reply(msg.id, { content: [{ type: "text", text }] });
+			reply(msg.id, { content: [{ type: "text", text: text }] });
 		} catch (err) {
 			reply(msg.id, {
 				content: [{ type: "text", text: "Error: " + (err && err.message ? err.message : err) }],

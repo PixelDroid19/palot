@@ -20,6 +20,13 @@ import { whichOnPath } from "@palot/cli-registry"
 import { createBuiltInProviders } from "./builtins"
 import { SharedContextStore } from "./context"
 import { EventBus } from "./events"
+import {
+	type HostToolDefinition,
+	HostToolRegistry,
+	registerCoreAgentTools,
+	registerDefaultPlatformTools,
+	registerSubagentTools,
+} from "./host-tools"
 import type {
 	AgentModelInfo,
 	AgentPermissionDecision,
@@ -62,6 +69,11 @@ export interface AgentHostOptions {
 	resolveBinary?: (binary: string) => Promise<string | null>
 	/** Provide bridge info to inject into sessions (set by the bridge server). */
 	bridgeInfo?: () => BridgeInfo | null
+	/**
+	 * When true (default), register core agent/context + platform host tools
+	 * (automation/system/browser stubs). Set false for a bare registry host.
+	 */
+	registerHostTools?: boolean
 }
 
 interface SessionEntry {
@@ -77,6 +89,8 @@ function catalogFallbackForProvider(provider: AgentSessionProvider): AgentModelI
 export class AgentHost {
 	readonly context = new SharedContextStore()
 	readonly events = new EventBus<HostEvents>()
+	/** Host-owned tools offered to every harness via the MCP bridge. */
+	readonly tools = new HostToolRegistry()
 
 	private providers = new Map<AgentRuntimeId, AgentSessionProvider>()
 	private sessions = new Map<string, SessionEntry>()
@@ -97,6 +111,44 @@ export class AgentHost {
 		for (const provider of options.providers ?? []) {
 			this.registerProvider(provider)
 		}
+
+		if (options.registerHostTools !== false) {
+			this.installDefaultHostTools()
+		}
+	}
+
+	/**
+	 * Register core + platform host tools (idempotent for core names if cleared first).
+	 * Embedders can {@link registerHostTool} extra tools anytime.
+	 */
+	installDefaultHostTools(): void {
+		registerCoreAgentTools(this.tools, {
+			listAgents: () => this.listRuntimes(),
+			delegate: (args) => this.delegate(args),
+			contextGet: (key) => this.context.get(key)?.value,
+			contextSet: (key, value, author) => {
+				this.context.set(key, value, author ?? "agent")
+			},
+			contextList: () => this.context.list().map((e) => e.key),
+		})
+		registerSubagentTools(this.tools, {
+			resolveWorkerRuntimeId: () => {
+				// Prefer process adapters for isolated workers; any registered runtime works.
+				const ids = this.listRuntimes().map((r) => r.id)
+				const preferred = ids.find((id) => id !== "opencode") ?? ids[0]
+				return preferred ?? null
+			},
+			delegate: (args) => this.delegate(args),
+		})
+		registerDefaultPlatformTools(this.tools)
+	}
+
+	registerHostTool(tool: HostToolDefinition): void {
+		this.tools.register(tool)
+	}
+
+	unregisterHostTool(name: string): boolean {
+		return this.tools.unregister(name)
 	}
 
 	registerProvider(provider: AgentSessionProvider): void {
@@ -143,8 +195,7 @@ export class AgentHost {
 				])
 				// Never ship an empty catalog when the adapter advertises models —
 				// use adapter-owned fallback only (no brand switch in the host).
-				const models =
-					listed.length > 0 ? listed : provider.capabilities.models ? fallback : listed
+				const models = listed.length > 0 ? listed : provider.capabilities.models ? fallback : listed
 				return {
 					id: provider.id,
 					displayName: provider.displayName,
