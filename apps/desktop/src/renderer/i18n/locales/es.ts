@@ -62,11 +62,11 @@ export const es: LocaleMessages = {
 		queued: "En cola",
 	},
 	subagentChat: {
-		title: "Agentes CLI",
+		title: "Agentes de runtime",
 		description:
-			"Conversa por turnos con una CLI de agente. Palot mantiene la sesión para conservar el contexto entre turnos, sin necesitar una sesión de OpenCode.",
+			"Conversa por turnos con cualquier runtime compatible (OpenCode, Codex, Claude Code, …). Palot mantiene la sesión para conservar el contexto entre turnos.",
 		noneInstalled:
-			"No hay ninguna CLI de agente compatible instalada. Instala Codex o Claude Code para empezar.",
+			"No hay ningún runtime compatible instalado. Instala OpenCode, Codex o Claude Code para empezar.",
 		you: "Tú",
 		thinking: "Pensando…",
 		send: "Enviar",

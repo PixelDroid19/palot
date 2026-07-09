@@ -1,9 +1,10 @@
 /**
- * Settings tab for managing project runtime server connections.
+ * Settings tab for managed local / remote server connections.
  *
- * Lists all configured servers (local + remote), allows adding/editing/removing
- * remote servers, testing connections, and switching the active server.
- * Includes configuration for the local server's hostname, port, and password.
+ * Applies to runtimes that need an HTTP server lifecycle (OpenCode adapter).
+ * Other runtimes (Codex, Claude) use process adapters and do not require this.
+ * Lists configured servers, add/edit/remove remote, test connections, and local
+ * hostname/port/password for the managed server when used.
  */
 
 import { Button } from "@palot/ui/components/button"

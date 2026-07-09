@@ -63,10 +63,10 @@ export const en = {
 		queued: "Queued",
 	},
 	subagentChat: {
-		title: "CLI Agents",
+		title: "Runtime agents",
 		description:
-			"Have a multi-turn conversation with a coding-agent CLI. Palot keeps the session so context carries across turns — no OpenCode session required.",
-		noneInstalled: "No supported agent CLI is installed. Install Codex or Claude Code to start.",
+			"Have a multi-turn conversation with any supported coding runtime (OpenCode, Codex, Claude Code, …). Palot keeps the session so context carries across turns.",
+		noneInstalled: "No supported runtime is installed. Install OpenCode, Codex, or Claude Code to start.",
 		you: "You",
 		thinking: "Thinking…",
 		send: "Send",

@@ -24,11 +24,12 @@ export function WelcomeStep({ onContinue }: WelcomeStepProps) {
 				{/* Description */}
 				<div className="space-y-3">
 					<p className="text-lg text-muted-foreground">
-						Your native workspace for coding runtimes.
+						Your native workspace for multiple coding runtimes.
 					</p>
 					<p className="text-sm leading-relaxed text-muted-foreground/70">
-						Palot gives you a native experience for managing coding sessions across all your
-						projects, with real-time streaming, native notifications, and multi-session support.
+						Palot unifies OpenCode, Codex, Claude Code, and other adapters behind one session UI —
+						real-time streaming, native notifications, and multi-session support without making any
+						single tool the product base.
 					</p>
 				</div>
 

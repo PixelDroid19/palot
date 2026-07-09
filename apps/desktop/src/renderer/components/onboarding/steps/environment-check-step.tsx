@@ -1,9 +1,9 @@
 /**
  * Onboarding Step 2: Environment Check.
  *
- * Verifies the project runtime CLI (OpenCode) is installed and compatible. Offers install/update
- * if needed. When Managed runtime is not found locally, shows any mDNS-discovered
- * servers on the network as an alternative connection path.
+ * Palot supports multiple runtimes. This step optionally verifies the local
+ * managed server for the OpenCode adapter when present, and offers install or
+ * remote connect paths. OpenCode is not required for Codex/Claude workflows.
  */
 
 import { Button } from "@palot/ui/components/button"
@@ -55,7 +55,7 @@ interface EnvironmentCheckStepProps {
 
 export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckStepProps) {
 	const [checks, setChecks] = useState<CheckItem[]>([
-		{ id: "locate", label: "Locating project runtime CLI", status: "pending" },
+		{ id: "locate", label: "Locating local managed runtime (OpenCode)", status: "pending" },
 		{ id: "version", label: "Checking version compatibility", status: "pending" },
 	])
 	const [projectRuntimeResult, setProjectRuntimeResult] = useState<ProjectRuntimeCheckResult | null>(null)
@@ -94,7 +94,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		setAllDone(false)
 		setProjectRuntimeResult(null)
 		setChecks([
-			{ id: "locate", label: "Locating project runtime CLI", status: "running" },
+			{ id: "locate", label: "Locating local managed runtime (OpenCode)", status: "running" },
 			{ id: "version", label: "Checking version compatibility", status: "pending" },
 		])
 
