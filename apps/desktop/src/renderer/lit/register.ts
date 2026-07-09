@@ -4,6 +4,7 @@
  * mount as custom elements — do not boot a parallel Lit product shell here.
  */
 import "./components/gcode-wordmark"
+import "./components/gcode-runtime-mark"
 // Experimental / unmounted product prototypes (not default UI):
 import "./components/gcode-app"
 import "./components/gcode-automations"

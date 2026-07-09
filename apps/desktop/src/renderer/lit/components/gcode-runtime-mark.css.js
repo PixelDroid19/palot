@@ -1,0 +1,4 @@
+/* AUTO-GENERATED from gcode-runtime-mark.scss — do not edit */
+import { css } from "lit";
+export const styles = css`:host{display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;line-height:0;vertical-align:middle;color:var(--foreground, currentColor)}:host([data-runtime-animation=busy]){animation:gcode-rm-spin 1s linear infinite}:host([data-runtime-animation=waiting]){animation:gcode-rm-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}:host([data-runtime-animation=failed]){opacity:.9;border-radius:2px;box-shadow:0 0 0 1px color-mix(in srgb, #ef4444 50%, transparent)}svg{display:block;flex-shrink:0}.claude{color:#d97757}.muted{color:var(--muted-foreground, #afafaf)}@keyframes gcode-rm-spin{to{transform:rotate(360deg)}}@keyframes gcode-rm-pulse{0%,100%{opacity:1}50%{opacity:.45}}`;
+export default styles;
