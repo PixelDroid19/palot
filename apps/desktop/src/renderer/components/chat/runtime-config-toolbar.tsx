@@ -1,31 +1,25 @@
+/**
+ * Single capability-driven runtime config toolbar.
+ *
+ * All runtimes (OpenCode, Codex, Claude, …) share the same visual slots:
+ *   Profile/Agent · Model · Mode/Permission · Effort/Variant · (workspace via parent)
+ *
+ * Callers pass only the sections the active runtime's descriptor supports.
+ * Missing capabilities omit the slot — never a broken empty selector.
+ */
 import type { AgentSandbox } from "../../../preload/api"
 import type { SdkAgent } from "../../hooks/use-runtime-data"
 import { useTranslation } from "../../i18n/use-translation"
 import { CliOptionSelect } from "./cli-toolbar"
 import { AgentSelector, VariantSelector } from "./prompt-toolbar"
 import { RuntimeModelSelect, type RuntimeModelSelectItem } from "./runtime-model-select"
+import {
+	buildToolbarSectionsFromSlots,
+	type RuntimeToolbarSections as PureRuntimeToolbarSections,
+} from "./runtime-toolbar-sections"
 import { SessionConfigToolbarRow } from "./session-config-toolbar-row"
 
-interface ToolbarOption {
-	value: string
-	label: string
-	muted?: boolean
-}
-
-function cliEffortOptions(
-	t: ReturnType<typeof useTranslation>["t"],
-	efforts: string[],
-): ToolbarOption[] {
-	return [
-		{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
-		...efforts.map((effort) => ({
-			value: effort,
-			label: t("runtimePicker.effortLevel", {
-				level: effort.charAt(0).toUpperCase() + effort.slice(1),
-			}),
-		})),
-	]
-}
+export { buildToolbarSectionsFromSlots } from "./runtime-toolbar-sections"
 
 export interface RuntimeToolbarAgentSection {
 	agents: SdkAgent[]
@@ -40,6 +34,7 @@ export interface RuntimeToolbarProjectModelSection {
 	value: string | null
 	onValueChange: (value: string) => void
 	disabled?: boolean
+	emptyLabel?: string
 }
 
 export interface RuntimeToolbarVariantSection {
@@ -52,14 +47,20 @@ export interface RuntimeToolbarVariantSection {
 export interface RuntimeToolbarSandboxSection {
 	value: AgentSandbox
 	onValueChange: (value: AgentSandbox) => void
+	disabled?: boolean
 }
 
 export interface RuntimeToolbarEffortSection {
 	efforts: string[]
 	value: string
 	onValueChange: (value: string) => void
+	disabled?: boolean
 }
 
+/**
+ * Ordered slots shared by every runtime. Only include keys the descriptor
+ * declares; the view skips undefined slots.
+ */
 export interface RuntimeToolbarSections {
 	agent?: RuntimeToolbarAgentSection
 	model?: RuntimeToolbarProjectModelSection
@@ -72,40 +73,62 @@ export interface RuntimeConfigToolbarProps {
 	sections: RuntimeToolbarSections
 }
 
+function effortOptions(
+	t: ReturnType<typeof useTranslation>["t"],
+	efforts: string[],
+): { value: string; label: string; muted?: boolean }[] {
+	return [
+		{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
+		...efforts.map((effort) => ({
+			value: effort,
+			label: t("runtimePicker.effortLevel", {
+				level: effort.charAt(0).toUpperCase() + effort.slice(1),
+			}),
+		})),
+	]
+}
+
 function RuntimeToolbarSectionsView({ sections }: { sections: RuntimeToolbarSections }) {
 	const { t } = useTranslation()
-	const hasEffort = (sections.effort?.efforts.length ?? 0) > 0
+	const normalized = buildToolbarSectionsFromSlots(
+		sections as PureRuntimeToolbarSections<SdkAgent, AgentSandbox>,
+	) as RuntimeToolbarSections
+	const hasEffort = (normalized.effort?.efforts.length ?? 0) > 0
 	const items = [
-		sections.agent && (
+		normalized.agent && (
 			<AgentSelector
-				agents={sections.agent.agents}
-				selectedAgent={sections.agent.selectedAgent}
-				defaultAgent={sections.agent.defaultAgent}
-				onSelectAgent={sections.agent.onSelectAgent}
-				disabled={sections.agent.disabled}
+				key="agent"
+				agents={normalized.agent.agents}
+				selectedAgent={normalized.agent.selectedAgent}
+				defaultAgent={normalized.agent.defaultAgent}
+				onSelectAgent={normalized.agent.onSelectAgent}
+				disabled={normalized.agent.disabled}
 			/>
 		),
-		sections.model && (
+		normalized.model && (
 			<RuntimeModelSelect
-				items={sections.model.items}
-				value={sections.model.value}
-				onValueChange={sections.model.onValueChange}
-				disabled={sections.model.disabled}
+				key="model"
+				items={normalized.model.items}
+				value={normalized.model.value}
+				onValueChange={normalized.model.onValueChange}
+				disabled={normalized.model.disabled}
 			/>
 		),
-		sections.variant && (
+		normalized.variant && (
 			<VariantSelector
-				variants={sections.variant.variants}
-				selectedVariant={sections.variant.selectedVariant}
-				onSelectVariant={sections.variant.onSelectVariant}
-				disabled={sections.variant.disabled}
+				key="variant"
+				variants={normalized.variant.variants}
+				selectedVariant={normalized.variant.selectedVariant}
+				onSelectVariant={normalized.variant.onSelectVariant}
+				disabled={normalized.variant.disabled}
 			/>
 		),
-		sections.sandbox && (
+		normalized.sandbox && (
 			<CliOptionSelect
+				key="sandbox"
 				aria-label={t("runtimePicker.sandbox")}
-				value={sections.sandbox.value}
-				onValueChange={(value) => sections.sandbox?.onValueChange(value as AgentSandbox)}
+				value={normalized.sandbox.value}
+				onValueChange={(value) => normalized.sandbox?.onValueChange(value as AgentSandbox)}
 				options={[
 					{ value: "plan", label: t("runtimePicker.sandboxPlan") },
 					{ value: "read-only", label: t("runtimePicker.sandboxReadOnly") },
@@ -114,25 +137,32 @@ function RuntimeToolbarSectionsView({ sections }: { sections: RuntimeToolbarSect
 				]}
 			/>
 		),
-		hasEffort && sections.effort && (
+		hasEffort && normalized.effort && (
 			<CliOptionSelect
+				key="effort"
 				aria-label={t("runtimePicker.effort")}
-				value={sections.effort.value || "__default__"}
+				value={normalized.effort.value || "__default__"}
 				onValueChange={(value) =>
-					sections.effort?.onValueChange(value === "__default__" ? "" : value)
+					normalized.effort?.onValueChange(value === "__default__" ? "" : value)
 				}
-				options={cliEffortOptions(t, sections.effort.efforts)}
+				options={effortOptions(t, normalized.effort.efforts)}
 			/>
 		),
 	]
 
 	if (!items.some(Boolean)) return null
 
-	return (
-		<SessionConfigToolbarRow items={items} />
-	)
+	return <SessionConfigToolbarRow items={items} />
 }
 
 export function RuntimeConfigToolbar(props: RuntimeConfigToolbarProps) {
 	return <RuntimeToolbarSectionsView sections={props.sections} />
+}
+
+/**
+ * @deprecated CliSessionToolbar is a thin alias of RuntimeConfigToolbar so
+ * existing imports keep working. All runtimes share this chrome.
+ */
+export function CliSessionToolbar(props: RuntimeConfigToolbarProps) {
+	return <RuntimeConfigToolbar {...props} />
 }

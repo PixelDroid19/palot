@@ -30,7 +30,7 @@ import {
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
 	PROJECT_RUNTIME_ID,
-	installedCliRuntimeDescriptors,
+	installedProcessRuntimeDescriptors,
 	loadRuntimeDescriptors,
 	type SessionRuntimeId,
 } from "../../lib/session-runtimes"
@@ -356,7 +356,7 @@ export function useCliChatRuntimeToolbarProps(
 	const runtimeId = meta?.runtimeId
 	useEffect(() => {
 		if (!runtimeId) return
-		loadRuntimeDescriptors().then((all) => setRuntimes(installedCliRuntimeDescriptors(all)))
+		loadRuntimeDescriptors().then((all) => setRuntimes(installedProcessRuntimeDescriptors(all)))
 	}, [runtimeId])
 
 	const descriptor = runtimes.find((runtime) => runtime.id === runtimeId)

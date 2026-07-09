@@ -26,21 +26,6 @@ interface ToolbarOption {
 	muted?: boolean
 }
 
-function cliEffortOptions(
-	t: ReturnType<typeof useTranslation>["t"],
-	efforts: string[],
-): ToolbarOption[] {
-	return [
-		{ value: "__default__", label: t("runtimePicker.effortDefault"), muted: true },
-		...efforts.map((effort) => ({
-			value: effort,
-			label: t("runtimePicker.effortLevel", {
-				level: effort.charAt(0).toUpperCase() + effort.slice(1),
-			}),
-		})),
-	]
-}
-
 export function CliOptionSelect({
 	"aria-label": ariaLabel,
 	value,
