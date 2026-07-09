@@ -57,7 +57,6 @@ export default defineConfig({
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "src/renderer"),
-				"@gcode/ui": path.resolve(__dirname, "../../packages/ui/src"),
 			},
 		},
 		worker: {

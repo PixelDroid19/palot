@@ -11,7 +11,6 @@
       body { overflow: hidden; }
     </style>
     <style>
-      /* Splash screen styles -- inlined so they render before any JS loads. */
       #splash {
         position: fixed;
         inset: 0;
@@ -20,11 +19,8 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        /* Transparent so macOS glass/vibrancy shows through. The native
-           window chrome provides the visual backdrop. */
         background: transparent;
         transition: opacity 300ms ease-out;
-        /* Allow dragging the window from the splash on macOS */
         -webkit-app-region: drag;
       }
       #splash.hiding {
@@ -34,7 +30,7 @@
       #splash svg {
         height: 20px;
         width: auto;
-        color: hsl(var(--foreground, 0 0% 93%));
+        color: hsl(0 0% 93%);
       }
       #splash .dots {
         display: flex;
@@ -46,7 +42,7 @@
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: hsl(var(--muted-foreground, 0 0% 45%) / 0.4);
+        background: hsl(0 0% 45% / 0.4);
         animation: splash-pulse 1.2s ease-in-out infinite;
       }
       #splash .dots span:nth-child(2) { animation-delay: 150ms; }
@@ -59,24 +55,15 @@
   </head>
   <body>
     <script>
-      // Prevent flash of wrong color scheme before React hydrates.
-      // Reads from the same localStorage key used by Zustand persist.
       try {
-        // Prefer GCode keys; fall back to legacy Palot storage for one-release migrate.
         function readJson(key) {
           try {
             var raw = localStorage.getItem(key);
             return raw == null ? null : JSON.parse(raw);
           } catch (e) { return null; }
         }
-        var scheme = readJson('gcode:colorScheme');
-        var themeId = readJson('gcode:theme');
-        if (scheme == null || themeId == null) {
-          var prefs = JSON.parse(localStorage.getItem('palot-preferences') || '{}');
-          var state = prefs.state || {};
-          if (scheme == null) scheme = state.colorScheme;
-          if (themeId == null) themeId = state.theme;
-        }
+        var scheme = readJson('gcode:colorScheme') || 'dark';
+        var themeId = readJson('gcode:theme') || 'default';
         if (typeof scheme === 'string') {
           try { scheme = JSON.parse(scheme); } catch (e) {}
         }
@@ -97,20 +84,7 @@
         document.documentElement.classList.add('dark');
       }
     </script>
-    <script>
-      // React Scan: dev-only render visualizer. Loaded via script tag outside
-      // Vite's module graph so it survives HMR. Uses document.write to ensure
-      // the script loads synchronously before React's module script executes.
-      // Toggle via Command Palette (Cmd+K > "React Scan"). Only active in dev
-      // since production React builds don't expose the DevTools hook.
-      try {
-        if (localStorage.getItem('gcode:reactScan') || localStorage.getItem('palot:reactScan') === 'true') {
-          document.write('<script src="https://unpkg.com/react-scan/dist/auto.global.js"><\/script>');
-        }
-      } catch (e) {}
-    </script>
-    <!-- Splash screen: renders immediately before React/JS loads.
-         The React StartupOverlay component removes this element once it mounts. -->
+    <!-- Splash: removed by gcode-app once Lit mounts -->
     <div id="splash">
       <svg viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="overflow:visible">
         <text x="0" y="22" fill="currentColor" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="22" font-weight="800" letter-spacing="1.2">GCode</text>

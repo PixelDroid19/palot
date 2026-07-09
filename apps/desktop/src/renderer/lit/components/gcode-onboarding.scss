@@ -52,4 +52,57 @@ button.primary {
 	background: var(--gcode-accent);
 	color: #041018;
 	font-weight: 700;
+	border: none;
+	cursor: pointer;
+}
+
+button.secondary {
+	padding: 8px 12px;
+	border-radius: var(--gcode-radius-sm);
+	background: var(--gcode-bg-muted);
+	color: var(--gcode-fg);
+	border: 1px solid var(--gcode-border);
+	font-size: 12px;
+	cursor: pointer;
+	align-self: flex-start;
+}
+
+.step[data-active="true"] {
+	outline: 1px solid var(--gcode-accent);
+}
+
+.detect-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.detect-label {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--gcode-fg-muted);
+	margin-bottom: 4px;
+}
+
+.detect-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 10px;
+	border-radius: var(--gcode-radius-sm);
+	background: var(--gcode-bg-muted);
+	font-size: 12px;
+}
+
+.detect-row[data-ok="true"] strong {
+	color: var(--gcode-fg);
+}
+
+.detect-row[data-ok="false"] {
+	opacity: 0.7;
+}
+
+.error {
+	color: var(--gcode-danger);
+	font-size: 12px;
 }

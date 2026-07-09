@@ -1,6 +1,6 @@
 /**
  * Lit ReactiveController for framework-agnostic i18n (en/es).
- * Reads/writes the same localStorage key as the React binding (`gcode:locale`)
+ * Reads/writes localStorage key `gcode:locale`
  * so hybrid UI stays in sync, and publishes BusTopics.localeChanged.
  */
 import type { ReactiveController, ReactiveControllerHost } from "lit"

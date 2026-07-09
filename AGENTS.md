@@ -28,8 +28,8 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`main/automation/`** -- Schedulers + neutral `executeAutomationRun` dispatch by registered runtime executors (fail closed if missing)
 - **`preload/`** -- `window.gcode` via `contextBridge`
 - **`renderer/lit/`** -- **Primary UI**: Lit custom elements, SCSS co-located (`foo.scss` → `foo.css.js` via `scripts/scss-to-cssjs.ts`), event bus + bubbling, locale controller
-- **`renderer/services/`** -- Framework-free backend/session services (shared by Lit and any residual React)
-- **`renderer/i18n/`** -- Dependency-free `translate(locale, key)` for **en** + **es** (Lit uses `LocaleController`; do not add React-only bindings for new UI)
+- **`renderer/services/`** -- Framework-free backend/session services (used by Lit product UI)
+- **`renderer/i18n/`** -- Dependency-free `translate(locale, key)` for **en** + **es** (Lit uses `LocaleController`)
 - **`shared/`** -- Cross-process constants/types (runtime ids, transport registry)
 
 ## Skills
@@ -40,7 +40,7 @@ generic knowledge.
 
 | Skill | When to load |
 |---|---|
-| `react-best-practices` | Not used for product UI (Lit-only). Optional for non-desktop packages if any. |
+| `react-best-practices` | Not used for product UI (Lit-only desktop). |
 
 ## Commands
 

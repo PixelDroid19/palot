@@ -86,3 +86,40 @@ select {
 	font-size: 12px;
 	color: var(--gcode-fg-muted);
 }
+
+.btn {
+	margin-top: 8px;
+	padding: 6px 12px;
+	border-radius: var(--gcode-radius-sm);
+	background: var(--gcode-bg-muted);
+	font-size: 12px;
+	border: 1px solid var(--gcode-border);
+	color: var(--gcode-fg);
+	cursor: pointer;
+}
+
+.pill {
+	font-size: 11px;
+	font-family: var(--gcode-font-mono);
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: var(--gcode-bg-muted);
+	color: var(--gcode-fg-muted);
+}
+
+.pill[data-ok="true"] {
+	background: var(--gcode-accent-soft);
+	color: var(--gcode-fg);
+}
+
+.error {
+	color: var(--gcode-danger);
+	font-size: 13px;
+	margin-bottom: var(--gcode-space-3);
+}
+
+input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	accent-color: var(--gcode-accent);
+}

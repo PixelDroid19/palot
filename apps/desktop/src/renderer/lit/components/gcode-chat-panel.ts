@@ -1,9 +1,14 @@
 /**
- * Primary chat surface — message list + composer host.
- * Parent supplies messages; composer send bubbles as `gcode-send`.
+ * Chat surface: messages, tool cards, permission gate, question gate, composer.
  */
 import { html, LitElement } from "lit"
 import { customElement, property } from "lit/decorators.js"
+import type {
+	LitPermissionDecision,
+	LitPermissionRequest,
+	LitQuestionRequest,
+	LitToolEvent,
+} from "../chat-runtime"
 import { LocaleController } from "../locale-controller"
 import "./gcode-composer"
 import { styles } from "./gcode-chat-panel.css.js"
@@ -17,23 +22,43 @@ export interface ChatMessageView {
 @customElement("gcode-chat-panel")
 export class GcodeChatPanel extends LitElement {
 	static styles = styles
-
 	private locale = new LocaleController(this)
 
-	@property({ type: String })
-	title = "GCode"
+	@property({ type: String }) title = "GCode"
+	@property({ type: String, attribute: "runtime-id" }) runtimeId = ""
+	@property({ attribute: false }) messages: ChatMessageView[] = []
+	@property({ attribute: false }) tools: LitToolEvent[] = []
+	@property({ attribute: false }) permission: LitPermissionRequest | null = null
+	@property({ attribute: false }) question: LitQuestionRequest | null = null
+	@property({ type: Boolean }) busy = false
 
-	@property({ type: String, attribute: "runtime-id" })
-	runtimeId = ""
+	private emitPermission(decision: LitPermissionDecision): void {
+		if (!this.permission) return
+		this.dispatchEvent(
+			new CustomEvent("gcode-permission", {
+				detail: { requestId: this.permission.requestId, decision },
+				bubbles: true,
+				composed: true,
+			}),
+		)
+	}
 
-	@property({ attribute: false })
-	messages: ChatMessageView[] = []
-
-	@property({ type: Boolean, attribute: "busy" })
-	busy = false
+	private emitQuestionAnswer(questionText: string, label: string): void {
+		if (!this.question) return
+		this.dispatchEvent(
+			new CustomEvent("gcode-question-answer", {
+				detail: {
+					requestId: this.question.requestId,
+					answers: { [questionText]: label },
+				},
+				bubbles: true,
+				composed: true,
+			}),
+		)
+	}
 
 	render() {
-		const empty = this.messages.length === 0
+		const empty = this.messages.length === 0 && this.tools.length === 0
 		return html`
 			<div class="topbar">
 				<div class="topbar-title">${this.title}</div>
@@ -71,13 +96,82 @@ export class GcodeChatPanel extends LitElement {
 										</div>
 									`,
 								)}
+								${this.tools.map(
+									(t) => html`
+										<div class="tool-card" data-status=${t.status} data-tool-id=${t.id}>
+											<div class="tool-name">${t.name} · ${t.status}</div>
+											${t.detail ? html`<div class="tool-detail">${t.detail}</div>` : null}
+										</div>
+									`,
+								)}
 							</div>
 						`
 			}
+			${
+				this.permission
+					? html`
+							<div class="gate" data-testid="permission-gate">
+								<div class="gate-title">
+									${this.locale.t("cliApprovals.title", {
+										name: this.permission.toolName || "tool",
+									})}
+								</div>
+								${
+									this.permission.description
+										? html`<div class="gate-desc">${this.permission.description}</div>`
+										: null
+								}
+								<div class="gate-actions">
+									<button
+										type="button"
+										class="primary"
+										@click=${() => this.emitPermission("allow")}
+									>
+										${this.locale.t("cliApprovals.allow")}
+									</button>
+									<button type="button" @click=${() => this.emitPermission("allow-session")}>
+										${this.locale.t("cliApprovals.allowSession")}
+									</button>
+									<button
+										type="button"
+										class="danger"
+										@click=${() => this.emitPermission("deny")}
+									>
+										${this.locale.t("cliApprovals.deny")}
+									</button>
+								</div>
+							</div>
+						`
+					: null
+			}
+			${
+				this.question
+					? html`
+							<div class="gate" data-testid="question-gate">
+								${this.question.questions.map(
+									(q) => html`
+										<div class="gate-title">${q.header || q.question}</div>
+										${q.options.map(
+											(opt) => html`
+												<button
+													type="button"
+													class="q-option"
+													@click=${() => this.emitQuestionAnswer(q.question, opt.label)}
+												>
+													<strong>${opt.label}</strong>
+													${opt.description ? html`<div class="gate-desc">${opt.description}</div>` : null}
+												</button>
+											`,
+										)}
+									`,
+								)}
+							</div>
+						`
+					: null
+			}
 			<gcode-composer
-				?disabled=${this.busy}
+				?disabled=${this.busy || !!this.permission || !!this.question}
 				@gcode-send=${(e: CustomEvent<{ text: string }>) => {
-					// re-bubble for app shell
 					this.dispatchEvent(
 						new CustomEvent("gcode-send", {
 							detail: e.detail,

@@ -5,15 +5,19 @@
 import { html, LitElement } from "lit"
 import { customElement, state } from "lit/decorators.js"
 import { BusTopics, gcodeBus } from "../bus"
-import { runLitAgentTurn } from "../chat-runtime"
-import { LocaleController } from "../locale-controller"
 import {
-	createManagedSession,
-	loadManagedMessages,
-	promptManagedSession,
-} from "../managed-chat"
+	answerLitQuestion,
+	respondLitPermission,
+	runLitAgentTurn,
+	type LitPermissionDecision,
+	type LitPermissionRequest,
+	type LitQuestionRequest,
+	type LitToolEvent,
+} from "../chat-runtime"
+import { LocaleController } from "../locale-controller"
+import { loadManagedMessages, promptManagedSession } from "../managed-chat"
 import { readOnboardingState } from "../onboarding-store"
-import { hrefForRoute, navigate, parseHash, type LitRoute } from "../router"
+import { navigate, parseHash, type LitRoute } from "../router"
 import { sessionStore, type LitChatMessage } from "../session-store"
 import type { ChatMessageView } from "./gcode-chat-panel"
 import "./gcode-automations"
@@ -31,12 +35,10 @@ export class GcodeApp extends LitElement {
 
 	@state() private route: LitRoute = parseHash()
 	@state() private messages: ChatMessageView[] = []
+	@state() private tools: LitToolEvent[] = []
 	@state() private busy = false
-	@state() private permission: {
-		requestId: string
-		toolName?: string
-		description?: string
-	} | null = null
+	@state() private permission: LitPermissionRequest | null = null
+	@state() private question: LitQuestionRequest | null = null
 
 	private unsubs: Array<() => void> = []
 	private onHash = () => {
@@ -73,6 +75,9 @@ export class GcodeApp extends LitElement {
 	}
 
 	private onRoute(): void {
+		this.tools = []
+		this.permission = null
+		this.question = null
 		if (this.route.name === "session") {
 			void this.loadSession(this.route.sessionId)
 		}
@@ -120,20 +125,33 @@ export class GcodeApp extends LitElement {
 		return this.route.name === "session" ? this.route.sessionId : sessionStore.getActiveId()
 	}
 
+	private upsertTool(tool: LitToolEvent): void {
+		const idx = this.tools.findIndex((t) => t.id === tool.id)
+		if (idx >= 0) {
+			const next = [...this.tools]
+			next[idx] = tool
+			this.tools = next
+		} else {
+			this.tools = [...this.tools, tool]
+		}
+	}
+
 	private async onSend(e: CustomEvent<{ text: string }>): Promise<void> {
 		const text = e.detail?.text?.trim()
 		if (!text || this.busy) return
 		let sessionId = this.activeSessionId()
 		if (!sessionId) {
-			// create local session then send
-			sessionId = crypto.randomUUID()
-			sessionStore.upsertAndPersist({
-				id: sessionId,
-				title: text.slice(0, 48),
-				runtimeId: "claude",
-				directory: "",
-			})
-			navigate(`/session/${sessionId}`)
+			this.messages = [
+				...this.messages,
+				{
+					id: `e-${Date.now()}`,
+					role: "system",
+					text: this.locale.t("litShell.turnFailed", {
+						error: "No active session. Create one from Home first.",
+					}),
+				},
+			]
+			return
 		}
 
 		const userMsg: LitChatMessage = {
@@ -145,15 +163,16 @@ export class GcodeApp extends LitElement {
 		sessionStore.appendMessage(sessionId, userMsg)
 		this.busy = true
 		this.permission = null
+		this.question = null
+		this.tools = []
 
 		const meta = sessionStore.getMeta(sessionId)
-		const runtimeId = meta?.runtimeId || "claude"
+		const runtimeId = meta?.runtimeId || ""
 		const assistantId = `a-${Date.now()}`
 
 		try {
 			if (runtimeId === "opencode" || sessionId.startsWith("ses_")) {
 				await promptManagedSession(sessionId, text)
-				// poll messages once after async prompt
 				await new Promise((r) => setTimeout(r, 1500))
 				const msgs = await loadManagedMessages(sessionId)
 				if (msgs.length) this.messages = msgs
@@ -167,6 +186,12 @@ export class GcodeApp extends LitElement {
 					},
 					onPermission: (req) => {
 						this.permission = req
+					},
+					onQuestion: (req) => {
+						this.question = req
+					},
+					onTool: (tool) => {
+						this.upsertTool(tool)
 					},
 					onError: (err) => {
 						this.messages = [
@@ -203,7 +228,48 @@ export class GcodeApp extends LitElement {
 			]
 		} finally {
 			this.busy = false
+		}
+	}
+
+	private async onPermission(
+		e: CustomEvent<{ requestId: string; decision: LitPermissionDecision }>,
+	): Promise<void> {
+		const sessionId = this.activeSessionId()
+		if (!sessionId || !e.detail) return
+		try {
+			await respondLitPermission(sessionId, e.detail.requestId, e.detail.decision)
 			this.permission = null
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err)
+			this.messages = [
+				...this.messages,
+				{
+					id: `e-${Date.now()}`,
+					role: "system",
+					text: this.locale.t("litShell.turnFailed", { error: message }),
+				},
+			]
+		}
+	}
+
+	private async onQuestionAnswer(
+		e: CustomEvent<{ requestId: string; answers: Record<string, string> }>,
+	): Promise<void> {
+		const sessionId = this.activeSessionId()
+		if (!sessionId || !e.detail) return
+		try {
+			await answerLitQuestion(sessionId, e.detail.requestId, e.detail.answers)
+			this.question = null
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err)
+			this.messages = [
+				...this.messages,
+				{
+					id: `e-${Date.now()}`,
+					role: "system",
+					text: this.locale.t("litShell.turnFailed", { error: message }),
+				},
+			]
 		}
 	}
 
@@ -226,25 +292,21 @@ export class GcodeApp extends LitElement {
 			case "session": {
 				const active = sessionStore.list().find((s) => s.id === route.sessionId)
 				return html`
-					${
-						this.permission
-							? html`
-									<div
-										style="padding:8px 16px;background:var(--gcode-bg-muted);border-bottom:1px solid var(--gcode-border);font-size:12px;"
-									>
-										${this.locale.t("cliApprovals.title", {
-											name: this.permission.toolName || "tool",
-										})}
-									</div>
-								`
-							: null
-					}
 					<gcode-chat-panel
 						title=${active?.title || route.sessionId.slice(0, 8)}
 						runtime-id=${active?.runtimeId || ""}
 						.messages=${this.messages}
+						.tools=${this.tools}
+						.permission=${this.permission}
+						.question=${this.question}
 						?busy=${this.busy}
 						@gcode-send=${(e: CustomEvent<{ text: string }>) => this.onSend(e)}
+						@gcode-permission=${(
+							e: CustomEvent<{ requestId: string; decision: LitPermissionDecision }>,
+						) => this.onPermission(e)}
+						@gcode-question-answer=${(
+							e: CustomEvent<{ requestId: string; answers: Record<string, string> }>,
+						) => this.onQuestionAnswer(e)}
 					></gcode-chat-panel>
 				`
 			}
@@ -282,7 +344,3 @@ declare global {
 		"gcode-app": GcodeApp
 	}
 }
-
-// silence unused import if tree-shaken
-void hrefForRoute
-void createManagedSession

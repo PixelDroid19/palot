@@ -1,8 +1,11 @@
 /**
- * Lit chat runtime must call window.gcode.agentSession (shipped IPC path).
+ * Lit chat runtime public API — fail-closed, no offline success, no auto-allow.
  */
 import { afterEach, describe, expect, test } from "bun:test"
-import { runLitAgentTurn } from "../src/renderer/lit/chat-runtime"
+import {
+	respondLitPermission,
+	runLitAgentTurn,
+} from "../src/renderer/lit/chat-runtime"
 import { sessionStore } from "../src/renderer/lit/session-store"
 
 const mem = new Map<string, string>()
@@ -20,7 +23,7 @@ afterEach(() => {
 	delete globalThis.window
 })
 
-describe("runLitAgentTurn (shipped)", () => {
+describe("runLitAgentTurn (public)", () => {
 	test("opens and prompts agentSession with session meta", async () => {
 		const opens: unknown[] = []
 		const prompts: unknown[] = []
@@ -36,7 +39,6 @@ describe("runLitAgentTurn (shipped)", () => {
 					},
 					prompt: async (sessionId: string, opts: unknown) => {
 						prompts.push({ sessionId, opts })
-						// simulate stream
 						for (const cb of updates) {
 							cb(sessionId, { kind: "text-delta", text: "Hello" })
 						}
@@ -62,8 +64,10 @@ describe("runLitAgentTurn (shipped)", () => {
 		})
 
 		const deltas: string[] = []
+		const tools: string[] = []
 		const final = await runLitAgentTurn("s1", "hi", {
 			onAssistantDelta: (t) => deltas.push(t),
+			onTool: (t) => tools.push(t.name),
 		})
 		expect(opens).toHaveLength(1)
 		expect((opens[0] as { runtimeId: string }).runtimeId).toBe("codex")
@@ -74,7 +78,85 @@ describe("runLitAgentTurn (shipped)", () => {
 		expect(deltas.length).toBeGreaterThan(0)
 	})
 
-	test("fails closed for opencode managed-server without React gateway", async () => {
+	test("emits permission without auto-responding", async () => {
+		const permissionCalls: string[] = []
+		const updates: Array<(sid: string, u: Record<string, unknown>) => void> = []
+		const respondCalls: unknown[] = []
+
+		// @ts-expect-error test window
+		globalThis.window = {
+			gcode: {
+				agentSession: {
+					open: async () => ({ threadId: "t1" }),
+					prompt: async (sessionId: string) => {
+						for (const cb of updates) {
+							cb(sessionId, {
+								kind: "permission",
+								requestId: "perm-1",
+								toolName: "bash",
+								description: "run ls",
+							})
+						}
+						return { message: "ok", status: "ok" }
+					},
+					onUpdate: (cb: (sid: string, u: Record<string, unknown>) => void) => {
+						updates.push(cb)
+						return () => {}
+					},
+					respondPermission: async (sid: string, requestId: string, decision: string) => {
+						respondCalls.push({ sid, requestId, decision })
+						return true
+					},
+				},
+			},
+		}
+
+		sessionStore.upsertAndPersist({
+			id: "s-perm",
+			title: "P",
+			runtimeId: "claude",
+			directory: "/repo",
+		})
+
+		await runLitAgentTurn("s-perm", "ls", {
+			onPermission: (req) => permissionCalls.push(req.requestId),
+		})
+
+		expect(permissionCalls).toEqual(["perm-1"])
+		// auto-allow must not happen during the turn
+		expect(respondCalls).toHaveLength(0)
+
+		const ok = await respondLitPermission("s-perm", "perm-1", "allow")
+		expect(ok).toBe(true)
+		expect(respondCalls).toHaveLength(1)
+		expect((respondCalls[0] as { decision: string }).decision).toBe("allow")
+	})
+
+	test("fails closed when session has no runtime", async () => {
+		// @ts-expect-error test window
+		globalThis.window = { gcode: { agentSession: {} } }
+		sessionStore.upsertAndPersist({
+			id: "s-none",
+			title: "N",
+			runtimeId: "unknown",
+			directory: "",
+		})
+		await expect(runLitAgentTurn("s-none", "hi")).rejects.toThrow(/no runtime/i)
+	})
+
+	test("fails closed for Claude/Codex without agentSession bridge", async () => {
+		// @ts-expect-error test window
+		globalThis.window = {}
+		sessionStore.upsertAndPersist({
+			id: "s2",
+			title: "T",
+			runtimeId: "claude",
+			directory: "/repo",
+		})
+		await expect(runLitAgentTurn("s2", "hi")).rejects.toThrow(/bridge/i)
+	})
+
+	test("opencode path uses managed-chat and fails without workspace client", async () => {
 		// @ts-expect-error test window
 		globalThis.window = {
 			gcode: {
@@ -92,6 +174,6 @@ describe("runLitAgentTurn (shipped)", () => {
 			runtimeId: "opencode",
 			directory: "/repo",
 		})
-		await expect(runLitAgentTurn("oc1", "hi")).rejects.toThrow(/OpenCode|managed-server|workspace/i)
+		await expect(runLitAgentTurn("oc1", "hi")).rejects.toThrow()
 	})
 })

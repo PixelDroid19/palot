@@ -1,6 +1,7 @@
 /**
  * Lit product bootstrap.
  */
+import "../index.css"
 import "./components/gcode-app"
 
 const root = document.getElementById("root")
