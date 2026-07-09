@@ -65,4 +65,24 @@ describe("GCode brand identity", () => {
 		expect(yml).not.toContain("productName: Palot")
 		expect(yml).not.toContain("com.palot")
 	})
+
+	test("assets/branding wordmark is GCode (not palot path outlines)", () => {
+		const monorepo = join(root, "../..")
+		const svg = readFileSync(join(monorepo, "assets/branding/wordmark.svg"), "utf8")
+		expect(svg).toContain("GCode")
+		expect(svg).not.toContain("M612.104")
+		expect(svg.toLowerCase()).not.toMatch(/palot\./)
+		expect(svg).not.toMatch(/Wordmark:\s*"palot/)
+	})
+
+	test("README primary screenshot asset exists and is not the old palot-only file", () => {
+		const shot = join(root, "resources/brand/screenshot.jpg")
+		const buf = readFileSync(shot)
+		expect(buf.byteLength).toBeGreaterThan(50_000)
+		// Old marketing shot was 276513 bytes JFIF with embedded palot. chrome;
+		// edited GCode shot is a different blob (hash/size). Reject known-old size.
+		expect(buf.byteLength).not.toBe(276513)
+		const latin = buf.toString("latin1").toLowerCase()
+		expect(latin.includes("palot.")).toBe(false)
+	})
 })
