@@ -5,9 +5,11 @@
 import { beforeEach, describe, expect, test } from "bun:test"
 import {
 	bootstrapTransportForRuntimeId,
+	clearManagedServerRuntimeIds,
 	isRegisteredManagedServerRuntimeId,
 	listManagedServerRuntimeIds,
 	registerManagedServerRuntimeId,
+	syncManagedServerRuntimeIds,
 	unregisterManagedServerRuntimeId,
 } from "../src/shared/runtime-transport-registry"
 import {
@@ -22,11 +24,14 @@ import { gatewayTransportForRuntimeId } from "../src/renderer/lib/runtime-transp
 import { PROJECT_RUNTIME_ID } from "../src/shared/runtime-ids"
 import {
 	resolveDefaultSessionRuntimeId,
+	syncTransportRegistryFromDescriptors,
 } from "../src/renderer/lib/session-runtimes"
 
 describe("managed-server transport registry", () => {
-	test("bootstrap uses registered ids, not a frozen brand table only", () => {
-		expect(gatewayTransportForRuntimeId(PROJECT_RUNTIME_ID)).toBe("managed-server")
+	test("bootstrap uses only registered ids (no module-load brand freeze)", () => {
+		clearManagedServerRuntimeIds()
+		// Unregistered brands (including opencode) → agent-host until synced
+		expect(gatewayTransportForRuntimeId(PROJECT_RUNTIME_ID)).toBe("agent-host")
 		expect(gatewayTransportForRuntimeId("codex")).toBe("agent-host")
 		expect(gatewayTransportForRuntimeId("claude")).toBe("agent-host")
 		expect(gatewayTransportForRuntimeId("custom-harness")).toBe("agent-host")
@@ -37,6 +42,17 @@ describe("managed-server transport registry", () => {
 		expect(listManagedServerRuntimeIds()).toContain("acme-server")
 		unregisterManagedServerRuntimeId("acme-server")
 		expect(bootstrapTransportForRuntimeId("acme-server")).toBe("agent-host")
+	})
+
+	test("syncManagedServerRuntimeIds replaces set so unplugged brands disappear", () => {
+		syncManagedServerRuntimeIds(["opencode", "acme"])
+		expect(listManagedServerRuntimeIds().sort()).toEqual(["acme", "opencode"])
+		syncManagedServerRuntimeIds(["acme"])
+		expect(listManagedServerRuntimeIds()).toEqual(["acme"])
+		expect(bootstrapTransportForRuntimeId("opencode")).toBe("agent-host")
+		expect(bootstrapTransportForRuntimeId("acme")).toBe("managed-server")
+		clearManagedServerRuntimeIds()
+		expect(listManagedServerRuntimeIds()).toEqual([])
 	})
 })
 
@@ -75,6 +91,43 @@ describe("resolveDefaultSessionRuntimeId from descriptors", () => {
 			},
 		])
 		expect(id).toBe("solo-harness")
+	})
+
+	test("empty descriptors do not invent opencode via managed registry", () => {
+		clearManagedServerRuntimeIds()
+		// Stale brand must not apply when descriptors are empty and registry cleared
+		expect(resolveDefaultSessionRuntimeId([])).toBe("")
+		// Even if someone re-registers opencode without descriptors, product default
+		// with non-empty descriptors still prefers the list (tested above).
+		registerManagedServerRuntimeId("opencode")
+		// With empty descriptors we may fall through to managed list — clear first:
+		clearManagedServerRuntimeIds()
+		expect(resolveDefaultSessionRuntimeId([])).toBe("")
+	})
+
+	test("sync from descriptors without opencode unplugs transport bootstrap", () => {
+		syncTransportRegistryFromDescriptors([
+			{
+				id: "claude",
+				displayName: "Claude",
+				installed: true,
+				capabilities: { managedLocalServer: false } as never,
+				sessionCapabilities: { supportsRuntimeConfiguration: false } as never,
+				transport: "agent-host",
+				models: [],
+			} as never,
+		])
+		expect(gatewayTransportForRuntimeId("opencode")).toBe("agent-host")
+		expect(resolveDefaultSessionRuntimeId([
+			{
+				id: "claude",
+				displayName: "Claude",
+				installed: true,
+				capabilities: {} as never,
+				sessionCapabilities: {} as never,
+				models: [],
+			},
+		])).toBe("claude")
 	})
 })
 

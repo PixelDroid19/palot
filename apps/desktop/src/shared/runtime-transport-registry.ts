@@ -4,6 +4,10 @@
  * Managed-server adapters register their ids here so the gateway does not
  * hard-code a single product brand. Process adapters need no registration
  * (default transport is agent-host).
+ *
+ * Main and renderer each have their own module instance. The renderer must
+ * {@link syncManagedServerRuntimeIds} from descriptors returned by main
+ * (which respect composition) — never hard-register a brand at module load.
  */
 
 export type RuntimeTransport = "managed-server" | "agent-host"
@@ -17,6 +21,22 @@ export function registerManagedServerRuntimeId(runtimeId: string): void {
 
 export function unregisterManagedServerRuntimeId(runtimeId: string): void {
 	managedServerIds.delete(runtimeId)
+}
+
+/** Drop all registered managed-server ids (before re-sync from descriptors). */
+export function clearManagedServerRuntimeIds(): void {
+	managedServerIds.clear()
+}
+
+/**
+ * Replace the managed-server id set with exactly these ids (from descriptors).
+ * Ensures unplugging a managed adapter on main is reflected in the renderer.
+ */
+export function syncManagedServerRuntimeIds(runtimeIds: readonly string[]): void {
+	managedServerIds.clear()
+	for (const id of runtimeIds) {
+		if (id) managedServerIds.add(id)
+	}
 }
 
 export function isRegisteredManagedServerRuntimeId(runtimeId: string): boolean {

@@ -3,12 +3,18 @@
  * switch entry points. Mocks only outer process/SDK boundaries — never re-implement
  * transport selection or the GATEWAY_BY_TRANSPORT table.
  */
-import { beforeEach, describe, expect, mock, test } from "bun:test"
+import { beforeAll, beforeEach, describe, expect, mock, test } from "bun:test"
 import {
 	gatewayTransportForRuntimeId,
 	resolveRuntimeTransport,
 } from "../src/renderer/lib/runtime-transport"
 import { PROJECT_RUNTIME_ID } from "../src/shared/runtime-ids"
+import { registerManagedServerRuntimeId } from "../src/shared/runtime-transport-registry"
+
+// Simulate main composition that includes OpenCode (renderer no longer auto-registers).
+beforeAll(() => {
+	registerManagedServerRuntimeId(PROJECT_RUNTIME_ID)
+})
 
 // --- Outer boundary mocks (must be registered before gateway import) ---
 

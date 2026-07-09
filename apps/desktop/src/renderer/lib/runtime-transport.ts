@@ -3,13 +3,14 @@
  *
  * Adapters declare capabilities (and optionally an explicit transport).
  * Session gateway and UI gate on this, not on hard-coded runtime product names.
+ *
+ * Do NOT register brands at module load — the renderer syncs managed-server
+ * ids from descriptors loaded from main (composition-aware).
  */
 import {
 	bootstrapTransportForRuntimeId,
-	registerManagedServerRuntimeId,
 	type RuntimeTransport,
 } from "../../shared/runtime-transport-registry"
-import { PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
 
 export type { RuntimeTransport }
 
@@ -20,11 +21,6 @@ export type RuntimeTransportInput = {
 	managedLocalServer?: boolean
 	supportsRuntimeConfiguration?: boolean
 }
-
-// Default composition: OpenCode managed-server adapter is registered at module
-// load. Custom builds can register additional managed-server ids or unregister
-// this one via the transport registry.
-registerManagedServerRuntimeId(PROJECT_RUNTIME_ID)
 
 export function resolveRuntimeTransport(input: RuntimeTransportInput): RuntimeTransport {
 	if (input.transport) return input.transport
@@ -37,7 +33,7 @@ export function resolveRuntimeTransport(input: RuntimeTransportInput): RuntimeTr
 
 /**
  * Pure id → transport map used by the session gateway (no descriptor cache).
- * Managed-server ids come from the transport registry (not a brand switch).
+ * Managed-server ids come from the transport registry (synced from descriptors).
  * Process adapters default to agent-host until descriptors override.
  */
 export function gatewayTransportForRuntimeId(runtimeId: string): RuntimeTransport {

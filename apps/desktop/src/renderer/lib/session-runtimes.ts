@@ -10,7 +10,10 @@
  * `loadRuntimeDescriptors()` resolves.
  */
 import type { AgentRuntimeId, SessionRuntimeDescriptor } from "../../preload/api"
-import { listManagedServerRuntimeIds } from "../../shared/runtime-transport-registry"
+import {
+	listManagedServerRuntimeIds,
+	syncManagedServerRuntimeIds,
+} from "../../shared/runtime-transport-registry"
 import { PROJECT_RUNTIME_ID as SHARED_PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
 import {
 	gatewayTransportForRuntimeId,
@@ -23,10 +26,10 @@ export const PROJECT_RUNTIME_ID = SHARED_PROJECT_RUNTIME_ID
 export const OPENCODE_RUNTIME_ID = PROJECT_RUNTIME_ID
 export type SessionRuntimeId = string
 /**
- * Bootstrap fallback only when no descriptors/registry are available yet.
- * Prefer {@link resolveDefaultSessionRuntimeId} for product paths.
+ * Last resolved default from descriptors (starts empty until first load).
+ * Prefer {@link resolveDefaultSessionRuntimeId} — do not treat this as product base.
  */
-export let DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = PROJECT_RUNTIME_ID
+export let DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = ""
 export interface SessionRuntimeOption {
 	value: SessionRuntimeId
 	label: string
@@ -40,32 +43,55 @@ let descriptorCache: { at: number; value: SessionRuntimeDescriptor[] } | null = 
 let inflight: Promise<SessionRuntimeDescriptor[]> | null = null
 
 /**
+ * Sync renderer transport registry from descriptors (main is composition-aware).
+ * Replaces the managed-server id set so unplugged adapters disappear here too.
+ */
+export function syncTransportRegistryFromDescriptors(
+	descriptors: SessionRuntimeDescriptor[],
+): void {
+	const managedIds = descriptors
+		.filter((d) => resolveRuntimeTransport(d) === "managed-server")
+		.map((d) => d.id)
+	syncManagedServerRuntimeIds(managedIds)
+}
+
+/**
  * Default runtime for new sessions: first **installed** descriptor, else first
- * descriptor, else first registered managed-server id, else bootstrap constant.
- * Driven by registry/descriptors — not a frozen OpenCode product base.
+ * descriptor, else last-known DEFAULT, else first managed id after sync.
+ * Never invents a brand that is not present in the provided descriptors when
+ * that list is non-empty.
  */
 export function resolveDefaultSessionRuntimeId(
 	descriptors: SessionRuntimeDescriptor[] = runtimeDescriptors(),
 ): SessionRuntimeId {
-	const installed = descriptors.find((d) => d.installed)
-	if (installed) return installed.id
-	if (descriptors[0]) return descriptors[0].id
+	if (descriptors.length > 0) {
+		const installed = descriptors.find((d) => d.installed)
+		if (installed) return installed.id
+		return descriptors[0]!.id
+	}
+	// No descriptors yet (pre-load): prefer empty → callers should wait for load.
+	// Managed list is only valid after sync from descriptors (not module-load brand).
 	const managed = listManagedServerRuntimeIds()
 	if (managed[0]) return managed[0]
-	return DEFAULT_SESSION_RUNTIME_ID
+	if (DEFAULT_SESSION_RUNTIME_ID) return DEFAULT_SESSION_RUNTIME_ID
+	// Absolute last resort for tests without any registry: empty string is safer
+	// than a frozen "opencode" that re-couples the product.
+	return ""
 }
 
 /**
  * Runtime for sessions without process-adapter meta (managed-server path).
- * Uses registered managed-server ids only — never invents a process CLI default.
+ * Uses registry ids synced from descriptors only.
  */
 export function resolveDefaultManagedRuntimeId(): SessionRuntimeId {
 	const managed = listManagedServerRuntimeIds()
 	if (managed[0]) return managed[0]
+	// If no managed-server is registered, fall back to general default (may be process).
 	return resolveDefaultSessionRuntimeId()
 }
 
 function refreshDefaultSessionRuntimeId(descriptors: SessionRuntimeDescriptor[]): void {
+	syncTransportRegistryFromDescriptors(descriptors)
 	DEFAULT_SESSION_RUNTIME_ID = resolveDefaultSessionRuntimeId(descriptors)
 }
 
