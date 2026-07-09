@@ -591,7 +591,8 @@ registerAutomationRuntimeExecutor(openCodeAutomationExecutor)
 
 /**
  * Neutral product entry: dispatches via {@link executeAutomationRun}.
- * Defaults to the OpenCode adapter until automation configs carry runtimeId.
+ * Uses `config.runtimeId` when set; otherwise the OpenCode managed-server
+ * adapter (current default for existing automation configs).
  */
 export async function executeRun(
 	config: AutomationConfig & { id: string; prompt: string },
@@ -599,7 +600,7 @@ export async function executeRun(
 	onSessionCreated?: AutomationOnSessionCreated,
 ): Promise<AutomationExecutionResult> {
 	return executeAutomationRun({
-		runtimeId: "opencode",
+		runtimeId: config.runtimeId || "opencode",
 		config,
 		workspace,
 		onSessionCreated,

@@ -67,6 +67,12 @@ export interface AutomationConfig {
 	schedule: AutomationSchedule
 	workspaces: string[]
 	execution: ExecutionConfig
+	/**
+	 * Which runtime adapter executes this automation.
+	 * Defaults to `"opencode"` (managed-server adapter) when omitted so existing
+	 * configs keep working. Product dispatch uses the neutral executor registry.
+	 */
+	runtimeId?: string
 }
 
 export interface RunResult {

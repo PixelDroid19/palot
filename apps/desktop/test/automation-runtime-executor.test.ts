@@ -62,4 +62,35 @@ describe("neutral automation executor registry", () => {
 		expect(result.title).toBe("Missing")
 		expect(typeof result.error === "string" || result.error === null).toBe(true)
 	})
+
+	test("dispatches to registered runtimeId (config.runtimeId path is product-owned)", async () => {
+		const seen: string[] = []
+		registerAutomationRuntimeExecutor({
+			runtimeId: "claude-auto-test",
+			async execute(config) {
+				seen.push(config.id)
+				return {
+					sessionId: "c1",
+					worktreePath: null,
+					title: config.name,
+					summary: "claude-path",
+					hasActionable: true,
+					branch: null,
+					error: null,
+				}
+			},
+		})
+		const result = await executeAutomationRun({
+			runtimeId: "claude-auto-test",
+			config: {
+				id: "auto-claude",
+				name: "Claude Auto",
+				prompt: "review",
+				runtimeId: "claude-auto-test",
+			} as never,
+			workspace: "/tmp/ws",
+		})
+		expect(result.summary).toBe("claude-path")
+		expect(seen).toEqual(["auto-claude"])
+	})
 })
