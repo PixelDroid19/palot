@@ -123,7 +123,12 @@ export interface AgentModelInfo {
 	defaultEffort?: string
 }
 
-/** What a runtime can do — drives which UI affordances are shown. */
+/**
+ * What a runtime can do — drives which UI affordances are shown.
+ *
+ * Product code must gate UI/flow on these flags (or {@link AgentSessionCapabilities}),
+ * never on hard-coded runtime id product branches outside adapter boundaries.
+ */
 export interface AgentRuntimeCapabilities {
 	/** Accepts image attachments on a prompt. */
 	imageInput: boolean
@@ -137,6 +142,25 @@ export interface AgentRuntimeCapabilities {
 	interrupt: boolean
 	/** Accepts steering input while a turn is running. */
 	steering: boolean
+	/** Exposes a model catalog the UI can pick from. */
+	models: boolean
+	/** Supports agent/profile selection (e.g. build/plan agents). */
+	agentsProfiles: boolean
+	/** Supports model variants (provider-specific quality/speed modes). */
+	variants: boolean
+	/** Supports sandbox / permission-mode selection. */
+	sandboxModes: boolean
+	/** Can launch into a git worktree / isolated workspace. */
+	worktree: boolean
+	/** Sessions persist across app restarts (server- or CLI-backed). */
+	persistentSessions: boolean
+	/** Supports background / subagent sessions. */
+	backgroundAgents: boolean
+	/**
+	 * Needs a local managed HTTP server lifecycle (today: OpenCode).
+	 * Other runtimes speak process/stdio and leave this false.
+	 */
+	managedLocalServer: boolean
 }
 
 /** Session-level UX affordances a runtime can back in Palot. */
@@ -145,10 +169,22 @@ export interface AgentSessionCapabilities {
 	supportsSessionSummarize: boolean
 	supportsServerSlashCommands: boolean
 	supportsFork: boolean
+	/**
+	 * Rich per-session configuration via a managed project server
+	 * (agents, provider model catalog, variants). When false, the
+	 * session is configured from the runtime descriptor catalog.
+	 */
 	supportsRuntimeConfiguration: boolean
 	supportsWorktreeLaunch: boolean
 	supportsServerHistory: boolean
 }
+
+/**
+ * How the product talks to a runtime. Adapters own the wire protocol;
+ * product code only picks a transport from the descriptor, never by
+ * hard-coding "OpenCode vs CLI".
+ */
+export type RuntimeTransport = "managed-server" | "agent-host"
 
 /** Full description of a runtime for pickers and settings UIs. */
 export interface AgentRuntimeDescriptor {
@@ -157,7 +193,70 @@ export interface AgentRuntimeDescriptor {
 	installed: boolean
 	capabilities: AgentRuntimeCapabilities
 	sessionCapabilities: AgentSessionCapabilities
+	/** Wire transport this runtime uses. Defaults from capabilities when omitted. */
+	transport?: RuntimeTransport
 	models: AgentModelInfo[]
+}
+
+// ---------------------------------------------------------------------------
+// Product-facing neutral aliases (T3-style: core contract, concrete adapters)
+// ---------------------------------------------------------------------------
+
+/** @see AgentSessionProvider — concrete CLI/server adapters implement this. */
+export type RuntimeAdapter = AgentSessionProvider
+/** @see AgentRuntimeDescriptor */
+export type RuntimeDescriptor = AgentRuntimeDescriptor
+/** @see AgentRuntimeCapabilities */
+export type RuntimeCapabilities = AgentRuntimeCapabilities
+/** @see AgentModelInfo */
+export type RuntimeModel = AgentModelInfo
+/** @see AgentSessionOptions — session open / execution options. */
+export type RuntimeExecutionOptions = AgentSessionOptions
+
+/**
+ * Neutral prompt payload shared by all runtimes. Adapters translate this into
+ * OpenCode SDK, Codex app-server, or Claude Agent SDK calls.
+ */
+export interface RuntimePromptPayload {
+	runtimeId: AgentRuntimeId
+	text: string
+	/** Model slug or provider/model ref — adapter-normalized. */
+	model?: string
+	/** Agent / profile name when the runtime supports agentsProfiles. */
+	profile?: string
+	/** Model variant when the runtime supports variants. */
+	variant?: string
+	/** Reasoning effort when the runtime supports reasoningEffort. */
+	effort?: string
+	/** Sandbox / permission posture. */
+	permissionMode?: AgentSandbox
+	/** Absolute image paths (or attachment paths the adapter understands). */
+	files?: string[]
+	/** Working directory / workspace root. */
+	cwd?: string
+}
+
+/** Loose input for transport resolution (full descriptor or partial flags). */
+export type RuntimeTransportInput = {
+	transport?: RuntimeTransport
+	capabilities?: Partial<Pick<AgentRuntimeCapabilities, "managedLocalServer">> &
+		Partial<AgentRuntimeCapabilities>
+	sessionCapabilities?: Partial<
+		Pick<AgentSessionCapabilities, "supportsRuntimeConfiguration">
+	> &
+		Partial<AgentSessionCapabilities>
+	managedLocalServer?: boolean
+	supportsRuntimeConfiguration?: boolean
+}
+
+/** Resolve transport from a descriptor or capability set. */
+export function resolveRuntimeTransport(input: RuntimeTransportInput): RuntimeTransport {
+	if (input.transport) return input.transport
+	if (input.capabilities?.managedLocalServer) return "managed-server"
+	if (input.sessionCapabilities?.supportsRuntimeConfiguration) return "managed-server"
+	if (input.managedLocalServer) return "managed-server"
+	if (input.supportsRuntimeConfiguration) return "managed-server"
+	return "agent-host"
 }
 
 /**
@@ -268,6 +367,8 @@ export interface AgentSessionProvider {
 	/**
 	 * Discover the models this CLI can run from the CLI's own source of truth.
 	 * Never throws; returns a fallback on any error. First entry = default.
+	 * Quota / rate-limit failures must NOT clear the catalog — treat those as
+	 * account state on the model, not as "no models available".
 	 */
 	listModels(): Promise<AgentModelInfo[]>
 	/** Open a persistent session. */
@@ -277,6 +378,42 @@ export interface AgentSessionProvider {
 	): Promise<AgentSession>
 	/** Release provider-wide resources (shared processes). */
 	dispose(): Promise<void>
+}
+
+/** Default capability flags for process/CLI adapters (Codex, Claude). */
+export const DEFAULT_PROCESS_RUNTIME_CAPABILITIES: AgentRuntimeCapabilities = {
+	imageInput: true,
+	reasoningEffort: true,
+	resume: true,
+	permissions: true,
+	interrupt: true,
+	steering: false,
+	models: true,
+	agentsProfiles: false,
+	variants: false,
+	sandboxModes: true,
+	worktree: false,
+	persistentSessions: true,
+	backgroundAgents: false,
+	managedLocalServer: false,
+}
+
+/** Default capability flags for managed-server adapters (OpenCode today). */
+export const DEFAULT_MANAGED_SERVER_RUNTIME_CAPABILITIES: AgentRuntimeCapabilities = {
+	imageInput: true,
+	reasoningEffort: false,
+	resume: true,
+	permissions: true,
+	interrupt: true,
+	steering: false,
+	models: true,
+	agentsProfiles: true,
+	variants: true,
+	sandboxModes: false,
+	worktree: true,
+	persistentSessions: true,
+	backgroundAgents: true,
+	managedLocalServer: true,
 }
 
 // Shared parsing helpers for providers.

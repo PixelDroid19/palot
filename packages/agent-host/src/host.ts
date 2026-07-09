@@ -29,6 +29,7 @@ import type {
 	AgentUpdate,
 	BridgeInfo,
 } from "./types"
+import { resolveRuntimeTransport } from "./types"
 
 const RUNTIME_CACHE_TTL_MS = 60_000
 const DELEGATE_TIMEOUT_MS = 5 * 60 * 1000
@@ -108,6 +109,10 @@ export class AgentHost {
 					installed: !!binary,
 					capabilities: provider.capabilities,
 					sessionCapabilities: provider.sessionCapabilities,
+					transport: resolveRuntimeTransport({
+						capabilities: provider.capabilities,
+						sessionCapabilities: provider.sessionCapabilities,
+					}),
 					models,
 				}
 			}),

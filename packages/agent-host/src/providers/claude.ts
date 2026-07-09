@@ -36,18 +36,27 @@ import {
 	type AgentUpdate,
 	type AgentUsage,
 	asRecord,
+	DEFAULT_PROCESS_RUNTIME_CAPABILITIES,
 	readNumber,
 	readString,
 } from "../types"
 
+/**
+ * Official Claude Code effort levels (as of 2026 SDK/CLI).
+ * See code.claude.com docs — /effort and model effort slider.
+ */
 const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
-const CLAUDE_MODEL_ALIASES: AgentModelInfo[] = [
-	{ slug: "default", label: "Default", efforts: CLAUDE_EFFORTS },
-	{ slug: "best", label: "Best", efforts: CLAUDE_EFFORTS },
-	{ slug: "sonnet", label: "Sonnet", efforts: CLAUDE_EFFORTS },
-	{ slug: "opus", label: "Opus", efforts: CLAUDE_EFFORTS },
-	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS },
-	{ slug: "fable", label: "Fable", efforts: CLAUDE_EFFORTS },
+
+/**
+ * Explicit fallback catalog when discovery returns empty or the CLI is
+ * unavailable. Labels make it clear these are aliases, not a blank picker.
+ */
+export const CLAUDE_MODEL_FALLBACK: AgentModelInfo[] = [
+	{ slug: "default", label: "Default (Claude)", efforts: CLAUDE_EFFORTS, defaultEffort: "high" },
+	{ slug: "best", label: "Best available", efforts: CLAUDE_EFFORTS, defaultEffort: "high" },
+	{ slug: "sonnet", label: "Sonnet", efforts: CLAUDE_EFFORTS, defaultEffort: "high" },
+	{ slug: "opus", label: "Opus", efforts: CLAUDE_EFFORTS, defaultEffort: "high" },
+	{ slug: "haiku", label: "Haiku", efforts: CLAUDE_EFFORTS, defaultEffort: "medium" },
 ]
 
 async function* emptyPrompt(): AsyncIterable<SDKUserMessage> {
@@ -640,12 +649,10 @@ export class ClaudeProvider implements AgentSessionProvider {
 	readonly displayName = "Claude Code"
 	readonly binary = "claude"
 	readonly capabilities = {
-		imageInput: true,
-		reasoningEffort: true,
-		resume: true,
-		permissions: true,
-		interrupt: true,
+		...DEFAULT_PROCESS_RUNTIME_CAPABILITIES,
 		steering: true,
+		// Background agents via `claude agents` / Task tool when available.
+		backgroundAgents: true,
 	}
 	readonly sessionCapabilities = {
 		supportsSessionRevert: false,
@@ -659,9 +666,14 @@ export class ClaudeProvider implements AgentSessionProvider {
 
 	constructor(private readonly resolveBinary: () => Promise<string | null>) {}
 
+	/**
+	 * Discover models from Claude settings when possible; always return a
+	 * non-empty explicit fallback so the shared toolbar never shows an empty
+	 * model slot for Claude.
+	 */
 	async listModels(): Promise<AgentModelInfo[]> {
 		const binary = await this.resolveBinary().catch(() => null)
-		if (!binary) return CLAUDE_MODEL_ALIASES
+		if (!binary) return CLAUDE_MODEL_FALLBACK
 
 		const q = query({
 			prompt: emptyPrompt(),
@@ -675,17 +687,71 @@ export class ClaudeProvider implements AgentSessionProvider {
 		})
 
 		try {
-			const settings = await q.getSettings()
-			const discovered = settingsModelInfo(settings)
-			if (discovered.length > 0) {
-				return uniqueClaudeModels([...discovered, ...CLAUDE_MODEL_ALIASES])
+			// SDK Query may expose getSettings depending on version; guard at runtime.
+			const getSettings = (q as { getSettings?: () => Promise<Settings> }).getSettings
+			if (getSettings) {
+				const settings = await getSettings.call(q)
+				const discovered = settingsModelInfo(settings)
+				if (discovered.length > 0) {
+					return uniqueClaudeModels([...discovered, ...CLAUDE_MODEL_FALLBACK])
+				}
 			}
-		} catch {}
-		finally {
+		} catch {
+			// Discovery failed (auth, network, CLI error) — fall through to
+			// explicit aliases. Quota limits must not blank the catalog.
+		} finally {
 			q.close()
 		}
 
-		return CLAUDE_MODEL_ALIASES
+		return CLAUDE_MODEL_FALLBACK
+	}
+
+	/**
+	 * List Claude Code agent definitions when the CLI supports
+	 * `claude agents --json`. Returns [] when unsupported — the toolbar hides
+	 * the agents slot via capabilities.agentsProfiles (false for Claude).
+	 */
+	async listBackgroundAgents(): Promise<{ name: string; description?: string }[]> {
+		const binary = await this.resolveBinary().catch(() => null)
+		if (!binary) return []
+		try {
+			const { spawn } = await import("node:child_process")
+			const output = await new Promise<string>((resolve, reject) => {
+				const child = spawn(binary, ["agents", "--json"], {
+					stdio: ["ignore", "pipe", "pipe"],
+				})
+				let stdout = ""
+				let stderr = ""
+				child.stdout?.on("data", (chunk: Buffer) => {
+					stdout += chunk.toString()
+				})
+				child.stderr?.on("data", (chunk: Buffer) => {
+					stderr += chunk.toString()
+				})
+				child.on("error", reject)
+				child.on("close", (code) => {
+					if (code === 0) resolve(stdout)
+					else reject(new Error(stderr || `claude agents exited ${code}`))
+				})
+			})
+			const parsed = JSON.parse(output) as unknown
+			const list = Array.isArray(parsed)
+				? parsed
+				: Array.isArray((parsed as { agents?: unknown })?.agents)
+					? (parsed as { agents: unknown[] }).agents
+					: []
+			const agents: { name: string; description?: string }[] = []
+			for (const entry of list) {
+				const rec = asRecord(entry)
+				const name = readString(rec?.name) || readString(rec?.id)
+				if (!name) continue
+				const description = readString(rec?.description) || undefined
+				agents.push(description ? { name, description } : { name })
+			}
+			return agents
+		} catch {
+			return []
+		}
 	}
 
 	async openSession(

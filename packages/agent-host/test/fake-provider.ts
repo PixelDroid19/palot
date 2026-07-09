@@ -129,6 +129,23 @@ export class FakeProvider implements AgentSessionProvider {
 		permissions: true,
 		interrupt: true,
 		steering: true,
+		models: true,
+		agentsProfiles: false,
+		variants: false,
+		sandboxModes: true,
+		worktree: false,
+		persistentSessions: true,
+		backgroundAgents: false,
+		managedLocalServer: false,
+	}
+	readonly sessionCapabilities = {
+		supportsSessionRevert: false,
+		supportsSessionSummarize: false,
+		supportsServerSlashCommands: false,
+		supportsFork: false,
+		supportsRuntimeConfiguration: false,
+		supportsWorktreeLaunch: false,
+		supportsServerHistory: false,
 	}
 	sessions: FakeSession[] = []
 

@@ -26,9 +26,48 @@ import {
 	type AgentUpdate,
 	type AgentUsage,
 	asRecord,
+	DEFAULT_PROCESS_RUNTIME_CAPABILITIES,
 	readNumber,
 	readString,
 } from "../types"
+
+/** Explicit fallback when model/list fails (network, auth). Never empty for UI. */
+export const CODEX_MODEL_FALLBACK: AgentModelInfo[] = [
+	{
+		slug: "o3",
+		label: "o3",
+		efforts: ["low", "medium", "high"],
+		defaultEffort: "medium",
+	},
+	{
+		slug: "o4-mini",
+		label: "o4-mini",
+		efforts: ["low", "medium", "high"],
+		defaultEffort: "medium",
+	},
+	{
+		slug: "gpt-5",
+		label: "gpt-5",
+		efforts: ["low", "medium", "high", "xhigh"],
+		defaultEffort: "medium",
+	},
+	{
+		slug: "codex-mini-latest",
+		label: "codex-mini-latest",
+		efforts: ["low", "medium", "high"],
+		defaultEffort: "medium",
+	},
+]
+
+/**
+ * Whether an error message indicates account quota / rate limit rather than
+ * "models unavailable". Callers must keep the model catalog visible.
+ */
+export function isCodexQuotaOrAccountLimit(message: string): boolean {
+	return /quota|rate.?limit|usage.?limit|billing|insufficient.?credit|plan.?limit|exceeded.*limit/i.test(
+		message,
+	)
+}
 
 /**
  * When Palot is launched from inside another Codex-managed environment (for
@@ -453,11 +492,7 @@ export class CodexProvider implements AgentSessionProvider {
 	readonly displayName = "Codex"
 	readonly binary = "codex"
 	readonly capabilities = {
-		imageInput: true,
-		reasoningEffort: true,
-		resume: true,
-		permissions: true,
-		interrupt: true,
+		...DEFAULT_PROCESS_RUNTIME_CAPABILITIES,
 		steering: true,
 	}
 	readonly sessionCapabilities = {
@@ -535,6 +570,12 @@ export class CodexProvider implements AgentSessionProvider {
 		this.sessions.delete(threadId)
 	}
 
+	/**
+	 * Catalog from Codex app-server `model/list`. On failure (including quota /
+	 * account limits during listing), returns {@link CODEX_MODEL_FALLBACK} so
+	 * the shared toolbar keeps a non-empty model slot. Quota is account state,
+	 * not "models unavailable".
+	 */
 	async listModels(): Promise<AgentModelInfo[]> {
 		try {
 			const rpc = await this.connection()
@@ -543,21 +584,32 @@ export class CodexProvider implements AgentSessionProvider {
 			for (const entry of result?.data ?? []) {
 				const model = asRecord(entry)
 				if (!model || model.hidden === true) continue
+				// Quota-limited models stay listed; surface via label when present.
 				const efforts = Array.isArray(model.supportedReasoningEfforts)
 					? model.supportedReasoningEfforts
 							.map((e) => readString(asRecord(e)?.reasoningEffort))
 							.filter(Boolean)
 					: []
+				const slug = readString(model.id) || readString(model.model)
+				if (!slug) continue
+				const baseLabel = readString(model.displayName) || slug
+				const quotaLimited =
+					model.quotaLimited === true ||
+					model.limited === true ||
+					isCodexQuotaOrAccountLimit(readString(model.status) || readString(model.error))
 				models.push({
-					slug: readString(model.id) || readString(model.model),
-					label: readString(model.displayName) || readString(model.id),
+					slug,
+					label: quotaLimited ? `${baseLabel} (quota limited)` : baseLabel,
 					efforts,
 					defaultEffort: readString(model.defaultReasoningEffort) || undefined,
 				})
 			}
-			return models
-		} catch {
-			return []
+			return models.length > 0 ? models : CODEX_MODEL_FALLBACK
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err)
+			// Keep catalog for quota/rate-limit — do not treat as empty availability.
+			if (isCodexQuotaOrAccountLimit(message)) return CODEX_MODEL_FALLBACK
+			return CODEX_MODEL_FALLBACK
 		}
 	}
 
