@@ -34,23 +34,32 @@ contextBridge.exposeInMainWorld("palot", {
 	/** Get the current chrome tier (pull-based, avoids race with push event). */
 	getChromeTier: () => ipcRenderer.invoke("chrome-tier:get"),
 
-	/** Ensures the managed runtime server is running. Spawns it if not. */
-	ensureManagedRuntime: () => ipcRenderer.invoke("project-runtime:ensure"),
+	/** Ensures the managed local server (OpenCode adapter) is running. */
+	ensureManagedRuntime: () => ipcRenderer.invoke("runtime:ensure"),
 
-	/** Gets the URL of the running server, or null. */
-	getServerUrl: () => ipcRenderer.invoke("project-runtime:url"),
+	/** Gets the URL of the running managed local server, or null. */
+	getServerUrl: () => ipcRenderer.invoke("runtime:url"),
 
-	/** Stops the managed runtime server. */
-	stopManagedRuntime: () => ipcRenderer.invoke("project-runtime:stop"),
+	/** Stops the managed local server. */
+	stopManagedRuntime: () => ipcRenderer.invoke("runtime:stop"),
 
-	/** Restarts the managed runtime server (stops and re-starts with current settings). */
-	restartManagedRuntime: () => ipcRenderer.invoke("project-runtime:restart"),
+	/** Restarts the managed local server (stops and re-starts with current settings). */
+	restartManagedRuntime: () => ipcRenderer.invoke("runtime:restart"),
 
+	/** Neutral runtime local-server lifecycle (preferred). */
+	runtime: {
+		ensure: () => ipcRenderer.invoke("runtime:ensure"),
+		getServerUrl: () => ipcRenderer.invoke("runtime:url"),
+		stop: () => ipcRenderer.invoke("runtime:stop"),
+		restart: () => ipcRenderer.invoke("runtime:restart"),
+	},
+
+	/** @deprecated Use `runtime` — temporary shim for project-runtime naming. */
 	projectRuntime: {
-		ensure: () => ipcRenderer.invoke("project-runtime:ensure"),
-		getServerUrl: () => ipcRenderer.invoke("project-runtime:url"),
-		stop: () => ipcRenderer.invoke("project-runtime:stop"),
-		restart: () => ipcRenderer.invoke("project-runtime:restart"),
+		ensure: () => ipcRenderer.invoke("runtime:ensure"),
+		getServerUrl: () => ipcRenderer.invoke("runtime:url"),
+		stop: () => ipcRenderer.invoke("runtime:stop"),
+		restart: () => ipcRenderer.invoke("runtime:restart"),
 	},
 
 	// --- Credential storage (safeStorage-backed) ---

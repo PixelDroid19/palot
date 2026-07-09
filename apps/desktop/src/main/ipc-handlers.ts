@@ -198,8 +198,13 @@ export function registerIpcHandlers(): void {
 		isDev: !app.isPackaged,
 	}))
 
-	// --- OpenCode server lifecycle ---
+	// --- Managed local server lifecycle (OpenCode adapter; neutral `runtime:*` API) ---
 
+	ipcMain.handle(
+		"runtime:ensure",
+		withLogging("runtime:ensure", async () => await ensureProjectRuntimeServer()),
+	)
+	// @deprecated legacy channel names — keep until callers migrate fully
 	ipcMain.handle(
 		"opencode:ensure",
 		withLogging("opencode:ensure", async () => await ensureProjectRuntimeServer()),
@@ -209,9 +214,14 @@ export function registerIpcHandlers(): void {
 		withLogging("project-runtime:ensure", async () => await ensureProjectRuntimeServer()),
 	)
 
+	ipcMain.handle("runtime:url", () => getProjectRuntimeUrl())
 	ipcMain.handle("opencode:url", () => getProjectRuntimeUrl())
 	ipcMain.handle("project-runtime:url", () => getProjectRuntimeUrl())
 
+	ipcMain.handle(
+		"runtime:stop",
+		withLogging("runtime:stop", () => stopProjectRuntimeServer()),
+	)
 	ipcMain.handle(
 		"opencode:stop",
 		withLogging("opencode:stop", () => stopProjectRuntimeServer()),
@@ -221,6 +231,10 @@ export function registerIpcHandlers(): void {
 		withLogging("project-runtime:stop", () => stopProjectRuntimeServer()),
 	)
 
+	ipcMain.handle(
+		"runtime:restart",
+		withLogging("runtime:restart", async () => await restartProjectRuntimeServer()),
+	)
 	ipcMain.handle(
 		"opencode:restart",
 		withLogging("opencode:restart", async () => await restartProjectRuntimeServer()),

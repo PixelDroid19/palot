@@ -7,15 +7,22 @@ import type { ConversionCategory } from "@palot/configconv"
  * The renderer accesses these via `window.palot`.
  */
 
-export interface ProjectRuntimeServerInfo {
+/**
+ * Local managed server info for runtimes that need an HTTP lifecycle
+ * (today: OpenCode adapter). Not a product-wide "base runtime" type.
+ */
+export interface RuntimeServerInfo {
 	url: string
 	pid: number | null
 	managed: boolean
 }
 
-export type ManagedRuntimeServerInfo = ProjectRuntimeServerInfo
-
-export interface OpenCodeServerInfo extends ProjectRuntimeServerInfo {}
+/** @deprecated Use RuntimeServerInfo */
+export type ProjectRuntimeServerInfo = RuntimeServerInfo
+/** @deprecated Use RuntimeServerInfo */
+export type ManagedRuntimeServerInfo = RuntimeServerInfo
+/** @deprecated Use RuntimeServerInfo — OpenCode is one adapter. */
+export interface OpenCodeServerInfo extends RuntimeServerInfo {}
 
 export interface ModelRef {
 	providerID: string
@@ -278,6 +285,13 @@ export type AgentRunResult = import("@palot/agent-host").AgentRunResult
 export type AgentUpdate = import("@palot/agent-host").AgentUpdate
 export type AgentModelInfo = import("@palot/agent-host").AgentModelInfo
 export type AgentRuntimeDescriptor = import("@palot/agent-host").AgentRuntimeDescriptor
+export type RuntimeAdapter = import("@palot/agent-host").RuntimeAdapter
+export type RuntimeDescriptor = import("@palot/agent-host").RuntimeDescriptor
+export type RuntimeCapabilities = import("@palot/agent-host").RuntimeCapabilities
+export type RuntimeModel = import("@palot/agent-host").RuntimeModel
+export type RuntimeExecutionOptions = import("@palot/agent-host").RuntimeExecutionOptions
+export type RuntimePromptPayload = import("@palot/agent-host").RuntimePromptPayload
+export type RuntimeTransport = import("@palot/agent-host").RuntimeTransport
 export interface SessionRuntimeCapabilities {
 	supportsSessionRevert: boolean
 	supportsSessionSummarize: boolean
@@ -289,6 +303,8 @@ export interface SessionRuntimeCapabilities {
 }
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 	sessionCapabilities: SessionRuntimeCapabilities
+	/** Wire transport — product code dispatches by this, not by runtime brand. */
+	transport: RuntimeTransport
 	setup: {
 		description: string
 		version: string | null
@@ -514,15 +530,27 @@ export interface PalotAPI {
 	/** Get the current chrome tier (pull-based, avoids race with push event). */
 	getChromeTier: () => Promise<WindowChromeTier>
 
-	ensureManagedRuntime: () => Promise<ManagedRuntimeServerInfo>
+	/** Ensures the managed local server (OpenCode adapter) is running. */
+	ensureManagedRuntime: () => Promise<RuntimeServerInfo>
 	getServerUrl: () => Promise<string | null>
 	stopManagedRuntime: () => Promise<boolean>
-	restartManagedRuntime: () => Promise<ManagedRuntimeServerInfo>
-	projectRuntime: {
-		ensure: () => Promise<ProjectRuntimeServerInfo>
+	restartManagedRuntime: () => Promise<RuntimeServerInfo>
+	/**
+	 * Neutral runtime local-server lifecycle API.
+	 * Preferred over legacy projectRuntime / ensureManagedRuntime names.
+	 */
+	runtime: {
+		ensure: () => Promise<RuntimeServerInfo>
 		getServerUrl: () => Promise<string | null>
 		stop: () => Promise<boolean>
-		restart: () => Promise<ProjectRuntimeServerInfo>
+		restart: () => Promise<RuntimeServerInfo>
+	}
+	/** @deprecated Use `runtime` — temporary shim for project-runtime naming. */
+	projectRuntime: {
+		ensure: () => Promise<RuntimeServerInfo>
+		getServerUrl: () => Promise<string | null>
+		stop: () => Promise<boolean>
+		restart: () => Promise<RuntimeServerInfo>
 	}
 	getModelState: () => Promise<ModelState>
 	updateModelRecent: (model: ModelRef) => Promise<ModelState>

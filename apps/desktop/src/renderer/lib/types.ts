@@ -1,6 +1,7 @@
 // Import SDK types we reference in our own interfaces
 import type {
 	PermissionRequest as SdkPermissionRequest,
+	Project as RuntimeProject,
 	QuestionRequest as SdkQuestionRequest,
 } from "@opencode-ai/sdk/v2/client"
 
@@ -38,10 +39,10 @@ export type {
 	UserMessage,
 } from "@opencode-ai/sdk/v2/client"
 
-export type { RuntimeProject }
-export type { RuntimeProject as ProjectRuntimeProject }
-export type { ProjectRuntimeProject }
-export type { RuntimeProject as ManagedRuntimeProject }
+/** @deprecated Use RuntimeProject — OpenCode SDK project shape, not product base. */
+export type ProjectRuntimeProject = RuntimeProject
+/** @deprecated Use RuntimeProject */
+export type ManagedRuntimeProject = RuntimeProject
 
 /**
  * UI-facing diff model for review surfaces.
