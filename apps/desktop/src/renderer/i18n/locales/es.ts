@@ -60,7 +60,7 @@ export const es: LocaleMessages = {
 	},
 	settings: {
 		language: "Idioma",
-		languageDescription: "Idioma de las partes nuevas de la interfaz",
+		languageDescription: "Idioma de la interfaz (inglés o español)",
 	},
 	queuedMessage: {
 		sendNow: "Enviar ahora",
@@ -84,5 +84,19 @@ export const es: LocaleMessages = {
 		emptyState:
 			"Empieza una conversación con {{agent}}. Se ejecuta sin interfaz y recuerda esta sesión entre turnos.",
 		contextKept: "Sesión guardada · el contexto se conserva entre turnos",
+	},
+	litShell: {
+		newSession: "Nueva sesión",
+		newSessionTitle: "Nueva sesión",
+		settings: "Ajustes",
+		back: "Volver",
+		emptySessions: "Aún no hay sesiones. Crea una para chatear con OpenCode, Codex o Claude.",
+		welcomeTitle: "¿Qué construimos?",
+		welcomeBody: "Elige una sesión o crea una nueva. Espacio multi-agente denso: runtimes, herramientas y aprobaciones en un solo lugar.",
+		composerHint: "Enter para enviar · Shift+Enter para nueva línea",
+		systemReady: "Shell Lit de GCode listo. Las sesiones y herramientas usan el bridge del host cuando Electron está disponible.",
+		sessionOpened: "Sesión abierta {{id}}",
+		offlineReply: "Recibido: {{text}}\n\n(Conecta un runtime para turnos de agente en vivo.)",
+		turnFailed: "El turno falló: {{error}}",
 	},
 }

@@ -1,0 +1,46 @@
+// Design tokens for Lit surfaces — no Tailwind dependency.
+// Import via @use "tokens" or loadPaths: lit/styles
+
+:host,
+.gcode-tokens {
+	--gcode-bg: #0c0d10;
+	--gcode-bg-elevated: #14161b;
+	--gcode-bg-muted: #1a1d24;
+	--gcode-border: rgba(255, 255, 255, 0.08);
+	--gcode-border-strong: rgba(255, 255, 255, 0.14);
+	--gcode-fg: #eceef2;
+	--gcode-fg-muted: #9aa3b2;
+	--gcode-fg-subtle: #6b7380;
+	--gcode-accent: #05bdf5;
+	--gcode-accent-soft: rgba(5, 189, 245, 0.14);
+	--gcode-danger: #f07178;
+	--gcode-success: #7fd99a;
+	--gcode-radius: 10px;
+	--gcode-radius-sm: 6px;
+	--gcode-font: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--gcode-font-mono: "IBM Plex Mono", ui-monospace, Menlo, Monaco, monospace;
+	--gcode-sidebar-width: 260px;
+	--gcode-titlebar-height: 40px;
+	--gcode-space-1: 4px;
+	--gcode-space-2: 8px;
+	--gcode-space-3: 12px;
+	--gcode-space-4: 16px;
+	--gcode-space-5: 20px;
+	--gcode-space-6: 24px;
+	color-scheme: dark;
+}
+
+:host([data-theme="light"]),
+.gcode-tokens[data-theme="light"] {
+	--gcode-bg: #f6f7f9;
+	--gcode-bg-elevated: #ffffff;
+	--gcode-bg-muted: #eef0f4;
+	--gcode-border: rgba(15, 23, 42, 0.1);
+	--gcode-border-strong: rgba(15, 23, 42, 0.16);
+	--gcode-fg: #0f172a;
+	--gcode-fg-muted: #475569;
+	--gcode-fg-subtle: #64748b;
+	--gcode-accent: #009fde;
+	--gcode-accent-soft: rgba(0, 159, 222, 0.12);
+	color-scheme: light;
+}

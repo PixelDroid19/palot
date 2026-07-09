@@ -14,9 +14,9 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
 - **`packages/cli-registry`**: Detects installed coding-agent CLIs (`@gcode/cli-registry`) -- OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI; reports version and auth state via a host-injected, testable detection layer
 - **`packages/agent-host`**: Multi-agent core (`@gcode/agent-host`) -- registry-only `AgentHost` (pluggable adapters, sessions, event bus, shared context) plus the **host tool plane** (`host.tools` / `HostToolRegistry`: automation, system, browser, agents, context) via `AgentBridge` (loopback HTTP + dynamic MCP proxy). Product tools are **host-owned** (desktop-host style), not CLI-owned; adapters only inject the bridge. Claude/Codex process adapters live here. Caveat: sandboxed `codex exec` auto-cancels MCP tool calls (openai/codex#24135) — Codex only gets the bridge in full-access runs.
-- **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`)
+- **`apps/desktop`**: Electron 40 + Vite desktop app (via `electron-vite`). **Product chrome is Lit web components** (`src/renderer/lit/`), not React. Residual React/Jotai under `renderer/components` is legacy islands only.
 - **`apps/server`**: Bun + Hono backend -- browser-mode dev only (`dev:web`), NOT bundled with Electron; also exports `@gcode/server` client/types
-- **Runtime composition**: `apps/desktop/src/main/agents/composition.ts` + `AgentHost` options (`builtinProviders`, custom `providers`) plug/unplug harnesses. OpenCode is a **managed-server** adapter (descriptor registry), not the product base. Gateway: `renderer` → `runtime-session-gateway` → managed-server or agent-host by **transport**, never by brand product grammar.
+- **Runtime composition**: `apps/desktop/src/main/agents/composition.ts` + `AgentHost` options (`builtinProviders`, custom `providers`) plug/unplug harnesses. OpenCode is a **managed-server** adapter (descriptor registry), not the product base. Gateway services remain framework-free under `renderer/services/`.
 - **OpenCode runtime boundary**: `apps/desktop/src/main/opencode-runtime.ts` owns CLI discovery, auth headers, readiness, server startup. Tray/automation/notifications must reuse it — do not rebuild bootstrap logic.
 - **Host tool backends (desktop)**: `apps/desktop/src/main/agents/host-tool-backends.ts` wires real automation/system/browser into `host.tools` at `getAgentHost()` time.
 - **Migration boundary**: `packages/configconv` is the single source of truth for Claude/Cursor/OpenCode migration. Skills migrate as linked directories (`linkedDirs`), not copied markdown stubs.
@@ -27,7 +27,10 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`main/agents/`** -- Host composition, AgentHost wiring, host tool backends, process-session lifecycle
 - **`main/automation/`** -- Schedulers + neutral `executeAutomationRun` dispatch by registered runtime executors (fail closed if missing)
 - **`preload/`** -- `window.gcode` via `contextBridge`
-- **`renderer/`** -- React app: components, hooks, `services/backend.ts`, Jotai atoms
+- **`renderer/lit/`** -- **Primary UI**: Lit custom elements, SCSS co-located (`foo.scss` → `foo.css.js` via `scripts/scss-to-cssjs.ts`), event bus + bubbling, locale controller
+- **`renderer/services/`** -- Framework-free backend/session services (shared by Lit and any residual React)
+- **`renderer/i18n/`** -- Dependency-free `translate(locale, key)` for **en** + **es** (Lit uses `LocaleController`; do not add React-only bindings for new UI)
+- **`renderer/components/`** -- Legacy React islands (do not expand; port to Lit instead)
 - **`shared/`** -- Cross-process constants/types (runtime ids, transport registry)
 
 ## Skills
@@ -38,11 +41,12 @@ generic knowledge.
 
 | Skill | When to load |
 |---|---|
-| `react-best-practices` | Writing or reviewing renderer components, optimizing re-renders or bundle size |
+| `react-best-practices` | Only when touching residual React islands under `renderer/components` |
 
 ## Commands
 
-- **Electron dev**: `cd apps/desktop && bun run dev` (electron-vite, renderer on port 1420)
+- **Electron dev**: `cd apps/desktop && bun run dev` (runs `scss:build` then electron-vite; renderer on port 1420)
+- **SCSS → css.js**: `cd apps/desktop && bun run scss:build` (or `scss:watch` for on-save compile)
 - **Electron dev (root)**: `bun run dev:desktop`
 - **Electron dev (Wayland)**: `bun run dev:desktop:wayland`
 - **Browser-only dev**: `bun run dev:web` (Vite only, needs `apps/server` running)
@@ -153,17 +157,36 @@ The main process runs in Node.js, the renderer runs in a Chromium sandbox. They 
 
 All hooks must import from `services/backend.ts`, NOT from `services/gcode-server.ts` directly. The backend module detects Electron (`"gcode" in window`) and routes to IPC or HTTP automatically.
 
-### Jotai + React 19
+### Lit product UI -- SCSS → css.js
 
-The codebase uses Jotai for state management. Derive data with `useMemo` from atom values -- do NOT create new objects inside selectors.
+- Co-locate `component.scss` next to `component.ts`. Run `bun run scss:build` (or `scss:watch`) to emit `component.css.js` exporting `styles` as Lit `css\`...\``.
+- Import styles with `import { styles } from "./foo.css.js"` and set `static styles = styles`.
+- **Never hand-edit `*.css.js`** — always regenerate from SCSS.
+- Design tokens live in `renderer/lit/styles/_tokens.scss` (CSS variables, no Tailwind).
 
-### Tailwind v4 Monorepo -- Missing Styles
+### Lit state -- events + bus (not Jotai)
 
-`packages/ui/src/styles/globals.css` must have `@source "../components";` or utility classes used only in UI components won't generate CSS. Do NOT remove this line.
+- Prefer **bubbled `CustomEvent`** (`emitBubbled` in `lit/bus.ts`) for parent/child.
+- Cross-tree topics use `gcodeBus` + `BusTopics` (locale, session select, nav, chat send).
+- Each Lit element owns one concern; do not reintroduce a global React store for migrated trees.
+
+### i18n en/es
+
+- Core: `translate(locale, key, params?)` in `renderer/i18n/` (framework-free).
+- Lit: `LocaleController` (`lit/locale-controller.ts`) — persists `gcode:locale`, publishes `BusTopics.localeChanged`.
+- Add new strings to `locales/en.ts` first (types derive from `en`), mirror in `es.ts`.
+
+### Residual React / Jotai
+
+Legacy React under `renderer/components` and Jotai atoms may still exist for unmigrated islands. **Do not expand React UI.** Port slices to Lit. Product entry is `renderer/main.tsx` → `lit/main-lit.ts` (no `createRoot`).
+
+### Tailwind (legacy packages/ui only)
+
+`packages/ui` still uses Tailwind for any leftover shared React widgets. Lit surfaces must not depend on Tailwind utility classes.
 
 ### Biome -- CSS Disabled
 
-Biome v2 cannot parse Tailwind v4 syntax. CSS linting/formatting is disabled. Do not try to enable it.
+Biome v2 cannot parse Tailwind v4 syntax. CSS linting/formatting is disabled. Do not try to enable it. SCSS is compiled outside Biome.
 
 ### Changesets -- versioning workflow
 

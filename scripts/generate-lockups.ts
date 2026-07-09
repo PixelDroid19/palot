@@ -95,7 +95,7 @@ async function generate() {
 </svg>`
 		const buf = await sharp(Buffer.from(svg)).png().toBuffer()
 		writeFileSync(join(BRAND, name), buf)
-		console.log("  -> brand/" + name)
+		console.log(`  -> brand/${name}`)
 	}
 
 	// Standalone wordmark SVG (text-based, currentColor for CSS theming)

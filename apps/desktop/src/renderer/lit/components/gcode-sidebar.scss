@@ -1,0 +1,132 @@
+@use "../styles/tokens";
+
+:host {
+	display: flex;
+	flex-direction: column;
+	width: var(--gcode-sidebar-width);
+	min-width: var(--gcode-sidebar-width);
+	height: 100%;
+	background: var(--gcode-bg-elevated);
+	border-right: 1px solid var(--gcode-border);
+	font-family: var(--gcode-font);
+	color: var(--gcode-fg);
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--gcode-space-3) var(--gcode-space-4);
+	border-bottom: 1px solid var(--gcode-border);
+	-webkit-app-region: drag;
+	min-height: var(--gcode-titlebar-height);
+}
+
+.brand {
+	font-weight: 800;
+	font-size: 14px;
+	letter-spacing: 0.04em;
+	font-family: var(--gcode-font-mono);
+}
+
+.actions {
+	display: flex;
+	gap: var(--gcode-space-2);
+	-webkit-app-region: no-drag;
+}
+
+.icon-btn {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--gcode-radius-sm);
+	display: grid;
+	place-items: center;
+	color: var(--gcode-fg-muted);
+	background: transparent;
+}
+
+.icon-btn:hover {
+	background: var(--gcode-bg-muted);
+	color: var(--gcode-fg);
+}
+
+.section-label {
+	padding: var(--gcode-space-3) var(--gcode-space-4) var(--gcode-space-2);
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--gcode-fg-subtle);
+}
+
+.list {
+	flex: 1;
+	overflow: auto;
+	padding: 0 var(--gcode-space-2) var(--gcode-space-3);
+}
+
+.item {
+	width: 100%;
+	text-align: left;
+	padding: var(--gcode-space-2) var(--gcode-space-3);
+	border-radius: var(--gcode-radius-sm);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: 2px;
+}
+
+.item:hover {
+	background: var(--gcode-bg-muted);
+}
+
+.item[data-active="true"] {
+	background: var(--gcode-accent-soft);
+	color: var(--gcode-fg);
+}
+
+.title {
+	font-size: 13px;
+	font-weight: 500;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.meta {
+	font-size: 11px;
+	color: var(--gcode-fg-subtle);
+	font-family: var(--gcode-font-mono);
+}
+
+.empty {
+	padding: var(--gcode-space-4);
+	font-size: 12px;
+	color: var(--gcode-fg-muted);
+	line-height: 1.4;
+}
+
+.footer {
+	padding: var(--gcode-space-3) var(--gcode-space-4);
+	border-top: 1px solid var(--gcode-border);
+	display: flex;
+	gap: var(--gcode-space-2);
+}
+
+.footer button {
+	flex: 1;
+	padding: var(--gcode-space-2);
+	border-radius: var(--gcode-radius-sm);
+	background: var(--gcode-bg-muted);
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.footer button:hover {
+	background: var(--gcode-border-strong);
+}
+
+.footer button.primary {
+	background: var(--gcode-accent);
+	color: #041018;
+}

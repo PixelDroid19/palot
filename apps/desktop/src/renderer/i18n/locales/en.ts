@@ -61,7 +61,7 @@ export const en = {
 	},
 	settings: {
 		language: "Language",
-		languageDescription: "Language for newly-built parts of the interface",
+		languageDescription: "Interface language (English or Spanish)",
 	},
 	queuedMessage: {
 		sendNow: "Send now",
@@ -83,5 +83,20 @@ export const en = {
 		inputPlaceholder: "Message {{agent}}…",
 		emptyState: "Start a conversation with {{agent}}. It runs headless and remembers this session across turns.",
 		contextKept: "Session kept · context carries across turns",
+	},
+
+	litShell: {
+		newSession: "New session",
+		newSessionTitle: "New session",
+		settings: "Settings",
+		back: "Back",
+		emptySessions: "No sessions yet. Start one to chat with OpenCode, Codex, or Claude.",
+		welcomeTitle: "What should we build?",
+		welcomeBody: "Pick a session or start a new one. Dense multi-agent workspace — runtimes, tools, and approvals in one place.",
+		composerHint: "Enter to send · Shift+Enter for newline",
+		systemReady: "GCode Lit shell ready. Sessions and tools use the host bridge when Electron is available.",
+		sessionOpened: "Opened session {{id}}",
+		offlineReply: "Received: {{text}}\n\n(Connect a runtime session for live agent turns.)",
+		turnFailed: "Turn failed: {{error}}",
 	},
 } as const

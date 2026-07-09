@@ -16,14 +16,18 @@
 		"paths": {
 			"@/*": ["./src/renderer/*"],
 			"@gcode/ui/*": ["../../packages/ui/src/*"]
-		}
+		},
+		"experimentalDecorators": true,
+		"useDefineForClassFields": false
 	},
 	"include": [
 		"src/main/**/*.ts",
 		"src/preload/**/*.ts",
 		"src/preload/**/*.d.ts",
 		"src/renderer/**/*.ts",
-		"src/renderer/**/*.tsx"
+		"src/renderer/**/*.tsx",
+		"src/renderer/**/*.css.js",
+		"src/renderer/**/*.d.ts"
 	],
 	"exclude": ["node_modules", "dist", "out", "release"]
 }

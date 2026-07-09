@@ -1,0 +1,62 @@
+@use "../styles/tokens";
+
+:host {
+	display: block;
+	padding: var(--gcode-space-6);
+	font-family: var(--gcode-font);
+	color: var(--gcode-fg);
+	background: var(--gcode-bg);
+	height: 100%;
+	overflow: auto;
+}
+
+h1 {
+	margin: 0 0 var(--gcode-space-5);
+	font-size: 20px;
+	font-weight: 650;
+}
+
+.card {
+	max-width: 480px;
+	border: 1px solid var(--gcode-border);
+	border-radius: var(--gcode-radius);
+	background: var(--gcode-bg-elevated);
+	padding: var(--gcode-space-4);
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--gcode-space-4);
+}
+
+.label {
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.desc {
+	font-size: 12px;
+	color: var(--gcode-fg-muted);
+	margin-top: 4px;
+}
+
+select {
+	background: var(--gcode-bg);
+	border: 1px solid var(--gcode-border-strong);
+	border-radius: var(--gcode-radius-sm);
+	color: var(--gcode-fg);
+	padding: 6px 10px;
+	font-size: 13px;
+}
+
+.back {
+	margin-bottom: var(--gcode-space-4);
+	font-size: 13px;
+	color: var(--gcode-accent);
+}
+
+.back:hover {
+	text-decoration: underline;
+}

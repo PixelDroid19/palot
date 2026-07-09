@@ -1,0 +1,29 @@
+@use "tokens";
+
+:host {
+	display: block;
+	box-sizing: border-box;
+	font-family: var(--gcode-font);
+	color: var(--gcode-fg);
+	background: var(--gcode-bg);
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+button {
+	font: inherit;
+	cursor: pointer;
+	border: none;
+	background: transparent;
+	color: inherit;
+}
+
+input,
+textarea {
+	font: inherit;
+	color: inherit;
+}
