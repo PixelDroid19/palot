@@ -1,19 +1,4 @@
 /**
- * Renderer entry — full product via React app shell.
- *
- * Lit web components are registered for progressive migration (SCSS→css.js,
- * event bus, i18n controller). Unmigrated routes stay on React so onboarding,
- * automations, multi-runtime catalog, streaming chat, and permissions remain
- * reachable. Lit modules themselves do not import React.
+ * Desktop renderer entry — Lit-only product UI (no React).
  */
-import { StrictMode } from "react"
-import { createRoot } from "react-dom/client"
-import { App } from "./app"
-import "./index.css"
-import "./lit/register"
-
-createRoot(document.getElementById("root")!).render(
-	<StrictMode>
-		<App />
-	</StrictMode>,
-)
+import "./lit/main-lit"

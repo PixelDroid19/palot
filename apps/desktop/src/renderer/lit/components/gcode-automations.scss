@@ -1,0 +1,69 @@
+@use "../styles/tokens";
+
+:host {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	background: var(--gcode-bg);
+	font-family: var(--gcode-font);
+	color: var(--gcode-fg);
+	padding: var(--gcode-space-5);
+}
+
+h1 {
+	margin: 0 0 var(--gcode-space-4);
+	font-size: 20px;
+}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gcode-space-2);
+	overflow: auto;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--gcode-space-3);
+	padding: var(--gcode-space-3) var(--gcode-space-4);
+	border: 1px solid var(--gcode-border);
+	border-radius: var(--gcode-radius);
+	background: var(--gcode-bg-elevated);
+}
+
+.name {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.meta {
+	font-size: 11px;
+	color: var(--gcode-fg-subtle);
+	font-family: var(--gcode-font-mono);
+}
+
+button {
+	padding: 6px 10px;
+	border-radius: var(--gcode-radius-sm);
+	background: var(--gcode-bg-muted);
+	font-size: 12px;
+}
+
+button.primary {
+	background: var(--gcode-accent);
+	color: #041018;
+	font-weight: 600;
+}
+
+.empty,
+.error {
+	color: var(--gcode-fg-muted);
+	font-size: 13px;
+}
+
+.error {
+	color: var(--gcode-danger);
+}

@@ -1,12 +1,41 @@
 @use "../styles/tokens";
 
 :host {
-	display: block;
-	padding: var(--gcode-space-6);
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	background: var(--gcode-bg);
 	font-family: var(--gcode-font);
 	color: var(--gcode-fg);
-	background: var(--gcode-bg);
-	height: 100%;
+}
+
+.nav {
+	width: 200px;
+	border-right: 1px solid var(--gcode-border);
+	padding: var(--gcode-space-4);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	background: var(--gcode-bg-elevated);
+}
+
+.nav button {
+	text-align: left;
+	padding: 8px 10px;
+	border-radius: var(--gcode-radius-sm);
+	font-size: 13px;
+	color: var(--gcode-fg-muted);
+}
+
+.nav button[data-active="true"] {
+	background: var(--gcode-accent-soft);
+	color: var(--gcode-fg);
+	font-weight: 600;
+}
+
+.content {
+	flex: 1;
+	padding: var(--gcode-space-6);
 	overflow: auto;
 }
 
@@ -22,6 +51,7 @@ h1 {
 	border-radius: var(--gcode-radius);
 	background: var(--gcode-bg-elevated);
 	padding: var(--gcode-space-4);
+	margin-bottom: var(--gcode-space-4);
 }
 
 .row {
@@ -51,12 +81,8 @@ select {
 	font-size: 13px;
 }
 
-.back {
-	margin-bottom: var(--gcode-space-4);
-	font-size: 13px;
-	color: var(--gcode-accent);
-}
-
-.back:hover {
-	text-decoration: underline;
+.mono {
+	font-family: var(--gcode-font-mono);
+	font-size: 12px;
+	color: var(--gcode-fg-muted);
 }

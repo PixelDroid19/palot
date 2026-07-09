@@ -1,19 +1,18 @@
 /**
- * Session / task sidebar — dense agent-IDE style (Codex-like activity list).
- * Emits bubbled events; also publishes on gcodeBus.
+ * Session list + nav chrome.
  */
 import { html, LitElement } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
 import type { TranslationKey } from "../../i18n"
 import { BusTopics, emitBubbled, gcodeBus } from "../bus"
 import { LocaleController } from "../locale-controller"
+import { navigate } from "../router"
 import { type LitSessionSummary, sessionStore } from "../session-store"
 import { styles } from "./gcode-sidebar.css.js"
 
 @customElement("gcode-sidebar")
 export class GcodeSidebar extends LitElement {
 	static styles = styles
-
 	private locale = new LocaleController(this)
 
 	@property({ type: String, attribute: "active-id" })
@@ -23,7 +22,6 @@ export class GcodeSidebar extends LitElement {
 	private sessions: LitSessionSummary[] = []
 
 	private unsubList: (() => void) | null = null
-	private unsubSelect: (() => void) | null = null
 
 	connectedCallback(): void {
 		super.connectedCallback()
@@ -32,14 +30,10 @@ export class GcodeSidebar extends LitElement {
 		this.unsubList = gcodeBus.subscribe(BusTopics.sessionListChanged, (list) => {
 			this.sessions = list as LitSessionSummary[]
 		})
-		this.unsubSelect = gcodeBus.subscribe(BusTopics.sessionSelect, (id) => {
-			this.activeId = id as string | null
-		})
 	}
 
 	disconnectedCallback(): void {
 		this.unsubList?.()
-		this.unsubSelect?.()
 		super.disconnectedCallback()
 	}
 
@@ -50,20 +44,7 @@ export class GcodeSidebar extends LitElement {
 	private onSelect(id: string): void {
 		sessionStore.select(id)
 		emitBubbled(this, "gcode-session-select", { id })
-	}
-
-	private onNew(): void {
-		emitBubbled(this, "gcode-new-session", {})
-		gcodeBus.publish(BusTopics.nav, { view: "new-session" })
-	}
-
-	private onSettings(): void {
-		emitBubbled(this, "gcode-open-settings", {})
-		gcodeBus.publish(BusTopics.nav, { view: "settings" })
-	}
-
-	private onLocale(): void {
-		this.locale.toggleLocale()
+		navigate(`/session/${id}`)
 	}
 
 	render() {
@@ -75,7 +56,10 @@ export class GcodeSidebar extends LitElement {
 						class="icon-btn"
 						type="button"
 						title=${this.t("litShell.newSession")}
-						@click=${() => this.onNew()}
+						@click=${() => {
+							emitBubbled(this, "gcode-new-session", {})
+							navigate("/")
+						}}
 					>
 						+
 					</button>
@@ -103,10 +87,26 @@ export class GcodeSidebar extends LitElement {
 				}
 			</div>
 			<div class="footer">
-				<button type="button" @click=${() => this.onLocale()}>
+				<button type="button" @click=${() => this.locale.toggleLocale()}>
 					${this.locale.locale === "en" ? "ES" : "EN"}
 				</button>
-				<button type="button" class="primary" @click=${() => this.onSettings()}>
+				<button
+					type="button"
+					@click=${() => {
+						emitBubbled(this, "gcode-open-automations", {})
+						navigate("/automations")
+					}}
+				>
+					${this.t("litAutomations.title")}
+				</button>
+				<button
+					type="button"
+					class="primary"
+					@click=${() => {
+						emitBubbled(this, "gcode-open-settings", {})
+						navigate("/settings/general")
+					}}
+				>
 					${this.t("litShell.settings")}
 				</button>
 			</div>

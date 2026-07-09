@@ -14,7 +14,7 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
 - **`packages/cli-registry`**: Detects installed coding-agent CLIs (`@gcode/cli-registry`) -- OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI; reports version and auth state via a host-injected, testable detection layer
 - **`packages/agent-host`**: Multi-agent core (`@gcode/agent-host`) -- registry-only `AgentHost` (pluggable adapters, sessions, event bus, shared context) plus the **host tool plane** (`host.tools` / `HostToolRegistry`: automation, system, browser, agents, context) via `AgentBridge` (loopback HTTP + dynamic MCP proxy). Product tools are **host-owned** (desktop-host style), not CLI-owned; adapters only inject the bridge. Claude/Codex process adapters live here. Caveat: sandboxed `codex exec` auto-cancels MCP tool calls (openai/codex#24135) — Codex only gets the bridge in full-access runs.
-- **`apps/desktop`**: Electron 40 + Vite desktop app (via `electron-vite`). **Product chrome is Lit web components** (`src/renderer/lit/`), not React. Residual React/Jotai under `renderer/components` is legacy islands only.
+- **`apps/desktop`**: Electron 40 + Vite desktop app (via `electron-vite`). **Product UI is Lit-only** (`src/renderer/lit/`). No React renderer shell.
 - **`apps/server`**: Bun + Hono backend -- browser-mode dev only (`dev:web`), NOT bundled with Electron; also exports `@gcode/server` client/types
 - **Runtime composition**: `apps/desktop/src/main/agents/composition.ts` + `AgentHost` options (`builtinProviders`, custom `providers`) plug/unplug harnesses. OpenCode is a **managed-server** adapter (descriptor registry), not the product base. Gateway services remain framework-free under `renderer/services/`.
 - **OpenCode runtime boundary**: `apps/desktop/src/main/opencode-runtime.ts` owns CLI discovery, auth headers, readiness, server startup. Tray/automation/notifications must reuse it — do not rebuild bootstrap logic.
@@ -30,7 +30,6 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`renderer/lit/`** -- **Primary UI**: Lit custom elements, SCSS co-located (`foo.scss` → `foo.css.js` via `scripts/scss-to-cssjs.ts`), event bus + bubbling, locale controller
 - **`renderer/services/`** -- Framework-free backend/session services (shared by Lit and any residual React)
 - **`renderer/i18n/`** -- Dependency-free `translate(locale, key)` for **en** + **es** (Lit uses `LocaleController`; do not add React-only bindings for new UI)
-- **`renderer/components/`** -- Legacy React islands (do not expand; port to Lit instead)
 - **`shared/`** -- Cross-process constants/types (runtime ids, transport registry)
 
 ## Skills
@@ -41,7 +40,7 @@ generic knowledge.
 
 | Skill | When to load |
 |---|---|
-| `react-best-practices` | Only when touching residual React islands under `renderer/components` |
+| `react-best-practices` | Not used for product UI (Lit-only). Optional for non-desktop packages if any. |
 
 ## Commands
 
@@ -176,13 +175,14 @@ All hooks must import from `services/backend.ts`, NOT from `services/gcode-serve
 - Lit: `LocaleController` (`lit/locale-controller.ts`) — persists `gcode:locale`, publishes `BusTopics.localeChanged`.
 - Add new strings to `locales/en.ts` first (types derive from `en`), mirror in `es.ts`.
 
-### Hybrid React + Lit (incremental migration)
+### Lit-only desktop UI (no React)
 
-- **Default product entry**: `renderer/main.tsx` mounts the **React App** (full flows: onboarding, automations, multi-runtime chat, permissions, catalog).
-- **Lit registration**: `import "./lit/register"` registers custom elements without replacing the shell.
-- **Optional Lit shell**: `<gcode-app>` + `lit/main-lit.ts` for progressive chrome; session list uses the same `gcode:cliSessions` / `gcode:cliSession:*` keys as `cli-chat-persistence.ts`.
-- **Lit chat turns**: `lit/chat-runtime.ts` → `window.gcode.agentSession` (process runtimes). OpenCode managed-server still uses React gateway.
-- **Do not expand new React UI** — port remaining slices to Lit; keep React only for unmigrated product areas.
+- **Entry**: `renderer/main.tsx` → `lit/main-lit.ts` mounts `<gcode-app>` only. No `createRoot` / React App.
+- **Components**: `renderer/lit/components/*` (one concern each). Styles: co-located `.scss` → `scripts/scss-to-cssjs.ts` → `.css.js`.
+- **State**: bubbled `CustomEvent` + `gcodeBus` (`lit/bus.ts`). Locale: `LocaleController` + `gcode:locale` (en/es).
+- **I/O**: `services/backend.ts`, `project-runtime-sdk.ts`, `lit/chat-runtime.ts` (agentSession), `lit/managed-chat.ts` (OpenCode).
+- **Sessions**: `gcode:cliSessions` (string[]) + `gcode:cliSession:{id}` payloads via `lit/session-store.ts`.
+- **Do not reintroduce React/Jotai/TanStack Router for product UI.**
 
 ### Tailwind (legacy packages/ui only)
 

@@ -99,4 +99,30 @@ export const en = {
 		offlineReply: "Received: {{text}}\n\n(Connect a runtime session for live agent turns.)",
 		turnFailed: "Turn failed: {{error}}",
 	},
+
+	litOnboarding: {
+		welcomeTitle: "Welcome to GCode",
+		welcomeBody: "A multi-agent desktop for OpenCode, Claude Code, and Codex.",
+		runtimesTitle: "Install runtimes",
+		runtimesBody: "Install the CLIs you use. GCode detects them and opens sessions in your project folders.",
+		readyTitle: "You're ready",
+		readyBody: "Create a session, pick a runtime, and start building.",
+		stepWelcome: "Welcome",
+		stepRuntimes: "Runtimes",
+		stepReady: "Ready",
+		next: "Continue",
+		finish: "Start using GCode",
+	},
+	litAutomations: {
+		title: "Automations",
+		empty: "No automations yet.",
+		runNow: "Run now",
+	},
+	litSettings: {
+		general: "General",
+		server: "Server",
+		about: "About",
+		serverUrl: "Managed runtime URL",
+		aboutBody: "GCode multi-agent desktop — Lit UI, host tool plane, en/es.",
+	},
 } as const

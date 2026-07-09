@@ -1,41 +1,48 @@
 /**
- * Optional Lit product shell — sidebar + chat/settings.
- * Chat turns use `runLitAgentTurn` (window.gcode.agentSession), same IPC as React.
- * Registered via lit/register; React remains default full-product entry.
+ * Root Lit product shell — sole desktop UI entry.
+ * Hash router: home, session, settings, automations, onboarding.
  */
 import { html, LitElement } from "lit"
 import { customElement, state } from "lit/decorators.js"
 import { BusTopics, gcodeBus } from "../bus"
 import { runLitAgentTurn } from "../chat-runtime"
 import { LocaleController } from "../locale-controller"
-import { sessionStore } from "../session-store"
+import {
+	createManagedSession,
+	loadManagedMessages,
+	promptManagedSession,
+} from "../managed-chat"
+import { readOnboardingState } from "../onboarding-store"
+import { hrefForRoute, navigate, parseHash, type LitRoute } from "../router"
+import { sessionStore, type LitChatMessage } from "../session-store"
 import type { ChatMessageView } from "./gcode-chat-panel"
+import "./gcode-automations"
 import "./gcode-chat-panel"
+import "./gcode-home"
+import "./gcode-onboarding"
 import "./gcode-settings-panel"
 import "./gcode-sidebar"
 import { styles } from "./gcode-app.css.js"
 
-type View = "chat" | "settings"
-
 @customElement("gcode-app")
 export class GcodeApp extends LitElement {
 	static styles = styles
-
 	private locale = new LocaleController(this)
 
-	@state()
-	private view: View = "chat"
-
-	@state()
-	private activeId: string | null = null
-
-	@state()
-	private messages: ChatMessageView[] = []
-
-	@state()
-	private busy = false
+	@state() private route: LitRoute = parseHash()
+	@state() private messages: ChatMessageView[] = []
+	@state() private busy = false
+	@state() private permission: {
+		requestId: string
+		toolName?: string
+		description?: string
+	} | null = null
 
 	private unsubs: Array<() => void> = []
+	private onHash = () => {
+		this.route = parseHash()
+		this.onRoute()
+	}
 
 	connectedCallback(): void {
 		super.connectedCallback()
@@ -43,45 +50,64 @@ export class GcodeApp extends LitElement {
 		document.getElementById("splash")?.classList.add("hiding")
 		setTimeout(() => document.getElementById("splash")?.remove(), 320)
 
+		window.addEventListener("hashchange", this.onHash)
 		this.unsubs.push(
-			gcodeBus.subscribe(BusTopics.sessionSelect, (id) => {
-				this.activeId = id as string | null
-				this.view = "chat"
-				this.loadTranscript(this.activeId)
-			}),
-			gcodeBus.subscribe(BusTopics.nav, (payload) => {
-				const view = (payload as { view?: View }).view
-				if (view === "settings" || view === "chat") this.view = view
-			}),
 			gcodeBus.subscribe(BusTopics.localeChanged, () => this.requestUpdate()),
+			gcodeBus.subscribe(BusTopics.sessionListChanged, () => this.requestUpdate()),
 		)
 
-		if (this.messages.length === 0) {
-			this.messages = [
-				{
-					id: "sys-1",
-					role: "system",
-					text: this.locale.t("litShell.systemReady"),
-				},
-			]
+		if (!readOnboardingState().completed && this.route.name !== "onboarding") {
+			navigate("/onboarding")
+		} else if (!location.hash || location.hash === "#") {
+			navigate("/")
 		}
+		this.route = parseHash()
+		this.onRoute()
 	}
 
 	disconnectedCallback(): void {
+		window.removeEventListener("hashchange", this.onHash)
 		for (const u of this.unsubs) u()
 		this.unsubs = []
 		super.disconnectedCallback()
 	}
 
-	private loadTranscript(sessionId: string | null): void {
-		if (!sessionId) return
-		const msgs = sessionStore.getMessages(sessionId)
+	private onRoute(): void {
+		if (this.route.name === "session") {
+			void this.loadSession(this.route.sessionId)
+		}
+	}
+
+	private async loadSession(sessionId: string): Promise<void> {
+		sessionStore.select(sessionId)
+		const meta = sessionStore.getMeta(sessionId)
+		if (meta?.runtimeId === "opencode" || sessionId.startsWith("ses_")) {
+			try {
+				const msgs = await loadManagedMessages(sessionId)
+				this.messages =
+					msgs.length > 0
+						? msgs
+						: [
+								{
+									id: "sys",
+									role: "system",
+									text: this.locale.t("litShell.sessionOpened", {
+										id: sessionId.slice(0, 8),
+									}),
+								},
+							]
+				return
+			} catch {
+				// fall through to local persistence
+			}
+		}
+		const local = sessionStore.getMessages(sessionId)
 		this.messages =
-			msgs.length > 0
-				? msgs
+			local.length > 0
+				? local
 				: [
 						{
-							id: "sys-open",
+							id: "sys",
 							role: "system",
 							text: this.locale.t("litShell.sessionOpened", {
 								id: sessionId.slice(0, 8),
@@ -90,125 +116,163 @@ export class GcodeApp extends LitElement {
 					]
 	}
 
-	private onSend(e: CustomEvent<{ text: string }>): void {
-		const text = e.detail?.text?.trim()
-		if (!text || this.busy) return
-		void this.runTurn(text)
+	private activeSessionId(): string | null {
+		return this.route.name === "session" ? this.route.sessionId : sessionStore.getActiveId()
 	}
 
-	private async runTurn(text: string): Promise<void> {
-		// Ensure we have a session id for persistence
-		let sessionId = this.activeId
+	private async onSend(e: CustomEvent<{ text: string }>): Promise<void> {
+		const text = e.detail?.text?.trim()
+		if (!text || this.busy) return
+		let sessionId = this.activeSessionId()
 		if (!sessionId) {
-			sessionId = `lit-${Date.now().toString(36)}`
+			// create local session then send
+			sessionId = crypto.randomUUID()
 			sessionStore.upsertAndPersist({
 				id: sessionId,
-				title: text.slice(0, 48) || this.locale.t("litShell.newSessionTitle"),
-				runtimeId: "local",
+				title: text.slice(0, 48),
+				runtimeId: "claude",
 				directory: "",
 			})
-			sessionStore.select(sessionId)
-			this.activeId = sessionId
+			navigate(`/session/${sessionId}`)
 		}
 
-		const userId = `u-${Date.now()}`
-		const userMsg: ChatMessageView = { id: userId, role: "user", text }
+		const userMsg: LitChatMessage = {
+			id: `u-${Date.now()}`,
+			role: "user",
+			text,
+		}
 		this.messages = [...this.messages, userMsg]
 		sessionStore.appendMessage(sessionId, userMsg)
 		this.busy = true
+		this.permission = null
 
+		const meta = sessionStore.getMeta(sessionId)
+		const runtimeId = meta?.runtimeId || "claude"
 		const assistantId = `a-${Date.now()}`
-		let assistantText = ""
 
 		try {
-			const finalText = await runLitAgentTurn(sessionId, text, {
-				onAssistantDelta: (partial) => {
-					assistantText = partial
-					this.patchAssistant(assistantId, partial)
-				},
-				onAssistantFinal: (final) => {
-					assistantText = final
-					this.patchAssistant(assistantId, final)
-				},
-				onError: (err) => {
+			if (runtimeId === "opencode" || sessionId.startsWith("ses_")) {
+				await promptManagedSession(sessionId, text)
+				// poll messages once after async prompt
+				await new Promise((r) => setTimeout(r, 1500))
+				const msgs = await loadManagedMessages(sessionId)
+				if (msgs.length) this.messages = msgs
+			} else {
+				const finalText = await runLitAgentTurn(sessionId, text, {
+					onAssistantDelta: (partial) => {
+						this.messages = [
+							...this.messages.filter((m) => m.id !== assistantId),
+							{ id: assistantId, role: "assistant", text: partial },
+						]
+					},
+					onPermission: (req) => {
+						this.permission = req
+					},
+					onError: (err) => {
+						this.messages = [
+							...this.messages,
+							{
+								id: `e-${Date.now()}`,
+								role: "system",
+								text: this.locale.t("litShell.turnFailed", { error: err }),
+							},
+						]
+					},
+				})
+				if (finalText) {
 					this.messages = [
 						...this.messages.filter((m) => m.id !== assistantId),
-						{
-							id: `e-${Date.now()}`,
-							role: "system",
-							text: this.locale.t("litShell.turnFailed", { error: err }),
-						},
+						{ id: assistantId, role: "assistant", text: finalText },
 					]
-				},
-			})
-			const out = finalText || assistantText
-			if (out) {
-				this.patchAssistant(assistantId, out)
-				sessionStore.appendMessage(sessionId, {
-					id: assistantId,
-					role: "assistant",
-					text: out,
-				})
+					sessionStore.appendMessage(sessionId, {
+						id: assistantId,
+						role: "assistant",
+						text: finalText,
+					})
+				}
 			}
-		} catch {
-			// onError already handled when thrown from runLitAgentTurn
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err)
+			this.messages = [
+				...this.messages,
+				{
+					id: `e-${Date.now()}`,
+					role: "system",
+					text: this.locale.t("litShell.turnFailed", { error: message }),
+				},
+			]
 		} finally {
 			this.busy = false
+			this.permission = null
 		}
 	}
 
-	private patchAssistant(id: string, text: string): void {
-		const without = this.messages.filter((m) => m.id !== id)
-		this.messages = [...without, { id, role: "assistant", text }]
+	private onNewSession(): void {
+		navigate("/")
 	}
 
-	private onNewSession(): void {
-		const id = `lit-${Date.now().toString(36)}`
-		sessionStore.upsertAndPersist({
-			id,
-			title: this.locale.t("litShell.newSessionTitle"),
-			runtimeId: "local",
-			directory: "",
-		})
-		sessionStore.select(id)
-		this.activeId = id
-		this.messages = [
-			{
-				id: "sys-new",
-				role: "system",
-				text: this.locale.t("litShell.systemReady"),
-			},
-		]
-		this.view = "chat"
+	private renderMain() {
+		const route = this.route
+		switch (route.name) {
+			case "onboarding":
+				return html`<gcode-onboarding></gcode-onboarding>`
+			case "settings":
+				return html`<gcode-settings-panel
+					section=${route.section}
+				></gcode-settings-panel>`
+			case "automations":
+			case "automation":
+				return html`<gcode-automations></gcode-automations>`
+			case "session": {
+				const active = sessionStore.list().find((s) => s.id === route.sessionId)
+				return html`
+					${
+						this.permission
+							? html`
+									<div
+										style="padding:8px 16px;background:var(--gcode-bg-muted);border-bottom:1px solid var(--gcode-border);font-size:12px;"
+									>
+										${this.locale.t("cliApprovals.title", {
+											name: this.permission.toolName || "tool",
+										})}
+									</div>
+								`
+							: null
+					}
+					<gcode-chat-panel
+						title=${active?.title || route.sessionId.slice(0, 8)}
+						runtime-id=${active?.runtimeId || ""}
+						.messages=${this.messages}
+						?busy=${this.busy}
+						@gcode-send=${(e: CustomEvent<{ text: string }>) => this.onSend(e)}
+					></gcode-chat-panel>
+				`
+			}
+			case "home":
+			default:
+				return html`<gcode-home></gcode-home>`
+		}
 	}
 
 	render() {
-		const active = sessionStore.list().find((s) => s.id === this.activeId)
+		const hideChrome = this.route.name === "onboarding"
 		return html`
-			<gcode-sidebar
-				.activeId=${this.activeId}
-				@gcode-new-session=${() => this.onNewSession()}
-				@gcode-open-settings=${() => {
-					this.view = "settings"
-				}}
-			></gcode-sidebar>
-			<div class="main">
-				${
-					this.view === "settings"
-						? html`<gcode-settings-panel
-								@gcode-nav-back=${() => {
-									this.view = "chat"
+			${
+				hideChrome
+					? null
+					: html`
+							<gcode-sidebar
+								.activeId=${this.activeSessionId()}
+								@gcode-new-session=${() => this.onNewSession()}
+								@gcode-open-settings=${() => navigate("/settings/general")}
+								@gcode-open-automations=${() => navigate("/automations")}
+								@gcode-session-select=${(e: CustomEvent<{ id: string }>) => {
+									navigate(`/session/${e.detail.id}`)
 								}}
-							></gcode-settings-panel>`
-						: html`<gcode-chat-panel
-								title=${active?.title || this.locale.t("litShell.welcomeTitle")}
-								runtime-id=${active?.runtimeId || ""}
-								.messages=${this.messages}
-								?busy=${this.busy}
-								@gcode-send=${(e: CustomEvent<{ text: string }>) => this.onSend(e)}
-							></gcode-chat-panel>`
-				}
-			</div>
+							></gcode-sidebar>
+						`
+			}
+			<div class="main">${this.renderMain()}</div>
 		`
 	}
 }
@@ -218,3 +282,7 @@ declare global {
 		"gcode-app": GcodeApp
 	}
 }
+
+// silence unused import if tree-shaken
+void hrefForRoute
+void createManagedSession

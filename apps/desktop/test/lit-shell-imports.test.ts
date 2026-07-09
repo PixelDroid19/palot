@@ -1,5 +1,5 @@
 /**
- * Migrated Lit shell modules must not require React/ReactDOM.
+ * Migrated Lit product entry must not require React.
  */
 import { describe, expect, test } from "bun:test"
 import { readFileSync, readdirSync, statSync } from "node:fs"
@@ -14,11 +14,11 @@ function walk(dir: string, acc: string[] = []): string[] {
 	return acc
 }
 
-describe("Lit shell import graph (no React)", () => {
-	test("lit/**/*.ts does not import react or react-dom", () => {
+describe("Lit product import graph (no React)", () => {
+	test("lit/**/*.ts does not import react, react-dom, or jotai", () => {
 		const root = path.resolve(import.meta.dir, "../src/renderer/lit")
 		const files = walk(root)
-		expect(files.length).toBeGreaterThan(5)
+		expect(files.length).toBeGreaterThan(8)
 		const offenders: string[] = []
 		for (const f of files) {
 			const text = readFileSync(f, "utf8")
@@ -33,15 +33,14 @@ describe("Lit shell import graph (no React)", () => {
 		expect(offenders).toEqual([])
 	})
 
-	test("main.tsx boots full React App and registers Lit components", () => {
+	test("main.tsx boots Lit-only entry", () => {
 		const main = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/main.tsx"),
 			"utf8",
 		)
-		// Product entry restores full flows via React App
-		expect(main).toContain('from "./app"')
-		expect(main).toContain("createRoot")
-		// Lit registered as progressive islands / optional shell
-		expect(main).toContain("./lit/register")
+		expect(main).toContain("./lit/main-lit")
+		expect(main).not.toContain("createRoot")
+		expect(main).not.toContain('from "react"')
+		expect(main).not.toContain("./app")
 	})
 })

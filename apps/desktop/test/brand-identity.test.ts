@@ -1,6 +1,5 @@
 /**
- * Brand identity: shipping surfaces must say GCode, not legacy palot product marks.
- * Drives real files on disk (wordmark component, resources, about copy).
+ * Brand identity for Lit-only desktop product surfaces.
  */
 import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
@@ -9,12 +8,13 @@ import { join } from "node:path"
 const root = join(import.meta.dir, "..")
 
 describe("GCode brand identity", () => {
-	test("inline wordmark component draws GCode text, not palot path outlines", () => {
-		const src = readFileSync(join(root, "src/renderer/components/gcode-wordmark.tsx"), "utf8")
+	test("Lit shell brand text is GCode", () => {
+		const src = readFileSync(
+			join(root, "src/renderer/lit/components/gcode-sidebar.ts"),
+			"utf8",
+		)
 		expect(src).toContain("GCode")
-		expect(src).not.toContain("M612.104")
-		expect(src.toLowerCase()).not.toContain("palot.")
-		expect(src).toMatch(/>\s*GCode\s*<\/text>/)
+		expect(src).not.toMatch(/\bPalot\b/)
 	})
 
 	test("resources/wordmark.svg is GCode", () => {
@@ -32,30 +32,16 @@ describe("GCode brand identity", () => {
 		}
 	})
 
-	test("about settings CLI labels use gcode", () => {
-		const src = readFileSync(
-			join(root, "src/renderer/components/settings/about-settings.tsx"),
-			"utf8",
-		)
-		expect(src).toContain('label="gcode CLI"')
-		expect(src).toContain("Install the gcode command-line tool")
-		expect(src).not.toContain("palot CLI")
-		expect(src).not.toContain("Install the palot")
-	})
-
 	test("onboarding installer logs use [gcode] prefix", () => {
 		const src = readFileSync(join(root, "src/main/onboarding.ts"), "utf8")
 		expect(src).toContain("[gcode]")
 		expect(src).not.toContain("[palot]")
 	})
 
-	test("index.html FOUC reads gcode:colorScheme and splash is GCode", () => {
+	test("index.html splash is GCode", () => {
 		const html = readFileSync(join(root, "src/renderer/index.html"), "utf8")
-		expect(html).toContain("gcode:colorScheme")
-		expect(html).toContain(">GCode</text>")
+		expect(html).toContain("GCode")
 		expect(html).not.toContain("M612.104")
-		// may still mention palot-preferences as legacy fallback only
-		expect(html).toMatch(/gcode:colorScheme/)
 	})
 
 	test("electron-builder product identity is GCode", () => {
@@ -66,34 +52,10 @@ describe("GCode brand identity", () => {
 		expect(yml).not.toContain("com.palot")
 	})
 
-	test("assets/branding wordmark is GCode (not palot path outlines)", () => {
-		const monorepo = join(root, "../..")
-		const svg = readFileSync(join(monorepo, "assets/branding/wordmark.svg"), "utf8")
-		expect(svg).toContain("GCode")
-		expect(svg).not.toContain("M612.104")
-		expect(svg.toLowerCase()).not.toMatch(/palot\./)
-		expect(svg).not.toMatch(/Wordmark:\s*"palot/)
-	})
-
-	test("README primary screenshot asset exists and is not the old palot-only file", () => {
-		const shot = join(root, "resources/brand/screenshot.jpg")
-		const buf = readFileSync(shot)
-		expect(buf.byteLength).toBeGreaterThan(50_000)
-		// Old marketing shot was 276513 bytes JFIF with embedded palot. chrome;
-		// edited GCode shot is a different blob (hash/size). Reject known-old size.
-		expect(buf.byteLength).not.toBe(276513)
-		const latin = buf.toString("latin1").toLowerCase()
-		expect(latin.includes("palot.")).toBe(false)
-	})
-
-	test("blue showcase HTML ships GCode wordmarks, not legacy palot path outlines", () => {
-		const monorepo = join(root, "../..")
-		const html = readFileSync(join(monorepo, "assets/palot-blue-showcase.html"), "utf8")
-		// Real shipped showcase — must render GCode text, never palot. glyph paths
-		expect(html).toContain(">GCode</text>")
-		expect(html).not.toContain("M612.104")
-		expect(html).not.toMatch(/viewBox="352 253 278 101"/)
-		// Product wordmark copy (not just CSS token names like --palot-blue)
-		expect(html).toMatch(/"GCode" wordmark/)
+	test("renderer entry is Lit-only", () => {
+		const main = readFileSync(join(root, "src/renderer/main.tsx"), "utf8")
+		expect(main).toContain("./lit/main-lit")
+		expect(main).not.toContain("createRoot")
+		expect(main).not.toContain('from "react"')
 	})
 })

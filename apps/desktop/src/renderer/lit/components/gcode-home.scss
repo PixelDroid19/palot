@@ -1,0 +1,76 @@
+@use "../styles/tokens";
+
+:host {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	align-items: center;
+	justify-content: center;
+	padding: var(--gcode-space-6);
+	background: var(--gcode-bg);
+	font-family: var(--gcode-font);
+	color: var(--gcode-fg);
+}
+
+.card {
+	width: min(520px, 100%);
+	border: 1px solid var(--gcode-border);
+	border-radius: var(--gcode-radius);
+	background: var(--gcode-bg-elevated);
+	padding: var(--gcode-space-5);
+	display: flex;
+	flex-direction: column;
+	gap: var(--gcode-space-4);
+}
+
+h1 {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 650;
+}
+
+p {
+	margin: 0;
+	color: var(--gcode-fg-muted);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--gcode-fg-muted);
+}
+
+select,
+input {
+	padding: 8px 10px;
+	border-radius: var(--gcode-radius-sm);
+	border: 1px solid var(--gcode-border-strong);
+	background: var(--gcode-bg);
+	color: var(--gcode-fg);
+	font-size: 13px;
+}
+
+button.primary {
+	padding: 10px 14px;
+	border-radius: var(--gcode-radius-sm);
+	background: var(--gcode-accent);
+	color: #041018;
+	font-weight: 700;
+	font-size: 13px;
+}
+
+button.primary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.error {
+	color: var(--gcode-danger);
+	font-size: 12px;
+}
