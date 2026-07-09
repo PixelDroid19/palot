@@ -1,14 +1,33 @@
 /**
- * Onboarding — welcome, real CLI/provider detection, finish.
- * Uses window.gcode.onboarding + agentSession.describeRuntimes (Electron only).
+ * Onboarding — welcome, CLI detect, scan/preview/execute migration, finish.
+ * Uses public window.gcode.onboarding APIs (no stubs).
  */
 import { html, LitElement } from "lit"
 import { customElement, state } from "lit/decorators.js"
-import type { ProviderDetection, SessionRuntimeDescriptor } from "../../../preload/api"
+import type {
+	MigrationCategory,
+	MigrationPreview,
+	MigrationProvider,
+	MigrationResult,
+	ProviderDetection,
+	SessionRuntimeDescriptor,
+} from "../../../preload/api"
 import { LocaleController } from "../locale-controller"
 import { markOnboardingComplete, readOnboardingState } from "../onboarding-store"
 import { navigate } from "../router"
 import { styles } from "./gcode-onboarding.css.js"
+
+const DEFAULT_CATEGORIES: MigrationCategory[] = [
+	"config",
+	"mcp",
+	"agents",
+	"commands",
+	"skills",
+	"permissions",
+	"rules",
+	"hooks",
+	"history",
+]
 
 @customElement("gcode-onboarding")
 export class GcodeOnboarding extends LitElement {
@@ -17,9 +36,15 @@ export class GcodeOnboarding extends LitElement {
 
 	@state() private step = 0
 	@state() private detecting = false
+	@state() private migrating = false
 	@state() private error = ""
 	@state() private providers: ProviderDetection[] = []
 	@state() private runtimes: SessionRuntimeDescriptor[] = []
+	@state() private selectedProvider: MigrationProvider | null = null
+	@state() private scanResult: unknown = null
+	@state() private preview: MigrationPreview | null = null
+	@state() private result: MigrationResult | null = null
+	@state() private categories: MigrationCategory[] = [...DEFAULT_CATEGORIES]
 
 	connectedCallback(): void {
 		super.connectedCallback()
@@ -68,12 +93,93 @@ export class GcodeOnboarding extends LitElement {
 		}
 	}
 
-	private async next(): Promise<void> {
-		if (this.step === 1 && this.providers.length === 0 && this.runtimes.length === 0) {
-			await this.detect()
+	private async previewMigration(provider: MigrationProvider): Promise<void> {
+		this.migrating = true
+		this.error = ""
+		this.selectedProvider = provider
+		this.preview = null
+		this.result = null
+		try {
+			const g = (
+				window as unknown as {
+					gcode?: {
+						onboarding?: {
+							scanProvider?: (
+								p: MigrationProvider,
+							) => Promise<{ detection: ProviderDetection; scanResult: unknown }>
+							previewMigration?: (
+								p: MigrationProvider,
+								scan: unknown,
+								cats: MigrationCategory[],
+							) => Promise<MigrationPreview>
+						}
+					}
+				}
+			).gcode
+			if (!g?.onboarding?.scanProvider || !g.onboarding.previewMigration) {
+				throw new Error(this.locale.t("litOnboarding.desktopRequired"))
+			}
+			const scanned = await g.onboarding.scanProvider(provider)
+			this.scanResult = scanned.scanResult
+			this.preview = await g.onboarding.previewMigration(
+				provider,
+				scanned.scanResult,
+				this.categories,
+			)
+		} catch (err) {
+			this.error = err instanceof Error ? err.message : String(err)
+		} finally {
+			this.migrating = false
 		}
-		if (this.step < 2) this.step += 1
-		if (this.step === 1) void this.detect()
+	}
+
+	private async executeMigration(): Promise<void> {
+		if (!this.selectedProvider || this.scanResult == null) return
+		this.migrating = true
+		this.error = ""
+		try {
+			const g = (
+				window as unknown as {
+					gcode?: {
+						onboarding?: {
+							executeMigration?: (
+								p: MigrationProvider,
+								scan: unknown,
+								cats: MigrationCategory[],
+							) => Promise<MigrationResult>
+						}
+					}
+				}
+			).gcode
+			if (!g?.onboarding?.executeMigration) {
+				throw new Error(this.locale.t("litOnboarding.desktopRequired"))
+			}
+			this.result = await g.onboarding.executeMigration(
+				this.selectedProvider,
+				this.scanResult,
+				this.categories,
+			)
+			if (!this.result.success && this.result.errors?.length) {
+				this.error = this.result.errors.join("; ")
+			}
+		} catch (err) {
+			this.error = err instanceof Error ? err.message : String(err)
+		} finally {
+			this.migrating = false
+		}
+	}
+
+	private async next(): Promise<void> {
+		if (this.step === 0) {
+			this.step = 1
+			void this.detect()
+			return
+		}
+		if (this.step === 1) {
+			this.step = 2
+			return
+		}
+		if (this.step < 3) this.step += 1
 	}
 
 	private renderRuntimesStep() {
@@ -139,15 +245,98 @@ export class GcodeOnboarding extends LitElement {
 		`
 	}
 
+	private renderMigrationStep() {
+		const found = this.providers.filter((p) => p.found)
+		return html`
+			<div class="detect-list">
+				${
+					found.length === 0
+						? html`<p>${this.locale.t("litOnboarding.noMigrationSources")}</p>`
+						: found.map(
+								(p) => html`
+									<div class="detect-row" data-ok="true">
+										<strong>${p.label || p.provider}</strong>
+										<button
+											type="button"
+											class="secondary"
+											?disabled=${this.migrating}
+											@click=${() => this.previewMigration(p.provider)}
+										>
+											${this.locale.t("litOnboarding.preview")}
+										</button>
+									</div>
+								`,
+							)
+				}
+			</div>
+			${
+				this.preview
+					? html`
+							<div class="preview">
+								<div class="detect-label">
+									${this.locale.t("litOnboarding.previewSummary", {
+										files: String(this.preview.fileCount),
+										sessions: String(this.preview.sessionCount),
+									})}
+								</div>
+								${this.preview.categories.map(
+									(cat) => html`
+										<div class="preview-cat">
+											<strong>${cat.category}</strong> · ${cat.itemCount}
+											${cat.files.slice(0, 8).map(
+												(f) => html`<div class="mono file">${f.path} (${f.status})</div>`,
+											)}
+										</div>
+									`,
+								)}
+								${
+									this.preview.warnings?.length
+										? html`<div class="warn">${this.preview.warnings.join(" · ")}</div>`
+										: null
+								}
+								<button
+									type="button"
+									class="primary"
+									?disabled=${this.migrating}
+									@click=${() => this.executeMigration()}
+								>
+									${this.locale.t("litOnboarding.execute")}
+								</button>
+							</div>
+						`
+					: null
+			}
+			${
+				this.result
+					? html`
+							<div class="preview" data-ok=${String(this.result.success)}>
+								<div class="detect-label">
+									${this.result.success
+										? this.locale.t("litOnboarding.migrateOk")
+										: this.locale.t("litOnboarding.migrateFail")}
+								</div>
+								<div class="mono">
+									written: ${this.result.filesWritten?.length ?? 0} · skipped:
+									${this.result.filesSkipped?.length ?? 0}
+								</div>
+							</div>
+						`
+					: null
+			}
+		`
+	}
+
 	render() {
 		const titles = [
 			this.locale.t("litOnboarding.welcomeTitle"),
 			this.locale.t("litOnboarding.runtimesTitle"),
+			this.locale.t("litOnboarding.migrateTitle"),
 			this.locale.t("litOnboarding.readyTitle"),
 		]
 		const bodies = [
 			this.locale.t("litOnboarding.welcomeBody"),
 			this.locale.t("litOnboarding.runtimesBody"),
+			this.locale.t("litOnboarding.migrateBody"),
 			this.locale.t("litOnboarding.readyBody"),
 		]
 		return html`
@@ -162,13 +351,17 @@ export class GcodeOnboarding extends LitElement {
 						2 · ${this.locale.t("litOnboarding.stepRuntimes")}
 					</div>
 					<div class="step" data-active=${String(this.step === 2)}>
-						3 · ${this.locale.t("litOnboarding.stepReady")}
+						3 · ${this.locale.t("litOnboarding.stepMigrate")}
+					</div>
+					<div class="step" data-active=${String(this.step === 3)}>
+						4 · ${this.locale.t("litOnboarding.stepReady")}
 					</div>
 				</div>
 				${this.step === 1 ? this.renderRuntimesStep() : null}
+				${this.step === 2 ? this.renderMigrationStep() : null}
 				${this.error ? html`<div class="error">${this.error}</div>` : null}
 				${
-					this.step < 2
+					this.step < 3
 						? html`
 								<button type="button" class="primary" @click=${() => this.next()}>
 									${this.locale.t("litOnboarding.next")}

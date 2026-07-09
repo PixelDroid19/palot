@@ -106,3 +106,35 @@ button.secondary {
 	color: var(--gcode-danger);
 	font-size: 12px;
 }
+
+.preview {
+	margin-top: 12px;
+	padding: 10px;
+	border-radius: var(--gcode-radius-sm);
+	background: var(--gcode-bg-muted);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-height: 280px;
+	overflow: auto;
+}
+
+.preview-cat {
+	font-size: 12px;
+}
+
+.file {
+	font-size: 11px;
+	color: var(--gcode-fg-subtle);
+	padding-left: 8px;
+}
+
+.warn {
+	font-size: 12px;
+	color: #d4a017;
+}
+
+.mono {
+	font-family: var(--gcode-font-mono);
+	font-size: 11px;
+}

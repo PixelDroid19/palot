@@ -123,3 +123,90 @@ input[type="checkbox"] {
 	height: 16px;
 	accent-color: var(--gcode-accent);
 }
+
+input:not([type="checkbox"]) {
+	background: var(--gcode-bg);
+	border: 1px solid var(--gcode-border-strong);
+	border-radius: var(--gcode-radius-sm);
+	color: var(--gcode-fg);
+	padding: 6px 10px;
+	font-size: 13px;
+}
+
+.btn.primary {
+	background: var(--gcode-accent);
+	color: #041018;
+	font-weight: 600;
+	border-color: transparent;
+}
+
+.btn.danger {
+	color: var(--gcode-danger);
+	border-color: color-mix(in srgb, var(--gcode-danger) 40%, transparent);
+}
+
+.stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: var(--gcode-space-3);
+	margin-bottom: var(--gcode-space-4);
+	max-width: 640px;
+}
+
+.stat {
+	border: 1px solid var(--gcode-border);
+	border-radius: var(--gcode-radius);
+	background: var(--gcode-bg-elevated);
+	padding: var(--gcode-space-3);
+}
+
+.stat-label {
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--gcode-fg-muted);
+}
+
+.stat-value {
+	margin-top: 4px;
+	font-size: 20px;
+	font-weight: 650;
+	font-variant-numeric: tabular-nums;
+}
+
+.chart {
+	display: flex;
+	align-items: flex-end;
+	gap: 2px;
+	height: 96px;
+	margin-top: 12px;
+}
+
+.bar {
+	flex: 1;
+	min-width: 3px;
+	background: var(--gcode-accent);
+	border-radius: 2px 2px 0 0;
+	opacity: 0.75;
+}
+
+.table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 10px;
+	font-size: 12px;
+}
+
+.table th,
+.table td {
+	text-align: left;
+	padding: 6px 8px;
+	border-bottom: 1px solid var(--gcode-border);
+}
+
+.table th {
+	color: var(--gcode-fg-muted);
+	font-weight: 600;
+	font-size: 11px;
+	text-transform: uppercase;
+}
