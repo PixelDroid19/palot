@@ -1,0 +1,4 @@
+/* AUTO-GENERATED from gcode-status-dot.scss — do not edit */
+import { css } from "lit";
+export const styles = css`:host{display:inline-block;flex-shrink:0;width:.375rem;height:.375rem;border-radius:9999px;background:color-mix(in srgb, var(--muted-foreground, #afafaf) 40%, transparent);vertical-align:middle}:host([data-kind=ok]){background:#22c55e;animation:none}:host([data-kind=bad]){background:#ef4444;animation:none}:host([data-kind=checking]){background:color-mix(in srgb, var(--muted-foreground, #afafaf) 40%, transparent);animation:gcode-dot-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}:host([data-size=md]){width:.5rem;height:.5rem}:host([data-size=md][data-bordered]){box-shadow:0 0 0 1px var(--sidebar, var(--background, #0d0d0d))}@keyframes gcode-dot-pulse{0%,100%{opacity:1}50%{opacity:.4}}`;
+export default styles;

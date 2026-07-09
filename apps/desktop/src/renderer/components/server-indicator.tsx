@@ -14,11 +14,13 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@gcode/ui/compo
 import { useNavigate } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import { CheckIcon, GlobeIcon, MonitorIcon, RadarIcon, SettingsIcon } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ServerConfig } from "../../preload/api"
 import { serverConnectedAtom } from "../atoms/connection"
 import { useServerActions, useServers } from "../hooks/use-servers"
+import type { HealthState } from "../lit/status-dot"
 import { isElectron, resolveAuthHeader, resolveServerUrl } from "../services/backend"
+import "../lit/components/gcode-status-dot"
 
 // ============================================================
 // Health probe helper
@@ -62,25 +64,28 @@ async function probeServerHealth(server: ServerConfig): Promise<boolean> {
 }
 
 // ============================================================
-// Status dot component
+// Status dot — progressive Lit host (sole production markup)
 // ============================================================
 
-type HealthState = boolean | null
-
-function StatusDot({ health, className }: { health: HealthState; className?: string }) {
-	if (health === null) {
-		// Still checking: pulsing neutral dot
-		return (
-			<span
-				className={`size-1.5 shrink-0 rounded-full bg-muted-foreground/40 animate-pulse ${className ?? ""}`}
-			/>
-		)
-	}
-	return (
-		<span
-			className={`size-1.5 shrink-0 rounded-full ${health ? "bg-green-500" : "bg-red-500"} ${className ?? ""}`}
-		/>
-	)
+function StatusDot({
+	health,
+	size = "sm",
+	bordered = false,
+	className,
+}: {
+	health: HealthState
+	size?: "sm" | "md"
+	bordered?: boolean
+	className?: string
+}) {
+	return createElement("gcode-status-dot", {
+		class: className,
+		className,
+		health: health === null ? "null" : health ? "true" : "false",
+		size,
+		bordered,
+		"data-lit-status-dot": "1",
+	})
 }
 
 // ============================================================
@@ -199,12 +204,9 @@ export function ServerIndicator() {
 					>
 						<div className="relative">
 							<ServerIcon aria-hidden="true" className="size-4" />
-							{/* Status dot */}
-							<span
-								className={`absolute -right-0.5 -bottom-0.5 size-2 rounded-full border border-sidebar-background ${
-									connected ? "bg-green-500" : "bg-red-500"
-								}`}
-							/>
+							<span className="absolute -right-0.5 -bottom-0.5">
+								<StatusDot health={connected} size="md" bordered />
+							</span>
 						</div>
 						<span className="truncate">{activeServer.name}</span>
 						{!connected && <span className="text-[10px] text-red-500/70">(offline)</span>}
