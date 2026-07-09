@@ -1,17 +1,32 @@
+/**
+ * Session lifecycle for agent-host process runtimes and mid-session switches.
+ *
+ * Transcript is always Palot-owned (messages/parts atoms). Switching runtimes
+ * never wipes the visible chat: CLI↔CLI keeps the same session id; CLI→managed
+ * transfers the transcript onto the new managed session before removing the old
+ * shell, and stages a text handoff for the next model turn.
+ */
 import type { AgentRuntimeId, AgentSandbox } from "../../preload/api"
 import { createUuidV7 } from "../../shared/uuid"
 import {
+	clearCliMeta,
 	getCliMeta,
 	patchCliMeta,
 	setCliMeta,
 } from "../atoms/cli-sessions"
-import { messagesFamily, upsertMessageAtom } from "../atoms/messages"
-import { partsFamily, upsertPartAtom } from "../atoms/parts"
-import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
+import { messagesFamily, setMessagesAtom } from "../atoms/messages"
+import { partsFamily } from "../atoms/parts"
+import {
+	removeSessionAtom,
+	sessionFamily,
+	setSessionBranchAtom,
+	setSessionWorktreeAtom,
+	upsertSessionAtom,
+} from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
 import { runtimeLabel } from "../lib/session-runtimes"
-import type { Part, Session, TextPart } from "../lib/types"
+import type { Message, Part, Session, TextPart } from "../lib/types"
 import {
 	closeCliSessionBackend,
 	forgetCliSession,
@@ -19,17 +34,20 @@ import {
 } from "./cli-chat-persistence"
 import { cancelCliTurn } from "./cli-chat-turn"
 
-const log = createLogger("cli-chat-session")
+const log = createLogger("runtime-session-switch")
 
 const isElectron = typeof window !== "undefined" && "palot" in window
 
 const HANDOFF_MAX_CHARS = 12_000
 
+/** Pending wire handoff text for the next managed-server prompt (by session id). */
+const pendingManagedHandoffs = new Map<string, string>()
+
 export function buildConversationHandoff(sessionId: string): string {
-	const messages = appStore.get(messagesFamily(sessionId))
+	const messages = appStore.get(messagesFamily(sessionId)) ?? []
 	const turns: string[] = []
 	for (const message of messages) {
-		const parts = appStore.get(partsFamily(message.id))
+		const parts = appStore.get(partsFamily(message.id)) ?? []
 		const text = parts
 			.filter((p): p is TextPart => p.type === "text")
 			.map((p) => p.text)
@@ -47,6 +65,62 @@ export function buildConversationHandoff(sessionId: string): string {
 	return transcript.trim()
 }
 
+/** Build the system-style preamble injected into the next turn after a runtime switch. */
+export function buildRuntimeHandoffPreamble(history: string): string {
+	return (
+		"Context: this conversation continues from another coding agent. History so far:\n\n" +
+		`<conversation-history>\n${history}\n</conversation-history>\n\n` +
+		"Continue seamlessly. Preserve prior decisions, files, and unfinished work."
+	)
+}
+
+/**
+ * Move the visible transcript from one session id to another without destroying
+ * parts. Clears the source message list first so removeSessionAtom cannot wipe
+ * part atoms that still belong to the destination.
+ *
+ * Message ids are preserved so part lookups stay valid.
+ */
+export function transferSessionTranscript(fromSessionId: string, toSessionId: string): number {
+	if (fromSessionId === toSessionId) return 0
+	const source = appStore.get(messagesFamily(fromSessionId)) ?? []
+	if (source.length === 0) return 0
+
+	const messages: Message[] = source.map((message) => ({
+		...message,
+		sessionID: toSessionId,
+	}))
+	const parts: Record<string, Part[]> = {}
+	for (const message of source) {
+		parts[message.id] = appStore.get(partsFamily(message.id)) ?? []
+	}
+
+	// Detach from source BEFORE removeSessionAtom can delete shared part atoms.
+	appStore.set(messagesFamily(fromSessionId), [])
+
+	appStore.set(setMessagesAtom, {
+		sessionId: toSessionId,
+		messages,
+		parts,
+	})
+
+	return messages.length
+}
+
+/** Consume staged managed-server handoff for the next prompt (one-shot). */
+export function consumeManagedRuntimeHandoff(sessionId: string): string | null {
+	const handoff = pendingManagedHandoffs.get(sessionId)
+	if (handoff) pendingManagedHandoffs.delete(sessionId)
+	return handoff ?? null
+}
+
+/** @deprecated Use consumeManagedRuntimeHandoff */
+export const consumeProjectRuntimeHandoff = consumeManagedRuntimeHandoff
+
+/**
+ * Switch an agent-host session onto another process runtime (or attach agent-host
+ * meta to a managed-server session). Same UI session id; transcript stays put.
+ */
 export async function switchCliRuntime(
 	sessionId: string,
 	runtimeId: AgentRuntimeId,
@@ -54,7 +128,7 @@ export async function switchCliRuntime(
 ): Promise<void> {
 	const meta = getCliMeta(sessionId)
 	if (meta?.runtimeId === runtimeId) return
-	const hasHistory = appStore.get(messagesFamily(sessionId)).length > 0
+	const hasHistory = (appStore.get(messagesFamily(sessionId)) ?? []).length > 0
 	if (meta) {
 		if (isElectron) {
 			cancelCliTurn(sessionId)
@@ -78,60 +152,83 @@ export async function switchCliRuntime(
 		})
 	}
 	persistCliSession(sessionId)
-	log.info("Switched session runtime", { sessionId, runtimeId })
+	log.info("Switched session to process runtime", { sessionId, runtimeId, handoff: hasHistory })
 }
 
-const projectRuntimeHandoffs = new Map<string, string>()
-
-export function consumeProjectRuntimeHandoff(sessionId: string): string | null {
-	const handoff = projectRuntimeHandoffs.get(sessionId)
-	if (handoff) projectRuntimeHandoffs.delete(sessionId)
-	return handoff ?? null
-}
-
-export async function switchCliSessionToProjectRuntime(
+/**
+ * Switch a process-backed session onto the managed-server transport (OpenCode).
+ * Creates a server session, transfers the UI transcript, stages a text handoff
+ * for the next prompt, then removes only the old session shell.
+ */
+export async function switchSessionToManagedServer(
 	sessionId: string,
-	createProjectSession: (directory: string, title?: string) => Promise<Session | undefined>,
+	createManagedSession: (directory: string, title?: string) => Promise<Session | undefined>,
 ): Promise<string | null> {
-	const meta = getCliMeta(sessionId)
 	const entry = appStore.get(sessionFamily(sessionId))
-	if (!meta || !entry) return null
+	if (!entry) {
+		log.warn("Cannot switch to managed server: session missing", { sessionId })
+		return null
+	}
+
+	// Capture handoff text before any mutation.
+	const history = buildConversationHandoff(sessionId)
+	const messageCount = (appStore.get(messagesFamily(sessionId)) ?? []).length
 
 	cancelCliTurn(sessionId)
 	await closeCliSessionBackend(sessionId)
 
-	const created = await createProjectSession(entry.directory, entry.session.title)
-	if (!created) return null
-
-	for (const message of appStore.get(messagesFamily(sessionId))) {
-		const newMessageId = `${message.id}-oc`
-		appStore.set(upsertMessageAtom, { ...message, id: newMessageId, sessionID: created.id })
-		for (const part of appStore.get(partsFamily(message.id))) {
-			appStore.set(upsertPartAtom, {
-				...part,
-				id: `${part.id}-oc`,
-				messageID: newMessageId,
-				sessionID: created.id,
-			} as Part)
-		}
+	const created = await createManagedSession(entry.directory, entry.session.title)
+	if (!created) {
+		log.error("Managed session create failed during runtime switch", { sessionId })
+		return null
 	}
 
-	const history = buildConversationHandoff(sessionId)
+	// Preserve title / worktree / branch metadata on the managed session shell.
+	appStore.set(upsertSessionAtom, {
+		session: {
+			...created,
+			title: entry.session.title || created.title,
+		},
+		directory: entry.directory,
+	})
+	if (entry.worktreePath) {
+		appStore.set(setSessionWorktreeAtom, {
+			sessionId: created.id,
+			worktreePath: entry.worktreePath,
+			worktreeBranch: entry.worktreeBranch ?? "",
+		})
+	}
+	if (entry.branch) {
+		appStore.set(setSessionBranchAtom, {
+			sessionId: created.id,
+			branch: entry.branch,
+		})
+	}
+
+	const moved = transferSessionTranscript(sessionId, created.id)
 	if (history) {
-		projectRuntimeHandoffs.set(
-			created.id,
-			`Context: this conversation continues from another coding agent. History so far:\n\n<conversation-history>\n${history}\n</conversation-history>\n\nContinue seamlessly.`,
-		)
+		pendingManagedHandoffs.set(created.id, buildRuntimeHandoffPreamble(history))
 	}
 
+	clearCliMeta(sessionId)
 	await forgetCliSession(sessionId)
+	// messagesFamily(sessionId) is already empty → removeSessionAtom will not drop parts
 	appStore.set(removeSessionAtom, sessionId)
-	log.info("Switched CLI session to project runtime", { from: sessionId, to: created.id })
+
+	log.info("Switched process session to managed server", {
+		from: sessionId,
+		to: created.id,
+		movedMessages: moved,
+		sourceMessages: messageCount,
+		handoff: Boolean(history),
+	})
 	return created.id
 }
 
-export const consumeManagedRuntimeHandoff = consumeProjectRuntimeHandoff
-export const switchCliSessionToManagedRuntime = switchCliSessionToProjectRuntime
+/** @deprecated Use switchSessionToManagedServer */
+export const switchCliSessionToProjectRuntime = switchSessionToManagedServer
+/** @deprecated Use switchSessionToManagedServer */
+export const switchCliSessionToManagedRuntime = switchSessionToManagedServer
 
 export function createCliSession(args: {
 	directory: string
@@ -157,6 +254,6 @@ export function createCliSession(args: {
 		threadId: null,
 	})
 	persistCliSession(sessionId)
-	log.info("Created CLI session", { sessionId, runtime: args.runtimeId })
+	log.info("Created process runtime session", { sessionId, runtime: args.runtimeId })
 	return sessionId
 }

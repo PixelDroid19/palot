@@ -89,3 +89,11 @@ export function patchCliMeta(sessionId: string, patch: Partial<CliSessionMeta>):
 	if (!existing) return
 	appStore.set(cliSessionsAtom, { ...current, [sessionId]: { ...existing, ...patch } })
 }
+
+/** Drop process-adapter meta for a session (e.g. after switching to managed-server). */
+export function clearCliMeta(sessionId: string): void {
+	const current = appStore.get(cliSessionsAtom)
+	if (!(sessionId in current)) return
+	const { [sessionId]: _removed, ...rest } = current
+	appStore.set(cliSessionsAtom, rest)
+}

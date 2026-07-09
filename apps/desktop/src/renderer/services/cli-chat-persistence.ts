@@ -1,5 +1,5 @@
 import type { CliSessionMeta } from "../atoms/cli-sessions"
-import { getCliMeta, setCliMeta } from "../atoms/cli-sessions"
+import { clearCliMeta, getCliMeta, setCliMeta } from "../atoms/cli-sessions"
 import { messagesFamily, upsertMessageAtom } from "../atoms/messages"
 import { partsFamily, upsertPartAtom } from "../atoms/parts"
 import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
@@ -121,5 +121,6 @@ export async function forgetCliSession(sessionId: string): Promise<void> {
 	localStorage.removeItem(SESSION_KEY_PREFIX + sessionId)
 	const ids = readIndex().filter((id) => id !== sessionId)
 	localStorage.setItem(INDEX_KEY, JSON.stringify(ids))
+	clearCliMeta(sessionId)
 	await closeCliSessionBackend(sessionId)
 }

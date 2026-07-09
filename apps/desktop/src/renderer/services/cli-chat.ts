@@ -10,10 +10,15 @@ export {
 } from "./cli-chat-persistence"
 export {
 	buildConversationHandoff,
+	buildRuntimeHandoffPreamble,
+	consumeManagedRuntimeHandoff,
 	consumeProjectRuntimeHandoff,
 	createCliSession,
 	switchCliRuntime,
+	switchSessionToManagedServer,
 	switchCliSessionToProjectRuntime,
+	switchCliSessionToManagedRuntime,
+	transferSessionTranscript,
 } from "./cli-chat-session"
 export {
 	answerCliQuestion,

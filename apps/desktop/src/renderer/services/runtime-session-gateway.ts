@@ -38,14 +38,14 @@ import { requireRuntimeSessionClient } from "./runtime-client"
 import {
 	createCliRuntimeSessionState,
 	switchCliRuntimeSession,
-	switchCliSessionIntoProjectRuntime,
+	switchSessionIntoManagedServer,
 } from "./runtime-cli-session"
 import {
 	forgetCliRuntimeSession,
 	persistCliRuntimeSession,
 } from "./runtime-cli-store"
 import {
-	consumeCliToProjectRuntimeHandoff,
+	consumeRuntimeHandoff,
 	interruptCliRuntimeTurn,
 	runCliRuntimeTurn,
 } from "./runtime-cli-turns"
@@ -121,7 +121,7 @@ async function promptManagedServerSession(
 	}
 
 	const parts: Array<{ type: "text"; text: string } | FilePartInput> = [{ type: "text", text }]
-	const handoff = consumeCliToProjectRuntimeHandoff(sessionId)
+	const handoff = consumeRuntimeHandoff(sessionId)
 	if (handoff) parts.unshift({ type: "text", text: handoff })
 	for (const file of files) {
 		parts.push({
@@ -409,13 +409,12 @@ export const runtimeSessionGateway = {
 		const targetTransport = runtimeTransportForId(targetRuntime)
 		const currentTransport = transportForSession(sessionId)
 
+		// Process → managed-server: new server session + transfer UI transcript + wire handoff
 		if (targetTransport === "managed-server" && currentTransport === "agent-host") {
-			return switchCliSessionIntoProjectRuntime(
-				sessionId,
-				managedServerGateway.createSession,
-			)
+			return switchSessionIntoManagedServer(sessionId, managedServerGateway.createSession)
 		}
 
+		// Any → process adapter: same UI session id, handoff flag for next turn
 		if (targetTransport === "agent-host") {
 			await switchCliRuntimeSession(sessionId, targetRuntime, fallbackDirectory)
 			return sessionId

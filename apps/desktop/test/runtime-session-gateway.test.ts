@@ -27,10 +27,11 @@ mock.module("../src/renderer/services/runtime-cli-session", () => ({
 	switchCliRuntimeSession: async (sessionId: string, runtimeId: string) => {
 		switchAgentHostCalls.push({ sessionId, runtimeId })
 	},
-	switchCliSessionIntoProjectRuntime: async (
-		sessionId: string,
-		_create: unknown,
-	) => {
+	switchSessionIntoManagedServer: async (sessionId: string, _create: unknown) => {
+		switchToManagedCalls.push(sessionId)
+		return "managed-after-switch"
+	},
+	switchCliSessionIntoProjectRuntime: async (sessionId: string, _create: unknown) => {
 		switchToManagedCalls.push(sessionId)
 		return "managed-after-switch"
 	},
@@ -41,6 +42,7 @@ mock.module("../src/renderer/services/runtime-cli-turns", () => ({
 		runTurnCalls.push({ sessionId, text, options })
 	},
 	interruptCliRuntimeTurn: () => {},
+	consumeRuntimeHandoff: () => null,
 	consumeCliToProjectRuntimeHandoff: () => null,
 	consumeCliToManagedRuntimeHandoff: () => null,
 }))

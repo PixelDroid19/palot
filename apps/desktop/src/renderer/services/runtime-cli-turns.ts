@@ -1,10 +1,6 @@
 import type { AgentSandbox } from "../../preload/api"
 import type { FileAttachment } from "../lib/types"
-import {
-	cancelCliTurn,
-	consumeProjectRuntimeHandoff,
-	runCliTurn,
-} from "./cli-chat"
+import { cancelCliTurn, consumeManagedRuntimeHandoff, runCliTurn } from "./cli-chat"
 import { patchSessionRuntimeState } from "../lib/runtime-session-config"
 
 /** Optional per-turn overrides applied to process-adapter session meta before send. */
@@ -46,8 +42,12 @@ export function interruptCliRuntimeTurn(sessionId: string): void {
 	cancelCliTurn(sessionId)
 }
 
-export function consumeCliToProjectRuntimeHandoff(sessionId: string): string | null {
-	return consumeProjectRuntimeHandoff(sessionId)
+/** Consume staged handoff for the next managed-server prompt. */
+export function consumeRuntimeHandoff(sessionId: string): string | null {
+	return consumeManagedRuntimeHandoff(sessionId)
 }
 
-export const consumeCliToManagedRuntimeHandoff = consumeCliToProjectRuntimeHandoff
+/** @deprecated Use consumeRuntimeHandoff */
+export const consumeCliToProjectRuntimeHandoff = consumeRuntimeHandoff
+/** @deprecated Use consumeRuntimeHandoff */
+export const consumeCliToManagedRuntimeHandoff = consumeRuntimeHandoff

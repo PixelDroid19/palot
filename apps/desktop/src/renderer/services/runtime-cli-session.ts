@@ -3,7 +3,7 @@ import type { Session } from "../lib/types"
 import {
 	createCliSession,
 	switchCliRuntime,
-	switchCliSessionToProjectRuntime,
+	switchSessionToManagedServer,
 } from "./cli-chat"
 
 export function createCliRuntimeSessionState(args: {
@@ -24,11 +24,15 @@ export async function switchCliRuntimeSession(
 	await switchCliRuntime(sessionId, runtimeId, fallbackCwd)
 }
 
-export async function switchCliSessionIntoProjectRuntime(
+/** Process (agent-host) session → managed-server (OpenCode) with transcript handoff. */
+export async function switchSessionIntoManagedServer(
 	sessionId: string,
-	createProjectSession: (directory: string, title?: string) => Promise<Session | undefined>,
+	createManagedSession: (directory: string, title?: string) => Promise<Session | undefined>,
 ): Promise<string | null> {
-	return switchCliSessionToProjectRuntime(sessionId, createProjectSession)
+	return switchSessionToManagedServer(sessionId, createManagedSession)
 }
 
-export const switchCliSessionIntoManagedRuntime = switchCliSessionIntoProjectRuntime
+/** @deprecated Use switchSessionIntoManagedServer */
+export const switchCliSessionIntoProjectRuntime = switchSessionIntoManagedServer
+/** @deprecated Use switchSessionIntoManagedServer */
+export const switchCliSessionIntoManagedRuntime = switchSessionIntoManagedServer
