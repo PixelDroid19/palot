@@ -33,6 +33,13 @@ Thumbs.db
 # Logs
 *.log
 
+# Local QA / dogfood / agent scratch (screenshots, audits, run logs)
+.scratch/
+**/QA-REPORT.md
+**/*-qa-report*
+qa-output/
+dogfood-output/
+
 # Research (local only)
 research/
 
