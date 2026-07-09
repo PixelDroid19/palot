@@ -1,8 +1,8 @@
 /**
- * Marks which sessions are backed by a coding-agent CLI (Codex, Claude Code, …)
- * rather than the OpenCode server. CLI sessions render in the exact same chat
- * view; this atom is the discriminator the write actions branch on so prompts
- * route to the CLI runner instead of the OpenCode client.
+ * Per-session meta for agent-host process transports (Codex, Claude Code, …).
+ * Sessions still render in the shared chat view; transport selection is by
+ * runtimeId + descriptor (gateway), while this atom holds process-adapter
+ * model/effort/sandbox/thread state for those sessions.
  *
  * Transcripts live in the shared message/part atoms and are persisted to
  * localStorage by services/cli-chat.ts (restored at startup by the app shell).

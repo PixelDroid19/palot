@@ -129,10 +129,14 @@ export async function launchRuntimeSession(args: {
 		runtimeId: args.runtimeId,
 		...args.launch.create,
 	})
-	const sessionId = result?.session?.id ?? result?.sessionId
+	if (!result) return
+	const sessionId = result.session?.id ?? result.sessionId
 	if (!sessionId) return
 	if (args.currentBranch && result.session) {
-		appStore.set(setSessionBranchAtom, { sessionId: result.session.id, branch: args.currentBranch })
+		appStore.set(setSessionBranchAtom, {
+			sessionId: result.session.id,
+			branch: args.currentBranch,
+		})
 	}
 	await sendRuntimePrompt(args.directory, sessionId, args.promptText, {
 		...(args.launch.promptOptions ?? {}),

@@ -44,10 +44,10 @@ import {
 } from "../lib/runtime-session-config"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
-	installedCliRuntimeDescriptors,
+	installedProcessRuntimeDescriptors,
 	installedSessionRuntimeOptions,
-	isCliRuntime,
 	loadRuntimeDescriptors,
+	runtimeTransportForId,
 	type SessionRuntimeId,
 } from "../lib/session-runtimes"
 import {
@@ -283,27 +283,26 @@ export function NewChat() {
 	const [cliModel, setCliModel] = useState<string>(initialPrefs?.model ?? "")
 	const [cliEffort, setCliEffort] = useState<string>(initialPrefs?.effort ?? "")
 	const [cliSandbox, setCliSandbox] = useState<AgentSandbox>(initialPrefs?.sandbox ?? "read-only")
-	// Persist the CLI defaults per runtime so the picker restores them next time.
+	// Persist process-adapter defaults per runtime so the picker restores them next time.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed by runtime
 	useEffect(() => {
-		if (isCliRuntime(sessionRuntime)) {
+		if (runtimeTransportForId(sessionRuntime) === "agent-host") {
 			saveCliPrefs(sessionRuntime, { model: cliModel, effort: cliEffort, sandbox: cliSandbox })
 		}
 	}, [cliModel, cliEffort, cliSandbox, sessionRuntime])
-	// Runtime descriptors come from the agent-host core: install state,
-	// capabilities, and each CLI's own model catalog (never hardcoded here).
-	const [cliRuntimes, setCliRuntimes] = useState<SessionRuntimeDescriptor[]>([])
-	// Auth state per runtime from the CLI detection layer, so the picker can
-	// flag CLIs that are installed but not logged in before a run fails.
-	const [cliAuth, setCliAuth] = useState<Record<string, string>>({})
+	// Runtime descriptors from the host: install state, capabilities, model catalogs.
+	const [installedRuntimes, setInstalledRuntimes] = useState<SessionRuntimeDescriptor[]>([])
+	// Auth state per process runtime so the picker can flag unauthenticated installs.
+	const [runtimeAuth, setRuntimeAuth] = useState<Record<string, string>>({})
 	useEffect(() => {
 		loadRuntimeDescriptors().then((all) => {
-			const installed = installedCliRuntimeDescriptors(all)
-			setCliRuntimes(installed)
-			// The remembered runtime may have been uninstalled since last use.
+			const installed = all.filter((d) => d.installed)
+			setInstalledRuntimes(installed)
+			const processInstalled = installedProcessRuntimeDescriptors(all)
+			// The remembered process runtime may have been uninstalled since last use.
 			setSessionRuntimeState((current) =>
-				!runtimeIdCapabilities(current).supportsRuntimeConfiguration &&
-				  !installed.some((d) => d.id === current)
+				runtimeTransportForId(current) === "agent-host" &&
+				!processInstalled.some((d) => d.id === current)
 					? DEFAULT_SESSION_RUNTIME_ID
 					: current,
 			)
@@ -314,38 +313,43 @@ export function NewChat() {
 				.then((detections) => {
 					const auth: Record<string, string> = {}
 					for (const d of detections) auth[d.id] = d.auth
-					setCliAuth(auth)
+					setRuntimeAuth(auth)
 				})
 				.catch(() => {})
 		}
 	}, [])
-	const activeCliRuntime = isCliRuntime(sessionRuntime)
-		? cliRuntimes.find((d) => d.id === sessionRuntime)
-		: undefined
-	const cliModels = useMemo(() => availableRuntimeModels(activeCliRuntime), [activeCliRuntime])
-	const resolvedCliModel = useMemo(
-		() => resolveRuntimeModel(activeCliRuntime, cliModel),
-		[activeCliRuntime, cliModel],
+	/** Active process-adapter descriptor when transport is agent-host. */
+	const activeProcessRuntime =
+		runtimeTransportForId(sessionRuntime) === "agent-host"
+			? installedRuntimes.find((d) => d.id === sessionRuntime)
+			: undefined
+	const processModels = useMemo(
+		() => availableRuntimeModels(activeProcessRuntime),
+		[activeProcessRuntime],
 	)
-	const cliEfforts = useMemo(
-		() => getRuntimeModelEfforts(activeCliRuntime, resolvedCliModel),
-		[activeCliRuntime, resolvedCliModel],
+	const resolvedProcessModel = useMemo(
+		() => resolveRuntimeModel(activeProcessRuntime, cliModel),
+		[activeProcessRuntime, cliModel],
 	)
-	const resolvedCliEffort = useMemo(
-		() => resolveRuntimeEffort(activeCliRuntime, resolvedCliModel, cliEffort),
-		[activeCliRuntime, resolvedCliModel, cliEffort],
+	const processEfforts = useMemo(
+		() => getRuntimeModelEfforts(activeProcessRuntime, resolvedProcessModel),
+		[activeProcessRuntime, resolvedProcessModel],
+	)
+	const resolvedProcessEffort = useMemo(
+		() => resolveRuntimeEffort(activeProcessRuntime, resolvedProcessModel, cliEffort),
+		[activeProcessRuntime, resolvedProcessModel, cliEffort],
 	)
 	useEffect(() => {
-		if (!activeCliRuntime) return
-		const nextModel = resolveRuntimeModel(activeCliRuntime, cliModel) ?? ""
+		if (!activeProcessRuntime) return
+		const nextModel = resolveRuntimeModel(activeProcessRuntime, cliModel) ?? ""
 		if (nextModel !== cliModel) {
 			setCliModel(nextModel)
 		}
-		const nextEffort = resolveRuntimeEffort(activeCliRuntime, nextModel, cliEffort) ?? ""
+		const nextEffort = resolveRuntimeEffort(activeProcessRuntime, nextModel, cliEffort) ?? ""
 		if (nextEffort !== cliEffort) {
 			setCliEffort(nextEffort)
 		}
-	}, [activeCliRuntime, cliEffort, cliModel])
+	}, [activeProcessRuntime, cliEffort, cliModel])
 
 
 	// Draft persistence — survives page reloads.
@@ -516,22 +520,30 @@ export function NewChat() {
 	)
 
 	const runtimeConfig = useMemo<NewChatRuntimeConfig | null>(() => {
-		if (activeCliRuntime) {
+		// Capability-driven: process adapters use catalog models/sandbox/effort;
+		// managed-server adapters use agents/providers/variants.
+		if (
+			runtimeTransportForId(sessionRuntime) === "agent-host" &&
+			activeProcessRuntime
+		) {
 			return buildCliNewChatRuntimeConfig({
-				runtimeId: activeCliRuntime.id,
-				models: cliModels,
-				modelValue: resolvedCliModel ?? "",
+				runtimeId: activeProcessRuntime.id as Exclude<
+					SessionRuntimeId,
+					typeof DEFAULT_SESSION_RUNTIME_ID
+				>,
+				models: processModels,
+				modelValue: resolvedProcessModel ?? "",
 				onModelChange: (value: string) => {
 					setCliModel(value)
 					setCliEffort("")
 				},
 				sandboxValue: cliSandbox,
 				onSandboxChange: setCliSandbox,
-				efforts: cliEfforts,
+				efforts: processEfforts,
 				effortValue: cliEffort,
 				onEffortChange: setCliEffort,
-				model: resolvedCliModel,
-				effort: resolvedCliEffort,
+				model: resolvedProcessModel,
+				effort: resolvedProcessEffort,
 				sandbox: cliSandbox,
 			})
 		}
@@ -555,21 +567,23 @@ export function NewChat() {
 
 		return null
 	}, [
-		activeCliRuntime,
+		activeProcessRuntime,
 		cliEffort,
-		cliEfforts,
 		cliSandbox,
 		config?.defaultAgent,
 		effectiveModel,
 		handleModelSelect,
+		processEfforts,
+		processModels,
 		runtimeAgents,
 		providers,
 		recentModels,
-		resolvedCliEffort,
-		resolvedCliModel,
+		resolvedProcessEffort,
+		resolvedProcessModel,
 		selectedAgent,
 		selectedModel,
 		selectedVariant,
+		sessionRuntime,
 		runtimeCapabilities.supportsRuntimeConfiguration,
 		worktreeMode,
 	])
@@ -816,7 +830,7 @@ export function NewChat() {
 							}
 							extraSlot={
 								<div className="flex items-center gap-2">
-									{cliRuntimes.length > 0 && (
+									{installedRuntimes.length > 0 && (
 										<CliOptionSelect
 											aria-label={t("runtimePicker.runtime")}
 											value={sessionRuntime}
@@ -825,25 +839,27 @@ export function NewChat() {
 												setSessionRuntime(next)
 												// Restore this runtime's remembered defaults (if any).
 												const prefs = loadCliPrefs(next)
-											setCliModel(prefs?.model ?? "")
-											setCliEffort(prefs?.effort ?? "")
-											setCliSandbox(prefs?.sandbox ?? "read-only")
-										}}
-										options={installedSessionRuntimeOptions(cliRuntimes).map((option) => ({
-											value: option.value,
-											label:
-												isCliRuntime(option.value) &&
-												cliAuth[option.value] === "unauthenticated"
-													? t("runtimePicker.loginRequired", { name: option.label })
-													: option.label,
-										}))}
-									/>
+												setCliModel(prefs?.model ?? "")
+												setCliEffort(prefs?.effort ?? "")
+												setCliSandbox(prefs?.sandbox ?? "read-only")
+											}}
+											options={installedSessionRuntimeOptions(installedRuntimes).map(
+												(option) => ({
+													value: option.value,
+													label:
+														runtimeTransportForId(option.value) === "agent-host" &&
+														runtimeAuth[option.value] === "unauthenticated"
+															? t("runtimePicker.loginRequired", { name: option.label })
+															: option.label,
+												}),
+											)}
+										/>
 									)}
-							{vcs &&
-								runtimeCapabilities.supportsWorktreeLaunch &&
-								runtimeConfig?.launch.worktreeMode && (
-								<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
-							)}
+									{vcs &&
+										runtimeCapabilities.supportsWorktreeLaunch &&
+										runtimeConfig?.launch.worktreeMode && (
+											<WorktreeToggle mode={worktreeMode} onModeChange={setWorktreeMode} />
+										)}
 								</div>
 							}
 						/>
@@ -859,8 +875,8 @@ export function NewChat() {
 					{/* No projects warning */}
 					{projects.length === 0 && (
 						<p className="mt-2 text-center text-xs text-muted-foreground">
-							No project runtime workspaces found. Check that OpenCode has indexed projects in
-							~/.local/share/opencode/storage/.
+							No workspaces found yet. Open a project folder or connect a runtime that indexes
+							local projects to get started.
 						</p>
 					)}
 				</div>

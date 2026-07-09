@@ -66,6 +66,7 @@ import {
 	cliRuntimeMeta,
 	persistRuntimeSelection,
 	sessionRuntimeCapabilities,
+	sessionUsesAgentHostTransport,
 	type RuntimePromptOptions,
 	useSessionRuntimeState,
 } from "../../lib/runtime-session-config"
@@ -831,13 +832,13 @@ function ChatInputSection({
 	onForkFromTurn,
 }: ChatInputSectionProps) {
 	const [sending, setSending] = useState(false)
-	// CLI-backed sessions use their own model; hide the project runtime agent/model
-	// picker. Reactive so a mid-session runtime switch swaps the toolbar live.
+	// Toolbar sections follow descriptor capabilities/transport — not product brand.
+	// Reactive so a mid-session runtime switch swaps the toolbar live.
 	const runtimeState = useSessionRuntimeState(agent.sessionId, agent.directory)
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
 	const cliMeta = cliRuntimeMeta(runtimeState)
-	const isCli = cliMeta != null
-	const cliToolbarProps = useCliChatRuntimeToolbarProps(agent.sessionId)
+	const usesAgentHost = sessionUsesAgentHostTransport(runtimeState)
+	const processToolbarProps = useCliChatRuntimeToolbarProps(agent.sessionId)
 
 	// Tree-scoped interactive requests — bubbles up from sub-agent sessions.
 	// These replace the direct `agent.permissions` / `agent.questions` arrays
@@ -1005,10 +1006,19 @@ function ChatInputSection({
 
 	const chatRuntimeConfig = useMemo<ChatRuntimeConfig>(
 		() =>
-			isCli
+			// Capability/transport gate: agent-host process adapters vs managed-server config.
+			usesAgentHost || !runtimeCapabilities.supportsRuntimeConfiguration
 				? buildCliChatRuntimeConfig({
-						runtimeId: cliMeta?.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
-						toolbarProps: cliToolbarProps ?? { sections: {} },
+						runtimeId: cliMeta?.runtimeId ?? runtimeState.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
+						toolbarProps: processToolbarProps ?? { sections: {} },
+						sendOptions: {
+							runtimeId:
+								cliMeta?.runtimeId ?? runtimeState.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
+							modelSlug: cliMeta?.model,
+							effort: cliMeta?.effort,
+							permissionMode: cliMeta?.sandbox,
+							cwd: cliMeta?.cwd ?? agent.directory,
+						},
 				  })
 				: buildConfigurableRuntimeChatRuntimeConfig({
 						agents: runtimeAgents ?? [],
@@ -1043,12 +1053,18 @@ function ChatInputSection({
 					}),
 		[
 			agent.directory,
+			cliMeta?.cwd,
+			cliMeta?.effort,
+			cliMeta?.model,
 			cliMeta?.runtimeId,
-			cliToolbarProps,
+			cliMeta?.sandbox,
+			processToolbarProps,
 			config?.defaultAgent,
 			effectiveModel,
 			handleModelSelect,
-			isCli,
+			usesAgentHost,
+			runtimeCapabilities.supportsRuntimeConfiguration,
+			runtimeState.runtimeId,
 			isConnected,
 			runtimeAgents,
 			providers,
@@ -1454,8 +1470,8 @@ function ChatInputSection({
 									onSelect={handleMentionSelect}
 									onClose={handleMentionClose}
 								/>
-								{isCli && <CliApprovalBar sessionId={agent.sessionId} />}
-								{isCli && <CliQuestionBar sessionId={agent.sessionId} />}
+								{usesAgentHost && <CliApprovalBar sessionId={agent.sessionId} />}
+								{usesAgentHost && <CliQuestionBar sessionId={agent.sessionId} />}
 								<PromptInput
 									className="rounded-xl"
 									accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"

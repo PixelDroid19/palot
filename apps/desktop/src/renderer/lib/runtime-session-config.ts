@@ -12,14 +12,28 @@ import {
 	type SessionRuntimeId,
 } from "./session-runtimes"
 import { persistCliRuntimeSession } from "../services/runtime-cli-store"
+import type { AgentSandbox } from "../../preload/api"
 import type { FileAttachment } from "./types"
 
+/**
+ * Neutral prompt payload for every runtime. Adapters map fields they understand:
+ *  - managed-server: model (provider/model), agentName, variant, files
+ *  - agent-host: modelSlug, effort, permissionMode, files, cwd
+ */
 export interface RuntimePromptOptions {
 	runtimeId?: SessionRuntimeId
+	/** Managed-server provider/model ref (OpenCode adapter). */
 	model?: ModelRef
+	/** Process-adapter model slug from the runtime catalog (Codex/Claude). */
+	modelSlug?: string
+	/** Agent / profile name when the runtime supports agentsProfiles. */
 	agentName?: string
 	variant?: string
+	effort?: string
+	permissionMode?: AgentSandbox
 	files?: FileAttachment[]
+	/** Working directory override for process adapters. */
+	cwd?: string
 }
 
 export interface ConfigurableRuntimeSelection {

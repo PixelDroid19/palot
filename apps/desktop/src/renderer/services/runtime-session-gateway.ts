@@ -168,7 +168,8 @@ export interface RuntimeSessionCreateResult {
 export interface NeutralRuntimePromptPayload {
 	runtimeId?: SessionRuntimeId
 	text: string
-	model?: RuntimePromptOptions["model"]
+	/** Managed-server ModelRef or process-adapter model slug. */
+	model?: RuntimePromptOptions["model"] | string
 	profile?: string
 	variant?: string
 	effort?: string
@@ -318,7 +319,13 @@ const agentHostGateway: SessionRuntimeGateway = {
 		text: string,
 		options?: RuntimePromptOptions,
 	): Promise<void> {
-		await runCliRuntimeTurn(sessionId, text, options?.files)
+		await runCliRuntimeTurn(sessionId, text, {
+			files: options?.files,
+			modelSlug: options?.modelSlug,
+			effort: options?.effort,
+			permissionMode: options?.permissionMode,
+			cwd: options?.cwd ?? _directory,
+		})
 	},
 	async abortSession(_directory: string, sessionId: string): Promise<void> {
 		interruptCliRuntimeTurn(sessionId)
@@ -438,12 +445,24 @@ export const runtimeSessionGateway = {
 		sessionId: string,
 		payload: NeutralRuntimePromptPayload,
 	): Promise<void> {
+		const modelRef =
+			payload.model && typeof payload.model !== "string" ? payload.model : undefined
+		const modelSlug =
+			typeof payload.model === "string"
+				? payload.model
+				: payload.model
+					? `${payload.model.providerID}/${payload.model.modelID}`
+					: undefined
 		const options: RuntimePromptOptions = {
 			runtimeId: payload.runtimeId,
-			model: payload.model,
+			model: modelRef,
+			modelSlug,
 			agentName: payload.profile,
 			variant: payload.variant,
+			effort: payload.effort,
+			permissionMode: payload.permissionMode,
 			files: payload.files,
+			cwd: payload.cwd ?? directory,
 		}
 		await this.promptSession(directory, sessionId, payload.text, options)
 	},

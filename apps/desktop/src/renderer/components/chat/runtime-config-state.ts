@@ -268,6 +268,9 @@ export function buildCliNewChatRuntimeConfig(args: {
 			},
 			promptOptions: {
 				runtimeId: args.runtimeId,
+				modelSlug: args.model,
+				effort: args.effort,
+				permissionMode: args.sandbox,
 			},
 		},
 	}
@@ -309,6 +312,8 @@ export function buildConfigurableRuntimeNewChatRuntimeConfig(args: {
 export function buildCliChatRuntimeConfig(args: {
 	runtimeId: string
 	toolbarProps: RuntimeConfigToolbarProps
+	/** Optional per-send overrides from session meta (model/effort/sandbox). */
+	sendOptions?: RuntimePromptOptions
 }): ChatRuntimeConfig {
 	return buildChatRuntimeConfig({
 		runtimeId: args.runtimeId,
@@ -316,6 +321,7 @@ export function buildCliChatRuntimeConfig(args: {
 		persistedSelection: null,
 		sendOptions: {
 			runtimeId: args.runtimeId,
+			...args.sendOptions,
 		},
 	})
 }
