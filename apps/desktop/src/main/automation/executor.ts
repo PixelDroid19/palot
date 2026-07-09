@@ -1,15 +1,17 @@
 /**
- * Automation executor -- runs agent sessions via the OpenCode SDK.
+ * OpenCode automation adapter — one concrete {@link AutomationRuntimeExecutor}.
  *
- * Given an automation config and workspace directory, the executor:
+ * Product code should call {@link executeAutomationRun} from
+ * `runtime-executor.ts`, which dispatches by runtimeId. This module owns the
+ * OpenCode SDK/SSE path only; it is not the sole automation pathway by design.
+ *
+ * Given an automation config and workspace directory, the OpenCode path:
  * 1. Creates a worktree (if useWorktree is enabled)
- * 2. Creates an OpenCode session with the appropriate permission ruleset
+ * 2. Creates a managed-server session with the appropriate permission ruleset
  * 3. Sends the automation prompt (with memory file context)
  * 4. Monitors SSE events until session goes idle or times out
  * 5. Captures results (summary, branch, diffs) and updates the run record
  * 6. Auto-archives if the agent reports nothing actionable
- *
- * Modeled after OpenCode's `run` CLI (packages/opencode/src/cli/cmd/run.ts).
  */
 
 import fs from "node:fs"
@@ -18,7 +20,17 @@ import type { OpencodeClient, PermissionRuleset } from "@opencode-ai/sdk/v2/clie
 import { createLogger } from "../logger"
 import { createAutomationClient } from "./project-runtime-client"
 import { getConfigDir } from "./paths"
+import {
+	type AutomationExecutionResult,
+	type AutomationOnSessionCreated,
+	type AutomationRuntimeExecutor,
+	executeAutomationRun,
+	registerAutomationRuntimeExecutor,
+} from "./runtime-executor"
 import type { AutomationConfig, PermissionPreset } from "./types"
+
+export type { AutomationExecutionResult as ExecutionResult, AutomationOnSessionCreated as OnSessionCreated }
+export { executeAutomationRun }
 
 const log = createLogger("automation-executor")
 
@@ -152,16 +164,6 @@ function buildSystemPrompt(automationId: string, automationName: string): string
 // ============================================================
 // Event monitoring
 // ============================================================
-
-export interface ExecutionResult {
-	sessionId: string
-	worktreePath: string | null
-	title: string
-	summary: string
-	hasActionable: boolean
-	branch: string | null
-	error: string | null
-}
 
 /**
  * Monitors SSE events for a session until it goes idle, errors, or times out.
@@ -324,32 +326,17 @@ function parseModelRef(modelStr: string): { providerID: string; modelID: string 
 // ============================================================
 
 /**
- * Callback fired as soon as the OpenCode session is created, before the
- * prompt is sent and monitoring begins. This allows the caller to persist
- * the sessionId immediately so the renderer can show the live session.
+ * OpenCode-backed automation execution. Prefer {@link executeRun} which goes
+ * through the neutral registry (OpenCode is the default registered adapter).
  */
-export type OnSessionCreated = (info: {
-	sessionId: string
-	worktreePath: string | null
-}) => void | Promise<void>
-
-/**
- * Executes a single automation run against a workspace.
- *
- * @param config      The automation config (from disk)
- * @param workspace   The project directory to run against
- * @param onSessionCreated  Optional callback invoked as soon as the session
- *                          is created, before monitoring begins
- * @returns Execution result with session info, summary, and actionability
- */
-export async function executeRun(
+export async function executeOpenCodeAutomationRun(
 	config: AutomationConfig & { id: string; prompt: string },
 	workspace: string,
-	onSessionCreated?: OnSessionCreated,
-): Promise<ExecutionResult> {
+	onSessionCreated?: AutomationOnSessionCreated,
+): Promise<AutomationExecutionResult> {
 	const client = createAutomationClient(workspace)
 	if (!client) {
-		log.error("Cannot execute run: no OpenCode server running", {
+		log.error("Cannot execute run: managed local server (OpenCode) not running", {
 			automationId: config.id,
 			workspace,
 		})
@@ -360,7 +347,7 @@ export async function executeRun(
 			summary: "",
 			hasActionable: false,
 			branch: null,
-			error: "No OpenCode server running",
+			error: "No managed local server (OpenCode) running",
 		}
 	}
 
@@ -592,4 +579,29 @@ export async function executeRun(
 	} finally {
 		abortController.abort()
 	}
+}
+
+/** OpenCode concrete automation adapter registered on the neutral executor registry. */
+export const openCodeAutomationExecutor: AutomationRuntimeExecutor = {
+	runtimeId: "opencode",
+	execute: executeOpenCodeAutomationRun,
+}
+
+registerAutomationRuntimeExecutor(openCodeAutomationExecutor)
+
+/**
+ * Neutral product entry: dispatches via {@link executeAutomationRun}.
+ * Defaults to the OpenCode adapter until automation configs carry runtimeId.
+ */
+export async function executeRun(
+	config: AutomationConfig & { id: string; prompt: string },
+	workspace: string,
+	onSessionCreated?: AutomationOnSessionCreated,
+): Promise<AutomationExecutionResult> {
+	return executeAutomationRun({
+		runtimeId: "opencode",
+		config,
+		workspace,
+		onSessionCreated,
+	})
 }
