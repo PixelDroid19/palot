@@ -8,7 +8,7 @@
  * sandbox come from the automation config; `execution.timeout` aborts the turn.
  */
 import { createUuidV7 } from "../../shared/uuid"
-import type { AgentPermissionDecision, AgentSandbox } from "@palot/agent-host"
+import type { AgentPermissionDecision, AgentSandbox } from "@gcode/agent-host"
 import { createLogger } from "../logger"
 import {
 	answerAgentQuestion,

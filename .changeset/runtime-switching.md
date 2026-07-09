@@ -1,5 +1,5 @@
 ---
-"@palot/desktop": minor
+"@gcode/desktop": minor
 ---
 
 Mid-session runtime switching with context handoff.

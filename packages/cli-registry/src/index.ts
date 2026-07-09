@@ -1,7 +1,7 @@
 /**
- * @palot/cli-registry -- Detection and description of coding-agent CLIs.
+ * @gcode/cli-registry -- Detection and description of coding-agent CLIs.
  *
- * Palot is agent-runtime agnostic. This package models the coding-agent CLIs it
+ * GCode is agent-runtime agnostic. This package models the coding-agent CLIs it
  * can work with (OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI) as
  * declarative {@link CliAdapter}s and probes the host to report which are
  * installed, their versions, and their auth state.
@@ -10,7 +10,7 @@
  * is exercised both with fakes and against the real system in integration
  * tests. `createNodeHost()` provides the production implementation.
  *
- *   import { detectAll, createNodeHost } from "@palot/cli-registry"
+ *   import { detectAll, createNodeHost } from "@gcode/cli-registry"
  *   const clis = await detectAll(createNodeHost())
  */
 

@@ -1,15 +1,15 @@
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@palot/ui/components/dropdown-menu"
-import { Input } from "@palot/ui/components/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@palot/ui/components/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/dropdown-menu"
+import { Input } from "@gcode/ui/components/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@gcode/ui/components/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@gcode/ui/components/tooltip"
+import { cn } from "@gcode/ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"
 import {
@@ -48,7 +48,7 @@ import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
 import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
-import { PalotWordmark } from "./palot-wordmark"
+import { GCodeWordmark } from "./gcode-wordmark"
 import { TerminalPanel } from "./chat/terminal-panel"
 import { ReviewPanel } from "./review/review-panel"
 import { SessionMetricsBar } from "./session-metrics-bar"
@@ -396,7 +396,7 @@ function SessionAppBarContent({
 	return (
 		<div className="flex h-full w-full min-w-0 items-center gap-2.5">
 			{/* App name */}
-			<PalotWordmark className="hidden h-[11px] w-auto shrink-0 text-muted-foreground/70 md:block" />
+			<GCodeWordmark className="hidden h-[11px] w-auto shrink-0 text-muted-foreground/70 md:block" />
 
 			{/* Separator */}
 			<div className="hidden h-3 w-px shrink-0 bg-border/60 md:block" />

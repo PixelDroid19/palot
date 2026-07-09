@@ -1,12 +1,12 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@palot/ui/components/collapsible"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/collapsible"
+import { cn } from "@gcode/ui/lib/utils"
 import {
 	CheckIcon,
 	ChevronDownIcon,

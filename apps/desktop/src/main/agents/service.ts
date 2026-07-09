@@ -1,6 +1,6 @@
 /**
  * Desktop wiring for the agent platform. The actual core (providers, sessions,
- * host, bridge, shared context) lives in `@palot/agent-host`; this file only
+ * host, bridge, shared context) lives in `@gcode/agent-host`; this file only
  * owns the Electron-specific pieces: a lazy singleton, where the MCP proxy
  * script is written, which Node binary CLIs use to launch it, and the
  * session functions the IPC layer calls.
@@ -20,8 +20,8 @@ import {
 	type AgentRuntimeId,
 	type AgentSandbox,
 	resolveRuntimeTransport,
-} from "@palot/agent-host"
-import { whichOnPath } from "@palot/cli-registry"
+} from "@gcode/agent-host"
+import { whichOnPath } from "@gcode/cli-registry"
 import { app } from "electron"
 import { detectAgentClis } from "../agent-clis"
 import { checkProjectRuntime } from "../compatibility"
@@ -147,7 +147,7 @@ export function resetManagedDescriptorRegistration(): void {
 
 /**
  * Start the host tool bridge (idempotent). CLIs launched afterwards get the
- * `palot` MCP server injected with the full host tool plane (automation,
+ * `gcode` MCP server injected with the full host tool plane (automation,
  * system, browser, agents, context) — independent of which harness is running.
  * A bridge failure only disables host tools — sessions still work.
  */
@@ -156,7 +156,7 @@ async function ensureBridge(): Promise<void> {
 	bridgeStarting ??= (async () => {
 		const dir = join(app.getPath("userData"), "agent-bridge")
 		mkdirSync(dir, { recursive: true })
-		const proxyScriptPath = join(dir, "palot-mcp.cjs")
+		const proxyScriptPath = join(dir, "gcode-mcp.cjs")
 		writeFileSync(proxyScriptPath, MCP_PROXY_SOURCE)
 
 		// Prefer a real Node from PATH; fall back to Electron-as-Node.
@@ -205,7 +205,7 @@ const OPENCODE_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabiliti
  * read. Returns the paths plus a cleanup function.
  */
 function writeImageFiles(images: AgentImageAttachment[]): { paths: string[]; cleanup: () => void } {
-	const dir = join(tmpdir(), `palot-images-${Math.random().toString(36).slice(2)}`)
+	const dir = join(tmpdir(), `gcode-images-${Math.random().toString(36).slice(2)}`)
 	mkdirSync(dir, { recursive: true })
 	const paths: string[] = []
 	for (const [index, image] of images.entries()) {

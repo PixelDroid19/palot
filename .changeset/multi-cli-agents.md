@@ -1,8 +1,8 @@
 ---
-"@palot/desktop": minor
+"@gcode/desktop": minor
 ---
 
-Multi-CLI agent runtimes: Palot is no longer tied to OpenCode.
+Multi-CLI agent runtimes: GCode is no longer tied to OpenCode.
 
 - **Runtime abstraction**: an `agents/` layer describes each coding-agent CLI as
   an adapter (how to build its headless command and parse its output into
@@ -18,5 +18,5 @@ Multi-CLI agent runtimes: Palot is no longer tied to OpenCode.
   in the selected project directory.
 - **Detection**: installed CLIs (with version and auth state) are surfaced on the
   Setup page and in Settings → Integrations, powered by the new
-  `@palot/cli-registry` package.
+  `@gcode/cli-registry` package.
 - New UI strings go through a lightweight typed i18n layer.

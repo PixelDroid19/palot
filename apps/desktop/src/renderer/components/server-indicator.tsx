@@ -9,8 +9,8 @@
  * on demand via a quick fetch to /global/health.
  */
 
-import { Popover, PopoverContent, PopoverTrigger } from "@palot/ui/components/popover"
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@palot/ui/components/sidebar"
+import { Popover, PopoverContent, PopoverTrigger } from "@gcode/ui/components/popover"
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@gcode/ui/components/sidebar"
 import { useNavigate } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import { CheckIcon, GlobeIcon, MonitorIcon, RadarIcon, SettingsIcon } from "lucide-react"
@@ -38,9 +38,9 @@ async function probeServerHealth(server: ServerConfig): Promise<boolean> {
 		const controller = new AbortController()
 		const timeout = setTimeout(() => controller.abort(), 3000)
 
-		if (isElectron && "palot" in window) {
+		if (isElectron && "gcode" in window) {
 			// Use IPC fetch to bypass connection limits
-			const result = await window.palot.fetch({
+			const result = await window.gcode.fetch({
 				url: `${url}/global/health`,
 				method: "GET",
 				headers,

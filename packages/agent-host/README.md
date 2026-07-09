@@ -1,6 +1,6 @@
-# @palot/agent-host
+# @gcode/agent-host
 
-The core of Palot's multi-agent platform: run many AI coding CLIs (Claude
+The core of GCode's multi-agent platform: run many AI coding CLIs (Claude
 Code, Codex, and any future CLI) side by side, let them talk to each other,
 and share context between them — without the core knowing anything about a
 specific provider, Electron, or the UI.
@@ -25,8 +25,8 @@ specific provider, Electron, or the UI.
              │ HTTP (token-authenticated)
    MCP proxy (stdio, dependency-free Node script, generated from MCP_PROXY_SOURCE)
              ▲ MCP over stdio
-   CLI agent processes (claude / codex / …) — each gets a "palot" MCP server with tools:
-   palot_list_agents · palot_delegate · palot_context_get/set/list
+   CLI agent processes (claude / codex / …) — each gets a "gcode" MCP server with tools:
+   gcode_list_agents · gcode_delegate · gcode_context_get/set/list
 ```
 
 Design rules:
@@ -44,7 +44,7 @@ Design rules:
 ## Usage
 
 ```ts
-import { AgentHost, AgentBridge, MCP_PROXY_SOURCE } from "@palot/agent-host"
+import { AgentHost, AgentBridge, MCP_PROXY_SOURCE } from "@gcode/agent-host"
 
 const host = new AgentHost({ maxConcurrentRuns: 8 })
 

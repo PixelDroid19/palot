@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import {
 	Command,
 	CommandDialog,
@@ -11,11 +11,11 @@ import {
 	CommandList,
 	CommandSeparator,
 	CommandShortcut,
-} from "@palot/ui/components/command"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@palot/ui/components/dialog"
-import { Spinner } from "@palot/ui/components/spinner"
-import { useControllableState } from "@palot/ui/hooks/use-controllable-state"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/command"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@gcode/ui/components/dialog"
+import { Spinner } from "@gcode/ui/components/spinner"
+import { useControllableState } from "@gcode/ui/hooks/use-controllable-state"
+import { cn } from "@gcode/ui/lib/utils"
 import {
 	CircleSmallIcon,
 	MarsIcon,

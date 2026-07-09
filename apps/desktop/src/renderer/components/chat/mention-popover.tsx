@@ -6,8 +6,8 @@
  * path + filename, agents show with a brain icon.
  */
 
-import { ScrollArea } from "@palot/ui/components/scroll-area"
-import { cn } from "@palot/ui/lib/utils"
+import { ScrollArea } from "@gcode/ui/components/scroll-area"
+import { cn } from "@gcode/ui/lib/utils"
 import fuzzysort from "fuzzysort"
 import { BrainIcon, FileIcon, FolderIcon, SearchIcon } from "lucide-react"
 import {

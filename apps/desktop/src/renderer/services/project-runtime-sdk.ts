@@ -19,7 +19,7 @@ type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respons
 
 const log = createLogger("opencode")
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 /**
  * Determines if a fetch error is a transient network error worth retrying.
@@ -140,7 +140,7 @@ function createIpcFetch(authHeader?: string): FetchFn {
 		log.info("IPC fetch →", { method: request.method, url: request.url })
 		const start = performance.now()
 		// Send through IPC → main process → net.fetch() → back
-		const result = await window.palot.fetch(serialized)
+		const result = await window.gcode.fetch(serialized)
 		const durationMs = Math.round(performance.now() - start)
 		log.info("IPC fetch ←", {
 			method: request.method,

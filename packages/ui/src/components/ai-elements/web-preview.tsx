@@ -1,19 +1,19 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@palot/ui/components/collapsible"
-import { Input } from "@palot/ui/components/input"
+} from "@gcode/ui/components/collapsible"
+import { Input } from "@gcode/ui/components/input"
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@palot/ui/components/tooltip"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/tooltip"
+import { cn } from "@gcode/ui/lib/utils"
 import { ChevronDownIcon } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"
 import { createContext, useCallback, useContext, useMemo, useState } from "react"

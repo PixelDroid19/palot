@@ -1,11 +1,11 @@
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import { CheckCircle2Icon, DownloadIcon, Loader2Icon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useUpdater } from "../../hooks/use-updater"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 export function AboutSettings() {
 	const [appVersion, setAppVersion] = useState("")
@@ -18,11 +18,11 @@ export function AboutSettings() {
 
 	useEffect(() => {
 		if (!isElectron) return
-		window.palot.getAppInfo().then((info) => {
+		window.gcode.getAppInfo().then((info) => {
 			setAppVersion(info.version)
 			setIsDev(info.isDev)
 		})
-		window.palot.cli.isInstalled().then(setCliInstalled)
+		window.gcode.cli.isInstalled().then(setCliInstalled)
 	}, [])
 
 	const handleCliInstall = useCallback(async () => {
@@ -30,7 +30,7 @@ export function AboutSettings() {
 		setCliLoading(true)
 		setCliError(null)
 		try {
-			const result = await window.palot.cli.install()
+			const result = await window.gcode.cli.install()
 			if (result.success) {
 				setCliInstalled(true)
 			} else {
@@ -46,7 +46,7 @@ export function AboutSettings() {
 		setCliLoading(true)
 		setCliError(null)
 		try {
-			const result = await window.palot.cli.uninstall()
+			const result = await window.gcode.cli.uninstall()
 			if (result.success) {
 				setCliInstalled(false)
 			} else {
@@ -122,7 +122,7 @@ export function AboutSettings() {
 						cliError
 							? cliError
 							: cliInstalled
-								? "Installed at /usr/local/bin/palot"
+								? "Installed at /usr/local/bin/gcode"
 								: "Install the palot command-line tool"
 					}
 				>

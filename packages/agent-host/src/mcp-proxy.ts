@@ -1,5 +1,5 @@
 /**
- * Source of the stdio MCP proxy that agent CLIs launch to reach the Palot
+ * Source of the stdio MCP proxy that agent CLIs launch to reach the GCode
  * bridge. Dependency-free plain-Node script (exported as a string so the
  * embedder can write it anywhere).
  *
@@ -9,10 +9,10 @@
  */
 
 export const MCP_PROXY_SOURCE = `#!/usr/bin/env node
-// Palot bridge MCP proxy (generated — do not edit). Dependency-free.
+// GCode bridge MCP proxy (generated — do not edit). Dependency-free.
 "use strict";
-const BRIDGE = process.env.PALOT_BRIDGE_URL;
-const TOKEN = process.env.PALOT_BRIDGE_TOKEN;
+const BRIDGE = process.env.GCODE_BRIDGE_URL;
+const TOKEN = process.env.GCODE_BRIDGE_TOKEN;
 
 async function bridge(method, path, body) {
 	const res = await fetch(BRIDGE + path, {
@@ -72,7 +72,7 @@ async function handle(msg) {
 		reply(msg.id, {
 			protocolVersion: msg.params && msg.params.protocolVersion ? msg.params.protocolVersion : "2025-06-18",
 			capabilities: { tools: {} },
-			serverInfo: { name: "palot-bridge", version: "1.0.0" },
+			serverInfo: { name: "gcode-bridge", version: "1.0.0" },
 		});
 	} else if (msg.method === "notifications/initialized") {
 		// Notification — no response.

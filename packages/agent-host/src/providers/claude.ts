@@ -258,14 +258,14 @@ class ClaudeSession implements AgentSession {
 		}
 		if (this.opts.bridge) {
 			options.mcpServers = {
-				palot: {
+				gcode: {
 					type: "stdio",
 					command: this.opts.bridge.nodeBinary,
 					args: [this.opts.bridge.proxyScriptPath],
 					env: {
 						...this.opts.bridge.proxyEnv,
-						PALOT_BRIDGE_URL: this.opts.bridge.url,
-						PALOT_BRIDGE_TOKEN: this.opts.bridge.token,
+						GCODE_BRIDGE_URL: this.opts.bridge.url,
+						GCODE_BRIDGE_TOKEN: this.opts.bridge.token,
 					},
 				},
 			}

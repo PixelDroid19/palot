@@ -3,7 +3,7 @@
  * command palette, and onboarding.
  * Does NOT render any sidebar chrome -- that lives in SidebarLayout.
  */
-import { TooltipProvider } from "@palot/ui/components/tooltip"
+import { TooltipProvider } from "@gcode/ui/components/tooltip"
 import { Outlet, useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useMemo } from "react"
@@ -32,7 +32,7 @@ export function RootLayout() {
 	const setOnboardingState = useSetAtom(onboardingStateAtom)
 
 	// Only run discovery/connection after onboarding is complete (or in browser mode / mock mode)
-	const isElectronEnv = typeof window !== "undefined" && "palot" in window
+	const isElectronEnv = typeof window !== "undefined" && "gcode" in window
 	const showOnboarding = isElectronEnv && !onboardingState.completed && !isMockMode
 
 	// Track discovery phase to coordinate startup overlay / content crossfade

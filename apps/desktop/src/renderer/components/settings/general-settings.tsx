@@ -4,8 +4,8 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@palot/ui/components/select"
-import { Switch } from "@palot/ui/components/switch"
+} from "@gcode/ui/components/select"
+import { Switch } from "@gcode/ui/components/switch"
 import { useAtomValue, useSetAtom } from "jotai"
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
@@ -18,7 +18,7 @@ import { fetchOpenInTargets, setOpenInPreferred } from "../../services/backend"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 export function GeneralSettings() {
 	return (
@@ -129,15 +129,15 @@ function OpaqueWindowsRow() {
 
 	// Translucency (liquid glass / vibrancy) only exists on macOS; other
 	// platforms are always opaque, so the toggle would do nothing (#64).
-	const isMac = isElectron && window.palot.platform === "darwin"
+	const isMac = isElectron && window.gcode.platform === "darwin"
 
 	const handleChange = useCallback(
 		async (checked: boolean) => {
 			setOpaque(checked)
 			if (isElectron) {
-				await window.palot.setOpaqueWindows(checked)
+				await window.gcode.setOpaqueWindows(checked)
 				// Requires relaunch -- prompt or auto-relaunch
-				window.palot.relaunch()
+				window.gcode.relaunch()
 			}
 		},
 		[setOpaque],

@@ -1,6 +1,6 @@
 /**
  * Shared context store: a small namespaced KV that agents read/write through
- * the bridge (`palot_context_get` / `palot_context_set` MCP tools) and the app
+ * the bridge (`gcode_context_get` / `gcode_context_set` MCP tools) and the app
  * can inspect. This is how two CLIs collaborate on one task without pasting
  * transcripts around — one writes findings, the other reads them.
  */

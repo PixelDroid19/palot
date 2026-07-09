@@ -5,15 +5,15 @@ import {
 	PromptInputTextarea,
 	PromptInputTools,
 	usePromptInputController,
-} from "@palot/ui/components/ai-elements/prompt-input"
+} from "@gcode/ui/components/ai-elements/prompt-input"
 import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./chat/mention-popover"
 import {
 	createAgentMention,
 	createFileMention,
 	insertMentionIntoText,
 } from "./chat/prompt-mentions"
-import { Popover, PopoverContent, PopoverTrigger } from "@palot/ui/components/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
+import { Popover, PopoverContent, PopoverTrigger } from "@gcode/ui/components/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@gcode/ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import {
 	BookMarkedIcon,
@@ -68,7 +68,7 @@ import {
 	type NewChatRuntimeConfig,
 } from "./chat/runtime-config-state"
 import { RuntimeConfigToolbar } from "./chat/runtime-config-toolbar"
-import { PalotWordmark } from "./palot-wordmark"
+import { GCodeWordmark } from "./gcode-wordmark"
 
 // ============================================================
 // Worktree mode toggle
@@ -228,7 +228,7 @@ interface CliRuntimePrefs {
 	sandbox: AgentSandbox
 }
 
-const CLI_PREFS_KEY = "palot:cliRuntimePrefs"
+const CLI_PREFS_KEY = "gcode:cliRuntimePrefs"
 
 function loadCliPrefs(runtimeId: string): CliRuntimePrefs | null {
 	try {
@@ -258,7 +258,7 @@ export function NewChat() {
 	const setAppBarContent = useSetAppBarContent()
 	useLayoutEffect(() => {
 		setAppBarContent(
-			<PalotWordmark className="h-[11px] w-auto shrink-0 text-muted-foreground/70" />,
+			<GCodeWordmark className="h-[11px] w-auto shrink-0 text-muted-foreground/70" />,
 		)
 		return () => setAppBarContent(null)
 	}, [setAppBarContent])
@@ -273,13 +273,13 @@ export function NewChat() {
 	// Session runtime is a first-class user choice, remembered across launches.
 	const [sessionRuntime, setSessionRuntimeState] = useState<SessionRuntimeId>(
 		() =>
-			(localStorage.getItem("palot:lastSessionRuntime") as SessionRuntimeId) ||
+			(localStorage.getItem("gcode:lastSessionRuntime") as SessionRuntimeId) ||
 			resolveDefaultSessionRuntimeId(),
 	)
 	const runtimeCapabilities = useMemo(() => runtimeIdCapabilities(sessionRuntime), [sessionRuntime])
 	const setSessionRuntime = (id: SessionRuntimeId) => {
 		setSessionRuntimeState(id)
-		localStorage.setItem("palot:lastSessionRuntime", id)
+		localStorage.setItem("gcode:lastSessionRuntime", id)
 	}
 	const initialPrefs = loadCliPrefs(sessionRuntime)
 	const [cliModel, setCliModel] = useState<string>(initialPrefs?.model ?? "")
@@ -309,8 +309,8 @@ export function NewChat() {
 					: current,
 			)
 		})
-		if ("palot" in window) {
-			window.palot.agentClis
+		if ("gcode" in window) {
+			window.gcode.agentClis
 				.detect()
 				.then((detections) => {
 					const auth: Record<string, string> = {}
@@ -682,7 +682,7 @@ export function NewChat() {
 				<div className="w-full max-w-4xl space-y-8">
 					{/* Wordmark */}
 					<div className="flex justify-center">
-						<PalotWordmark className="h-4 w-auto text-foreground" />
+						<GCodeWordmark className="h-4 w-auto text-foreground" />
 					</div>
 
 					{/* "Build what's next" + project name */}

@@ -1,10 +1,10 @@
 /**
- * Onboarding handlers for the Palot desktop app.
+ * Onboarding handlers for the GCode desktop app.
  *
  * Provides IPC-callable functions for the first-run experience:
  * - OpenCode CLI detection and version compatibility check
  * - OpenCode CLI installation (via curl/shell)
- * - Multi-provider config detection and migration via @palot/configconv
+ * - Multi-provider config detection and migration via @gcode/configconv
  *   Supported providers: Claude Code, Cursor, OpenCode
  */
 
@@ -19,12 +19,12 @@ import type { ProjectRuntimeCheckResult } from "./compatibility"
 import { checkProjectRuntime } from "./compatibility"
 import {
 	conversionReportMessageToText as formatConversionReportMessage,
-} from "@palot/configconv"
+} from "@gcode/configconv"
 import type {
 	CanonicalConversionResult,
 	ConversionCategory,
 	ConversionReportMessageInput,
-} from "@palot/configconv"
+} from "@gcode/configconv"
 import { createLogger } from "./logger"
 
 const log = createLogger("onboarding")
@@ -319,7 +319,7 @@ export const installManagedRuntime = installProjectRuntime
 
 /**
  * Quickly detects which agent tools have configuration on this machine.
- * Does NOT import @palot/configconv, just checks for file/directory existence.
+ * Does NOT import @gcode/configconv, just checks for file/directory existence.
  * Returns an array of detections (one per supported provider).
  */
 export async function detectProviders(): Promise<ProviderDetection[]> {
@@ -606,18 +606,18 @@ async function detectOpenCodeProvider(): Promise<ProviderDetection> {
 }
 
 // ============================================================
-// Migration (lazy-loads @palot/configconv)
+// Migration (lazy-loads @gcode/configconv)
 // ============================================================
 
 /**
  * Runs a full scan for the specified provider and returns detailed detection results.
- * Lazy-loads @palot/configconv to keep the main process fast when not needed.
+ * Lazy-loads @gcode/configconv to keep the main process fast when not needed.
  */
 export async function scanProvider(provider: MigrationProvider): Promise<{
 	detection: ProviderDetection
 	scanResult: unknown
 }> {
-	const { scanFormat } = await import("@palot/configconv")
+	const { scanFormat } = await import("@gcode/configconv")
 
 	const scanResult = await scanFormat({
 		format: provider,
@@ -637,10 +637,10 @@ export async function previewMigration(
 	scanResult: unknown,
 	categories: MigrationCategory[],
 ): Promise<MigrationPreview> {
-	const { universalConvert } = await import("@palot/configconv")
+	const { universalConvert } = await import("@gcode/configconv")
 	const normalizedCategories = normalizeMigrationCategories(categories)
 
-	// Convert from source provider to OpenCode (the target for Palot)
+	// Convert from source provider to OpenCode (the target for GCode)
 	// biome-ignore lint/suspicious/noExplicitAny: scanResult is dynamically typed from IPC
 	const conversion = universalConvert(scanResult as any, {
 		to: "opencode",
@@ -833,7 +833,7 @@ export async function executeMigration(
 	scanResult: unknown,
 	categories: MigrationCategory[],
 ): Promise<MigrationResult> {
-	const { universalConvert, universalWrite } = await import("@palot/configconv")
+	const { universalConvert, universalWrite } = await import("@gcode/configconv")
 	const normalizedCategories = normalizeMigrationCategories(categories)
 
 	// biome-ignore lint/suspicious/noExplicitAny: scanResult is dynamically typed from IPC
@@ -1017,8 +1017,8 @@ async function executeHistoryMigration(
 	}
 
 	if (provider === "cursor" && result?.data?.history) {
-		const { convertCursorHistory } = await import("@palot/configconv/converter/cursor-history")
-		const { writeHistorySessionsDetailed } = await import("@palot/configconv/writer/history")
+		const { convertCursorHistory } = await import("@gcode/configconv/converter/cursor-history")
+		const { writeHistorySessionsDetailed } = await import("@gcode/configconv/writer/history")
 
 		sendProgress("converting", 0, 0, 0)
 		const { sessions } = convertCursorHistory(result.data.history)
@@ -1040,8 +1040,8 @@ async function executeHistoryMigration(
 			}
 		}
 	} else if (provider === "claude-code" && result?.data?.history) {
-		const { convertHistory } = await import("@palot/configconv/converter/history")
-		const { writeHistorySessionsDetailed } = await import("@palot/configconv/writer/history")
+		const { convertHistory } = await import("@gcode/configconv/converter/history")
+		const { writeHistorySessionsDetailed } = await import("@gcode/configconv/writer/history")
 
 		sendProgress("converting", 0, 0, 0)
 		const { sessions } = await convertHistory(result.data.history)
@@ -1076,7 +1076,7 @@ export async function restoreMigrationBackup(): Promise<{
 	removed: string[]
 	errors: string[]
 }> {
-	const { restore } = await import("@palot/configconv")
+	const { restore } = await import("@gcode/configconv")
 	const result = await restore()
 	return {
 		success: result.errors.length === 0,

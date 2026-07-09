@@ -1,5 +1,5 @@
-import { Label } from "@palot/ui/components/label"
-import { cn } from "@palot/ui/lib/utils"
+import { Label } from "@gcode/ui/components/label"
+import { cn } from "@gcode/ui/lib/utils"
 import * as React from "react"
 import {
 	Controller,

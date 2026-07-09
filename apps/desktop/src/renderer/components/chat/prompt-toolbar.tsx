@@ -4,9 +4,9 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@palot/ui/components/select"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/select"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@gcode/ui/components/tooltip"
+import { cn } from "@gcode/ui/lib/utils"
 import { useAtomValue } from "jotai"
 import {
 	GitBranchIcon,

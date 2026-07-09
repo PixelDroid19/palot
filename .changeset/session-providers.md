@@ -1,6 +1,6 @@
 ---
-"@palot/agent-host": minor
-"@palot/desktop": minor
+"@gcode/agent-host": minor
+"@gcode/desktop": minor
 ---
 
 CLI integrations rebuilt on persistent sessions (t3code/synara architecture).

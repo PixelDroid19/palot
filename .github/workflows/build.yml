@@ -116,7 +116,7 @@ jobs:
         if: matrix.platform == 'linux'
         uses: actions/upload-artifact@v4
         with:
-          name: palot-linux
+          name: gcode-linux
           path: |
             apps/desktop/release/*.AppImage
             apps/desktop/release/*.deb
@@ -128,7 +128,7 @@ jobs:
         if: matrix.platform == 'mac'
         uses: actions/upload-artifact@v4
         with:
-          name: palot-${{ matrix.name }}
+          name: gcode-${{ matrix.name }}
           path: |
             apps/desktop/release/*.dmg
             apps/desktop/release/*.zip
@@ -139,7 +139,7 @@ jobs:
         if: matrix.platform == 'win'
         uses: actions/upload-artifact@v4
         with:
-          name: palot-windows
+          name: gcode-windows
           path: |
             apps/desktop/release/*.exe
           if-no-files-found: error

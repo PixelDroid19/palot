@@ -1,4 +1,4 @@
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import {
 	Dialog,
 	DialogContent,
@@ -6,7 +6,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@palot/ui/components/dialog"
+} from "@gcode/ui/components/dialog"
 import {
 	SearchableListPopover,
 	SearchableListPopoverContent,
@@ -17,7 +17,7 @@ import {
 	SearchableListPopoverSearch,
 	SearchableListPopoverTrigger,
 	useSearchableListPopoverSearch,
-} from "@palot/ui/components/searchable-list-popover"
+} from "@gcode/ui/components/searchable-list-popover"
 import {
 	AlertTriangleIcon,
 	CheckIcon,

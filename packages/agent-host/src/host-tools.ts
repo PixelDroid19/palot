@@ -1,5 +1,5 @@
 /**
- * Host-owned tool plane — tools Palot provides to every harness (CLIs, custom
+ * Host-owned tool plane — tools GCode provides to every harness (CLIs, custom
  * agents), independent of OpenCode/Codex/Claude adapter code.
  *
  * Product categories (automation, system, browser, agents, context) register
@@ -166,7 +166,7 @@ export function registerCoreAgentTools(
 	},
 ): void {
 	registry.register({
-		name: "palot_list_agents",
+		name: "gcode_list_agents",
 		description:
 			"List the other AI agents available on this machine that you can delegate tasks to.",
 		category: "agents",
@@ -177,9 +177,9 @@ export function registerCoreAgentTools(
 	})
 
 	registry.register({
-		name: "palot_delegate",
+		name: "gcode_delegate",
 		description:
-			"Delegate a task to another AI agent and return its answer. Use palot_list_agents to see valid agent ids.",
+			"Delegate a task to another AI agent and return its answer. Use gcode_list_agents to see valid agent ids.",
 		category: "agents",
 		inputSchema: {
 			type: "object",
@@ -205,7 +205,7 @@ export function registerCoreAgentTools(
 	})
 
 	registry.register({
-		name: "palot_context_get",
+		name: "gcode_context_get",
 		description: "Read a value from the shared context store that agents use to collaborate.",
 		category: "context",
 		inputSchema: {
@@ -221,7 +221,7 @@ export function registerCoreAgentTools(
 	})
 
 	registry.register({
-		name: "palot_context_set",
+		name: "gcode_context_set",
 		description: "Write a value to the shared context store so other agents can read it.",
 		category: "context",
 		inputSchema: {
@@ -236,7 +236,7 @@ export function registerCoreAgentTools(
 	})
 
 	registry.register({
-		name: "palot_context_list",
+		name: "gcode_context_list",
 		description: "List all keys in the shared context store.",
 		category: "context",
 		inputSchema: { type: "object", properties: {}, additionalProperties: false },
@@ -265,9 +265,9 @@ export function registerSubagentTools(
 	},
 ): void {
 	registry.register({
-		name: "palot_list_subagents",
+		name: "gcode_list_subagents",
 		description:
-			"List host subagent roles (general-purpose, explore). Use palot_run_subagent to invoke one with isolated context.",
+			"List host subagent roles (general-purpose, explore). Use gcode_run_subagent to invoke one with isolated context.",
 		category: "subagents",
 		inputSchema: { type: "object", properties: {}, additionalProperties: false },
 		async handler() {
@@ -284,7 +284,7 @@ export function registerSubagentTools(
 	})
 
 	registry.register({
-		name: "palot_run_subagent",
+		name: "gcode_run_subagent",
 		description:
 			"Run a host subagent role with isolated context and return its summary. Roles: general-purpose (write-capable under policy), explore (read-only research).",
 		category: "subagents",
@@ -308,7 +308,7 @@ export function registerSubagentTools(
 			const role = getHostSubagentRole(roleId)
 			if (!role) {
 				throw new Error(
-					`Unknown subagent role: ${roleId}. Use palot_list_subagents for valid roles.`,
+					`Unknown subagent role: ${roleId}. Use gcode_list_subagents for valid roles.`,
 				)
 			}
 			const runtimeId = deps.resolveWorkerRuntimeId()
@@ -376,9 +376,9 @@ export function registerDefaultPlatformTools(
 		}))
 
 	registry.register({
-		name: "palot_automation_list",
+		name: "gcode_automation_list",
 		description:
-			"List automations (scheduled agent jobs) available on this Palot host. Host-owned — works regardless of which coding CLI is active.",
+			"List automations (scheduled agent jobs) available on this GCode host. Host-owned — works regardless of which coding CLI is active.",
 		category: "automation",
 		inputSchema: { type: "object", properties: {}, additionalProperties: false },
 		async handler() {
@@ -388,9 +388,9 @@ export function registerDefaultPlatformTools(
 	})
 
 	registry.register({
-		name: "palot_automation_run",
+		name: "gcode_automation_run",
 		description:
-			"Run a Palot automation by id now (unattended agent job). Fail closed if the automation or backend is missing.",
+			"Run a GCode automation by id now (unattended agent job). Fail closed if the automation or backend is missing.",
 		category: "automation",
 		inputSchema: {
 			type: "object",
@@ -409,9 +409,9 @@ export function registerDefaultPlatformTools(
 	})
 
 	registry.register({
-		name: "palot_system_run",
+		name: "gcode_system_run",
 		description:
-			"Run a host-mediated shell command on the local machine (policy enforced by the host). Prefer this over inventing shell access outside Palot.",
+			"Run a host-mediated shell command on the local machine (policy enforced by the host). Prefer this over inventing shell access outside GCode.",
 		category: "system",
 		inputSchema: {
 			type: "object",
@@ -431,7 +431,7 @@ export function registerDefaultPlatformTools(
 	})
 
 	registry.register({
-		name: "palot_browser_open",
+		name: "gcode_browser_open",
 		description:
 			"Open a URL in the system browser (or host browser surface). Host-owned tool available to every harness.",
 		category: "browser",

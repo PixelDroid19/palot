@@ -28,23 +28,23 @@ describe("host subagent roles", () => {
 			resolveBinary: async () => "/bin/sh",
 		})
 		const names = host.tools.list().map((t) => t.name)
-		expect(names).toContain("palot_list_subagents")
-		expect(names).toContain("palot_run_subagent")
+		expect(names).toContain("gcode_list_subagents")
+		expect(names).toContain("gcode_run_subagent")
 	})
 
-	test("palot_list_subagents returns role descriptors", async () => {
+	test("gcode_list_subagents returns role descriptors", async () => {
 		const host = new AgentHost({
 			builtinProviders: false,
 			providers: [new FakeProvider("worker")],
 			resolveBinary: async () => "/bin/sh",
 		})
-		const raw = await host.tools.call("palot_list_subagents")
+		const raw = await host.tools.call("gcode_list_subagents")
 		const listed = JSON.parse(raw) as { id: string; readOnly: boolean }[]
 		expect(listed.map((r) => r.id).sort()).toEqual(["explore", "general-purpose"])
 		expect(listed.find((r) => r.id === "explore")?.readOnly).toBe(true)
 	})
 
-	test("palot_run_subagent explore uses read-only isolation via real delegate", async () => {
+	test("gcode_run_subagent explore uses read-only isolation via real delegate", async () => {
 		const provider = new FakeProvider("worker", {
 			reply: (input) => `explored:${input.text.slice(0, 40)}`,
 		})
@@ -53,7 +53,7 @@ describe("host subagent roles", () => {
 			providers: [provider],
 			resolveBinary: async () => "/bin/sh",
 		})
-		const result = await host.tools.call("palot_run_subagent", {
+		const result = await host.tools.call("gcode_run_subagent", {
 			role: "explore",
 			prompt: "map entry points",
 			cwd: "/tmp",
@@ -70,7 +70,7 @@ describe("host subagent roles", () => {
 			resolveBinary: async () => "/bin/sh",
 		})
 		await expect(
-			host.tools.call("palot_run_subagent", { role: "invented", prompt: "x", cwd: "/tmp" }),
+			host.tools.call("gcode_run_subagent", { role: "invented", prompt: "x", cwd: "/tmp" }),
 		).rejects.toThrow(/Unknown subagent role/)
 	})
 
@@ -81,7 +81,7 @@ describe("host subagent roles", () => {
 			delegate: async () => ({ message: "nope", notices: [] }),
 		})
 		await expect(
-			reg.call("palot_run_subagent", { role: "explore", prompt: "x" }),
+			reg.call("gcode_run_subagent", { role: "explore", prompt: "x" }),
 		).rejects.toThrow(/No worker runtime/)
 	})
 })

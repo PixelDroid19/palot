@@ -1,5 +1,5 @@
 /**
- * Session runtimes Palot can start a conversation with. Every runtime renders
+ * Session runtimes GCode can start a conversation with. Every runtime renders
  * through the same chat surfaces; adapters own wire protocols (managed server
  * vs agent-host process). Product code selects by `runtimeId` + descriptor
  * capabilities/transport — never by hard-coded "OpenCode vs CLI" branches.
@@ -35,7 +35,7 @@ export interface SessionRuntimeOption {
 	label: string
 }
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 const DESCRIPTOR_TTL_MS = 60_000
 
@@ -106,7 +106,7 @@ export function loadRuntimeDescriptors(force = false): Promise<SessionRuntimeDes
 	}
 	if (!isElectron) return Promise.resolve([])
 	if (!force && inflight) return inflight
-	inflight = window.palot.agentSession
+	inflight = window.gcode.agentSession
 		.describeRuntimes()
 		.then((descriptors) => {
 			descriptorCache = { at: Date.now(), value: descriptors }

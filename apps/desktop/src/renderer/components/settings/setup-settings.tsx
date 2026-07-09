@@ -2,8 +2,8 @@
  * Settings tab for environment setup, migration management, and re-running onboarding.
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@gcode/ui/components/button"
+import { Spinner } from "@gcode/ui/components/spinner"
 import { useAtomValue, useSetAtom } from "jotai"
 import {
 	AlertCircleIcon,
@@ -21,7 +21,7 @@ import {
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 // ============================================================
 // Provider display metadata
@@ -72,7 +72,7 @@ function RuntimeStatusSection() {
 	return (
 		<SettingsSection
 			title="Installed runtimes"
-			description="Palot supports multiple coding runtimes with the same workspace UI. OpenCode can run as a local managed server when installed; Codex and Claude Code run as process adapters. All share the same session flows."
+			description="GCode supports multiple coding runtimes with the same workspace UI. OpenCode can run as a local managed server when installed; Codex and Claude Code run as process adapters. All share the same session flows."
 		>
 			<div className="flex items-center justify-end px-4 pt-3">
 				<Button variant="outline" size="sm" onClick={() => load(true)} disabled={loading} className="gap-1.5">
@@ -134,7 +134,7 @@ function MigrationSection() {
 		setRestoring(true)
 		setRestoreResult(null)
 		try {
-			const result = await window.palot.onboarding.restoreBackup()
+			const result = await window.gcode.onboarding.restoreBackup()
 			if (result.success) {
 				setRestoreResult(`Restored ${result.restored.length} file(s)`)
 			} else {
@@ -223,7 +223,7 @@ function OnboardingSection() {
 		})
 		// Relaunch the app to show onboarding fresh
 		if (isElectron) {
-			window.palot.relaunch()
+			window.gcode.relaunch()
 		}
 	}, [setOnboardingState])
 

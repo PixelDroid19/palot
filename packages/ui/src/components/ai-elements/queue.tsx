@@ -1,13 +1,13 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@palot/ui/components/collapsible"
-import { ScrollArea } from "@palot/ui/components/scroll-area"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/collapsible"
+import { ScrollArea } from "@gcode/ui/components/scroll-area"
+import { cn } from "@gcode/ui/lib/utils"
 import { ChevronDownIcon, PaperclipIcon } from "lucide-react"
 import type { ComponentProps } from "react"
 

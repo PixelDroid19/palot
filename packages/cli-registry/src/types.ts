@@ -1,7 +1,7 @@
 /**
- * Types describing coding-agent CLIs that Palot can detect and work with.
+ * Types describing coding-agent CLIs that GCode can detect and work with.
  *
- * Palot is not tied to a single agent runtime. A {@link CliAdapter} is a small,
+ * GCode is not tied to a single agent runtime. A {@link CliAdapter} is a small,
  * declarative description of one coding-agent CLI (its binary, how to read its
  * version, where it keeps auth, and how to install it). The registry detects
  * which of these are actually available on the host so the rest of the app can
@@ -46,7 +46,7 @@ export interface CliAdapter {
 	/** One-line install hint shown when the CLI is missing. */
 	installHint: string
 	/**
-	 * Whether Palot can drive this CLI as a managed backend today. Detection is
+	 * Whether GCode can drive this CLI as a managed backend today. Detection is
 	 * offered for every adapter; `managed` marks first-class runtime support.
 	 */
 	managed: boolean

@@ -6,9 +6,9 @@
  * (from the complete step), so scanning happens on mount.
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Checkbox } from "@palot/ui/components/checkbox"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@gcode/ui/components/button"
+import { Checkbox } from "@gcode/ui/components/checkbox"
+import { Spinner } from "@gcode/ui/components/spinner"
 import {
 	ArrowRightIcon,
 	BotIcon,
@@ -26,7 +26,7 @@ import type {
 	MigrationCategory as UIssueMigrationCategory,
 	ProviderDetection,
 } from "../../../../preload/api"
-import type { ConversionCategory } from "@palot/configconv"
+import type { ConversionCategory } from "@gcode/configconv"
 
 // ============================================================
 // Types
@@ -69,7 +69,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 	const hasScanned = useRef(false)
 	const scanResultRef = useRef<unknown>(null)
 
-	const isElectron = typeof window !== "undefined" && "palot" in window
+	const isElectron = typeof window !== "undefined" && "gcode" in window
 	const label = PROVIDER_LABELS[provider]
 
 	// Run full scan on mount (user explicitly opted in)
@@ -78,7 +78,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 		hasScanned.current = true
 		setScanning(true)
 
-		window.palot.onboarding
+		window.gcode.onboarding
 			.scanProvider(provider)
 			.then(({ detection, scanResult }) => {
 				scanResultRef.current = scanResult
@@ -103,7 +103,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 		const selectedIds = categories.filter((c) => c.enabled).map((c) => c.id)
 
 		try {
-			const preview = await window.palot.onboarding.previewMigration(
+			const preview = await window.gcode.onboarding.previewMigration(
 				provider,
 				scanResultRef.current,
 				selectedIds,
@@ -124,7 +124,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 				<div className="text-center">
 					<h2 className="text-xl font-semibold text-foreground">Migrate from {label}</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						We detected an existing {label} setup. Palot can import your configuration into the
+						We detected an existing {label} setup. GCode can import your configuration into the
 						project runtime format.
 					</p>
 				</div>

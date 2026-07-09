@@ -1,10 +1,10 @@
-import type { ConversionCategory } from "@palot/configconv"
+import type { ConversionCategory } from "@gcode/configconv"
 
 /**
  * Type definitions for the Electron preload bridge.
  *
  * These types are shared between the preload script and the renderer.
- * The renderer accesses these via `window.palot`.
+ * The renderer accesses these via `window.gcode`.
  */
 
 /**
@@ -127,7 +127,7 @@ export interface OpenInTargetsResult {
 // Server config types (shared between main process and renderer)
 // ============================================================
 
-/** Built-in local server, auto-managed by Palot via OpenCodeManager. */
+/** Built-in local server, auto-managed by GCode via OpenCodeManager. */
 export interface LocalServerConfig {
 	id: "local"
 	name: string
@@ -271,27 +271,27 @@ export interface RemoteAccessInfo {
 
 export type WebhookTarget = "feishu" | "wechat" | "generic"
 
-/** A detected coding-agent CLI (re-exported from @palot/cli-registry). */
-export type AgentCliDetection = import("@palot/cli-registry").CliDetection
+/** A detected coding-agent CLI (re-exported from @gcode/cli-registry). */
+export type AgentCliDetection = import("@gcode/cli-registry").CliDetection
 
-/** Agent platform types (re-exported from @palot/agent-host, the core). */
-export type AgentRuntimeId = import("@palot/agent-host").AgentRuntimeId
-export type AgentSandbox = import("@palot/agent-host").AgentSandbox
-export type AgentUsage = import("@palot/agent-host").AgentUsage
-export type AgentPermissionDecision = import("@palot/agent-host").AgentPermissionDecision
-export type AgentPermissionRequest = import("@palot/agent-host").AgentPermissionRequest
-export type AgentQuestionRequest = import("@palot/agent-host").AgentQuestionRequest
-export type AgentRunResult = import("@palot/agent-host").AgentRunResult
-export type AgentUpdate = import("@palot/agent-host").AgentUpdate
-export type AgentModelInfo = import("@palot/agent-host").AgentModelInfo
-export type AgentRuntimeDescriptor = import("@palot/agent-host").AgentRuntimeDescriptor
-export type RuntimeAdapter = import("@palot/agent-host").RuntimeAdapter
-export type RuntimeDescriptor = import("@palot/agent-host").RuntimeDescriptor
-export type RuntimeCapabilities = import("@palot/agent-host").RuntimeCapabilities
-export type RuntimeModel = import("@palot/agent-host").RuntimeModel
-export type RuntimeExecutionOptions = import("@palot/agent-host").RuntimeExecutionOptions
-export type RuntimePromptPayload = import("@palot/agent-host").RuntimePromptPayload
-export type RuntimeTransport = import("@palot/agent-host").RuntimeTransport
+/** Agent platform types (re-exported from @gcode/agent-host, the core). */
+export type AgentRuntimeId = import("@gcode/agent-host").AgentRuntimeId
+export type AgentSandbox = import("@gcode/agent-host").AgentSandbox
+export type AgentUsage = import("@gcode/agent-host").AgentUsage
+export type AgentPermissionDecision = import("@gcode/agent-host").AgentPermissionDecision
+export type AgentPermissionRequest = import("@gcode/agent-host").AgentPermissionRequest
+export type AgentQuestionRequest = import("@gcode/agent-host").AgentQuestionRequest
+export type AgentRunResult = import("@gcode/agent-host").AgentRunResult
+export type AgentUpdate = import("@gcode/agent-host").AgentUpdate
+export type AgentModelInfo = import("@gcode/agent-host").AgentModelInfo
+export type AgentRuntimeDescriptor = import("@gcode/agent-host").AgentRuntimeDescriptor
+export type RuntimeAdapter = import("@gcode/agent-host").RuntimeAdapter
+export type RuntimeDescriptor = import("@gcode/agent-host").RuntimeDescriptor
+export type RuntimeCapabilities = import("@gcode/agent-host").RuntimeCapabilities
+export type RuntimeModel = import("@gcode/agent-host").RuntimeModel
+export type RuntimeExecutionOptions = import("@gcode/agent-host").RuntimeExecutionOptions
+export type RuntimePromptPayload = import("@gcode/agent-host").RuntimePromptPayload
+export type RuntimeTransport = import("@gcode/agent-host").RuntimeTransport
 export interface SessionRuntimeCapabilities {
 	supportsSessionRevert: boolean
 	supportsSessionSummarize: boolean
@@ -520,7 +520,7 @@ export interface UpdateAutomationInput {
 	execution?: Partial<ExecutionConfig>
 }
 
-export interface PalotAPI {
+export interface GCodeAPI {
 	/** The host platform: "darwin", "win32", or "linux". */
 	platform: NodeJS.Platform
 	getAppInfo: () => Promise<AppInfo>
@@ -812,6 +812,6 @@ export interface PalotAPI {
 
 declare global {
 	interface Window {
-		palot: PalotAPI
+		gcode: GCodeAPI
 	}
 }

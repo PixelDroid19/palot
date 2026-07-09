@@ -1,7 +1,7 @@
 /**
  * Session lifecycle for agent-host process runtimes and mid-session switches.
  *
- * Transcript is always Palot-owned (messages/parts atoms). Switching runtimes
+ * Transcript is always GCode-owned (messages/parts atoms). Switching runtimes
  * never wipes the visible chat: CLI↔CLI keeps the same session id; CLI→managed
  * transfers the transcript onto the new managed session before removing the old
  * shell, and stages a text handoff for the next model turn.
@@ -40,7 +40,7 @@ import { cancelCliTurn } from "./cli-chat-turn"
 
 const log = createLogger("runtime-session-switch")
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 const HANDOFF_MAX_CHARS = 12_000
 

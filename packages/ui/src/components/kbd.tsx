@@ -1,4 +1,4 @@
-import { cn } from "@palot/ui/lib/utils"
+import { cn } from "@gcode/ui/lib/utils"
 
 function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
 	return (

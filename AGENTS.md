@@ -1,4 +1,4 @@
-# Palot Agent Instructions
+# GCode Agent Instructions
 
 ## Purpose of This File
 
@@ -9,13 +9,13 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 ## Project Structure
 
 - **Monorepo**: Turborepo + Bun workspaces (Bun 1.3.8)
-- **`packages/ui`**: Shared shadcn/ui component library (`@palot/ui`)
-- **`packages/configconv`**: Universal agent config converter library (`@palot/configconv`) -- converts between Claude Code, OpenCode, and Cursor formats
+- **`packages/ui`**: Shared shadcn/ui component library (`@gcode/ui`)
+- **`packages/configconv`**: Universal agent config converter library (`@gcode/configconv`) -- converts between Claude Code, OpenCode, and Cursor formats
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
-- **`packages/cli-registry`**: Detects installed coding-agent CLIs (`@palot/cli-registry`) -- OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI; reports version and auth state via a host-injected, testable detection layer
-- **`packages/agent-host`**: Multi-agent core (`@palot/agent-host`) -- registry-only `AgentHost` (pluggable adapters, sessions, event bus, shared context) plus the **host tool plane** (`host.tools` / `HostToolRegistry`: automation, system, browser, agents, context) via `AgentBridge` (loopback HTTP + dynamic MCP proxy). Product tools are **host-owned** (desktop-host style), not CLI-owned; adapters only inject the bridge. Claude/Codex process adapters live here. Caveat: sandboxed `codex exec` auto-cancels MCP tool calls (openai/codex#24135) — Codex only gets the bridge in full-access runs.
+- **`packages/cli-registry`**: Detects installed coding-agent CLIs (`@gcode/cli-registry`) -- OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI; reports version and auth state via a host-injected, testable detection layer
+- **`packages/agent-host`**: Multi-agent core (`@gcode/agent-host`) -- registry-only `AgentHost` (pluggable adapters, sessions, event bus, shared context) plus the **host tool plane** (`host.tools` / `HostToolRegistry`: automation, system, browser, agents, context) via `AgentBridge` (loopback HTTP + dynamic MCP proxy). Product tools are **host-owned** (desktop-host style), not CLI-owned; adapters only inject the bridge. Claude/Codex process adapters live here. Caveat: sandboxed `codex exec` auto-cancels MCP tool calls (openai/codex#24135) — Codex only gets the bridge in full-access runs.
 - **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`)
-- **`apps/server`**: Bun + Hono backend -- browser-mode dev only (`dev:web`), NOT bundled with Electron; also exports `@palot/server` client/types
+- **`apps/server`**: Bun + Hono backend -- browser-mode dev only (`dev:web`), NOT bundled with Electron; also exports `@gcode/server` client/types
 - **Runtime composition**: `apps/desktop/src/main/agents/composition.ts` + `AgentHost` options (`builtinProviders`, custom `providers`) plug/unplug harnesses. OpenCode is a **managed-server** adapter (descriptor registry), not the product base. Gateway: `renderer` → `runtime-session-gateway` → managed-server or agent-host by **transport**, never by brand product grammar.
 - **OpenCode runtime boundary**: `apps/desktop/src/main/opencode-runtime.ts` owns CLI discovery, auth headers, readiness, server startup. Tray/automation/notifications must reuse it — do not rebuild bootstrap logic.
 - **Host tool backends (desktop)**: `apps/desktop/src/main/agents/host-tool-backends.ts` wires real automation/system/browser into `host.tools` at `getAgentHost()` time.
@@ -26,7 +26,7 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`main/`** -- Electron main process (Node.js): window management, IPC, server lifecycle, filesystem
 - **`main/agents/`** -- Host composition, AgentHost wiring, host tool backends, process-session lifecycle
 - **`main/automation/`** -- Schedulers + neutral `executeAutomationRun` dispatch by registered runtime executors (fail closed if missing)
-- **`preload/`** -- `window.palot` via `contextBridge`
+- **`preload/`** -- `window.gcode` via `contextBridge`
 - **`renderer/`** -- React app: components, hooks, `services/backend.ts`, Jotai atoms
 - **`shared/`** -- Cross-process constants/types (runtime ids, transport registry)
 
@@ -79,7 +79,7 @@ generic knowledge.
 - Use `import type { ... }` for type-only imports (Biome warns otherwise)
 - Order: external packages first, then internal/relative imports (no blank line between)
 - Main process: `node:` builtins first, then `electron`, then local
-- Renderer: `@palot/ui` -> `@tanstack/*` -> `lucide-react` -> `react` -> local atoms/hooks/services
+- Renderer: `@gcode/ui` -> `@tanstack/*` -> `lucide-react` -> `react` -> local atoms/hooks/services
 
 ### Naming Conventions
 
@@ -139,7 +139,7 @@ generic knowledge.
 
 ### Host tool plane -- do not brand-fork product tools
 
-Automation, system, browser, agents, and context tools register on `AgentHost.tools` and are listed/called only via `AgentBridge` (`GET/POST /v1/tools*`) and the dynamic MCP proxy. Never reimplement `palot_*` tools inside Claude/Codex/OpenCode adapters. Never gate tool availability with `runtimeId === "opencode"|"codex"|"claude"`. Missing tool/runtime → fail closed (explicit error), never silent brand fallback.
+Automation, system, browser, agents, and context tools register on `AgentHost.tools` and are listed/called only via `AgentBridge` (`GET/POST /v1/tools*`) and the dynamic MCP proxy. Never reimplement `gcode_*` tools inside Claude/Codex/OpenCode adapters. Never gate tool availability with `runtimeId === "opencode"|"codex"|"claude"`. Missing tool/runtime → fail closed (explicit error), never silent brand fallback.
 
 ### Runtime dispatch -- registry and transport only
 
@@ -147,11 +147,11 @@ Chat create/prompt/switch goes through the neutral gateway + transport (`managed
 
 ### Electron -- Two Runtime Contexts
 
-The main process runs in Node.js, the renderer runs in a Chromium sandbox. They communicate via IPC only. Never import Node.js modules (`fs`, `child_process`, `path`) in the renderer -- use the `window.palot` bridge or `services/backend.ts` instead.
+The main process runs in Node.js, the renderer runs in a Chromium sandbox. They communicate via IPC only. Never import Node.js modules (`fs`, `child_process`, `path`) in the renderer -- use the `window.gcode` bridge or `services/backend.ts` instead.
 
 ### Backend Service Layer -- `services/backend.ts`
 
-All hooks must import from `services/backend.ts`, NOT from `services/palot-server.ts` directly. The backend module detects Electron (`"palot" in window`) and routes to IPC or HTTP automatically.
+All hooks must import from `services/backend.ts`, NOT from `services/gcode-server.ts` directly. The backend module detects Electron (`"gcode" in window`) and routes to IPC or HTTP automatically.
 
 ### Jotai + React 19
 
@@ -193,7 +193,7 @@ Always pass the resolved model to `promptAsync`. The server has no single "curre
 
 ### OpenCode local password attach
 
-If a same-user OpenCode server is already listening on the configured local port and requires a password, Palot now refuses to attach with missing/stale local credentials. Save the local credential or stop the existing server; do not paper over this by silently connecting unauthenticated.
+If a same-user OpenCode server is already listening on the configured local port and requires a password, GCode now refuses to attach with missing/stale local credentials. Save the local credential or stop the existing server; do not paper over this by silently connecting unauthenticated.
 
 ### Server type regeneration (browser mode only)
 
@@ -201,15 +201,15 @@ When adding routes to `apps/server`, run `cd apps/server && bun run build:types`
 
 ### Electron -- Preload Timing
 
-The `window.palot` bridge is not available until the preload script finishes. Early-running renderer code (e.g., module-level calls, top-of-file side effects) must guard with optional chaining: `window.palot?.someMethod()`.
+The `window.gcode` bridge is not available until the preload script finishes. Early-running renderer code (e.g., module-level calls, top-of-file side effects) must guard with optional chaining: `window.gcode?.someMethod()`.
 
 ### Electron -- External Links
 
 Never open external URLs inside the Electron window. Use `setWindowOpenHandler` in the main process to deny and redirect to `shell.openExternal()`. This prevents navigation to untrusted content inside the app.
 
-### Palot storage -- XDG Base Directory
+### GCode storage -- XDG Base Directory
 
-Palot follows the XDG Base Directory Specification (same convention as OpenCode). Config at `~/.config/palot/`, data at `~/.local/share/palot/`. Automation configs live at `~/.config/palot/automations/<id>/`, SQLite database at `~/.local/share/palot/palot.db`. See `main/automation/paths.ts` for the implementation. Do NOT use `~/.palot/` (legacy) or Electron's `userData` path for automation storage.
+GCode follows the XDG Base Directory Specification (same convention as OpenCode). Config at `~/.config/gcode/`, data at `~/.local/share/gcode/`. Automation configs live at `~/.config/gcode/automations/<id>/`, SQLite database at `~/.local/share/gcode/gcode.db`. See `main/automation/paths.ts` for the implementation. Do NOT use `~/.palot/` (legacy) or Electron's `userData` path for automation storage.
 
 ### electron-vite -- Three Build Targets
 

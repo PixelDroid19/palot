@@ -1,5 +1,5 @@
 /**
- * Core contracts for the Palot agent platform.
+ * Core contracts for the GCode agent platform.
  *
  * The core is deliberately tiny: it only knows about agents (adapters),
  * sessions, runs, events, and shared context. Everything provider-specific
@@ -163,7 +163,7 @@ export interface AgentRuntimeCapabilities {
 	managedLocalServer: boolean
 }
 
-/** Session-level UX affordances a runtime can back in Palot. */
+/** Session-level UX affordances a runtime can back in GCode. */
 export interface AgentSessionCapabilities {
 	supportsSessionRevert: boolean
 	supportsSessionSummarize: boolean
@@ -259,7 +259,7 @@ export function resolveRuntimeTransport(input: RuntimeTransportInput): RuntimeTr
 
 /**
  * Capabilities the host offers to a run (inter-agent bridge). When present,
- * adapters that support MCP inject the Palot bridge so the CLI can delegate
+ * adapters that support MCP inject the GCode bridge so the CLI can delegate
  * to other agents and read/write shared context.
  */
 export interface BridgeInfo {

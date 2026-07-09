@@ -5,7 +5,7 @@
  * Defaults to Claude Code -> OpenCode for backwards compatibility.
  */
 
-import type { AgentFormat } from "@palot/configconv"
+import type { AgentFormat } from "@gcode/configconv"
 import {
 	conversionReportMessageToText,
 	convertCursorHistory,
@@ -14,7 +14,7 @@ import {
 	universalConvert,
 	universalWrite,
 	writeHistorySessions,
-} from "@palot/configconv"
+} from "@gcode/configconv"
 import { defineCommand } from "citty"
 import consola from "consola"
 
@@ -143,7 +143,7 @@ export default defineCommand({
 				scanResult.data.history
 			) {
 				if (!args.json) consola.start("Converting chat history...")
-				const { convertHistory } = await import("@palot/configconv/converter/history")
+				const { convertHistory } = await import("@gcode/configconv/converter/history")
 				const { sessions } = await convertHistory(scanResult.data.history)
 				if (sessions.length > 0) {
 					historyFilesWritten = await writeHistorySessions(sessions)

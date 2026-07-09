@@ -8,8 +8,8 @@ import {
 	SearchableListPopoverSearch,
 	SearchableListPopoverTrigger,
 	useSearchableListPopoverSearch,
-} from "@palot/ui/components/searchable-list-popover"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/searchable-list-popover"
+import { cn } from "@gcode/ui/lib/utils"
 import { CheckIcon, ChevronDownIcon } from "lucide-react"
 import { useMemo, useState, type ReactNode } from "react"
 

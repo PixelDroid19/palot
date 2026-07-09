@@ -1,7 +1,7 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
-import { cn } from "@palot/ui/lib/utils"
+import { Button } from "@gcode/ui/components/button"
+import { cn } from "@gcode/ui/lib/utils"
 import { MultiFileDiff, PatchDiff } from "@pierre/diffs/react"
 import { CheckIcon, CopyIcon, MinusIcon, PlusIcon } from "lucide-react"
 import {

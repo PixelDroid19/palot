@@ -2,8 +2,8 @@
  * Neutral compact option select used by the shared runtime config toolbar.
  * Same chrome for every runtime (OpenCode, Codex, Claude, …).
  */
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@palot/ui/components/select"
-import { cn } from "@palot/ui/lib/utils"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@gcode/ui/components/select"
+import { cn } from "@gcode/ui/lib/utils"
 
 const TOOLBAR_TRIGGER_CN =
 	"h-7! gap-1 border-none bg-transparent! hover:bg-muted! px-2! py-0! text-xs shadow-none transition-colors"

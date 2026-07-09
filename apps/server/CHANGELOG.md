@@ -1,4 +1,4 @@
-# @palot/server
+# @gcode/server
 
 ## 0.4.0
 
@@ -6,7 +6,7 @@
 
 - [`2a9d3de`](https://github.com/ItsWendell/palot/commit/2a9d3de3b529a6aa73b8ae574fb2a6f2084d73f9) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### Breaking: Require OpenCode >= 1.2.0
 
-  Palot now requires OpenCode 1.2.0 or higher. Older versions will be blocked during the environment check.
+  GCode now requires OpenCode 1.2.0 or higher. Older versions will be blocked during the environment check.
 
   ### New Features
 

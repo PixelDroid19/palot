@@ -1,8 +1,8 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
-import { ButtonGroup, ButtonGroupText } from "@palot/ui/components/button-group"
-import { cn } from "@palot/ui/lib/utils"
+import { Button } from "@gcode/ui/components/button"
+import { ButtonGroup, ButtonGroupText } from "@gcode/ui/components/button-group"
+import { cn } from "@gcode/ui/lib/utils"
 import type { Experimental_SpeechResult as SpeechResult } from "ai"
 import {
 	MediaControlBar,

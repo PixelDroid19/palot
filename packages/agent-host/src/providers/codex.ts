@@ -70,7 +70,7 @@ export function isCodexQuotaOrAccountLimit(message: string): boolean {
 }
 
 /**
- * When Palot is launched from inside another Codex-managed environment (for
+ * When GCode is launched from inside another Codex-managed environment (for
  * example this repo being driven from Codex Desktop), the child Codex runtime
  * must NOT inherit the parent session markers. Otherwise the nested Codex
  * process can try to reuse the parent's thread/skill context and probe stale
@@ -178,20 +178,20 @@ class CodexSession implements AgentSession {
 
 	async open(): Promise<void> {
 		const rpc = await this.provider.connection()
-		// The Palot bridge rides in as a per-thread MCP server. Unlike the old
+		// The GCode bridge rides in as a per-thread MCP server. Unlike the old
 		// `codex exec` path, approvals are answered interactively here, so the
 		// bridge works in every sandbox mode.
 		const bridge = this.opts.bridge
 		const config = bridge
 			? {
 					mcp_servers: {
-						palot: {
+						gcode: {
 							command: bridge.nodeBinary,
 							args: [bridge.proxyScriptPath],
 							env: {
 								...bridge.proxyEnv,
-								PALOT_BRIDGE_URL: bridge.url,
-								PALOT_BRIDGE_TOKEN: bridge.token,
+								GCODE_BRIDGE_URL: bridge.url,
+								GCODE_BRIDGE_TOKEN: bridge.token,
 							},
 						},
 					},
@@ -555,7 +555,7 @@ export class CodexProvider implements AgentSessionProvider {
 			if (this.rpc === rpc) this.rpc = null
 		})
 		await rpc.request("initialize", {
-			clientInfo: { name: "palot", title: "Palot", version: "1.0.0" },
+			clientInfo: { name: "gcode", title: "GCode", version: "1.0.0" },
 			// Experimental API unlocks streaming extras (e.g. command output deltas).
 			capabilities: { experimentalApi: true, requestAttestation: false },
 		})

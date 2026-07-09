@@ -9,17 +9,17 @@ const EVENT: WebhookEvent = {
 }
 
 describe("buildPayload", () => {
-	test("Feishu uses msg_type/content.text with a [Palot] prefix", () => {
+	test("Feishu uses msg_type/content.text with a [GCode] prefix", () => {
 		expect(buildPayload("feishu", EVENT)).toEqual({
 			msg_type: "text",
-			content: { text: "[Palot] Task done\nThe agent finished." },
+			content: { text: "[GCode] Task done\nThe agent finished." },
 		})
 	})
 
 	test("WeChat Work uses msgtype/text.content", () => {
 		expect(buildPayload("wechat", EVENT)).toEqual({
 			msgtype: "text",
-			text: { content: "[Palot] Task done\nThe agent finished." },
+			text: { content: "[GCode] Task done\nThe agent finished." },
 		})
 	})
 
@@ -29,7 +29,7 @@ describe("buildPayload", () => {
 			body: "The agent finished.",
 			type: "completed",
 			sessionId: "ses_123",
-			source: "palot",
+			source: "gcode",
 		})
 	})
 

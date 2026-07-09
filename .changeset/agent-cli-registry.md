@@ -1,11 +1,11 @@
 ---
-"@palot/desktop": minor
+"@gcode/desktop": minor
 ---
 
-Multi-CLI awareness: Palot now detects the coding-agent CLIs installed on your
+Multi-CLI awareness: GCode now detects the coding-agent CLIs installed on your
 machine, not just OpenCode.
 
-- New **`@palot/cli-registry`** package: a modular, host-injected registry that
+- New **`@gcode/cli-registry`** package: a modular, host-injected registry that
   describes each coding-agent CLI (OpenCode, Claude Code, Codex, Cursor Agent,
   Gemini CLI) as a declarative adapter and probes the host for installation,
   version, and auth state. Covered by integration tests that run against the

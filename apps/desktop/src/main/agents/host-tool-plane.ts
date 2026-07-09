@@ -4,17 +4,17 @@
  * Electron-free so unit tests can drive the real heal without the desktop
  * main-process graph (app, shell, …).
  */
-import type { AgentHost } from "@palot/agent-host"
+import type { AgentHost } from "@gcode/agent-host"
 
 /** Core host tools that must always be present for agentic multi-harness scale. */
 export const REQUIRED_HOST_TOOLS = [
-	"palot_list_agents",
-	"palot_delegate",
-	"palot_list_subagents",
-	"palot_run_subagent",
-	"palot_automation_list",
-	"palot_system_run",
-	"palot_browser_open",
+	"gcode_list_agents",
+	"gcode_delegate",
+	"gcode_list_subagents",
+	"gcode_run_subagent",
+	"gcode_automation_list",
+	"gcode_system_run",
+	"gcode_browser_open",
 ] as const
 
 export function listMissingHostTools(host: AgentHost): string[] {

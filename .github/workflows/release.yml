@@ -358,7 +358,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.changeset.outputs.tag }}
-          name: Palot ${{ needs.changeset.outputs.version }}
+          name: GCode ${{ needs.changeset.outputs.version }}
           body_path: /tmp/release-notes.md
           draft: false
           prerelease: ${{ contains(needs.changeset.outputs.version, '-') }}

@@ -10,7 +10,7 @@
 import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { AgentHost, registerDefaultPlatformTools } from "@palot/agent-host"
+import { AgentHost, registerDefaultPlatformTools } from "@gcode/agent-host"
 import {
 	REQUIRED_HOST_TOOLS,
 	ensureHostToolPlaneComplete,
@@ -48,17 +48,17 @@ describe("getAgentHost hot-upgrade heal entry", () => {
 			builtinProviders: false,
 			resolveBinary: async () => null,
 		})
-		incomplete.tools.unregister("palot_list_subagents")
-		incomplete.tools.unregister("palot_run_subagent")
-		expect(listMissingHostTools(incomplete)).toContain("palot_list_subagents")
+		incomplete.tools.unregister("gcode_list_subagents")
+		incomplete.tools.unregister("gcode_run_subagent")
+		expect(listMissingHostTools(incomplete)).toContain("gcode_list_subagents")
 
 		// Same control flow as getAgentHost() when hostSingleton is already set.
 		const host = getAgentHostHotPath(incomplete)
 		expect(host).toBe(incomplete)
-		expect(host.tools.has("palot_list_subagents")).toBe(true)
-		expect(host.tools.has("palot_run_subagent")).toBe(true)
+		expect(host.tools.has("gcode_list_subagents")).toBe(true)
+		expect(host.tools.has("gcode_run_subagent")).toBe(true)
 
-		const roles = JSON.parse(await host.tools.call("palot_list_subagents")) as { id: string }[]
+		const roles = JSON.parse(await host.tools.call("gcode_list_subagents")) as { id: string }[]
 		expect(roles.map((r) => r.id).sort()).toEqual(["explore", "general-purpose"])
 	})
 

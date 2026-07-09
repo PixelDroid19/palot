@@ -6,8 +6,8 @@
  * Reuses ConnectProviderDialog for the actual auth flows.
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@gcode/ui/components/button"
+import { Spinner } from "@gcode/ui/components/spinner"
 import { useQueryClient } from "@tanstack/react-query"
 import { CheckIcon, ExternalLinkIcon, LinkIcon, SparklesIcon, ZapIcon } from "lucide-react"
 import { motion } from "motion/react"
@@ -94,7 +94,7 @@ export function ProviderSetupStep({ onComplete, onSkip }: ProviderSetupStepProps
 					<Spinner className="size-8 text-muted-foreground" />
 					<h2 className="text-xl font-semibold">Waiting for project runtime...</h2>
 					<p className="max-w-md text-sm text-muted-foreground">
-						Palot is connecting to the project runtime background process. This should only take a moment.
+						GCode is connecting to the project runtime background process. This should only take a moment.
 					</p>
 				</div>
 				<div className="flex gap-3">

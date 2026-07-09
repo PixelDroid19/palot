@@ -35,7 +35,7 @@ import { buildConversationHandoff } from "./cli-chat-session"
 
 const log = createLogger("cli-chat-turn")
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 const activeTurns = new Set<string>()
 
@@ -75,7 +75,7 @@ export async function runCliTurn(
 			text,
 		} as TextPart)
 		bump(sessionId)
-		await window.palot.agentSession.steer(sessionId, text).catch((err) => {
+		await window.gcode.agentSession.steer(sessionId, text).catch((err) => {
 			log.warn("Steering failed", { sessionId }, err)
 		})
 		return
@@ -181,7 +181,7 @@ export async function runCliTurn(
 		bump(sessionId)
 	}
 
-	const unsubscribe = window.palot.agentSession.onUpdate((sid, update: AgentUpdate) => {
+	const unsubscribe = window.gcode.agentSession.onUpdate((sid, update: AgentUpdate) => {
 		if (sid !== sessionId) return
 		if (update.kind === "message-delta" && update.text) {
 			streamedDeltas = true
@@ -270,14 +270,14 @@ export async function runCliTurn(
 	})
 
 	try {
-		await window.palot.agentSession.open(sessionId, meta.runtimeId, {
+		await window.gcode.agentSession.open(sessionId, meta.runtimeId, {
 			cwd: meta.cwd || ".",
 			sandbox: meta.sandbox,
 			model: meta.model,
 			reasoningEffort: meta.effort,
 			resumeId: meta.threadId ?? undefined,
 		})
-		const result = await window.palot.agentSession.prompt(sessionId, {
+		const result = await window.gcode.agentSession.prompt(sessionId, {
 			text: promptText,
 			model: meta.model ?? "",
 			reasoningEffort: meta.effort,
@@ -338,7 +338,7 @@ export async function runCliTurn(
 
 export function cancelCliTurn(sessionId: string): void {
 	if (isElectron && activeTurns.has(sessionId)) {
-		void window.palot.agentSession.interrupt(sessionId)
+		void window.gcode.agentSession.interrupt(sessionId)
 	}
 }
 
@@ -353,7 +353,7 @@ export function respondCliPermission(
 ): void {
 	if (!isElectron) return
 	removeCliPermission(sessionId, requestId)
-	void window.palot.agentSession.respondPermission(sessionId, requestId, decision)
+	void window.gcode.agentSession.respondPermission(sessionId, requestId, decision)
 }
 
 export function answerCliQuestion(
@@ -363,5 +363,5 @@ export function answerCliQuestion(
 ): void {
 	if (!isElectron) return
 	removeCliQuestion(sessionId, requestId)
-	void window.palot.agentSession.answerQuestion(sessionId, requestId, answers)
+	void window.gcode.agentSession.answerQuestion(sessionId, requestId, answers)
 }

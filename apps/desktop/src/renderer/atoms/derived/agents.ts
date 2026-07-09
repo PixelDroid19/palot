@@ -569,7 +569,7 @@ export const projectListAtom = (() => {
 			}
 		}
 
-		// Drop projects the user removed from Palot (local hide; OpenCode has no delete API).
+		// Drop projects the user removed from GCode (local hide; OpenCode has no delete API).
 		for (const dir of hiddenDirs) {
 			projects.delete(dir)
 		}

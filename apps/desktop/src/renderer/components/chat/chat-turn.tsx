@@ -4,15 +4,15 @@ import {
 	MessageActions,
 	MessageContent,
 	MessageResponse,
-} from "@palot/ui/components/ai-elements/message"
+} from "@gcode/ui/components/ai-elements/message"
 import {
 	Reasoning,
 	ReasoningContent,
 	ReasoningText,
 	ReasoningTrigger,
-} from "@palot/ui/components/ai-elements/reasoning"
-import { Shimmer } from "@palot/ui/components/ai-elements/shimmer"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@palot/ui/components/dialog"
+} from "@gcode/ui/components/ai-elements/reasoning"
+import { Shimmer } from "@gcode/ui/components/ai-elements/shimmer"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@gcode/ui/components/dialog"
 
 import {
 	ArrowUpToLineIcon,

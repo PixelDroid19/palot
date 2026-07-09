@@ -81,7 +81,7 @@
   --duration-normal: 0.2s;
   --duration-relaxed: 0.3s;
 
-  /* Light mode — Cortex neutral scale with Palot Blue accent */
+  /* Light mode — Cortex neutral scale with GCode Blue accent */
   --background: #ffffff;
   --foreground: #0d0d0d;
   --card: #ffffff;
@@ -123,7 +123,7 @@
 }
 
 .dark {
-  /* Dark mode — Cortex neutral scale with Palot Blue accent */
+  /* Dark mode — Cortex neutral scale with GCode Blue accent */
   --background: #181818;
   --foreground: #ffffff;
   --card: #212121;

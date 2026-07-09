@@ -28,13 +28,13 @@ function migrateFromZustandPersist(): void {
 	try {
 		const { state } = JSON.parse(raw) // Zustand persist wraps in { state, version }
 		if (state.displayMode)
-			localStorage.setItem("palot:displayMode", JSON.stringify(state.displayMode))
-		if (state.theme) localStorage.setItem("palot:theme", JSON.stringify(state.theme))
+			localStorage.setItem("gcode:displayMode", JSON.stringify(state.displayMode))
+		if (state.theme) localStorage.setItem("gcode:theme", JSON.stringify(state.theme))
 		if (state.colorScheme)
-			localStorage.setItem("palot:colorScheme", JSON.stringify(state.colorScheme))
-		if (state.drafts) localStorage.setItem("palot:drafts", JSON.stringify(state.drafts))
+			localStorage.setItem("gcode:colorScheme", JSON.stringify(state.colorScheme))
+		if (state.drafts) localStorage.setItem("gcode:drafts", JSON.stringify(state.drafts))
 		if (state.projectModels)
-			localStorage.setItem("palot:runtimeSelections", JSON.stringify(state.projectModels))
+			localStorage.setItem("gcode:runtimeSelections", JSON.stringify(state.projectModels))
 
 		// Remove old key after successful migration
 		localStorage.removeItem(oldKey)
@@ -43,21 +43,64 @@ function migrateFromZustandPersist(): void {
 	}
 }
 
+/** Copy a single localStorage key from legacy Palot prefix if the GCode key is empty. */
+function migrateStorageKey(from: string, to: string): void {
+	if (localStorage.getItem(to) != null) return
+	const legacy = localStorage.getItem(from)
+	if (legacy == null) return
+	localStorage.setItem(to, legacy)
+	localStorage.removeItem(from)
+}
+
+/** One-time Palot → GCode localStorage key migration (product rebrand). */
+function migratePalotStorageKeys(): void {
+	const pairs: Array<[string, string]> = [
+		["palot:displayMode", "gcode:displayMode"],
+		["palot:theme", "gcode:theme"],
+		["palot:colorScheme", "gcode:colorScheme"],
+		["palot:drafts", "gcode:drafts"],
+		["palot:runtimeSelections", "gcode:runtimeSelections"],
+		["palot:projectModels", "gcode:runtimeSelections"],
+		["palot:opaqueWindows", "gcode:opaqueWindows"],
+		["palot:automationsBannerDismissed", "gcode:automationsBannerDismissed"],
+		["palot:onboarding", "gcode:onboarding"],
+		["palot:hiddenProjects", "gcode:hiddenProjects"],
+		["palot:locale", "gcode:locale"],
+		["palot:mockMode", "gcode:mockMode"],
+		["palot:automationsEnabled", "gcode:automationsEnabled"],
+		["palot:reactScan", "gcode:reactScan"],
+		["palot:review-panel-settings", "gcode:review-panel-settings"],
+		["palot:cliSessions", "gcode:cliSessions"],
+		["palot:cliRuntimePrefs", "gcode:cliRuntimePrefs"],
+		["palot:lastSessionRuntime", "gcode:lastSessionRuntime"],
+	]
+	for (const [from, to] of pairs) migrateStorageKey(from, to)
+	// CLI session bodies used a prefix
+	for (let i = 0; i < localStorage.length; i++) {
+		const key = localStorage.key(i)
+		if (!key?.startsWith("palot:cliSession:")) continue
+		const next = key.replace(/^palot:/, "gcode:")
+		migrateStorageKey(key, next)
+	}
+}
+
 // Run migration at module load time (before any atoms are read)
 migrateFromZustandPersist()
+migratePalotStorageKeys()
 
 // Migrate removed "compact" display mode to "default"
 function migrateDisplayMode(): void {
-	const raw = localStorage.getItem("palot:displayMode")
+	const raw = localStorage.getItem("gcode:displayMode")
 	if (raw === '"compact"') {
-		localStorage.setItem("palot:displayMode", '"default"')
+		localStorage.setItem("gcode:displayMode", '"default"')
 	}
 }
 migrateDisplayMode()
 
 function migrateRuntimeSelectionsKey(): void {
-	const legacyKey = "palot:projectModels"
-	const nextKey = "palot:runtimeSelections"
+	// Older GCode builds used gcode:projectModels before runtimeSelections rename
+	const legacyKey = "gcode:projectModels"
+	const nextKey = "gcode:runtimeSelections"
 	const next = localStorage.getItem(nextKey)
 	if (next) return
 	const legacy = localStorage.getItem(legacyKey)
@@ -71,17 +114,17 @@ migrateRuntimeSelectionsKey()
 // Persisted atoms — each is independent with its own localStorage key
 // ============================================================
 
-export const displayModeAtom = atomWithStorage<DisplayMode>("palot:displayMode", "default")
+export const displayModeAtom = atomWithStorage<DisplayMode>("gcode:displayMode", "default")
 
-export const themeAtom = atomWithStorage<string>("palot:theme", "default")
+export const themeAtom = atomWithStorage<string>("gcode:theme", "default")
 
-export const colorSchemeAtom = atomWithStorage<ColorScheme>("palot:colorScheme", "dark")
+export const colorSchemeAtom = atomWithStorage<ColorScheme>("gcode:colorScheme", "dark")
 
 /**
  * Whether the user prefers opaque (non-transparent) windows.
  * When true, the renderer uses solid backgrounds instead of semi-transparent.
  */
-export const opaqueWindowsAtom = atomWithStorage<boolean>("palot:opaqueWindows", false)
+export const opaqueWindowsAtom = atomWithStorage<boolean>("gcode:opaqueWindows", false)
 
 /**
  * The active window chrome tier, set by the main process on load.
@@ -100,10 +143,10 @@ export const isTransparentAtom = atom((get) => {
 	return !opaque && (tier === "liquid-glass" || tier === "vibrancy")
 })
 
-export const draftsAtom = atomWithStorage<Record<string, string>>("palot:drafts", {})
+export const draftsAtom = atomWithStorage<Record<string, string>>("gcode:drafts", {})
 
 export const runtimeSelectionsAtom = atomWithStorage<Record<string, PersistedModelRef>>(
-	"palot:runtimeSelections",
+	"gcode:runtimeSelections",
 	{},
 )
 
@@ -112,7 +155,7 @@ export const runtimeSelectionsAtom = atomWithStorage<Record<string, PersistedMod
  * Once dismissed, the banner never reappears.
  */
 export const automationsBannerDismissedAtom = atomWithStorage<boolean>(
-	"palot:automationsBannerDismissed",
+	"gcode:automationsBannerDismissed",
 	false,
 )
 

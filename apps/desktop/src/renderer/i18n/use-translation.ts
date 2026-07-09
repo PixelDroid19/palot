@@ -13,7 +13,7 @@ import {
 	type TranslationParams,
 } from "./index"
 
-export const localeAtom = atomWithStorage<Locale>("palot:locale", DEFAULT_LOCALE)
+export const localeAtom = atomWithStorage<Locale>("gcode:locale", DEFAULT_LOCALE)
 
 export interface UseTranslation {
 	t: (key: TranslationKey, params?: TranslationParams) => string

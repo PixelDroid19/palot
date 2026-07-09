@@ -1,7 +1,7 @@
 import type { CliAdapter } from "../types"
 
 /**
- * OpenCode — the agent runtime Palot manages directly today. Its auth lives in
+ * OpenCode — the agent runtime GCode manages directly today. Its auth lives in
  * an `auth.json` under the platform data/config dir.
  */
 export const opencodeAdapter: CliAdapter = {

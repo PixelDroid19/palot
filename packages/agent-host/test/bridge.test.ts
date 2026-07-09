@@ -17,8 +17,8 @@ let info: BridgeInfo
 let proxyPath: string
 
 beforeAll(async () => {
-	const dir = mkdtempSync(join(tmpdir(), "palot-bridge-"))
-	proxyPath = join(dir, "palot-mcp.cjs")
+	const dir = mkdtempSync(join(tmpdir(), "gcode-bridge-"))
+	proxyPath = join(dir, "gcode-mcp.cjs")
 	writeFileSync(proxyPath, MCP_PROXY_SOURCE)
 	host = new AgentHost({ builtinProviders: false, resolveBinary: async () => "/bin/sh" })
 	host.registerProvider(echoProvider)
@@ -74,7 +74,7 @@ describe("AgentBridge", () => {
 
 	test("the MCP proxy speaks MCP and reaches the bridge end-to-end", async () => {
 		const child = spawn(process.execPath, [proxyPath], {
-			env: { ...process.env, PALOT_BRIDGE_URL: info.url, PALOT_BRIDGE_TOKEN: info.token },
+			env: { ...process.env, GCODE_BRIDGE_URL: info.url, GCODE_BRIDGE_TOKEN: info.token },
 			stdio: ["pipe", "pipe", "inherit"],
 		})
 		const responses: Record<string, unknown>[] = []
@@ -102,16 +102,16 @@ describe("AgentBridge", () => {
 			jsonrpc: "2.0",
 			id: 3,
 			method: "tools/call",
-			params: { name: "palot_delegate", arguments: { agent: "echo", prompt: "ping", cwd: "/tmp" } },
+			params: { name: "gcode_delegate", arguments: { agent: "echo", prompt: "ping", cwd: "/tmp" } },
 		})
 
 		await done
 		child.kill()
 
 		const init = responses.find((r) => r.id === 1) as { result: { serverInfo: { name: string } } }
-		expect(init.result.serverInfo.name).toBe("palot-bridge")
+		expect(init.result.serverInfo.name).toBe("gcode-bridge")
 		const tools = responses.find((r) => r.id === 2) as { result: { tools: { name: string }[] } }
-		expect(tools.result.tools.map((t) => t.name)).toContain("palot_delegate")
+		expect(tools.result.tools.map((t) => t.name)).toContain("gcode_delegate")
 		const callRes = responses.find((r) => r.id === 3) as {
 			result: { content: { text: string }[] }
 		}

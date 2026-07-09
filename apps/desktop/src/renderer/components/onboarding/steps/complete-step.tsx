@@ -7,9 +7,9 @@
  * already been migrated.
  */
 
-import { Badge } from "@palot/ui/components/badge"
-import { Button } from "@palot/ui/components/button"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Badge } from "@gcode/ui/components/badge"
+import { Button } from "@gcode/ui/components/button"
+import { Spinner } from "@gcode/ui/components/spinner"
 import { ArrowRightIcon, CheckCircle2Icon, CommandIcon, FlaskConicalIcon } from "lucide-react"
 import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
@@ -32,8 +32,8 @@ interface CompleteStepProps {
 // Component
 // ============================================================
 
-const isElectron = typeof window !== "undefined" && "palot" in window
-const isMac = isElectron && window.palot.platform === "darwin"
+const isElectron = typeof window !== "undefined" && "gcode" in window
+const isMac = isElectron && window.gcode.platform === "darwin"
 
 export function CompleteStep({
 	projectRuntimeVersion,
@@ -54,7 +54,7 @@ export function CompleteStep({
 		hasDetected.current = true
 		setDetecting(true)
 
-		window.palot.onboarding
+		window.gcode.onboarding
 			.detectProviders()
 			.then((detections) => {
 				// Only show providers that were found and aren't the project runtime itself.
@@ -101,8 +101,8 @@ export function CompleteStep({
 					<h2 className="text-2xl font-semibold text-foreground">You're all set.</h2>
 					<p className="text-sm text-muted-foreground">
 						{projectRuntimeVersion
-							? `Palot is ready (OpenCode managed runtime ${formatVersion(projectRuntimeVersion)}; Codex and Claude Code work as process adapters too)`
-							: "Palot is ready — use OpenCode, Codex, or Claude Code with the same session UI"}
+							? `GCode is ready (OpenCode managed runtime ${formatVersion(projectRuntimeVersion)}; Codex and Claude Code work as process adapters too)`
+							: "GCode is ready — use OpenCode, Codex, or Claude Code with the same session UI"}
 						{hasMigrated ? " and your configuration has been migrated." : "."}
 					</p>
 				</motion.div>

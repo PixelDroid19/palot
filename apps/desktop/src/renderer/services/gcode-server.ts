@@ -1,12 +1,12 @@
 /**
- * Type-safe RPC client for the Palot local backend server (Bun + Hono).
+ * Type-safe RPC client for the GCode local backend server (Bun + Hono).
  *
  * Uses Hono's RPC client (`hc`) with the server's AppType for end-to-end
  * type safety. The type is resolved from compiled declarations (.d.ts)
  * so the desktop app doesn't need Bun types.
  */
 
-import { createClient } from "@palot/server/client"
+import { createClient } from "@gcode/server/client"
 
 const BASE_URL = "http://localhost:3100"
 
@@ -29,7 +29,7 @@ export async function fetchServers() {
 
 /**
  * Ensures the single project runtime server is running and returns its URL.
- * Calls `GET /api/servers/opencode` on the Palot backend.
+ * Calls `GET /api/servers/opencode` on the GCode backend.
  */
 export async function fetchProjectRuntimeUrl(): Promise<{ url: string }> {
 	const res = await client.api.servers.opencode.$get()
@@ -77,7 +77,7 @@ export async function updateModelRecent(model: { providerID: string; modelID: st
 }
 
 /**
- * Checks if the Palot server is running.
+ * Checks if the GCode server is running.
  */
 export async function checkServerHealth() {
 	try {

@@ -4,7 +4,7 @@
  * selection is fed back as the tool's answer (fixes the "AskUserQuestion tool
  * doesn't provide answer" gap synara #91 hits when there is no question UI).
  */
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import { useAtomValue } from "jotai"
 import { MessageCircleQuestion } from "lucide-react"
 import { useState } from "react"

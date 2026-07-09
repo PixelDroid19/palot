@@ -1,24 +1,24 @@
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
-import { Button } from "@palot/ui/components/button"
-import { Input } from "@palot/ui/components/input"
-import { Separator } from "@palot/ui/components/separator"
+import { Button } from "@gcode/ui/components/button"
+import { Input } from "@gcode/ui/components/input"
+import { Separator } from "@gcode/ui/components/separator"
 import {
 	Sheet,
 	SheetContent,
 	SheetDescription,
 	SheetHeader,
 	SheetTitle,
-} from "@palot/ui/components/sheet"
-import { Skeleton } from "@palot/ui/components/skeleton"
+} from "@gcode/ui/components/sheet"
+import { Skeleton } from "@gcode/ui/components/skeleton"
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@palot/ui/components/tooltip"
-import { useIsMobile } from "@palot/ui/hooks/use-mobile"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/tooltip"
+import { useIsMobile } from "@gcode/ui/hooks/use-mobile"
+import { cn } from "@gcode/ui/lib/utils"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
 import * as React from "react"

@@ -1,12 +1,12 @@
 /**
  * Onboarding Step 1: Welcome.
  *
- * Brief introduction to Palot and what the setup will cover.
+ * Brief introduction to GCode and what the setup will cover.
  */
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import { ArrowRightIcon } from "lucide-react"
-import { PalotWordmark } from "../../palot-wordmark"
+import { GCodeWordmark } from "../../gcode-wordmark"
 
 interface WelcomeStepProps {
 	onContinue: () => void
@@ -18,7 +18,7 @@ export function WelcomeStep({ onContinue }: WelcomeStepProps) {
 			<div className="w-full max-w-md space-y-8 text-center">
 				{/* Logo */}
 				<div className="flex justify-center">
-					<PalotWordmark className="h-6 w-auto text-foreground" />
+					<GCodeWordmark className="h-6 w-auto text-foreground" />
 				</div>
 
 				{/* Description */}
@@ -27,7 +27,7 @@ export function WelcomeStep({ onContinue }: WelcomeStepProps) {
 						Your native workspace for multiple coding runtimes.
 					</p>
 					<p className="text-sm leading-relaxed text-muted-foreground/70">
-						Palot unifies OpenCode, Codex, Claude Code, and other adapters behind one session UI —
+						GCode unifies OpenCode, Codex, Claude Code, and other adapters behind one session UI —
 						real-time streaming, native notifications, and multi-session support without making any
 						single tool the product base.
 					</p>

@@ -73,7 +73,7 @@ export const en = {
 	subagentChat: {
 		title: "Runtime agents",
 		description:
-			"Have a multi-turn conversation with any supported coding runtime (OpenCode, Codex, Claude Code, …). Palot keeps the session so context carries across turns.",
+			"Have a multi-turn conversation with any supported coding runtime (OpenCode, Codex, Claude Code, …). GCode keeps the session so context carries across turns.",
 		noneInstalled: "No supported runtime is installed. Install OpenCode, Codex, or Claude Code to start.",
 		you: "You",
 		thinking: "Thinking…",

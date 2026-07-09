@@ -4,7 +4,7 @@ import path from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
-import { whichOnPath } from "@palot/cli-registry"
+import { whichOnPath } from "@gcode/cli-registry"
 import { createLogger } from "./logger"
 
 const log = createLogger("opencode-runtime")

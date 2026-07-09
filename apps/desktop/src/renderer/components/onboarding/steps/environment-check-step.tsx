@@ -1,17 +1,17 @@
 /**
  * Onboarding Step 2: Environment Check.
  *
- * Palot is multi-runtime (OpenCode, Codex, Claude Code, …). This step checks
+ * GCode is multi-runtime (OpenCode, Codex, Claude Code, …). This step checks
  * the optional local managed-server adapter (OpenCode today) for workspaces that
  * use it. Missing OpenCode is a warning, not a hard block — Codex/Claude work
  * without it. Users may install OpenCode, connect a remote managed server, or
  * continue with process adapters only.
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Input } from "@palot/ui/components/input"
-import { Label } from "@palot/ui/components/label"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@gcode/ui/components/button"
+import { Input } from "@gcode/ui/components/input"
+import { Label } from "@gcode/ui/components/label"
+import { Spinner } from "@gcode/ui/components/spinner"
 import { useAtomValue } from "jotai"
 import {
 	AlertCircleIcon,
@@ -72,7 +72,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip: _onSkip }: Environmen
 	const hasRun = useRef(false)
 	const terminalRef = useRef<HTMLDivElement>(null)
 
-	const isElectron = typeof window !== "undefined" && "palot" in window
+	const isElectron = typeof window !== "undefined" && "gcode" in window
 
 	// mDNS discovered servers (scanner starts before onboarding renders)
 	const discoveredServers = useAtomValue(discoveredMdnsServersAtom)
@@ -110,7 +110,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip: _onSkip }: Environmen
 
 		try {
 			// Optional managed-server adapter (OpenCode). Not required for Codex/Claude.
-			const result = await window.palot.onboarding.checkProjectRuntime()
+			const result = await window.gcode.onboarding.checkProjectRuntime()
 			setProjectRuntimeResult(result)
 
 			if (!result.installed) {
@@ -202,12 +202,12 @@ export function EnvironmentCheckStep({ onComplete, onSkip: _onSkip }: Environmen
 		setInstalling(true)
 		setInstallOutput([])
 
-		const cleanup = window.palot.onboarding.onInstallOutput((text) => {
+		const cleanup = window.gcode.onboarding.onInstallOutput((text) => {
 			setInstallOutput((prev) => [...prev, text])
 		})
 
 		try {
-			const result = await window.palot.onboarding.installProjectRuntime()
+			const result = await window.gcode.onboarding.installProjectRuntime()
 			cleanup()
 
 			if (result.success) {
@@ -302,7 +302,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip: _onSkip }: Environmen
 
 				// The newly saved server gets an auto-generated ID. Find it in settings
 				// and switch to it.
-				const settings = await window.palot.getSettings()
+				const settings = await window.gcode.getSettings()
 				const saved = settings.servers?.servers.find(
 					(s) =>
 						s.type === "remote" &&
@@ -336,7 +336,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip: _onSkip }: Environmen
 				<div className="text-center">
 					<h2 className="text-xl font-semibold text-foreground">Environment Check</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Palot supports multiple runtimes. Checking optional managed-server setup —
+						GCode supports multiple runtimes. Checking optional managed-server setup —
 						Codex and Claude Code work without it.
 					</p>
 				</div>

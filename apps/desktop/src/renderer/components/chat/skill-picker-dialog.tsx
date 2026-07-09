@@ -12,10 +12,10 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@palot/ui/components/dialog"
-import { Input } from "@palot/ui/components/input"
-import { ScrollArea } from "@palot/ui/components/scroll-area"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/dialog"
+import { Input } from "@gcode/ui/components/input"
+import { ScrollArea } from "@gcode/ui/components/scroll-area"
+import { cn } from "@gcode/ui/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import fuzzysort from "fuzzysort"
 import { BookOpenIcon, SearchIcon } from "lucide-react"

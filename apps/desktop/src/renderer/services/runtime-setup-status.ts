@@ -1,7 +1,7 @@
 import type { SessionRuntimeDescriptor } from "../../preload/api"
 import { loadRuntimeDescriptors } from "../lib/session-runtimes"
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 export interface RuntimeSetupStatus {
 	id: string

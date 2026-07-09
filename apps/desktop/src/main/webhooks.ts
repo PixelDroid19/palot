@@ -66,7 +66,7 @@ export async function testWebhook(
 	const result = await post(url, buildPayload(target, {
 		type: "completed",
 		title: "Test notification",
-		body: "Palot webhook integration is working.",
+		body: "GCode webhook integration is working.",
 	}))
 	log.info("Webhook test", { target, success: result.success })
 	return result

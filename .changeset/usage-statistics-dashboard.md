@@ -1,8 +1,8 @@
 ---
-"@palot/desktop": minor
+"@gcode/desktop": minor
 ---
 
-Expand Palot's power-user feature set:
+Expand GCode's power-user feature set:
 
 - **Usage statistics dashboard** (Settings → Usage): aggregates cost and token
   usage (input, output, reasoning, cache read/write) across every project and
@@ -21,7 +21,7 @@ Expand Palot's power-user feature set:
 - **SSH remote skill sync** (Settings → Integrations): push/pull user-level
   OpenCode skills to/from a remote host over SSH via rsync.
 - **Remote & mobile access** (Settings → Integrations): surfaces the running
-  OpenCode server's reachable endpoints so another device (a laptop's Palot,
+  OpenCode server's reachable endpoints so another device (a laptop's GCode,
   the web build, or a phone browser) can connect. Endpoints are typed and
   ranked (Tailscale → LAN → loopback); Tailscale CGNAT addresses are detected
   automatically to give a stable address that works from anywhere, and each

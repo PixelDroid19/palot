@@ -1,4 +1,4 @@
-# @palot/ui
+# @gcode/ui
 
 ## 0.6.0
 

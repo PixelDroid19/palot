@@ -27,7 +27,7 @@ export interface OnboardingState {
 // Atoms
 // ============================================================
 
-export const onboardingStateAtom = atomWithStorage<OnboardingState>("palot:onboarding", {
+export const onboardingStateAtom = atomWithStorage<OnboardingState>("gcode:onboarding", {
 	completed: false,
 	completedAt: null,
 	skippedSteps: [],

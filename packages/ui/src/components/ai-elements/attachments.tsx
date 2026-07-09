@@ -1,8 +1,8 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@palot/ui/components/hover-card"
-import { cn } from "@palot/ui/lib/utils"
+import { Button } from "@gcode/ui/components/button"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@gcode/ui/components/hover-card"
+import { cn } from "@gcode/ui/lib/utils"
 import type { FileUIPart, SourceDocumentUIPart } from "ai"
 import {
 	FileTextIcon,

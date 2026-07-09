@@ -24,18 +24,18 @@ import type { BridgeInfo } from "../src/types"
 import { FakeProvider } from "./fake-provider"
 
 const PLATFORM_TOOL_NAMES = [
-	"palot_automation_list",
-	"palot_automation_run",
-	"palot_system_run",
-	"palot_browser_open",
+	"gcode_automation_list",
+	"gcode_automation_run",
+	"gcode_system_run",
+	"gcode_browser_open",
 ] as const
 
 const CORE_TOOL_NAMES = [
-	"palot_list_agents",
-	"palot_delegate",
-	"palot_context_get",
-	"palot_context_set",
-	"palot_context_list",
+	"gcode_list_agents",
+	"gcode_delegate",
+	"gcode_context_get",
+	"gcode_context_set",
+	"gcode_context_list",
 ] as const
 
 describe("HostToolRegistry", () => {
@@ -79,17 +79,17 @@ describe("registerDefaultPlatformTools fail-closed stubs", () => {
 	test("stub backends refuse automation/system/browser", async () => {
 		const reg = new HostToolRegistry()
 		registerDefaultPlatformTools(reg)
-		expect(await reg.call("palot_automation_list")).toBe("[]")
-		await expect(reg.call("palot_automation_run", { id: "x" })).rejects.toThrow(
+		expect(await reg.call("gcode_automation_list")).toBe("[]")
+		await expect(reg.call("gcode_automation_run", { id: "x" })).rejects.toThrow(
 			/No automation backend/,
 		)
-		const sys = JSON.parse(await reg.call("palot_system_run", { command: "echo hi" })) as {
+		const sys = JSON.parse(await reg.call("gcode_system_run", { command: "echo hi" })) as {
 			exitCode: number
 			stderr: string
 		}
 		expect(sys.exitCode).toBe(1)
 		expect(sys.stderr).toMatch(/No system backend/)
-		await expect(reg.call("palot_browser_open", { url: "https://example.com" })).rejects.toThrow(
+		await expect(reg.call("gcode_browser_open", { url: "https://example.com" })).rejects.toThrow(
 			/No browser backend/,
 		)
 	})
@@ -115,15 +115,15 @@ describe("registerDefaultPlatformTools fail-closed stubs", () => {
 				return { ok: true, message: `opened ${url}` }
 			},
 		})
-		expect(JSON.parse(await reg.call("palot_automation_list"))).toEqual([
+		expect(JSON.parse(await reg.call("gcode_automation_list"))).toEqual([
 			{ id: "a1", name: "Nightly", status: "active" },
 		])
-		expect(await reg.call("palot_automation_run", { id: "a1" })).toBe("queued a1")
-		expect(JSON.parse(await reg.call("palot_system_run", { command: "true" }))).toMatchObject({
+		expect(await reg.call("gcode_automation_run", { id: "a1" })).toBe("queued a1")
+		expect(JSON.parse(await reg.call("gcode_system_run", { command: "true" }))).toMatchObject({
 			exitCode: 0,
 			stdout: "ok\n",
 		})
-		expect(await reg.call("palot_browser_open", { url: "https://example.com" })).toMatch(
+		expect(await reg.call("gcode_browser_open", { url: "https://example.com" })).toMatch(
 			/opened/,
 		)
 		expect(calls).toEqual([
@@ -139,7 +139,7 @@ describe("registerDefaultPlatformTools fail-closed stubs", () => {
 		registerDefaultPlatformTools(reg, {
 			openBrowser: async () => ({ ok: true, message: "should not run" }),
 		})
-		await expect(reg.call("palot_browser_open", { url: "file:///etc/passwd" })).rejects.toThrow(
+		await expect(reg.call("gcode_browser_open", { url: "file:///etc/passwd" })).rejects.toThrow(
 			/http/,
 		)
 	})
@@ -149,7 +149,7 @@ describe("registerDefaultPlatformTools fail-closed stubs", () => {
 		registerDefaultPlatformTools(reg, {
 			runAutomation: async () => ({ ok: false, message: "not found" }),
 		})
-		await expect(reg.call("palot_automation_run", { id: "missing" })).rejects.toThrow(/not found/)
+		await expect(reg.call("gcode_automation_run", { id: "missing" })).rejects.toThrow(/not found/)
 	})
 })
 
@@ -179,7 +179,7 @@ describe("AgentHost tool plane with fake harness only", () => {
 	test("registerHostTool adds custom host-owned tools", async () => {
 		const host = new AgentHost({ builtinProviders: false, registerHostTools: false })
 		host.registerHostTool({
-			name: "palot_desktop_ping",
+			name: "gcode_desktop_ping",
 			description: "ping",
 			category: "custom",
 			inputSchema: { type: "object" },
@@ -187,7 +187,7 @@ describe("AgentHost tool plane with fake harness only", () => {
 				return "pong"
 			},
 		})
-		expect(await host.tools.call("palot_desktop_ping")).toBe("pong")
+		expect(await host.tools.call("gcode_desktop_ping")).toBe("pong")
 	})
 
 	test("platform tools are not owned by any provider adapter", () => {
@@ -196,14 +196,14 @@ describe("AgentHost tool plane with fake harness only", () => {
 		const tools = host.tools.list()
 		expect(tools.every((t) => typeof t.name === "string" && t.category)).toBe(true)
 		expect(tools.filter((t) => t.category === "automation").map((t) => t.name)).toEqual([
-			"palot_automation_list",
-			"palot_automation_run",
+			"gcode_automation_list",
+			"gcode_automation_run",
 		])
 		expect(tools.filter((t) => t.category === "system").map((t) => t.name)).toEqual([
-			"palot_system_run",
+			"gcode_system_run",
 		])
 		expect(tools.filter((t) => t.category === "browser").map((t) => t.name)).toEqual([
-			"palot_browser_open",
+			"gcode_browser_open",
 		])
 	})
 })
@@ -215,8 +215,8 @@ describe("AgentBridge host tool plane HTTP", () => {
 	let proxyPath: string
 
 	beforeAll(async () => {
-		const dir = mkdtempSync(join(tmpdir(), "palot-toolplane-"))
-		proxyPath = join(dir, "palot-mcp.cjs")
+		const dir = mkdtempSync(join(tmpdir(), "gcode-toolplane-"))
+		proxyPath = join(dir, "gcode-mcp.cjs")
 		writeFileSync(proxyPath, MCP_PROXY_SOURCE)
 		host = new AgentHost({
 			builtinProviders: false,
@@ -271,7 +271,7 @@ describe("AgentBridge host tool plane HTTP", () => {
 	test("POST /v1/tools/call automation_list", async () => {
 		const res = await call("/v1/tools/call", {
 			method: "POST",
-			body: JSON.stringify({ name: "palot_automation_list", arguments: {} }),
+			body: JSON.stringify({ name: "gcode_automation_list", arguments: {} }),
 		})
 		expect(res.status).toBe(200)
 		const data = (await res.json()) as { result: string }
@@ -281,7 +281,7 @@ describe("AgentBridge host tool plane HTTP", () => {
 	test("POST /v1/tools/call automation_run fail-closed for missing id", async () => {
 		const res = await call("/v1/tools/call", {
 			method: "POST",
-			body: JSON.stringify({ name: "palot_automation_run", arguments: { id: "nope" } }),
+			body: JSON.stringify({ name: "gcode_automation_run", arguments: { id: "nope" } }),
 		})
 		expect(res.status).toBe(502)
 		const data = (await res.json()) as { error: string }
@@ -291,7 +291,7 @@ describe("AgentBridge host tool plane HTTP", () => {
 	test("POST /v1/tools/call system_run and browser_open", async () => {
 		const sys = await call("/v1/tools/call", {
 			method: "POST",
-			body: JSON.stringify({ name: "palot_system_run", arguments: { command: "pwd" } }),
+			body: JSON.stringify({ name: "gcode_system_run", arguments: { command: "pwd" } }),
 		})
 		expect(sys.status).toBe(200)
 		const sysData = (await sys.json()) as { result: string }
@@ -300,7 +300,7 @@ describe("AgentBridge host tool plane HTTP", () => {
 		const br = await call("/v1/tools/call", {
 			method: "POST",
 			body: JSON.stringify({
-				name: "palot_browser_open",
+				name: "gcode_browser_open",
 				arguments: { url: "https://example.com" },
 			}),
 		})
@@ -312,18 +312,18 @@ describe("AgentBridge host tool plane HTTP", () => {
 	test("POST /v1/tools/call unknown tool is 404 fail-closed", async () => {
 		const res = await call("/v1/tools/call", {
 			method: "POST",
-			body: JSON.stringify({ name: "palot_invented_tool", arguments: {} }),
+			body: JSON.stringify({ name: "gcode_invented_tool", arguments: {} }),
 		})
 		expect(res.status).toBe(404)
 		const data = (await res.json()) as { error: string }
 		expect(data.error).toMatch(/Unknown host tool/)
 	})
 
-	test("tools/call still reaches palot_delegate for fake harness", async () => {
+	test("tools/call still reaches gcode_delegate for fake harness", async () => {
 		const res = await call("/v1/tools/call", {
 			method: "POST",
 			body: JSON.stringify({
-				name: "palot_delegate",
+				name: "gcode_delegate",
 				arguments: { agent: "echo", prompt: "hi", cwd: "/tmp" },
 			}),
 		})

@@ -1,9 +1,9 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@palot/ui/components/hover-card"
-import { Progress } from "@palot/ui/components/progress"
-import { cn } from "@palot/ui/lib/utils"
+import { Button } from "@gcode/ui/components/button"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@gcode/ui/components/hover-card"
+import { Progress } from "@gcode/ui/components/progress"
+import { cn } from "@gcode/ui/lib/utils"
 import type { LanguageModelUsage } from "ai"
 import type { ComponentProps } from "react"
 import { createContext, useContext, useMemo } from "react"

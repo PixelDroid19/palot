@@ -1,5 +1,5 @@
 ---
-"@palot/desktop": minor
+"@gcode/desktop": minor
 ---
 
 CLI sessions are now fully functional: model catalogs come from each CLI's

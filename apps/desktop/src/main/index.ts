@@ -147,12 +147,12 @@ if (isDev) {
 // The single-instance lock and user-data directory are both keyed on app name,
 // so changing it here prevents the two from conflicting.
 if (isDev) {
-	app.setName("Palot Dev")
-	app.setPath("userData", path.join(app.getPath("appData"), "Palot Dev"))
+	app.setName("GCode Dev")
+	app.setPath("userData", path.join(app.getPath("appData"), "GCode Dev"))
 }
 
 async function createWindow(): Promise<BrowserWindow> {
-	const title = isDev ? "Palot (Dev)" : "Palot"
+	const title = isDev ? "GCode (Dev)" : "GCode"
 
 	const isMac = process.platform === "darwin"
 

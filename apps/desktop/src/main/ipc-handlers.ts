@@ -34,14 +34,14 @@ import {
 import { getResolvedChromeTier } from "./liquid-glass"
 import { createLogger } from "./logger"
 import { getDiscoveredServers } from "./mdns-scanner"
-import type { ConversionCategory } from "@palot/configconv"
+import type { ConversionCategory } from "@gcode/configconv"
 
 type MigrationCategory = ConversionCategory | "extra"
 
 import { readModelState, updateModelRecent } from "./model-state"
 import { dismissNotification, updateBadgeCount } from "./notifications"
 import { detectAgentClis } from "./agent-clis"
-import type { AgentPermissionDecision, AgentRuntimeId } from "@palot/agent-host"
+import type { AgentPermissionDecision, AgentRuntimeId } from "@gcode/agent-host"
 import {
 	type AgentPromptOptions,
 	type AgentSessionOpenOptions,

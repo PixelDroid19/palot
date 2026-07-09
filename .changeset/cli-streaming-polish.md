@@ -1,6 +1,6 @@
 ---
-"@palot/agent-host": patch
-"@palot/desktop": patch
+"@gcode/agent-host": patch
+"@gcode/desktop": patch
 ---
 
 Real streaming and richer events for CLI sessions.

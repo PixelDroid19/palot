@@ -4,7 +4,7 @@
  * the same allow / allow-for-session / deny flow the CLIs offer in their own
  * UIs, surfaced above the prompt input.
  */
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import { useAtomValue } from "jotai"
 import { ShieldQuestion } from "lucide-react"
 import { cliPermissionsAtom } from "../../atoms/cli-sessions"

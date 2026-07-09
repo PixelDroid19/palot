@@ -1,4 +1,4 @@
-import { type CliDetection, createNodeHost, detectAll } from "@palot/cli-registry"
+import { type CliDetection, createNodeHost, detectAll } from "@gcode/cli-registry"
 import { createLogger } from "./logger"
 
 const log = createLogger("agent-clis")

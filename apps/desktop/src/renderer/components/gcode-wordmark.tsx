@@ -1,11 +1,11 @@
 /**
- * Inline SVG wordmark for "palot." -- renders at currentColor, no font dependency.
+ * Inline SVG wordmark for "GCode" -- renders at currentColor, no font dependency.
  *
  * The viewBox is cropped to the cap-height-to-baseline range (y 257..333) so that
  * the SVG's center-line matches the visual center of adjacent text. The "p" descender
  * overflows below and is shown via overflow-visible / overflow:visible.
  */
-export function PalotWordmark({ className }: { className?: string }) {
+export function GCodeWordmark({ className }: { className?: string }) {
 	return (
 		<svg
 			viewBox="352 257 278 76"

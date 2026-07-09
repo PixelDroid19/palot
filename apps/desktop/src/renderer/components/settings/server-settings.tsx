@@ -7,7 +7,7 @@
  * hostname/port/password for the managed server when used.
  */
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import {
 	Dialog,
 	DialogClose,
@@ -17,10 +17,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@palot/ui/components/dialog"
-import { Input } from "@palot/ui/components/input"
-import { Label } from "@palot/ui/components/label"
-import { Switch } from "@palot/ui/components/switch"
+} from "@gcode/ui/components/dialog"
+import { Input } from "@gcode/ui/components/input"
+import { Label } from "@gcode/ui/components/label"
+import { Switch } from "@gcode/ui/components/switch"
 import {
 	CheckCircle2Icon,
 	ChevronRightIcon,
@@ -138,7 +138,7 @@ export function ServerSettings() {
 									</div>
 									<span className="block truncate text-xs text-muted-foreground">
 										{isLocal
-											? "Local project runtime server managed by Palot"
+											? "Local project runtime server managed by GCode"
 											: server.type === "remote"
 												? server.url
 												: `SSH: ${(server as { sshHost: string }).sshHost}`}
@@ -248,7 +248,7 @@ export function ServerSettings() {
 // Local server configuration
 // ============================================================
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 function LocalServerSettings() {
 	const { settings, updateSettings } = useSettings()
@@ -299,10 +299,10 @@ function LocalServerSettings() {
 		try {
 			// Store password in secure storage if provided
 			if (password && isElectron) {
-				await window.palot.credential.store("local", password)
+				await window.gcode.credential.store("local", password)
 			} else if (!hasPassword && isElectron) {
 				// If password was cleared, delete stored credential
-				await window.palot.credential.delete("local")
+				await window.gcode.credential.delete("local")
 			}
 
 			// Update local server config in settings
@@ -330,7 +330,7 @@ function LocalServerSettings() {
 
 			// Restart the server to apply new settings
 			if (isElectron) {
-				await window.palot.runtime.restart()
+				await window.gcode.runtime.restart()
 			}
 
 			setPassword("")
@@ -343,7 +343,7 @@ function LocalServerSettings() {
 
 	const handleClearPassword = useCallback(async () => {
 		if (isElectron) {
-			await window.palot.credential.delete("local")
+			await window.gcode.credential.delete("local")
 		}
 		setHasPassword(false)
 		setPassword("")
@@ -364,7 +364,7 @@ function LocalServerSettings() {
 
 		// Restart the server without password
 		if (isElectron) {
-			await window.palot.runtime.restart()
+			await window.gcode.runtime.restart()
 		}
 	}, [settings, updateSettings])
 

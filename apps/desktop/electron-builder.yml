@@ -1,6 +1,6 @@
-appId: com.palot.desktop
-productName: Palot
-copyright: Copyright (c) 2025 Palot Contributors
+appId: com.gcode.desktop
+productName: GCode
+copyright: Copyright (c) 2025 GCode Contributors
 directories:
   buildResources: resources
   output: release
@@ -19,9 +19,9 @@ asarUnpack:
   - "node_modules/node-pty/**/*"
 
 # Bundle the CLI launcher script into the app package.
-# macOS: Contents/Resources/bin/palot
-# Linux: resources/bin/palot
-# Windows: resources/bin/palot.cmd
+# macOS: Contents/Resources/bin/gcode
+# Linux: resources/bin/gcode
+# Windows: resources/bin/gcode.cmd
 extraResources:
   - from: resources/bin
     to: bin
@@ -68,7 +68,7 @@ win:
       arch: [x64, arm64]
 
 linux:
-  executableName: palot
+  executableName: gcode
   icon: resources/linux-icons
   target:
     - target: AppImage
@@ -78,13 +78,13 @@ linux:
     - target: rpm
       arch: [x64]
   category: Development
-  maintainer: palot
+  maintainer: gcode
   desktop:
     entry:
-      Name: Palot
+      Name: GCode
       Comment: AI-powered coding assistant
       Categories: Development;IDE;
-      StartupWMClass: Palot
+      StartupWMClass: GCode
 
 nsis:
   oneClick: false

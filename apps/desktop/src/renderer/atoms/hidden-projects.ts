@@ -1,5 +1,5 @@
 /**
- * Projects the user removed from Palot's sidebar.
+ * Projects the user removed from GCode's sidebar.
  *
  * OpenCode has no project-delete API, so "remove project" is a local hide:
  * persisted by directory path and filtered out of the project list until
@@ -8,7 +8,7 @@
 import { atomWithStorage } from "jotai/utils"
 import { atom } from "jotai"
 
-const STORAGE_KEY = "palot:hiddenProjects"
+const STORAGE_KEY = "gcode:hiddenProjects"
 
 /** Directory paths (worktrees) the user has removed from the sidebar. */
 export const hiddenProjectDirsAtom = atomWithStorage<string[]>(STORAGE_KEY, [])

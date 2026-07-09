@@ -1,7 +1,7 @@
 /**
- * OpenCode CLI version compatibility definitions for Palot.
+ * OpenCode CLI version compatibility definitions for GCode.
  *
- * Updated with each Palot release to reflect tested OpenCode versions.
+ * Updated with each GCode release to reflect tested OpenCode versions.
  * The environment check in the onboarding flow uses these ranges to
  * decide whether to pass, warn, or block.
  */
@@ -108,7 +108,7 @@ async function detectOpenCode(): Promise<{ version: string | null; path: string 
 // ============================================================
 
 /**
- * Check whether OpenCode is installed and compatible with this version of Palot.
+ * Check whether OpenCode is installed and compatible with this version of GCode.
  * Runs the binary to get its version, then compares against the compatibility range.
  */
 export async function checkProjectRuntime(): Promise<ProjectRuntimeCheckResult> {
@@ -155,7 +155,7 @@ export async function checkProjectRuntime(): Promise<ProjectRuntimeCheckResult> 
 				path: binaryPath,
 				compatible: false,
 				compatibility: "blocked",
-				message: `OpenCode ${version} has known issues with this version of Palot. Please update.`,
+				message: `OpenCode ${version} has known issues with this version of GCode. Please update.`,
 			}
 		}
 	}
@@ -168,7 +168,7 @@ export async function checkProjectRuntime(): Promise<ProjectRuntimeCheckResult> 
 			path: binaryPath,
 			compatible: false,
 			compatibility: "too-old",
-			message: `OpenCode ${version} is too old. Palot requires ${OPENCODE_COMPAT.supported}.`,
+			message: `OpenCode ${version} is too old. GCode requires ${OPENCODE_COMPAT.supported}.`,
 		}
 	}
 
@@ -180,7 +180,7 @@ export async function checkProjectRuntime(): Promise<ProjectRuntimeCheckResult> 
 			path: binaryPath,
 			compatible: true,
 			compatibility: "too-new",
-			message: `OpenCode ${version} is newer than tested. Palot is tested with ${OPENCODE_COMPAT.tested}. Some features may not work as expected.`,
+			message: `OpenCode ${version} is newer than tested. GCode is tested with ${OPENCODE_COMPAT.tested}. Some features may not work as expected.`,
 		}
 	}
 

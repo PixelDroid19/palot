@@ -1,4 +1,4 @@
-import { Separator } from "@palot/ui/components/separator"
+import { Separator } from "@gcode/ui/components/separator"
 import { Fragment, type ReactNode } from "react"
 
 export function SessionConfigToolbarRow({

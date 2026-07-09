@@ -1,12 +1,12 @@
 /**
- * Single composition surface for which runtimes Palot loads.
+ * Single composition surface for which runtimes GCode loads.
  *
  * Call {@link configureRuntimeComposition} before first getAgentHost /
  * describeSessionRuntimes / automation import side-effects settle. Defaults
  * match the full multi-runtime product; custom builds omit adapters here.
  */
-import type { BuiltInProviderId } from "@palot/agent-host"
-import { ALL_BUILTIN_PROVIDER_IDS } from "@palot/agent-host"
+import type { BuiltInProviderId } from "@gcode/agent-host"
+import { ALL_BUILTIN_PROVIDER_IDS } from "@gcode/agent-host"
 
 export interface RuntimeComposition {
 	/**

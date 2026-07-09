@@ -5,9 +5,9 @@ import {
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
-} from "@palot/ui/components/accordion"
-import { Badge } from "@palot/ui/components/badge"
-import { cn } from "@palot/ui/lib/utils"
+} from "@gcode/ui/components/accordion"
+import { Badge } from "@gcode/ui/components/badge"
+import { cn } from "@gcode/ui/lib/utils"
 import type { Tool } from "ai"
 import { BotIcon } from "lucide-react"
 import type { ComponentProps } from "react"

@@ -1,6 +1,6 @@
-import { Button } from "@palot/ui/components/button"
-import { Input } from "@palot/ui/components/input"
-import { Switch } from "@palot/ui/components/switch"
+import { Button } from "@gcode/ui/components/button"
+import { Input } from "@gcode/ui/components/input"
+import { Switch } from "@gcode/ui/components/switch"
 import {
 	CheckCircle2Icon,
 	CopyIcon,
@@ -25,7 +25,7 @@ import { useSettings } from "../../hooks/use-settings"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 // ============================================================
 // Webhooks (Feishu / WeChat / generic)
@@ -57,7 +57,7 @@ function WebhookField({
 		setTesting(true)
 		setResult(null)
 		try {
-			const r = await window.palot.webhooks.test(target)
+			const r = await window.gcode.webhooks.test(target)
 			setResult(r.success ? "ok" : "fail")
 		} finally {
 			setTesting(false)
@@ -131,7 +131,7 @@ function SkillSyncPanel() {
 			setOutput(null)
 			setOk(null)
 			try {
-				const r = await window.palot.skills.sync(direction)
+				const r = await window.gcode.skills.sync(direction)
 				setOk(r.success)
 				setOutput(r.error ? `${r.error}\n${r.output}` : r.output || "Done.")
 			} finally {
@@ -250,7 +250,7 @@ function RemoteAccessPanel() {
 		if (!isElectron) return
 		setLoading(true)
 		try {
-			const next = await window.palot.getRemoteAccessInfo()
+			const next = await window.gcode.getRemoteAccessInfo()
 			setInfo(next)
 			// Default to the best (first) non-loopback endpoint for the QR code.
 			const best = next.endpoints.find((e) => e.type !== "loopback")
@@ -278,7 +278,7 @@ function RemoteAccessPanel() {
 	return (
 		<SettingsSection
 			title="Remote & mobile access"
-			description="Connect another device (a laptop's Palot, the web build, or a phone browser) to this machine's running project runtime server. Scan the QR code from a phone on the same network — or via Tailscale from anywhere."
+			description="Connect another device (a laptop's GCode, the web build, or a phone browser) to this machine's running project runtime server. Scan the QR code from a phone on the same network — or via Tailscale from anywhere."
 		>
 			<div className="flex items-center justify-between px-4 py-3">
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -417,8 +417,8 @@ function AgentCliRow({ cli }: { cli: AgentCliDetection }) {
 		if (!isElectron || !provider) return
 		setMigrate({ status: "running" })
 		try {
-			const { scanResult } = await window.palot.onboarding.scanProvider(provider)
-			const result = await window.palot.onboarding.executeMigration(
+			const { scanResult } = await window.gcode.onboarding.scanProvider(provider)
+			const result = await window.gcode.onboarding.executeMigration(
 				provider,
 				scanResult,
 				ALL_MIGRATION_CATEGORIES,
@@ -531,7 +531,7 @@ function AgentClisPanel() {
 		if (!isElectron) return
 		setLoading(true)
 		try {
-			setClis(await window.palot.agentClis.detect(force))
+			setClis(await window.gcode.agentClis.detect(force))
 		} finally {
 			setLoading(false)
 		}
@@ -544,7 +544,7 @@ function AgentClisPanel() {
 	return (
 		<SettingsSection
 			title="Coding CLIs"
-			description="Palot works with multiple coding-agent CLIs. These are detected on this machine — the project runtime is bundled locally today, and the others are recognized for config migration and quick access."
+			description="GCode works with multiple coding-agent CLIs. These are detected on this machine — the project runtime is bundled locally today, and the others are recognized for config migration and quick access."
 		>
 			<div className="flex items-center justify-between px-4 py-3">
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">

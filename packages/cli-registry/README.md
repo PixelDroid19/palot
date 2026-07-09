@@ -1,8 +1,8 @@
-# @palot/cli-registry
+# @gcode/cli-registry
 
-Detection and description of coding-agent CLIs for Palot.
+Detection and description of coding-agent CLIs for GCode.
 
-Palot is not tied to a single agent runtime. This package models the
+GCode is not tied to a single agent runtime. This package models the
 coding-agent CLIs it can work with as small, declarative **adapters** and probes
 the host to report which are installed, their versions, and their auth state.
 
@@ -16,14 +16,14 @@ the host to report which are installed, their versions, and their auth state.
 | Cursor Agent | `cursor`   | detection only  |
 | Gemini CLI   | `gemini`   | detection only  |
 
-`managed` marks a CLI that Palot drives as a first-class runtime today.
+`managed` marks a CLI that GCode drives as a first-class runtime today.
 Detection (version, auth state, install hints) is offered for every adapter, so
 new runtimes can graduate to managed support without changing the model.
 
 ## Usage
 
 ```ts
-import { detectAll, createNodeHost } from "@palot/cli-registry"
+import { detectAll, createNodeHost } from "@gcode/cli-registry"
 
 const clis = await detectAll(createNodeHost())
 // -> [{ id: "opencode", installed: true, version: "0.11.2", auth: "authenticated", ... }, ...]

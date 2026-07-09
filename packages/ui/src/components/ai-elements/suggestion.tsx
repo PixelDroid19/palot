@@ -1,8 +1,8 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
-import { ScrollArea, ScrollBar } from "@palot/ui/components/scroll-area"
-import { cn } from "@palot/ui/lib/utils"
+import { Button } from "@gcode/ui/components/button"
+import { ScrollArea, ScrollBar } from "@gcode/ui/components/scroll-area"
+import { cn } from "@gcode/ui/lib/utils"
 import type { ComponentProps } from "react"
 import { useCallback } from "react"
 

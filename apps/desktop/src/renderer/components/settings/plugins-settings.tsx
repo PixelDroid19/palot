@@ -1,5 +1,5 @@
-import { Button } from "@palot/ui/components/button"
-import { Input } from "@palot/ui/components/input"
+import { Button } from "@gcode/ui/components/button"
+import { Input } from "@gcode/ui/components/input"
 import { Loader2Icon, PackageIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react"
 import { useState } from "react"
 import { usePlugins } from "../../hooks/use-plugins"

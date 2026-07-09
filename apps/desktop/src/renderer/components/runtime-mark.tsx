@@ -5,7 +5,7 @@
  * {@link ProviderIcon}: anthropic, openai, opencode). Rendered inline so we can
  * animate the mark with CSS without network fetches in the sidebar.
  */
-import { cn } from "@palot/ui/lib/utils"
+import { cn } from "@gcode/ui/lib/utils"
 import { memo, type ReactElement, type ReactNode } from "react"
 import {
 	iconAnimationClassName,

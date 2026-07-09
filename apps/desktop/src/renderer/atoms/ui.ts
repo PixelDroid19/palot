@@ -51,7 +51,7 @@ export interface ReviewPanelSettings {
 }
 
 export const reviewPanelSettingsAtom = atomWithStorage<ReviewPanelSettings>(
-	"palot:review-panel-settings",
+	"gcode:review-panel-settings",
 	{ diffStyle: "unified", expanded: false },
 )
 

@@ -5,7 +5,7 @@
  * Managed-server adapters (OpenCode today, future servers) register here so
  * describeSessionRuntimes does not hard-splice a single brand.
  */
-import type { AgentRuntimeDescriptor, RuntimeTransport } from "@palot/agent-host"
+import type { AgentRuntimeDescriptor, RuntimeTransport } from "@gcode/agent-host"
 
 /** Product-facing runtime descriptor (process or managed-server). */
 export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {

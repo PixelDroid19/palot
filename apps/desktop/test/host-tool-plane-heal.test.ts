@@ -3,10 +3,10 @@
  *
  * Drives the shipped heal module used by getAgentHost() when a long-lived
  * Electron main process still holds a pre-subagent AgentHost singleton
- * (live QA: bridge returned "Unknown host tool: palot_list_subagents").
+ * (live QA: bridge returned "Unknown host tool: gcode_list_subagents").
  */
 import { describe, expect, test } from "bun:test"
-import { AgentHost, registerDefaultPlatformTools } from "@palot/agent-host"
+import { AgentHost, registerDefaultPlatformTools } from "@gcode/agent-host"
 import {
 	REQUIRED_HOST_TOOLS,
 	ensureHostToolPlaneComplete,
@@ -46,19 +46,19 @@ describe("host-tool-plane heal (shipped getAgentHost path)", () => {
 			resolveBinary: async () => null,
 		})
 		// Pre-subagent singleton: plane without list/run subagents
-		host.tools.unregister("palot_list_subagents")
-		host.tools.unregister("palot_run_subagent")
+		host.tools.unregister("gcode_list_subagents")
+		host.tools.unregister("gcode_run_subagent")
 		expect(listMissingHostTools(host)).toEqual([
-			"palot_list_subagents",
-			"palot_run_subagent",
+			"gcode_list_subagents",
+			"gcode_run_subagent",
 		])
 
 		// Same function getAgentHost() calls on existing singleton
 		const healed = ensureHostToolPlaneComplete(host, installStubPlatformBackends)
-		expect(healed).toEqual(["palot_list_subagents", "palot_run_subagent"])
+		expect(healed).toEqual(["gcode_list_subagents", "gcode_run_subagent"])
 		expect(listMissingHostTools(host)).toEqual([])
 
-		const listed = JSON.parse(await host.tools.call("palot_list_subagents")) as {
+		const listed = JSON.parse(await host.tools.call("gcode_list_subagents")) as {
 			id: string
 		}[]
 		expect(listed.map((r) => r.id).sort()).toEqual(["explore", "general-purpose"])
@@ -79,7 +79,7 @@ describe("host-tool-plane heal (shipped getAgentHost path)", () => {
 			expect(host.tools.has(name)).toBe(true)
 		}
 		// Bridge-equivalent call after heal
-		const agents = JSON.parse(await host.tools.call("palot_list_agents")) as unknown[]
+		const agents = JSON.parse(await host.tools.call("gcode_list_agents")) as unknown[]
 		expect(Array.isArray(agents)).toBe(true)
 	})
 })

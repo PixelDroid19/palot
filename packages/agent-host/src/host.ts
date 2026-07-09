@@ -6,7 +6,7 @@
  *  - the event bus every session publishes through
  *  - the shared context store
  *  - delegation: any run can ask another runtime to do work through an
- *    ephemeral session (this is what the bridge's `palot_delegate` calls)
+ *    ephemeral session (this is what the bridge's `gcode_delegate` calls)
  *
  * The host knows nothing about Electron, IPC, or UI — embedders subscribe to
  * events and drive sessions. That keeps the core portable (desktop app today,
@@ -16,7 +16,7 @@
  * `providers`, or a subset of built-in ids, to ship without Codex/Claude or
  * with only a custom harness. Brand logic lives in adapters, never here.
  */
-import { whichOnPath } from "@palot/cli-registry"
+import { whichOnPath } from "@gcode/cli-registry"
 import { createBuiltInProviders } from "./builtins"
 import { SharedContextStore } from "./context"
 import { EventBus } from "./events"

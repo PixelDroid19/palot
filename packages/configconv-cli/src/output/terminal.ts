@@ -2,7 +2,7 @@
  * Terminal output formatting utilities for configconv CLI.
  */
 
-import type { AgentFormat, BackupInfo, RestoreResult } from "@palot/configconv"
+import type { AgentFormat, BackupInfo, RestoreResult } from "@gcode/configconv"
 import consola from "consola"
 
 /**

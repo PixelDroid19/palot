@@ -56,7 +56,7 @@ function endpointAddresses(url: string): string[] {
 
 /**
  * Describe how to reach the running OpenCode server from another device
- * (a laptop's Palot, the web build, or a phone browser). Endpoints are typed
+ * (a laptop's GCode, the web build, or a phone browser). Endpoints are typed
  * and sorted best-first so the UI can highlight the most useful address.
  */
 export function getRemoteAccessInfo(): RemoteAccessInfo {

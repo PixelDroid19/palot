@@ -1,0 +1,36 @@
+{
+  "ok": true,
+  "listed": [
+    "gcode_list_agents",
+    "gcode_delegate",
+    "gcode_context_get",
+    "gcode_context_set",
+    "gcode_context_list",
+    "gcode_list_subagents",
+    "gcode_run_subagent",
+    "gcode_automation_list",
+    "gcode_automation_run",
+    "gcode_system_run",
+    "gcode_browser_open"
+  ],
+  "missing": [],
+  "subagents": [
+    {
+      "id": "general-purpose",
+      "displayName": "General purpose",
+      "description": "Isolated context for broad work: implement a slice, organize files, run verification, report back. Can read and write under host policy.",
+      "readOnly": false,
+      "sandbox": "workspace-write"
+    },
+    {
+      "id": "explore",
+      "displayName": "Explore",
+      "description": "Read-only codebase research: search, map call chains, gather evidence. Does not create or modify files.",
+      "readOnly": true,
+      "sandbox": "read-only"
+    }
+  ],
+  "unknownRoleError": "Unknown subagent role: nope. Use gcode_list_subagents for valid roles.",
+  "unknownToolError": "Unknown host tool: gcode_not_a_tool",
+  "agents": []
+}

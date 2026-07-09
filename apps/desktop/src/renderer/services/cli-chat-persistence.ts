@@ -9,10 +9,10 @@ import type { Message, Part, Session } from "../lib/types"
 
 const log = createLogger("cli-chat-persistence")
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
-const INDEX_KEY = "palot:cliSessions"
-const SESSION_KEY_PREFIX = "palot:cliSession:"
+const INDEX_KEY = "gcode:cliSessions"
+const SESSION_KEY_PREFIX = "gcode:cliSession:"
 const MAX_PERSISTED_SESSIONS = 50
 
 interface PersistedCliSession {
@@ -110,7 +110,7 @@ export function restoreCliSessions(): void {
 export async function closeCliSessionBackend(sessionId: string): Promise<void> {
 	if (isElectron) {
 		try {
-			await window.palot.agentSession.close(sessionId)
+			await window.gcode.agentSession.close(sessionId)
 		} catch (err) {
 			log.warn("Failed to close CLI session in backend", { sessionId }, err)
 		}

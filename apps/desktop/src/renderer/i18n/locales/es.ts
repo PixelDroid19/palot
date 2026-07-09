@@ -72,7 +72,7 @@ export const es: LocaleMessages = {
 	subagentChat: {
 		title: "Agentes de runtime",
 		description:
-			"Conversa por turnos con cualquier runtime compatible (OpenCode, Codex, Claude Code, …). Palot mantiene la sesión para conservar el contexto entre turnos.",
+			"Conversa por turnos con cualquier runtime compatible (OpenCode, Codex, Claude Code, …). GCode mantiene la sesión para conservar el contexto entre turnos.",
 		noneInstalled:
 			"No hay ningún runtime compatible instalado. Instala OpenCode, Codex o Claude Code para empezar.",
 		you: "Tú",

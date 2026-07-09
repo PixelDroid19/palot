@@ -1,5 +1,5 @@
 ---
-"@palot/desktop": minor
+"@gcode/desktop": minor
 ---
 
 Embedded terminal, opened in the chat's directory.

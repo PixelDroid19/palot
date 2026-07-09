@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-    <title>Palot</title>
+    <title>GCode</title>
     <style>
       /* Splash screen styles -- inlined so they render before any JS loads. */
       #splash {
@@ -81,7 +81,7 @@
       // Toggle via Command Palette (Cmd+K > "React Scan"). Only active in dev
       // since production React builds don't expose the DevTools hook.
       try {
-        if (localStorage.getItem('palot:reactScan') === 'true') {
+        if (localStorage.getItem('gcode:reactScan') || localStorage.getItem('palot:reactScan') === 'true') {
           document.write('<script src="https://unpkg.com/react-scan/dist/auto.global.js"><\/script>');
         }
       } catch (e) {}

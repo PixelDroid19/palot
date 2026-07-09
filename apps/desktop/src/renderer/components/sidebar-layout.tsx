@@ -2,15 +2,15 @@
  * Sidebar shell layout: wraps child routes with the sidebar + SidebarInset chrome.
  * Reads from SidebarSlotContext to allow child routes to override sidebar content.
  */
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import {
 	Sidebar,
 	SidebarHeader,
 	SidebarInset,
 	SidebarProvider,
 	useSidebar,
-} from "@palot/ui/components/sidebar"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
+} from "@gcode/ui/components/sidebar"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@gcode/ui/components/tooltip"
 import { Outlet, useNavigate } from "@tanstack/react-router"
 import { useAtomValue, useSetAtom } from "jotai"
 import { PanelLeftIcon, PlusIcon } from "lucide-react"
@@ -42,8 +42,8 @@ import { UpdateBanner } from "./update-banner"
 // ============================================================
 
 const isMac =
-	typeof window !== "undefined" && "palot" in window && window.palot.platform === "darwin"
-const isElectronEnv = typeof window !== "undefined" && "palot" in window
+	typeof window !== "undefined" && "gcode" in window && window.gcode.platform === "darwin"
+const isElectronEnv = typeof window !== "undefined" && "gcode" in window
 
 /** Pixel offset from the left edge where window controls (toggle + new session) start */
 const WINDOW_CONTROLS_LEFT = isMac && isElectronEnv ? 93 : 8
@@ -209,7 +209,7 @@ export function SidebarLayout() {
 
 	const handleDeleteProject = useCallback(
 		async (project: SidebarProject) => {
-			// OpenCode has no project.delete — remove from Palot UI and drop local chats.
+			// OpenCode has no project.delete — remove from GCode UI and drop local chats.
 			const sessions = agents.filter(
 				(a) => a.directory === project.directory || a.projectSlug === project.slug,
 			)

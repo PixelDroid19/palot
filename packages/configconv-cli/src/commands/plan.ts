@@ -5,13 +5,13 @@
  * Defaults to Claude Code -> OpenCode.
  */
 
-import type { AgentFormat } from "@palot/configconv"
+import type { AgentFormat } from "@gcode/configconv"
 import {
 	conversionReportMessageToText,
 	formatName,
 	scanFormat,
 	universalConvert,
-} from "@palot/configconv"
+} from "@gcode/configconv"
 import { defineCommand } from "citty"
 import consola from "consola"
 

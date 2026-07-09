@@ -4,8 +4,8 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@palot/ui/components/select"
-import { Switch } from "@palot/ui/components/switch"
+} from "@gcode/ui/components/select"
+import { Switch } from "@gcode/ui/components/switch"
 import { useCallback } from "react"
 import { useSettings } from "../../hooks/use-settings"
 import { SettingsRow } from "./settings-row"
@@ -23,7 +23,7 @@ export function NotificationSettings() {
 	)
 
 	const isMac =
-		typeof window !== "undefined" && "palot" in window && window.palot.platform === "darwin"
+		typeof window !== "undefined" && "gcode" in window && window.gcode.platform === "darwin"
 
 	return (
 		<div className="space-y-8">
@@ -34,7 +34,7 @@ export function NotificationSettings() {
 			<SettingsSection>
 				<SettingsRow
 					label="Completion notifications"
-					description="Set when Palot alerts you that an agent is finished"
+					description="Set when GCode alerts you that an agent is finished"
 				>
 					<Select
 						value={notif.completionMode}

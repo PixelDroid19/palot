@@ -22,13 +22,13 @@ export function useUpdater() {
 		if (!isElectron) return
 
 		// Get current state on mount
-		window.palot
+		window.gcode
 			.getUpdateState()
 			.then(setState)
 			.catch(() => {})
 
 		// Subscribe to state changes pushed from main process
-		const unsubscribe = window.palot.onUpdateStateChanged((newState) => {
+		const unsubscribe = window.gcode.onUpdateStateChanged((newState) => {
 			setState(newState)
 		})
 
@@ -37,22 +37,22 @@ export function useUpdater() {
 
 	const checkForUpdates = useCallback(async () => {
 		if (!isElectron) return
-		await window.palot.checkForUpdates()
+		await window.gcode.checkForUpdates()
 	}, [])
 
 	const downloadUpdate = useCallback(async () => {
 		if (!isElectron) return
-		await window.palot.downloadUpdate()
+		await window.gcode.downloadUpdate()
 	}, [])
 
 	const installUpdate = useCallback(() => {
 		if (!isElectron) return
-		window.palot.installUpdate()
+		window.gcode.installUpdate()
 	}, [])
 
 	const openReleasePage = useCallback(async () => {
 		if (!isElectron) return
-		await window.palot.openReleasePage()
+		await window.gcode.openReleasePage()
 	}, [])
 
 	return {

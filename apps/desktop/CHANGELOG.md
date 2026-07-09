@@ -1,4 +1,4 @@
-# @palot/desktop
+# @gcode/desktop
 
 ## 0.11.0
 
@@ -178,7 +178,7 @@
 - [`f7c84b5`](https://github.com/ItsWendell/palot/commit/f7c84b5b4162824de5b4d31e860a6658f875e65e) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Extract ChatInputSection into its own component, optimize sub-agent card rendering, move detailed session metrics (tokens, exchanges, tools) into a popover for a cleaner toolbar, and add IPC fetch request/response logging
 
 - Updated dependencies [[`f7c84b5`](https://github.com/ItsWendell/palot/commit/f7c84b5b4162824de5b4d31e860a6658f875e65e)]:
-  - @palot/ui@0.6.0
+  - @gcode/ui@0.6.0
 
 ## 0.5.3
 
@@ -189,7 +189,7 @@
 - [`8171dee`](https://github.com/ItsWendell/palot/commit/8171deee90b638ea92604a20ab323da3f739b627) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Fix horizontal overflow and clipping in the desktop app at narrow window widths. Add `min-w-0` and `overflow-hidden` throughout the flex layout chain (SidebarInset, content area, conversation container, chat view, prompt toolbar) and make the session app bar collapse responsively with Tailwind breakpoints.
 
 - Updated dependencies [[`8171dee`](https://github.com/ItsWendell/palot/commit/8171deee90b638ea92604a20ab323da3f739b627)]:
-  - @palot/ui@0.5.3
+  - @gcode/ui@0.5.3
 
 ## 0.5.2
 
@@ -200,7 +200,7 @@
 - [`57ddb2f`](https://github.com/ItsWendell/palot/commit/57ddb2fdb750f9306c2710fa898bb7d3509c9796) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Use semver library for OpenCode version compatibility checks with standard range syntax (supported: `>=1.2.0`, tested: `~1.2.0`)
 
 - Updated dependencies [[`098847c`](https://github.com/ItsWendell/palot/commit/098847c404f51c0954ffaba1c872910b93dd69d9)]:
-  - @palot/configconv@0.5.2
+  - @gcode/configconv@0.5.2
 
 ## 0.5.1
 
@@ -225,8 +225,8 @@
     logical change:
     ```yaml
     ---
-    "@palot/desktop": minor
-    "@palot/configconv": minor
+    "@gcode/desktop": minor
+    "@gcode/configconv": minor
     ---
   ````
 
@@ -285,7 +285,7 @@
   This project links all five workspace packages together (see `config.json`):
 
   ```
-  @palot/desktop, @palot/ui, @palot/server, @palot/configconv, configconv
+  @gcode/desktop, @gcode/ui, @gcode/server, @gcode/configconv, configconv
   ```
 
   "Linked" means: when multiple linked packages are bumped in the same release,
@@ -361,7 +361,7 @@
   | `updateInternalDependencies` | `patch`                        | Internal dep ranges are bumped automatically |
   | `privatePackages`            | version + tag                  | Private packages still get versions and tags |
 
-- [`9fd5fc1`](https://github.com/ItsWendell/palot/commit/9fd5fc184e2ef51813d85ececef4e81e140aa4d3) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Add a real automation execution engine powered by the OpenCode SDK. Automations now create OpenCode sessions with configurable permission presets, model resolution, retry logic with exponential backoff, and live session tracking. Execution results are persisted to the SQLite database and automation storage follows XDG Base Directory conventions (`~/.config/palot/automations/`).
+- [`9fd5fc1`](https://github.com/ItsWendell/palot/commit/9fd5fc184e2ef51813d85ececef4e81e140aa4d3) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Add a real automation execution engine powered by the OpenCode SDK. Automations now create OpenCode sessions with configurable permission presets, model resolution, retry logic with exponential backoff, and live session tracking. Execution results are persisted to the SQLite database and automation storage follows XDG Base Directory conventions (`~/.config/gcode/automations/`).
 
 - [`9fd5fc1`](https://github.com/ItsWendell/palot/commit/9fd5fc184e2ef51813d85ececef4e81e140aa4d3) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Redesign the automations UI: new schedule picker with visual cron builder, project combobox in the creation dialog, nested routes with a dedicated detail view, toast notifications for automation actions, sidebar link with feature flag toggle, and server-awareness to hide the menu item on remote servers.
 
@@ -384,7 +384,7 @@
 - [`9fd5fc1`](https://github.com/ItsWendell/palot/commit/9fd5fc184e2ef51813d85ececef4e81e140aa4d3) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Improve worktree UX: non-blocking launch with a stub session and background setup, space-themed random name generator (replacing manual slug input), improved commit dialog layout, and "apply to project" now targets the project directory correctly.
 
 - Updated dependencies [[`755242d`](https://github.com/ItsWendell/palot/commit/755242d87f361457d00f3d56b91002f5ee1a7a6e)]:
-  - @palot/configconv@0.5.0
+  - @gcode/configconv@0.5.0
 
 ## 0.4.1
 
@@ -398,7 +398,7 @@
 
 - [`2a9d3de`](https://github.com/ItsWendell/palot/commit/2a9d3de3b529a6aa73b8ae574fb2a6f2084d73f9) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### Breaking: Require OpenCode >= 1.2.0
 
-  Palot now requires OpenCode 1.2.0 or higher. Older versions will be blocked during the environment check.
+  GCode now requires OpenCode 1.2.0 or higher. Older versions will be blocked during the environment check.
 
   ### New Features
 
@@ -422,7 +422,7 @@
 ### Patch Changes
 
 - Updated dependencies [[`2a9d3de`](https://github.com/ItsWendell/palot/commit/2a9d3de3b529a6aa73b8ae574fb2a6f2084d73f9)]:
-  - @palot/configconv@0.4.0
+  - @gcode/configconv@0.4.0
 
 ## 0.3.0
 
@@ -459,7 +459,7 @@
 ### Patch Changes
 
 - Updated dependencies [[`594e4b7`](https://github.com/ItsWendell/palot/commit/594e4b7e299dee6ba507f990001f505f6afd22c5)]:
-  - @palot/ui@0.3.0
+  - @gcode/ui@0.3.0
 
 ## 0.2.0
 
@@ -485,4 +485,4 @@
 ### Patch Changes
 
 - Updated dependencies [[`d2d6f2b`](https://github.com/ItsWendell/palot/commit/d2d6f2b3013ad0fa3bb9ac08ad9b8ff91517ffc5)]:
-  - @palot/ui@0.2.0
+  - @gcode/ui@0.2.0

@@ -5,8 +5,8 @@
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
 import { shell } from "electron"
-import { registerDefaultPlatformTools } from "@palot/agent-host"
-import type { AgentHost } from "@palot/agent-host"
+import { registerDefaultPlatformTools } from "@gcode/agent-host"
+import type { AgentHost } from "@gcode/agent-host"
 import { createLogger } from "../logger"
 import { listAutomations, runNow } from "../automation"
 

@@ -1,4 +1,4 @@
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@gcode/ui/components/button"
 import { Loader2Icon, RefreshCwIcon } from "lucide-react"
 import { useUsageStats } from "../../hooks/use-usage-stats"
 import { formatCost, formatTokens, shortModelName } from "../../lib/session-metrics"

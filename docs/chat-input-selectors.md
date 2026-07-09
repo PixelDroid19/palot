@@ -167,7 +167,7 @@ Calls `updateModelRecent(model)` which routes through the backend service layer:
 ```
 services/backend.ts:86-95
 
-Electron mode:  window.palot.updateModelRecent(model)
+Electron mode:  window.gcode.updateModelRecent(model)
                   -> IPC "model-state:update-recent"
                   -> main/model-state.ts:updateModelRecent()
                   -> writes ~/.local/state/opencode/model.json
@@ -278,7 +278,7 @@ Fetched via `useModelState` hook (`use-opencode-data.ts:343-404`):
 | `renderer/atoms/preferences.ts` | `projectModelsAtom` (localStorage), `PersistedModelRef` type, `setProjectModelAtom` |
 | `renderer/hooks/use-managed-runtime-data.ts` | `resolveEffectiveModel()`, `useManagedRuntimeProviders`, `useManagedRuntimeConfig`, `useManagedRuntimeAgents`, `useManagedRuntimeModelState`, `getModelVariants` |
 | `renderer/services/backend.ts` | `fetchModelState()`, `updateModelRecent()` -- Electron/browser routing layer |
-| `renderer/services/palot-server.ts` | HTTP implementations for model state (browser mode) |
+| `renderer/services/gcode-server.ts` | HTTP implementations for model state (browser mode) |
 | `main/model-state.ts` | `readModelState()`, `updateModelRecent()` -- reads/writes `model.json` on disk |
 | `main/ipc-handlers.ts` | Registers IPC channels `model-state` and `model-state:update-recent` |
-| `preload/index.ts` | Exposes `getModelState` and `updateModelRecent` on `window.palot` bridge |
+| `preload/index.ts` | Exposes `getModelState` and `updateModelRecent` on `window.gcode` bridge |

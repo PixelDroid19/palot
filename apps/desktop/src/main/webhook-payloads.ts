@@ -21,7 +21,7 @@ export interface WebhookEvent {
  * - Generic:                   flat JSON with the event fields + `source`
  */
 export function buildPayload(target: WebhookTarget, event: WebhookEvent): unknown {
-	const text = `[Palot] ${event.title}\n${event.body}`
+	const text = `[GCode] ${event.title}\n${event.body}`
 	switch (target) {
 		case "feishu":
 			return { msg_type: "text", content: { text } }
@@ -33,7 +33,7 @@ export function buildPayload(target: WebhookTarget, event: WebhookEvent): unknow
 				body: event.body,
 				type: event.type,
 				sessionId: event.sessionId,
-				source: "palot",
+				source: "gcode",
 			}
 	}
 }

@@ -6,8 +6,8 @@
  * Supports all import providers (Claude Code, Cursor, OpenCode).
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@gcode/ui/components/button"
+import { Spinner } from "@gcode/ui/components/spinner"
 import {
 	AlertTriangleIcon,
 	ArrowLeftIcon,
@@ -67,13 +67,13 @@ export function MigrationPreviewStep({
 	const [error, setError] = useState<string | null>(null)
 	const [progress, setProgress] = useState<MigrationProgress | null>(null)
 
-	const isElectron = typeof window !== "undefined" && "palot" in window
+	const isElectron = typeof window !== "undefined" && "gcode" in window
 	const label = PROVIDER_LABELS[provider]
 
 	// Subscribe to migration progress events during execution
 	useEffect(() => {
 		if (!isElectron || !executing) return
-		const unsub = window.palot.onboarding.onMigrationProgress((p) => {
+		const unsub = window.gcode.onboarding.onMigrationProgress((p) => {
 			setProgress(p as MigrationProgress)
 		})
 		return unsub
@@ -86,7 +86,7 @@ export function MigrationPreviewStep({
 		setProgress(null)
 
 		try {
-			const result = await window.palot.onboarding.executeMigration(
+			const result = await window.gcode.onboarding.executeMigration(
 				provider,
 				scanResult,
 				categories,

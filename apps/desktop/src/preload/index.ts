@@ -1,15 +1,15 @@
 import { contextBridge, ipcRenderer } from "electron"
-import type { ConversionCategory } from "@palot/configconv"
+import type { ConversionCategory } from "@gcode/configconv"
 
 type MigrationCategory = ConversionCategory | "extra"
 
 /**
  * Preload bridge — exposes a typed API from the main process to the renderer.
  *
- * The renderer accesses these via `window.palot.*`.
+ * The renderer accesses these via `window.gcode.*`.
  * All methods return Promises (backed by `ipcRenderer.invoke`).
  */
-contextBridge.exposeInMainWorld("palot", {
+contextBridge.exposeInMainWorld("gcode", {
 	/** The host platform: "darwin", "win32", or "linux". */
 	platform: process.platform,
 
@@ -162,11 +162,11 @@ contextBridge.exposeInMainWorld("palot", {
 	// --- CLI install ---
 
 	cli: {
-		/** Checks whether the `palot` CLI command is installed. */
+		/** Checks whether the `gcode` CLI command is installed. */
 		isInstalled: () => ipcRenderer.invoke("cli:is-installed"),
-		/** Installs the `palot` CLI command (symlinks to /usr/local/bin). */
+		/** Installs the `gcode` CLI command (symlinks to /usr/local/bin). */
 		install: () => ipcRenderer.invoke("cli:install"),
-		/** Uninstalls the `palot` CLI command. */
+		/** Uninstalls the `gcode` CLI command. */
 		uninstall: () => ipcRenderer.invoke("cli:uninstall"),
 	},
 

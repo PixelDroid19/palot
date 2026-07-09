@@ -9,7 +9,7 @@ import { Terminal } from "@xterm/xterm"
 import "@xterm/xterm/css/xterm.css"
 import { useEffect, useRef } from "react"
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "gcode" in window
 
 /** Terminal theme tuned to the app's dark surface. */
 const THEME = {
@@ -44,23 +44,23 @@ export function TerminalPanel({ sessionId, cwd }: { sessionId: string; cwd: stri
 		fit.fit()
 
 		const size = { cols: term.cols, rows: term.rows }
-		window.palot.terminal.create(id, cwd, size)
+		window.gcode.terminal.create(id, cwd, size)
 
 		// PTY output → terminal.
-		const offData = window.palot.terminal.onData((tid, data) => {
+		const offData = window.gcode.terminal.onData((tid, data) => {
 			if (tid === id) term.write(data)
 		})
-		const offExit = window.palot.terminal.onExit((tid) => {
+		const offExit = window.gcode.terminal.onExit((tid) => {
 			if (tid === id) term.write("\r\n\x1b[90m[process exited — reopen the terminal to start again]\x1b[0m\r\n")
 		})
 		// Keystrokes → PTY.
-		const inputDisposable = term.onData((data) => window.palot.terminal.input(id, data))
+		const inputDisposable = term.onData((data) => window.gcode.terminal.input(id, data))
 
 		// Keep the PTY sized to the panel.
 		const resize = () => {
 			try {
 				fit.fit()
-				window.palot.terminal.resize(id, term.cols, term.rows)
+				window.gcode.terminal.resize(id, term.cols, term.rows)
 			} catch {
 				// Panel not laid out yet.
 			}
@@ -77,7 +77,7 @@ export function TerminalPanel({ sessionId, cwd }: { sessionId: string; cwd: stri
 			offExit()
 			inputDisposable.dispose()
 			// Kill the PTY when the panel closes so shells don't leak.
-			window.palot.terminal.kill(id)
+			window.gcode.terminal.kill(id)
 			term.dispose()
 		}
 	}, [sessionId, cwd])

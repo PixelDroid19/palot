@@ -1,8 +1,8 @@
 /**
- * The Palot bridge: a loopback-only HTTP server that lets a running CLI agent
+ * The GCode bridge: a loopback-only HTTP server that lets a running CLI agent
  * use the platform — host tools, peer agents, and shared context. CLIs reach
  * it through the stdio MCP proxy (see `mcp-proxy.ts`), which adapters wire in
- * as an MCP server named "palot".
+ * as an MCP server named "gcode".
  *
  * Host tools (automation, system, browser, agents, context) are registered on
  * {@link AgentHost.tools} and exposed generically — not reimplemented per CLI.
