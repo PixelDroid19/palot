@@ -11,6 +11,7 @@ import { extname, join } from "node:path"
 import {
 	AgentBridge,
 	AgentHost,
+	DEFAULT_MANAGED_SERVER_RUNTIME_CAPABILITIES,
 	MCP_PROXY_SOURCE,
 	type AgentRuntimeCapabilities,
 	type AgentPermissionDecision,
@@ -18,6 +19,8 @@ import {
 	type AgentRuntimeDescriptor,
 	type AgentRuntimeId,
 	type AgentSandbox,
+	type RuntimeTransport,
+	resolveRuntimeTransport,
 } from "@palot/agent-host"
 import { whichOnPath } from "@palot/cli-registry"
 import { app } from "electron"
@@ -83,6 +86,8 @@ export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 		supportsWorktreeLaunch: boolean
 		supportsServerHistory: boolean
 	}
+	/** How the product talks to this runtime (never branch on product id for UI). */
+	transport: RuntimeTransport
 	setup: {
 		description: string
 		version: string | null
@@ -91,16 +96,11 @@ export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 	}
 }
 
-const PROJECT_RUNTIME_DESCRIPTOR_LABEL = "OpenCode"
-const PROJECT_RUNTIME_DESCRIPTOR_CAPABILITIES: AgentRuntimeCapabilities = {
-	imageInput: true,
-	reasoningEffort: false,
-	resume: true,
-	permissions: true,
-	interrupt: true,
-	steering: false,
-}
-const PROJECT_RUNTIME_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabilities"] = {
+/** OpenCode is one managed-server adapter — not the product base. */
+const OPENCODE_ADAPTER_LABEL = "OpenCode"
+const OPENCODE_ADAPTER_CAPABILITIES: AgentRuntimeCapabilities =
+	DEFAULT_MANAGED_SERVER_RUNTIME_CAPABILITIES
+const OPENCODE_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabilities"] = {
 	supportsSessionRevert: true,
 	supportsSessionSummarize: true,
 	supportsServerSlashCommands: true,
@@ -132,47 +132,56 @@ function writeImageFiles(images: AgentImageAttachment[]): { paths: string[]; cle
 	return { paths, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
-function describeProjectRuntime(detection?: {
+function describeOpenCodeAdapter(detection?: {
 	binaryPath: string | null
 	installHint: string
 }): Promise<SessionRuntimeDescriptor> {
 	return checkProjectRuntime().then((runtime) => ({
 		id: PROJECT_RUNTIME_ID,
-		displayName: PROJECT_RUNTIME_DESCRIPTOR_LABEL,
+		displayName: OPENCODE_ADAPTER_LABEL,
 		installed: runtime.installed,
-		capabilities: PROJECT_RUNTIME_DESCRIPTOR_CAPABILITIES,
-		sessionCapabilities: PROJECT_RUNTIME_SESSION_CAPABILITIES,
+		capabilities: OPENCODE_ADAPTER_CAPABILITIES,
+		sessionCapabilities: OPENCODE_SESSION_CAPABILITIES,
+		transport: "managed-server" as const,
 		setup: {
 			description: runtime.path ?? detection?.binaryPath ?? detection?.installHint ?? "Checking...",
 			version: runtime.version,
 			compatible: runtime.compatible,
 			warning: runtime.compatible ? null : runtime.message,
 		},
+		// Models come from the managed server provider catalog at session time.
 		models: [],
 	}))
 }
 
-/** Session runtime descriptors (managed + CLI) for runtime pickers and setup UI. */
+/** Session runtime descriptors (all adapters) for runtime pickers and setup UI. */
 export async function describeSessionRuntimes(): Promise<SessionRuntimeDescriptor[]> {
-	const [cliDetections, cliRuntimes] = await Promise.all([
+	const [cliDetections, agentHostRuntimes] = await Promise.all([
 		detectAgentClis(),
 		getAgentHost().describeRuntimes(),
 	])
-	const detections = new Map(cliDetections.map((runtime) => [runtime.id, runtime]))
-	const projectRuntime = await describeProjectRuntime(detections.get(PROJECT_RUNTIME_ID))
+	const detections = new Map<string, (typeof cliDetections)[number]>(
+		cliDetections.map((runtime) => [runtime.id, runtime]),
+	)
+	const openCode = await describeOpenCodeAdapter(detections.get(PROJECT_RUNTIME_ID))
 	return [
-		projectRuntime,
-		...cliRuntimes.map((runtime) => ({
-			...runtime,
-			setup: {
-				description: detections.get(runtime.id)?.installed
-					? (detections.get(runtime.id)?.binaryPath ?? "")
-					: (detections.get(runtime.id)?.installHint ?? ""),
-				version: detections.get(runtime.id)?.version ?? null,
-				compatible: detections.get(runtime.id)?.installed ?? false,
-				warning: null,
-			},
-		})),
+		openCode,
+		...agentHostRuntimes.map((runtime) => {
+			const transport = resolveRuntimeTransport(runtime)
+			const detection = detections.get(runtime.id)
+			return {
+				...runtime,
+				transport,
+				setup: {
+					description: detection?.installed
+						? (detection.binaryPath ?? "")
+						: (detection?.installHint ?? ""),
+					version: detection?.version ?? null,
+					compatible: detection?.installed ?? false,
+					warning: null,
+				},
+			}
+		}),
 	]
 }
 

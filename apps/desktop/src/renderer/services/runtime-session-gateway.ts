@@ -1,3 +1,12 @@
+/**
+ * Neutral session gateway: create / prompt / switch / lifecycle for every
+ * registered runtime. Selection is by `runtimeId` → transport (from the
+ * descriptor), never by product branches named "OpenCode vs CLI".
+ *
+ * Concrete wire protocols live only in transport adapters:
+ *  - managed-server → OpenCode SDK client (one adapter implementation)
+ *  - agent-host → process CLIs via IPC (Codex, Claude, …)
+ */
 import type { AgentSandbox } from "../../preload/api"
 import { upsertMessageAtom } from "../atoms/messages"
 import { upsertPartAtom } from "../atoms/parts"
@@ -5,16 +14,19 @@ import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/se
 import { appStore } from "../atoms/store"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
 import {
-	isCliRuntimeState,
 	readSessionRuntimeState,
 	resolveConfiguredPromptOptions,
 	resolvePromptRuntime,
 } from "../lib/runtime-session-config"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
-	isCliRuntime,
+	runtimeTransportForId,
 	type SessionRuntimeId,
 } from "../lib/session-runtimes"
+import {
+	gatewayTransportForRuntimeId,
+	type RuntimeTransport,
+} from "../lib/runtime-transport"
 import type {
 	FilePart,
 	FilePartInput,
@@ -38,18 +50,18 @@ import {
 	runCliRuntimeTurn,
 } from "./runtime-cli-turns"
 
-function shouldUseCliRuntime(
+function transportForPrompt(
 	sessionId: string,
 	options?: RuntimePromptOptions,
-): boolean {
-	return isCliRuntime(resolvePromptRuntime(readSessionRuntimeState(sessionId), options))
+): RuntimeTransport {
+	return runtimeTransportForId(resolvePromptRuntime(readSessionRuntimeState(sessionId), options))
 }
 
-function sessionUsesCliRuntime(sessionId: string): boolean {
-	return isCliRuntimeState(readSessionRuntimeState(sessionId))
+function transportForSession(sessionId: string): RuntimeTransport {
+	return runtimeTransportForId(readSessionRuntimeState(sessionId).runtimeId)
 }
 
-async function createConfigurableRuntimeSession(
+async function createManagedServerSession(
 	directory: string,
 	title?: string,
 ): Promise<Session | undefined> {
@@ -62,7 +74,7 @@ async function createConfigurableRuntimeSession(
 	return session
 }
 
-async function promptConfigurableRuntimeSession(
+async function promptManagedServerSession(
 	directory: string,
 	sessionId: string,
 	text: string,
@@ -149,6 +161,22 @@ export interface RuntimeSessionCreateResult {
 	session?: Session
 }
 
+/**
+ * Neutral prompt payload the gateway accepts. Transport adapters map this to
+ * OpenCode SDK / Codex / Claude calls.
+ */
+export interface NeutralRuntimePromptPayload {
+	runtimeId?: SessionRuntimeId
+	text: string
+	model?: RuntimePromptOptions["model"]
+	profile?: string
+	variant?: string
+	effort?: string
+	permissionMode?: AgentSandbox
+	files?: RuntimePromptOptions["files"]
+	cwd?: string
+}
+
 interface SessionRuntimeGateway {
 	promptSession(
 		directory: string,
@@ -185,17 +213,18 @@ interface SessionRuntimeGateway {
 	): Promise<Session>
 }
 
-const configurableRuntimeSessionGateway: SessionRuntimeGateway & {
+/** Managed local server transport (OpenCode adapter implementation). */
+const managedServerGateway: SessionRuntimeGateway & {
 	createSession: (directory: string, title?: string) => Promise<Session | undefined>
 } = {
-	createSession: createConfigurableRuntimeSession,
+	createSession: createManagedServerSession,
 	async promptSession(
 		directory: string,
 		sessionId: string,
 		text: string,
 		options?: RuntimePromptOptions,
 	): Promise<void> {
-		await promptConfigurableRuntimeSession(directory, sessionId, text, options)
+		await promptManagedServerSession(directory, sessionId, text, options)
 	},
 	async abortSession(directory: string, sessionId: string): Promise<void> {
 		const client = requireRuntimeSessionClient(directory)
@@ -281,7 +310,8 @@ const configurableRuntimeSessionGateway: SessionRuntimeGateway & {
 	},
 }
 
-const cliRuntimeSessionGateway: SessionRuntimeGateway = {
+/** Agent-host process transport (Codex, Claude adapters). */
+const agentHostGateway: SessionRuntimeGateway = {
 	async promptSession(
 		_directory: string,
 		sessionId: string,
@@ -302,47 +332,47 @@ const cliRuntimeSessionGateway: SessionRuntimeGateway = {
 		appStore.set(removeSessionAtom, sessionId)
 	},
 	async revertSession(): Promise<void> {
-		throw new Error("Revert is not supported for CLI sessions")
+		throw new Error("Revert is not supported for this runtime")
 	},
 	async unrevertSession(): Promise<void> {
-		throw new Error("Undo is not supported for CLI sessions")
+		throw new Error("Undo is not supported for this runtime")
 	},
 	async executeCommand(): Promise<void> {
-		throw new Error("Slash commands are not supported for CLI sessions")
+		throw new Error("Slash commands are not supported for this runtime")
 	},
 	async summarizeSession(): Promise<void> {
-		throw new Error("Summarize is not supported for CLI sessions")
+		throw new Error("Summarize is not supported for this runtime")
 	},
 	async deletePart(): Promise<void> {
-		throw new Error("Deleting parts is not supported for CLI sessions")
+		throw new Error("Deleting parts is not supported for this runtime")
 	},
 	async forkSession(): Promise<Session> {
-		throw new Error("Fork is not supported for CLI sessions")
+		throw new Error("Fork is not supported for this runtime")
 	},
 }
 
-function runtimeGatewayForSession(sessionId: string): SessionRuntimeGateway {
-	return sessionUsesCliRuntime(sessionId)
-		? cliRuntimeSessionGateway
-		: configurableRuntimeSessionGateway
+/** Dispatch table: transport → gateway implementation. */
+const GATEWAY_BY_TRANSPORT: Record<RuntimeTransport, SessionRuntimeGateway> = {
+	"managed-server": managedServerGateway,
+	"agent-host": agentHostGateway,
 }
 
-function runtimeGatewayForPrompt(
-	sessionId: string,
-	options?: RuntimePromptOptions,
-): SessionRuntimeGateway {
-	return shouldUseCliRuntime(sessionId, options)
-		? cliRuntimeSessionGateway
-		: configurableRuntimeSessionGateway
+function gatewayForTransport(transport: RuntimeTransport): SessionRuntimeGateway {
+	return GATEWAY_BY_TRANSPORT[transport]
 }
 
 export const runtimeSessionGateway = {
+	/**
+	 * Create a session for the given runtimeId. Adapter selection is by
+	 * transport resolved from the runtime descriptor.
+	 */
 	async createSession(
 		args: RuntimeSessionCreateRequest,
 	): Promise<RuntimeSessionCreateResult | null> {
-		if (isCliRuntime(args.runtimeId)) {
+		const transport = runtimeTransportForId(args.runtimeId)
+
+		if (transport === "agent-host") {
 			const sessionId = createCliRuntimeSessionState({
-				kind: "cli",
 				directory: args.directory,
 				runtimeId: args.runtimeId,
 				sandbox: args.sandbox ?? "read-only",
@@ -355,44 +385,71 @@ export const runtimeSessionGateway = {
 			}
 		}
 
-		const session = await configurableRuntimeSessionGateway.createSession(args.directory, args.title)
+		const session = await managedServerGateway.createSession(args.directory, args.title)
 		if (!session) return null
 		return {
-			runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+			runtimeId: args.runtimeId || DEFAULT_SESSION_RUNTIME_ID,
 			sessionId: session.id,
 			session,
 		}
 	},
+
 	async switchRuntimeSession(
 		sessionId: string,
 		targetRuntime: SessionRuntimeId,
 		fallbackDirectory?: string,
 	): Promise<string | null> {
-		if (!isCliRuntime(targetRuntime)) {
+		const targetTransport = runtimeTransportForId(targetRuntime)
+		const currentTransport = transportForSession(sessionId)
+
+		if (targetTransport === "managed-server" && currentTransport === "agent-host") {
 			return switchCliSessionIntoProjectRuntime(
 				sessionId,
-				configurableRuntimeSessionGateway.createSession,
+				managedServerGateway.createSession,
 			)
 		}
 
-		await switchCliRuntimeSession(sessionId, targetRuntime, fallbackDirectory)
+		if (targetTransport === "agent-host") {
+			await switchCliRuntimeSession(sessionId, targetRuntime, fallbackDirectory)
+			return sessionId
+		}
+
+		// managed-server → managed-server: same transport, no session rewrite
 		return sessionId
 	},
+
 	async promptSession(
 		directory: string,
 		sessionId: string,
 		text: string,
 		options?: RuntimePromptOptions,
 	): Promise<void> {
-		await runtimeGatewayForPrompt(sessionId, options).promptSession(
+		await gatewayForTransport(transportForPrompt(sessionId, options)).promptSession(
 			directory,
 			sessionId,
 			text,
 			options,
 		)
 	},
+
+	/** Prompt using a fully neutral payload (adapters translate). */
+	async promptNeutral(
+		directory: string,
+		sessionId: string,
+		payload: NeutralRuntimePromptPayload,
+	): Promise<void> {
+		const options: RuntimePromptOptions = {
+			runtimeId: payload.runtimeId,
+			model: payload.model,
+			agentName: payload.profile,
+			variant: payload.variant,
+			files: payload.files,
+		}
+		await this.promptSession(directory, sessionId, payload.text, options)
+	},
+
 	async abortSession(directory: string, sessionId: string): Promise<void> {
-		await runtimeGatewayForSession(sessionId).abortSession(directory, sessionId)
+		await gatewayForTransport(transportForSession(sessionId)).abortSession(directory, sessionId)
 	},
 	async renameSession(
 		directory: string,
@@ -407,20 +464,28 @@ export const runtimeSessionGateway = {
 			})
 		}
 
-		await runtimeGatewayForSession(sessionId).renameSession(directory, sessionId, title)
+		await gatewayForTransport(transportForSession(sessionId)).renameSession(
+			directory,
+			sessionId,
+			title,
+		)
 	},
 	async deleteSession(directory: string, sessionId: string): Promise<void> {
-		await runtimeGatewayForSession(sessionId).deleteSession(directory, sessionId)
+		await gatewayForTransport(transportForSession(sessionId)).deleteSession(directory, sessionId)
 	},
 	async revertSession(
 		directory: string,
 		sessionId: string,
 		messageId: string,
 	): Promise<void> {
-		await runtimeGatewayForSession(sessionId).revertSession(directory, sessionId, messageId)
+		await gatewayForTransport(transportForSession(sessionId)).revertSession(
+			directory,
+			sessionId,
+			messageId,
+		)
 	},
 	async unrevertSession(directory: string, sessionId: string): Promise<void> {
-		await runtimeGatewayForSession(sessionId).unrevertSession(directory, sessionId)
+		await gatewayForTransport(transportForSession(sessionId)).unrevertSession(directory, sessionId)
 	},
 	async executeCommand(
 		directory: string,
@@ -428,7 +493,7 @@ export const runtimeSessionGateway = {
 		command: string,
 		args: string,
 	): Promise<void> {
-		await runtimeGatewayForSession(sessionId).executeCommand(
+		await gatewayForTransport(transportForSession(sessionId)).executeCommand(
 			directory,
 			sessionId,
 			command,
@@ -440,7 +505,11 @@ export const runtimeSessionGateway = {
 		sessionId: string,
 		model?: { providerID: string; modelID: string },
 	): Promise<void> {
-		await runtimeGatewayForSession(sessionId).summarizeSession(directory, sessionId, model)
+		await gatewayForTransport(transportForSession(sessionId)).summarizeSession(
+			directory,
+			sessionId,
+			model,
+		)
 	},
 	async deletePart(
 		directory: string,
@@ -448,7 +517,7 @@ export const runtimeSessionGateway = {
 		messageId: string,
 		partId: string,
 	): Promise<void> {
-		await runtimeGatewayForSession(sessionId).deletePart(
+		await gatewayForTransport(transportForSession(sessionId)).deletePart(
 			directory,
 			sessionId,
 			messageId,
@@ -460,6 +529,20 @@ export const runtimeSessionGateway = {
 		sessionId: string,
 		messageId?: string,
 	): Promise<Session> {
-		return runtimeGatewayForSession(sessionId).forkSession(directory, sessionId, messageId)
+		return gatewayForTransport(transportForSession(sessionId)).forkSession(
+			directory,
+			sessionId,
+			messageId,
+		)
+	},
+
+	/** Which transport would handle this runtime id (descriptor-aware when loaded). */
+	transportForRuntimeId(runtimeId: SessionRuntimeId): RuntimeTransport {
+		return runtimeTransportForId(runtimeId)
+	},
+
+	/** Pure gateway dispatch key by runtime id (same table createSession uses before descriptors). */
+	gatewayKindForRuntimeId(runtimeId: SessionRuntimeId): RuntimeTransport {
+		return gatewayTransportForRuntimeId(runtimeId)
 	},
 }

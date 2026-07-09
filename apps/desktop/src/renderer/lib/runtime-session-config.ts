@@ -7,6 +7,7 @@ import type { ModelRef } from "../hooks/use-project-runtime-data"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
 	isCliRuntime,
+	runtimeTransportForId,
 	runtimeDescriptor,
 	type SessionRuntimeId,
 } from "./session-runtimes"
@@ -83,10 +84,22 @@ export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapab
 	)
 }
 
+/**
+ * True when session state is backed by agent-host process transport.
+ * Prefer transport/capability checks in new code.
+ *
+ * @deprecated Prefer runtimeTransportForId(state.runtimeId) === "agent-host"
+ */
 export function isCliRuntimeState(
 	state: Pick<SessionRuntimeState, "runtimeId">,
 ): state is SessionRuntimeState & { meta: CliSessionMeta } {
 	return isCliRuntime(state.runtimeId)
+}
+
+export function sessionUsesAgentHostTransport(
+	state: Pick<SessionRuntimeState, "runtimeId">,
+): boolean {
+	return runtimeTransportForId(state.runtimeId) === "agent-host"
 }
 
 export function cliRuntimeMeta(state: SessionRuntimeState): CliSessionMeta | null {
@@ -104,9 +117,9 @@ export function resolveConfiguredPromptOptions(
 	state: Pick<SessionRuntimeState, "runtimeId"> | null | undefined,
 	options?: RuntimePromptOptions,
 ): RuntimePromptOptions | null {
-	return isCliRuntime(resolvePromptRuntime(state, options))
-		? null
-		: (options ?? {})
+	const runtimeId = resolvePromptRuntime(state, options)
+	// Managed-server adapters accept rich prompt options; process adapters use meta.
+	return runtimeTransportForId(runtimeId) === "agent-host" ? null : (options ?? {})
 }
 
 export function resolveSessionRuntimeId(state: SessionRuntimeState): SessionRuntimeId {
