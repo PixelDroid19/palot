@@ -78,10 +78,11 @@ function StatusDot({
 	bordered?: boolean
 	className?: string
 }) {
+// Pass real boolean|null (not strings). Lit coerces if a string slips through.
 	return createElement("gcode-status-dot", {
 		class: className,
 		className,
-		health: health === null ? "null" : health ? "true" : "false",
+		health,
 		size,
 		bordered,
 		"data-lit-status-dot": "1",

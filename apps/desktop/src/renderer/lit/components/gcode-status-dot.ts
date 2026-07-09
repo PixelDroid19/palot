@@ -1,9 +1,11 @@
 /**
  * Health/connection status dot — progressive Lit leaf used by ServerIndicator.
+ * Normalizes React string props ("true"|"false"|"null") via coerceHealthState.
  */
 import { LitElement } from "lit"
 import { customElement, property } from "lit/decorators.js"
 import {
+	coerceHealthState,
 	healthToStatusDotKind,
 	statusDotKindLabel,
 	type HealthState,
@@ -11,27 +13,26 @@ import {
 } from "../status-dot"
 import { styles } from "./gcode-status-dot.css.js"
 
-function parseHealthAttr(value: string | null): HealthState {
-	if (value == null || value === "" || value === "null" || value === "checking") return null
-	if (value === "true" || value === "1" || value === "ok") return true
-	if (value === "false" || value === "0" || value === "bad") return false
-	return null
-}
-
 @customElement("gcode-status-dot")
 export class GcodeStatusDotElement extends LitElement {
 	static styles = styles
 
+	/**
+	 * May arrive as boolean|null (typed) or as React string props.
+	 * Always coerce before mapping to kind.
+	 */
 	@property({
 		attribute: "health",
 		reflect: true,
 		converter: {
-			fromAttribute: (value: string | null) => parseHealthAttr(value),
-			toAttribute: (value: HealthState) =>
-				value === null ? "null" : value ? "true" : "false",
+			fromAttribute: (value: string | null) => coerceHealthState(value),
+			toAttribute: (value: unknown) => {
+				const h = coerceHealthState(value)
+				return h === null ? "null" : h ? "true" : "false"
+			},
 		},
 	})
-	health: HealthState = null
+	health: HealthState | string = null
 
 	/** sm (list row) | md (sidebar badge overlay) */
 	@property({ type: String })
@@ -40,12 +41,21 @@ export class GcodeStatusDotElement extends LitElement {
 	@property({ type: Boolean, reflect: true })
 	bordered = false
 
-	private kind(): StatusDotKind {
+	/** Public: resolved kind after coercing React/string wire values. */
+	resolvedKind(): StatusDotKind {
 		return healthToStatusDotKind(this.health)
 	}
 
+	protected willUpdate(): void {
+		// Normalize any string property set by React createElement
+		const coerced = coerceHealthState(this.health)
+		if (this.health !== coerced) {
+			this.health = coerced
+		}
+	}
+
 	protected updated(): void {
-		const kind = this.kind()
+		const kind = this.resolvedKind()
 		this.setAttribute("data-kind", kind)
 		this.setAttribute("data-size", this.size || "sm")
 		this.setAttribute("role", "status")
