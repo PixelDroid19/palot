@@ -85,8 +85,31 @@ export function getAgentHost(): AgentHost {
 		// Host-owned tool plane: automation / system / browser for every harness.
 		// Independent of which CLI adapters are plugged in.
 		installDesktopHostToolBackends(hostSingleton)
+	} else {
+		// Long-lived main process (dev hot reload / mid-upgrade): reinstall core
+		// host tools if a newer plane (e.g. subagents) is missing.
+		ensureHostToolPlaneComplete(hostSingleton)
 	}
 	return hostSingleton
+}
+
+/** Core host tools that must always be present for agentic multi-harness scale. */
+const REQUIRED_HOST_TOOLS = [
+	"palot_list_agents",
+	"palot_delegate",
+	"palot_list_subagents",
+	"palot_run_subagent",
+	"palot_automation_list",
+	"palot_system_run",
+	"palot_browser_open",
+] as const
+
+function ensureHostToolPlaneComplete(host: AgentHost): void {
+	const missing = REQUIRED_HOST_TOOLS.filter((name) => !host.tools.has(name))
+	if (missing.length === 0) return
+	log.warn("Host tool plane incomplete; reinstalling defaults", { missing })
+	host.installDefaultHostTools()
+	installDesktopHostToolBackends(host)
 }
 
 /**

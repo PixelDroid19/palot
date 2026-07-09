@@ -22,6 +22,37 @@ describe("AgentHost sessions", () => {
 		expect(provider.sessions[0]?.turns).toHaveLength(2)
 	})
 
+	test("serializes concurrent prompts on the same session (no busy race)", async () => {
+		const provider = new FakeProvider("fake", { delayMs: 40 })
+		const host = makeHost([provider])
+		await host.openSession("s1", "fake", { cwd: "/tmp" })
+		// Fire two prompts without awaiting the first — host must queue them.
+		const p1 = host.prompt("s1", { text: "first" })
+		const p2 = host.prompt("s1", { text: "second" })
+		const [r1, r2] = await Promise.all([p1, p2])
+		expect(r1.message).toBe("echo:first")
+		expect(r2.message).toBe("echo:second")
+		const texts = provider.sessions[0]?.turns.map((t) => t.text)
+		expect(texts).toEqual(["first", "second"])
+	})
+
+	test("allows concurrent prompts on different sessions", async () => {
+		const provider = new FakeProvider("fake", { delayMs: 30 })
+		const host = makeHost([provider])
+		await host.openSession("a", "fake", { cwd: "/tmp" })
+		await host.openSession("b", "fake", { cwd: "/tmp" })
+		const started = Date.now()
+		const [ra, rb] = await Promise.all([
+			host.prompt("a", { text: "A" }),
+			host.prompt("b", { text: "B" }),
+		])
+		const elapsed = Date.now() - started
+		expect(ra.message).toBe("echo:A")
+		expect(rb.message).toBe("echo:B")
+		// Parallel: should finish near one delay, not two sequential delays.
+		expect(elapsed).toBeLessThan(90)
+	})
+
 	test("emits session updates and turn lifecycle events", async () => {
 		const provider = new FakeProvider("fake")
 		const host = makeHost([provider])

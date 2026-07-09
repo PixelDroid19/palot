@@ -94,6 +94,12 @@ export class AgentHost {
 
 	private providers = new Map<AgentRuntimeId, AgentSessionProvider>()
 	private sessions = new Map<string, SessionEntry>()
+	/**
+	 * Per-session turn queue: concurrent {@link prompt} calls on the same
+	 * sessionId run serially so adapters never see overlapping send() races.
+	 * Independent sessions stay fully concurrent (scalability across tasks).
+	 */
+	private turnTails = new Map<string, Promise<unknown>>()
 	private runtimeCache: { at: number; value: AgentRuntimeDescriptor[] } | null = null
 	private readonly resolveBinary: (binary: string) => Promise<string | null>
 	private bridgeInfo: () => BridgeInfo | null
@@ -243,11 +249,22 @@ export class AgentHost {
 		return this.sessions.get(sessionId)?.session ?? null
 	}
 
-	/** Run one turn on an open session, emitting turn lifecycle events. */
+	/**
+	 * Run one turn on an open session, emitting turn lifecycle events.
+	 * Concurrent prompts for the same session are queued (FIFO); different
+	 * sessions run in parallel.
+	 */
 	async prompt(sessionId: string, input: AgentTurnInput): Promise<AgentRunResult> {
+		if (!input.text.trim()) throw new Error("A task prompt is required")
+		return this.enqueueSessionTurn(sessionId, () => this.runPromptTurn(sessionId, input))
+	}
+
+	private async runPromptTurn(
+		sessionId: string,
+		input: AgentTurnInput,
+	): Promise<AgentRunResult> {
 		const entry = this.sessions.get(sessionId)
 		if (!entry) throw new Error(`No open session: ${sessionId}`)
-		if (!input.text.trim()) throw new Error("A task prompt is required")
 		this.events.emit("turn:start", { sessionId, runtimeId: entry.runtimeId })
 		try {
 			const result = await entry.session.send(input)
@@ -262,6 +279,19 @@ export class AgentHost {
 			})
 			throw err
 		}
+	}
+
+	/** Chain work after any in-flight turn for this session (never lose the queue on reject). */
+	private enqueueSessionTurn<T>(sessionId: string, work: () => Promise<T>): Promise<T> {
+		const prev = this.turnTails.get(sessionId) ?? Promise.resolve()
+		const run = prev.catch(() => {}).then(work)
+		// Tail must settle so the next prompt always runs even if this one throws.
+		const tail = run.then(
+			() => {},
+			() => {},
+		)
+		this.turnTails.set(sessionId, tail)
+		return run
 	}
 
 	async steer(sessionId: string, text: string): Promise<void> {
@@ -299,6 +329,7 @@ export class AgentHost {
 		const entry = this.sessions.get(sessionId)
 		if (!entry) return
 		this.sessions.delete(sessionId)
+		this.turnTails.delete(sessionId)
 		await entry.session.close().catch(() => {})
 	}
 
