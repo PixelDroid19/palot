@@ -6,6 +6,7 @@
 import "./components/gcode-wordmark"
 import "./components/gcode-runtime-mark"
 import "./components/gcode-status-dot"
+import "./components/gcode-tool-card"
 // Experimental / unmounted product prototypes (not default UI):
 import "./components/gcode-app"
 import "./components/gcode-automations"

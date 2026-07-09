@@ -7,13 +7,6 @@ import {
 	CodeBlockTitle,
 } from "@gcode/ui/components/ai-elements/code-block"
 import { Diff, DiffContent } from "@gcode/ui/components/ai-elements/diff"
-import {
-	Terminal,
-	TerminalContent,
-	TerminalCopyButton,
-	TerminalHeader,
-	TerminalTitle,
-} from "@gcode/ui/components/ai-elements/terminal"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@gcode/ui/components/dialog"
 import { cn } from "@gcode/ui/lib/utils"
 
@@ -274,11 +267,14 @@ export function getToolSubtitle(part: ToolPart): string | undefined {
 				extractFromRaw(state, "pattern", "path")
 			break
 		case "bash":
+			// Prefer the command itself — descriptions like "Echo proof marker" read as
+			// model fluff; the actual shell line is what operators need to scan.
 			subtitle =
+				(input.command as string) ??
+				extractFromRaw(state, "command") ??
 				title ??
 				(input.description as string) ??
-				(input.command as string) ??
-				extractFromRaw(state, "command", "description")
+				extractFromRaw(state, "description")
 			break
 		case "edit":
 			subtitle =
@@ -387,18 +383,14 @@ export function getToolDuration(part: ToolPart): string | undefined {
 // ============================================================
 
 /**
- * Bash tool: shows command with syntax highlighting + ANSI-colored terminal output.
+ * Bash tool content — quiet monospaced block using product surface tokens.
+ * Avoids nested “fake terminal” chrome (zinc-950 panels, Output headers).
  *
- * During `running` state the server streams incremental output via
- * `state.metadata.output` (accumulated string, updated on every stdout/stderr
- * chunk). We read that field so the terminal updates in real-time, matching the
- * behaviour of the OpenCode TUI and web UI.
+ * Streaming: `state.metadata.output` while running; `state.output` when done.
  */
 function BashContent({ part }: { part: ToolPart }) {
 	const command = part.state.input?.command as string | undefined
 
-	// During "running", live output arrives in state.metadata.output.
-	// After completion it moves to state.output.
 	const streamingOutput =
 		part.state.status === "running"
 			? (part.state.metadata?.output as string | undefined)
@@ -411,8 +403,7 @@ function BashContent({ part }: { part: ToolPart }) {
 		if (error) return error
 		if (!output) return ""
 		let cleaned = output
-		// The SDK output often echoes the command as the first line (e.g. "$ command\n...").
-		// Since we already render the command in a separate CodeBlock above, strip the duplicate.
+		// SDK often echoes the command as the first line; header already shows it.
 		if (command) {
 			const prefix = `$ ${command}`
 			if (cleaned.startsWith(prefix)) {
@@ -422,51 +413,34 @@ function BashContent({ part }: { part: ToolPart }) {
 		return truncateOutput(cleaned)
 	}, [output, error, command])
 
-	// If there's meaningful output, show a terminal view with ANSI support
-	if (displayOutput || isStreaming) {
-		return (
-			<div className="space-y-1.5">
-				{command && (
-					<CodeBlock
-						code={`$ ${command}`}
-						language="bash"
-						className="border-0 shadow-none rounded-none text-[11px]"
-					>
-						<CodeBlockContent code={`$ ${command}`} language="bash" />
-					</CodeBlock>
-				)}
-				<Terminal
-					output={displayOutput}
-					isStreaming={isStreaming}
+	if (!command && !displayOutput && !isStreaming) return null
+
+	return (
+		<div
+			data-slot="tool-bash-body"
+			className={cn(
+				"px-3 py-2 font-mono text-[12px] leading-relaxed",
+				error && "text-destructive",
+			)}
+		>
+			{command ? (
+				<div className="mb-1.5 flex gap-2 text-muted-foreground">
+					<span className="shrink-0 select-none text-muted-foreground/50">$</span>
+					<span className="min-w-0 break-all text-foreground/90">{command}</span>
+				</div>
+			) : null}
+			{displayOutput || isStreaming ? (
+				<pre
 					className={cn(
-						"max-h-64 border-0 shadow-none rounded-none text-[11px]",
-						error && "border-red-500/30",
+						"max-h-56 overflow-auto whitespace-pre-wrap break-words text-foreground/80",
+						isStreaming && "text-muted-foreground",
 					)}
 				>
-					<TerminalHeader className="py-1.5 px-3">
-						<TerminalTitle className="text-[11px]">Output</TerminalTitle>
-						<TerminalCopyButton className="size-6" />
-					</TerminalHeader>
-					<TerminalContent className="max-h-48 p-3 text-[11px] leading-relaxed" />
-				</Terminal>
-			</div>
-		)
-	}
-
-	// Command only (no output yet)
-	if (command) {
-		return (
-			<CodeBlock
-				code={`$ ${command}`}
-				language="bash"
-				className="border-0 shadow-none rounded-none text-[11px]"
-			>
-				<CodeBlockContent code={`$ ${command}`} language="bash" />
-			</CodeBlock>
-		)
-	}
-
-	return null
+					{displayOutput || (isStreaming ? "…" : "")}
+				</pre>
+			) : null}
+		</div>
+	)
 }
 
 /**

@@ -156,24 +156,38 @@ describe("runLitAgentTurn (public)", () => {
 		await expect(runLitAgentTurn("s2", "hi")).rejects.toThrow(/bridge/i)
 	})
 
-	test("opencode path uses managed-chat and fails without workspace client", async () => {
+	test("opencode path uses managed-chat and fails closed without server URL", async () => {
+		// isElectron is fixed at backend module load (often false in bun:test), so HTTP
+		// fetch is used. Force no reachable managed server; must not succeed via agentSession.
+		const prevFetch = globalThis.fetch
+		// @ts-expect-error test stub
+		globalThis.fetch = async () => {
+			throw new Error("Managed runtime server is not available")
+		}
 		// @ts-expect-error test window
 		globalThis.window = {
 			gcode: {
+				runtime: { ensure: async () => ({ url: "" }) },
 				agentSession: {
 					open: async () => ({ threadId: null }),
-					prompt: async () => ({ message: "nope" }),
+					prompt: async () => ({ message: "must-not-be-called" }),
 					onUpdate: () => () => {},
 					respondPermission: async () => true,
 				},
 			},
 		}
-		sessionStore.upsertAndPersist({
-			id: "oc1",
-			title: "OC",
-			runtimeId: "opencode",
-			directory: "/repo",
-		})
-		await expect(runLitAgentTurn("oc1", "hi")).rejects.toThrow()
+		try {
+			sessionStore.upsertAndPersist({
+				id: "oc1",
+				title: "OC",
+				runtimeId: "opencode",
+				directory: "/repo",
+			})
+			await expect(runLitAgentTurn("oc1", "hi")).rejects.toThrow(
+				/Managed runtime server is not available|Unable to connect|not available|connect/i,
+			)
+		} finally {
+			globalThis.fetch = prevFetch
+		}
 	})
 })
