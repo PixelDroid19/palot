@@ -33,13 +33,15 @@ describe("Lit shell import graph (no React)", () => {
 		expect(offenders).toEqual([])
 	})
 
-	test("main.tsx boots Lit entry not React createRoot", () => {
+	test("main.tsx boots full React App and registers Lit components", () => {
 		const main = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/main.tsx"),
 			"utf8",
 		)
-		expect(main).toContain("./lit/main-lit")
-		expect(main).not.toContain("createRoot")
-		expect(main).not.toContain('from "react"')
+		// Product entry restores full flows via React App
+		expect(main).toContain('from "./app"')
+		expect(main).toContain("createRoot")
+		// Lit registered as progressive islands / optional shell
+		expect(main).toContain("./lit/register")
 	})
 })

@@ -1,5 +1,19 @@
 /**
- * Renderer entry — Lit product shell (no React for primary chrome).
- * React remains available for temporary unmigrated islands if imported elsewhere.
+ * Renderer entry — full product via React app shell.
+ *
+ * Lit web components are registered for progressive migration (SCSS→css.js,
+ * event bus, i18n controller). Unmigrated routes stay on React so onboarding,
+ * automations, multi-runtime catalog, streaming chat, and permissions remain
+ * reachable. Lit modules themselves do not import React.
  */
-import "./lit/main-lit"
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
+import { App } from "./app"
+import "./index.css"
+import "./lit/register"
+
+createRoot(document.getElementById("root")!).render(
+	<StrictMode>
+		<App />
+	</StrictMode>,
+)

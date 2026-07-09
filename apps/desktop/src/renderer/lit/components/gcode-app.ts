@@ -1,10 +1,12 @@
 /**
- * Root Lit shell — sidebar + chat/settings views.
- * Coordinates children via bubbled events and gcodeBus (no React).
+ * Optional Lit product shell — sidebar + chat/settings.
+ * Chat turns use `runLitAgentTurn` (window.gcode.agentSession), same IPC as React.
+ * Registered via lit/register; React remains default full-product entry.
  */
 import { html, LitElement } from "lit"
 import { customElement, state } from "lit/decorators.js"
 import { BusTopics, gcodeBus } from "../bus"
+import { runLitAgentTurn } from "../chat-runtime"
 import { LocaleController } from "../locale-controller"
 import { sessionStore } from "../session-store"
 import type { ChatMessageView } from "./gcode-chat-panel"
@@ -13,7 +15,7 @@ import "./gcode-settings-panel"
 import "./gcode-sidebar"
 import { styles } from "./gcode-app.css.js"
 
-type View = "chat" | "settings" | "new-session"
+type View = "chat" | "settings"
 
 @customElement("gcode-app")
 export class GcodeApp extends LitElement {
@@ -38,7 +40,6 @@ export class GcodeApp extends LitElement {
 	connectedCallback(): void {
 		super.connectedCallback()
 		sessionStore.refresh()
-		// Remove splash if present
 		document.getElementById("splash")?.classList.add("hiding")
 		setTimeout(() => document.getElementById("splash")?.remove(), 320)
 
@@ -50,12 +51,11 @@ export class GcodeApp extends LitElement {
 			}),
 			gcodeBus.subscribe(BusTopics.nav, (payload) => {
 				const view = (payload as { view?: View }).view
-				if (view) this.view = view
+				if (view === "settings" || view === "chat") this.view = view
 			}),
 			gcodeBus.subscribe(BusTopics.localeChanged, () => this.requestUpdate()),
 		)
 
-		// Demo welcome system message for empty product chrome
 		if (this.messages.length === 0) {
 			this.messages = [
 				{
@@ -75,135 +75,103 @@ export class GcodeApp extends LitElement {
 
 	private loadTranscript(sessionId: string | null): void {
 		if (!sessionId) return
-		// Prefer CLI persistence key if present
-		try {
-			const raw =
-				localStorage.getItem(`gcode:cliSession:${sessionId}`) ??
-				localStorage.getItem(`palot:cliSession:${sessionId}`)
-			if (!raw) {
-				this.messages = [
-					{
-						id: "sys-open",
-						role: "system",
-						text: this.locale.t("litShell.sessionOpened", { id: sessionId.slice(0, 8) }),
-					},
-				]
-				return
-			}
-			const parsed = JSON.parse(raw) as {
-				messages?: Array<{ id?: string; role?: string; text?: string }>
-			}
-			const msgs = (parsed.messages || [])
-				.map((m, i) => ({
-					id: m.id || `m-${i}`,
-					role: (m.role === "user" || m.role === "assistant" ? m.role : "system") as
-						| "user"
-						| "assistant"
-						| "system",
-					text: m.text || "",
-				}))
-				.filter((m) => m.text)
-			this.messages =
-				msgs.length > 0
-					? msgs
-					: [
-							{
-								id: "sys-empty",
-								role: "system",
-								text: this.locale.t("litShell.sessionOpened", {
-									id: sessionId.slice(0, 8),
-								}),
-							},
-						]
-		} catch {
-			this.messages = []
-		}
+		const msgs = sessionStore.getMessages(sessionId)
+		this.messages =
+			msgs.length > 0
+				? msgs
+				: [
+						{
+							id: "sys-open",
+							role: "system",
+							text: this.locale.t("litShell.sessionOpened", {
+								id: sessionId.slice(0, 8),
+							}),
+						},
+					]
 	}
 
 	private onSend(e: CustomEvent<{ text: string }>): void {
 		const text = e.detail?.text?.trim()
-		if (!text) return
-		const userMsg: ChatMessageView = {
-			id: `u-${Date.now()}`,
-			role: "user",
-			text,
+		if (!text || this.busy) return
+		void this.runTurn(text)
+	}
+
+	private async runTurn(text: string): Promise<void> {
+		// Ensure we have a session id for persistence
+		let sessionId = this.activeId
+		if (!sessionId) {
+			sessionId = `lit-${Date.now().toString(36)}`
+			sessionStore.upsertAndPersist({
+				id: sessionId,
+				title: text.slice(0, 48) || this.locale.t("litShell.newSessionTitle"),
+				runtimeId: "local",
+				directory: "",
+			})
+			sessionStore.select(sessionId)
+			this.activeId = sessionId
 		}
+
+		const userId = `u-${Date.now()}`
+		const userMsg: ChatMessageView = { id: userId, role: "user", text }
 		this.messages = [...this.messages, userMsg]
+		sessionStore.appendMessage(sessionId, userMsg)
 		this.busy = true
-		// Local echo assistant stub — real agent turns go through agentSession IPC
-		// when a runtime session is active; this keeps the shell interactive offline.
-		const runtime = this.activeRuntimeLabel()
-		void this.runTurn(text, runtime)
-	}
 
-	private activeRuntimeLabel(): string {
-		const s = sessionStore.list().find((x) => x.id === this.activeId)
-		return s?.runtimeId || "local"
-	}
+		const assistantId = `a-${Date.now()}`
+		let assistantText = ""
 
-	private async runTurn(text: string, runtime: string): Promise<void> {
 		try {
-			// Prefer live agent session when Electron bridge is present
-			const bridge = (window as unknown as { gcode?: { agentSession?: AgentSessionBridge } })
-				.gcode
-			const agentSession = bridge?.agentSession
-			if (agentSession && this.activeId) {
-				await agentSession.open(this.activeId, runtime, {
-					cwd: sessionStore.list().find((s) => s.id === this.activeId)?.directory || "",
-					sandbox: "workspace-write",
-				})
-				const result = await agentSession.prompt(this.activeId, {
-					text,
-					sandbox: "workspace-write",
-				})
-				const message =
-					(result as { message?: string })?.message ||
-					(result as { text?: string })?.text ||
-					JSON.stringify(result)
-				this.messages = [
-					...this.messages,
-					{
-						id: `a-${Date.now()}`,
-						role: "assistant",
-						text: String(message).slice(0, 8000),
-					},
-				]
-				return
-			}
-			// Offline / browser demo response
-			this.messages = [
-				...this.messages,
-				{
-					id: `a-${Date.now()}`,
+			const finalText = await runLitAgentTurn(sessionId, text, {
+				onAssistantDelta: (partial) => {
+					assistantText = partial
+					this.patchAssistant(assistantId, partial)
+				},
+				onAssistantFinal: (final) => {
+					assistantText = final
+					this.patchAssistant(assistantId, final)
+				},
+				onError: (err) => {
+					this.messages = [
+						...this.messages.filter((m) => m.id !== assistantId),
+						{
+							id: `e-${Date.now()}`,
+							role: "system",
+							text: this.locale.t("litShell.turnFailed", { error: err }),
+						},
+					]
+				},
+			})
+			const out = finalText || assistantText
+			if (out) {
+				this.patchAssistant(assistantId, out)
+				sessionStore.appendMessage(sessionId, {
+					id: assistantId,
 					role: "assistant",
-					text: this.locale.t("litShell.offlineReply", { text: text.slice(0, 120) }),
-				},
-			]
-		} catch (err) {
-			this.messages = [
-				...this.messages,
-				{
-					id: `e-${Date.now()}`,
-					role: "system",
-					text: this.locale.t("litShell.turnFailed", {
-						error: err instanceof Error ? err.message : String(err),
-					}),
-				},
-			]
+					text: out,
+				})
+			}
+		} catch {
+			// onError already handled when thrown from runLitAgentTurn
 		} finally {
 			this.busy = false
 		}
 	}
 
+	private patchAssistant(id: string, text: string): void {
+		const without = this.messages.filter((m) => m.id !== id)
+		this.messages = [...without, { id, role: "assistant", text }]
+	}
+
 	private onNewSession(): void {
 		const id = `lit-${Date.now().toString(36)}`
-		sessionStore.upsertLocal({
+		sessionStore.upsertAndPersist({
 			id,
 			title: this.locale.t("litShell.newSessionTitle"),
 			runtimeId: "local",
-			updatedAt: Date.now(),
+			directory: "",
 		})
 		sessionStore.select(id)
+		this.activeId = id
 		this.messages = [
 			{
 				id: "sys-new",
@@ -243,15 +211,6 @@ export class GcodeApp extends LitElement {
 			</div>
 		`
 	}
-}
-
-interface AgentSessionBridge {
-	open: (
-		sessionId: string,
-		runtimeId: string,
-		opts: { cwd: string; sandbox?: string },
-	) => Promise<unknown>
-	prompt: (sessionId: string, opts: { text: string; sandbox?: string }) => Promise<unknown>
 }
 
 declare global {

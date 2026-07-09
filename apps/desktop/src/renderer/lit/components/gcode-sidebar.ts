@@ -2,7 +2,7 @@
  * Session / task sidebar — dense agent-IDE style (Codex-like activity list).
  * Emits bubbled events; also publishes on gcodeBus.
  */
-import { html, LitElement, nothing } from "lit"
+import { html, LitElement } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
 import type { TranslationKey } from "../../i18n"
 import { BusTopics, emitBubbled, gcodeBus } from "../bus"
@@ -119,6 +119,3 @@ declare global {
 		"gcode-sidebar": GcodeSidebar
 	}
 }
-
-// silence unused when nothing imported
-void nothing

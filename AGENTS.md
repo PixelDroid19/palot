@@ -176,9 +176,13 @@ All hooks must import from `services/backend.ts`, NOT from `services/gcode-serve
 - Lit: `LocaleController` (`lit/locale-controller.ts`) — persists `gcode:locale`, publishes `BusTopics.localeChanged`.
 - Add new strings to `locales/en.ts` first (types derive from `en`), mirror in `es.ts`.
 
-### Residual React / Jotai
+### Hybrid React + Lit (incremental migration)
 
-Legacy React under `renderer/components` and Jotai atoms may still exist for unmigrated islands. **Do not expand React UI.** Port slices to Lit. Product entry is `renderer/main.tsx` → `lit/main-lit.ts` (no `createRoot`).
+- **Default product entry**: `renderer/main.tsx` mounts the **React App** (full flows: onboarding, automations, multi-runtime chat, permissions, catalog).
+- **Lit registration**: `import "./lit/register"` registers custom elements without replacing the shell.
+- **Optional Lit shell**: `<gcode-app>` + `lit/main-lit.ts` for progressive chrome; session list uses the same `gcode:cliSessions` / `gcode:cliSession:*` keys as `cli-chat-persistence.ts`.
+- **Lit chat turns**: `lit/chat-runtime.ts` → `window.gcode.agentSession` (process runtimes). OpenCode managed-server still uses React gateway.
+- **Do not expand new React UI** — port remaining slices to Lit; keep React only for unmigrated product areas.
 
 ### Tailwind (legacy packages/ui only)
 
