@@ -101,8 +101,8 @@ export function CompleteStep({
 					<h2 className="text-2xl font-semibold text-foreground">You're all set.</h2>
 					<p className="text-sm text-muted-foreground">
 						{projectRuntimeVersion
-							? `Palot is ready (project runtime: OpenCode ${formatVersion(projectRuntimeVersion)})`
-							: "Palot is ready to go"}
+							? `Palot is ready (OpenCode managed runtime ${formatVersion(projectRuntimeVersion)}; Codex and Claude Code work as process adapters too)`
+							: "Palot is ready — use OpenCode, Codex, or Claude Code with the same session UI"}
 						{hasMigrated ? " and your configuration has been migrated." : "."}
 					</p>
 				</motion.div>

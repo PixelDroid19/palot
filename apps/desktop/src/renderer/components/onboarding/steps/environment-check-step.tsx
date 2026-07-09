@@ -1,9 +1,11 @@
 /**
  * Onboarding Step 2: Environment Check.
  *
- * Palot supports multiple runtimes. This step optionally verifies the local
- * managed server for the OpenCode adapter when present, and offers install or
- * remote connect paths. OpenCode is not required for Codex/Claude workflows.
+ * Palot is multi-runtime (OpenCode, Codex, Claude Code, …). This step checks
+ * the optional local managed-server adapter (OpenCode today) for workspaces that
+ * use it. Missing OpenCode is a warning, not a hard block — Codex/Claude work
+ * without it. Users may install OpenCode, connect a remote managed server, or
+ * continue with process adapters only.
  */
 
 import { Button } from "@palot/ui/components/button"
@@ -53,9 +55,13 @@ interface EnvironmentCheckStepProps {
 // Component
 // ============================================================
 
-export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckStepProps) {
+export function EnvironmentCheckStep({ onComplete, onSkip: _onSkip }: EnvironmentCheckStepProps) {
 	const [checks, setChecks] = useState<CheckItem[]>([
-		{ id: "locate", label: "Locating local managed runtime (OpenCode)", status: "pending" },
+		{
+			id: "locate",
+			label: "Checking optional managed-server runtime (OpenCode)",
+			status: "pending",
+		},
 		{ id: "version", label: "Checking version compatibility", status: "pending" },
 	])
 	const [projectRuntimeResult, setProjectRuntimeResult] = useState<ProjectRuntimeCheckResult | null>(null)
@@ -94,49 +100,63 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		setAllDone(false)
 		setProjectRuntimeResult(null)
 		setChecks([
-			{ id: "locate", label: "Locating local managed runtime (OpenCode)", status: "running" },
+			{
+				id: "locate",
+				label: "Checking optional managed-server runtime (OpenCode)",
+				status: "running",
+			},
 			{ id: "version", label: "Checking version compatibility", status: "pending" },
 		])
 
 		try {
-			// Step 1: Check project runtime installation
+			// Optional managed-server adapter (OpenCode). Not required for Codex/Claude.
 			const result = await window.palot.onboarding.checkProjectRuntime()
 			setProjectRuntimeResult(result)
 
 			if (!result.installed) {
 				updateCheck("locate", {
-					status: "error",
-					label: "Project runtime CLI not found",
-					detail: "Install the project runtime CLI to continue",
+					status: "warning",
+					label: "Managed-server runtime not installed",
+					detail:
+						"Optional — install OpenCode for managed-server sessions, or continue with Codex / Claude Code",
 				})
+				updateCheck("version", {
+					status: "warning",
+					label: "Skipped (runtime not installed)",
+					detail: "You can still use process adapters (Codex, Claude Code)",
+				})
+				// Multi-runtime: missing OpenCode does not block onboarding.
+				setAllDone(true)
 				return
 			}
 
 			updateCheck("locate", {
 				status: "success",
-				label: `Project runtime ${result.version} found`,
+				label: `OpenCode managed runtime ${result.version} found`,
 				detail: result.path ?? undefined,
 			})
 
-			// Step 2: Version compatibility
+			// Step 2: Version compatibility (only when installed)
 			updateCheck("version", { status: "running" })
 			await new Promise((r) => setTimeout(r, 300)) // Brief pause for visual feedback
 
 			if (result.compatibility === "too-old") {
 				updateCheck("version", {
-					status: "error",
-					label: "Version not compatible",
-					detail: result.message ?? undefined,
+					status: "warning",
+					label: "Managed runtime version is outdated",
+					detail: result.message ?? "Update recommended for managed-server sessions",
 				})
+				setAllDone(true)
 				return
 			}
 
 			if (result.compatibility === "blocked") {
 				updateCheck("version", {
-					status: "error",
-					label: "Version blocked",
-					detail: result.message ?? undefined,
+					status: "warning",
+					label: "Managed runtime version blocked",
+					detail: result.message ?? "Process adapters remain available",
 				})
+				setAllDone(true)
 				return
 			}
 
@@ -156,7 +176,16 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 			setAllDone(true)
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Check failed"
-			updateCheck("locate", { status: "error", detail: message })
+			updateCheck("locate", {
+				status: "warning",
+				label: "Could not check managed runtime",
+				detail: `${message}. You can continue with other runtimes.`,
+			})
+			updateCheck("version", {
+				status: "warning",
+				label: "Skipped",
+			})
+			setAllDone(true)
 		}
 	}, [isElectron, updateCheck])
 
@@ -307,7 +336,8 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 				<div className="text-center">
 					<h2 className="text-xl font-semibold text-foreground">Environment Check</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Verifying your setup is ready for Palot.
+						Palot supports multiple runtimes. Checking optional managed-server setup —
+						Codex and Claude Code work without it.
 					</p>
 				</div>
 
@@ -340,16 +370,20 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 					>
 						<p className="text-sm text-muted-foreground">
 							{needsUpdate
-								? "Your project runtime version is too old. Update to continue."
-								: "Palot needs the OpenCode project runtime for local sessions. Install it to continue."}
+								? "Your OpenCode managed-server runtime is outdated. Update for managed-server sessions, or continue with other runtimes."
+								: "OpenCode is an optional local managed-server runtime. Install it for managed-server sessions, or skip and use Codex / Claude Code."}
 						</p>
 						<div className="flex gap-2">
 							<Button size="sm" onClick={handleInstall} className="gap-2">
 								<DownloadIcon aria-hidden="true" className="size-3.5" />
-								{needsUpdate ? "Update for me" : "Install for me"}
+								{needsUpdate ? "Update OpenCode" : "Install OpenCode"}
 							</Button>
-							<Button size="sm" variant="outline" onClick={onSkip}>
-								{needsUpdate ? "Continue anyway" : "I'll install manually"}
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() => onComplete(projectRuntimeResult?.version ?? null)}
+							>
+								Continue without it
 							</Button>
 						</div>
 						<p className="text-xs text-muted-foreground/60">
@@ -372,8 +406,8 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 							<p className="text-sm font-medium text-foreground">Or connect to a remote server</p>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Connect to a project runtime running on another machine instead of installing locally
-							locally.
+							Connect to a remote managed-server runtime on another machine instead of installing
+							OpenCode locally.
 						</p>
 
 						{/* mDNS discovered servers */}

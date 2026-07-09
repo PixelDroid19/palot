@@ -330,7 +330,7 @@ function LocalServerSettings() {
 
 			// Restart the server to apply new settings
 			if (isElectron) {
-				await window.palot.projectRuntime.restart()
+				await window.palot.runtime.restart()
 			}
 
 			setPassword("")
@@ -364,7 +364,7 @@ function LocalServerSettings() {
 
 		// Restart the server without password
 		if (isElectron) {
-			await window.palot.projectRuntime.restart()
+			await window.palot.runtime.restart()
 		}
 	}, [settings, updateSettings])
 
@@ -376,8 +376,9 @@ function LocalServerSettings() {
 					Local Server Configuration
 				</h3>
 				<p className="mt-1 text-sm text-muted-foreground">
-					Configure how the local project runtime server is started. OpenCode powers this server
-					today. Changes require a server restart.
+					Configure the optional local managed-server lifecycle (used by the OpenCode adapter).
+					Codex and Claude Code run as process adapters and do not need this server. Changes
+					require a restart of the managed server.
 				</p>
 			</div>
 
