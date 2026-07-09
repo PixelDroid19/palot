@@ -48,8 +48,13 @@ import {
 	type SessionRuntimeDescriptor,
 } from "./descriptor-registry"
 import { installDesktopHostToolBackends } from "./host-tool-backends"
+import {
+	REQUIRED_HOST_TOOLS,
+	ensureHostToolPlaneComplete as healHostToolPlane,
+} from "./host-tool-plane"
 
 export type { SessionRuntimeDescriptor } from "./descriptor-registry"
+export { REQUIRED_HOST_TOOLS, listMissingHostTools } from "./host-tool-plane"
 
 const log = createLogger("agent-host")
 
@@ -93,23 +98,30 @@ export function getAgentHost(): AgentHost {
 	return hostSingleton
 }
 
-/** Core host tools that must always be present for agentic multi-harness scale. */
-const REQUIRED_HOST_TOOLS = [
-	"palot_list_agents",
-	"palot_delegate",
-	"palot_list_subagents",
-	"palot_run_subagent",
-	"palot_automation_list",
-	"palot_system_run",
-	"palot_browser_open",
-] as const
+/**
+ * Desktop wrapper around pure heal — installs real desktop backends after
+ * reinstalling core tools. Used by {@link getAgentHost} on every access of an
+ * existing singleton.
+ */
+export function ensureHostToolPlaneComplete(host: AgentHost): string[] {
+	const missing = healHostToolPlane(host, installDesktopHostToolBackends)
+	if (missing.length > 0) {
+		log.warn("Host tool plane incomplete; reinstalling defaults", { missing })
+	}
+	return missing
+}
 
-function ensureHostToolPlaneComplete(host: AgentHost): void {
-	const missing = REQUIRED_HOST_TOOLS.filter((name) => !host.tools.has(name))
-	if (missing.length === 0) return
-	log.warn("Host tool plane incomplete; reinstalling defaults", { missing })
-	host.installDefaultHostTools()
-	installDesktopHostToolBackends(host)
+/**
+ * Test/dev only: replace or clear the AgentHost singleton so hot-upgrade
+ * healing can be exercised through {@link getAgentHost}.
+ */
+export function setAgentHostSingletonForTests(host: AgentHost | null): void {
+	hostSingleton = host
+}
+
+/** Test only: clear host options so the next getAgentHost uses a clean slate. */
+export function resetAgentHostOptionsForTests(): void {
+	hostOptions = {}
 }
 
 /**
