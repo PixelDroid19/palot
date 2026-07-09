@@ -2,7 +2,7 @@ import { removeSessionAtom, setSessionBranchAtom, setSessionSetupPhaseAtom, setS
 import { appStore } from "../atoms/store"
 import type { AgentSandbox } from "../../preload/api"
 import type { RuntimePromptOptions } from "../lib/runtime-session-config"
-import { DEFAULT_SESSION_RUNTIME_ID, type SessionRuntimeId } from "../lib/session-runtimes"
+import { resolveDefaultSessionRuntimeId, type SessionRuntimeId } from "../lib/session-runtimes"
 import type { FileAttachment } from "../lib/types"
 import { createUuidV7 } from "../../shared/uuid"
 import { sendRuntimePrompt } from "./runtime-session-prompt"
@@ -31,7 +31,7 @@ export async function createDefaultRuntimeSession(
 	return createRuntimeSession({
 		directory,
 		title,
-		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+		runtimeId: resolveDefaultSessionRuntimeId(),
 	})
 }
 

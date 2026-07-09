@@ -206,12 +206,15 @@ export function createAgentHostAutomationExecutor(runtimeId: string): Automation
 	}
 }
 
-/** Register process-adapter automation backends for built-in agent-host runtimes. */
-export function registerBuiltInAgentHostAutomationExecutors(): void {
-	for (const runtimeId of ["codex", "claude"] as const) {
+/**
+ * Register process-adapter automation backends for the given runtime ids.
+ * Callers pass the composition subset (may be empty when process built-ins are off).
+ * No automatic side-effect registration — product composition owns plug-in.
+ */
+export function registerBuiltInAgentHostAutomationExecutors(
+	which: readonly string[] = ["codex", "claude"],
+): void {
+	for (const runtimeId of which) {
 		registerAutomationRuntimeExecutor(createAgentHostAutomationExecutor(runtimeId))
 	}
 }
-
-// Side-effect registration when this module is imported from the automation index.
-registerBuiltInAgentHostAutomationExecutors()

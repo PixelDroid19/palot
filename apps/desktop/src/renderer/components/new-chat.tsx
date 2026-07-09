@@ -43,7 +43,7 @@ import {
 	useRuntimePreference,
 } from "../lib/runtime-session-config"
 import {
-	DEFAULT_SESSION_RUNTIME_ID,
+	resolveDefaultSessionRuntimeId,
 	installedProcessRuntimeDescriptors,
 	installedSessionRuntimeOptions,
 	loadRuntimeDescriptors,
@@ -272,7 +272,9 @@ export function NewChat() {
 
 	// Session runtime is a first-class user choice, remembered across launches.
 	const [sessionRuntime, setSessionRuntimeState] = useState<SessionRuntimeId>(
-		() => (localStorage.getItem("palot:lastSessionRuntime") as SessionRuntimeId) || DEFAULT_SESSION_RUNTIME_ID,
+		() =>
+			(localStorage.getItem("palot:lastSessionRuntime") as SessionRuntimeId) ||
+			resolveDefaultSessionRuntimeId(),
 	)
 	const runtimeCapabilities = useMemo(() => runtimeIdCapabilities(sessionRuntime), [sessionRuntime])
 	const setSessionRuntime = (id: SessionRuntimeId) => {
@@ -303,7 +305,7 @@ export function NewChat() {
 			setSessionRuntimeState((current) =>
 				runtimeTransportForId(current) === "agent-host" &&
 				!processInstalled.some((d) => d.id === current)
-					? DEFAULT_SESSION_RUNTIME_ID
+					? resolveDefaultSessionRuntimeId(all)
 					: current,
 			)
 		})
@@ -527,10 +529,7 @@ export function NewChat() {
 			activeProcessRuntime
 		) {
 			return buildProcessNewChatRuntimeConfig({
-				runtimeId: activeProcessRuntime.id as Exclude<
-					SessionRuntimeId,
-					typeof DEFAULT_SESSION_RUNTIME_ID
-				>,
+				runtimeId: activeProcessRuntime.id,
 				models: processModels,
 				modelValue: resolvedProcessModel ?? "",
 				onModelChange: (value: string) => {

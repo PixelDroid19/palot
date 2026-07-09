@@ -10,6 +10,7 @@
  * `loadRuntimeDescriptors()` resolves.
  */
 import type { AgentRuntimeId, SessionRuntimeDescriptor } from "../../preload/api"
+import { listManagedServerRuntimeIds } from "../../shared/runtime-transport-registry"
 import { PROJECT_RUNTIME_ID as SHARED_PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
 import {
 	gatewayTransportForRuntimeId,
@@ -20,8 +21,12 @@ import {
 export const PROJECT_RUNTIME_ID = SHARED_PROJECT_RUNTIME_ID
 /** Concrete OpenCode adapter id (stable; not a product-base concept). */
 export const OPENCODE_RUNTIME_ID = PROJECT_RUNTIME_ID
-export type SessionRuntimeId = typeof PROJECT_RUNTIME_ID | AgentRuntimeId
-export const DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = PROJECT_RUNTIME_ID
+export type SessionRuntimeId = string
+/**
+ * Bootstrap fallback only when no descriptors/registry are available yet.
+ * Prefer {@link resolveDefaultSessionRuntimeId} for product paths.
+ */
+export let DEFAULT_SESSION_RUNTIME_ID: SessionRuntimeId = PROJECT_RUNTIME_ID
 export interface SessionRuntimeOption {
 	value: SessionRuntimeId
 	label: string
@@ -33,6 +38,36 @@ const DESCRIPTOR_TTL_MS = 60_000
 
 let descriptorCache: { at: number; value: SessionRuntimeDescriptor[] } | null = null
 let inflight: Promise<SessionRuntimeDescriptor[]> | null = null
+
+/**
+ * Default runtime for new sessions: first **installed** descriptor, else first
+ * descriptor, else first registered managed-server id, else bootstrap constant.
+ * Driven by registry/descriptors — not a frozen OpenCode product base.
+ */
+export function resolveDefaultSessionRuntimeId(
+	descriptors: SessionRuntimeDescriptor[] = runtimeDescriptors(),
+): SessionRuntimeId {
+	const installed = descriptors.find((d) => d.installed)
+	if (installed) return installed.id
+	if (descriptors[0]) return descriptors[0].id
+	const managed = listManagedServerRuntimeIds()
+	if (managed[0]) return managed[0]
+	return DEFAULT_SESSION_RUNTIME_ID
+}
+
+/**
+ * Runtime for sessions without process-adapter meta (managed-server path).
+ * Uses registered managed-server ids only — never invents a process CLI default.
+ */
+export function resolveDefaultManagedRuntimeId(): SessionRuntimeId {
+	const managed = listManagedServerRuntimeIds()
+	if (managed[0]) return managed[0]
+	return resolveDefaultSessionRuntimeId()
+}
+
+function refreshDefaultSessionRuntimeId(descriptors: SessionRuntimeDescriptor[]): void {
+	DEFAULT_SESSION_RUNTIME_ID = resolveDefaultSessionRuntimeId(descriptors)
+}
 
 /**
  * Fetch runtime descriptors from the core (cached briefly, so a CLI installed
@@ -49,6 +84,7 @@ export function loadRuntimeDescriptors(force = false): Promise<SessionRuntimeDes
 		.describeRuntimes()
 		.then((descriptors) => {
 			descriptorCache = { at: Date.now(), value: descriptors }
+			refreshDefaultSessionRuntimeId(descriptors)
 			inflight = null
 			return descriptors
 		})
@@ -105,8 +141,8 @@ export function installedCliRuntimeDescriptors(
 	return installedProcessRuntimeDescriptors(descriptors)
 }
 
-export function isProjectRuntimeId(id: string): id is typeof DEFAULT_SESSION_RUNTIME_ID {
-	return id === DEFAULT_SESSION_RUNTIME_ID
+export function isProjectRuntimeId(id: string): id is typeof PROJECT_RUNTIME_ID {
+	return id === PROJECT_RUNTIME_ID
 }
 
 export function isOpenCodeRuntimeId(id: string): boolean {

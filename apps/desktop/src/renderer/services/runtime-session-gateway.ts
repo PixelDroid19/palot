@@ -19,7 +19,7 @@ import {
 	resolvePromptRuntime,
 } from "../lib/runtime-session-config"
 import {
-	DEFAULT_SESSION_RUNTIME_ID,
+	resolveDefaultSessionRuntimeId,
 	runtimeTransportForId,
 	type SessionRuntimeId,
 } from "../lib/session-runtimes"
@@ -408,7 +408,7 @@ export const runtimeSessionGateway = {
 		const session = await managedServerGateway.createSession(args.directory, args.title)
 		if (!session) return null
 		return {
-			runtimeId: args.runtimeId || DEFAULT_SESSION_RUNTIME_ID,
+			runtimeId: args.runtimeId || resolveDefaultSessionRuntimeId(),
 			sessionId: session.id,
 			session,
 		}

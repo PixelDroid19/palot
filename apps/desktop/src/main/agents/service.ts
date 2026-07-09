@@ -27,10 +27,24 @@ import { detectAgentClis } from "../agent-clis"
 import { checkProjectRuntime } from "../compatibility"
 import { createLogger } from "../logger"
 import { PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
-import { registerManagedServerRuntimeId } from "../../shared/runtime-transport-registry"
+import {
+	registerManagedServerRuntimeId,
+	unregisterManagedServerRuntimeId,
+} from "../../shared/runtime-transport-registry"
+import {
+	resolveProcessBuiltinIds,
+	shouldIncludeOpenCode,
+} from "./composition"
+// Re-export composition API for app entry / tests
+export {
+	configureRuntimeComposition,
+	getRuntimeComposition,
+	type RuntimeComposition,
+} from "./composition"
 import {
 	describeRegisteredManagedDescriptors,
 	registerRuntimeDescriptorSource,
+	unregisterRuntimeDescriptorSource,
 	type SessionRuntimeDescriptor,
 } from "./descriptor-registry"
 
@@ -46,7 +60,8 @@ let managedSourcesRegistered = false
 
 /**
  * Compose which process adapters load into AgentHost (before first getAgentHost).
- * Example custom-only build: `{ builtinProviders: false, providers: [myHarness] }`.
+ * Prefer {@link configureRuntimeComposition} for full product composition.
+ * Example custom-only: `{ builtinProviders: false, providers: [myHarness] }`.
  */
 export function configureAgentHost(options: AgentHostOptions): void {
 	if (hostSingleton) {
@@ -56,19 +71,40 @@ export function configureAgentHost(options: AgentHostOptions): void {
 }
 
 export function getAgentHost(): AgentHost {
+	// Align AgentHost built-ins with product composition when not overridden explicitly.
+	if (!hostSingleton && hostOptions.builtinProviders === undefined) {
+		const ids = resolveProcessBuiltinIds()
+		hostOptions = {
+			...hostOptions,
+			builtinProviders: ids.length === 0 ? false : ids,
+		}
+	}
 	hostSingleton ??= new AgentHost(hostOptions)
 	return hostSingleton
 }
 
-/** Register default managed-server descriptor sources (OpenCode). Idempotent. */
+/**
+ * Register managed-server descriptor sources per composition.
+ * When OpenCode is omitted, does not re-register it (unplug sticks).
+ */
 export function registerDefaultManagedDescriptorSources(): void {
 	if (managedSourcesRegistered) return
 	managedSourcesRegistered = true
+	if (!shouldIncludeOpenCode()) {
+		unregisterRuntimeDescriptorSource(PROJECT_RUNTIME_ID)
+		unregisterManagedServerRuntimeId(PROJECT_RUNTIME_ID)
+		return
+	}
 	registerManagedServerRuntimeId(PROJECT_RUNTIME_ID)
 	registerRuntimeDescriptorSource({
 		id: PROJECT_RUNTIME_ID,
 		describe: () => describeOpenCodeAdapter(),
 	})
+}
+
+/** Force re-evaluation of managed sources after composition changes (tests). */
+export function resetManagedDescriptorRegistration(): void {
+	managedSourcesRegistered = false
 }
 
 /**

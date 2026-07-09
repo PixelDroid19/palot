@@ -60,11 +60,10 @@ export function listAutomationRuntimeExecutors(): AutomationRuntimeExecutor[] {
 
 /**
  * Default runtime for legacy automation configs with no runtimeId:
- * prefer a registered "opencode" executor if present, else the first registered
- * executor — never invent a brand that is not registered.
+ * first registered executor in registration order — pure registry, no brand
+ * preference. Returns null when nothing is registered.
  */
 export function resolveDefaultAutomationRuntimeId(): string | null {
-	if (executors.has("opencode")) return "opencode"
 	const first = executors.keys().next()
 	return first.done ? null : first.value
 }
@@ -72,17 +71,16 @@ export function resolveDefaultAutomationRuntimeId(): string | null {
 /**
  * Neutral automation entry point. Selects executor by runtimeId.
  *
- * - Omitted / empty runtimeId → {@link resolveDefaultAutomationRuntimeId}.
+ * - Omitted / empty / whitespace runtimeId → {@link resolveDefaultAutomationRuntimeId}.
  * - Explicit runtimeId with no registered executor → **fail closed** (never
  *   silently run a different runtime's backend).
  */
 export async function executeAutomationRun(
 	request: AutomationRunRequest,
 ): Promise<AutomationExecutionResult> {
-	const explicit = Boolean(request.runtimeId && request.runtimeId.trim())
-	const runtimeId = explicit
-		? request.runtimeId.trim()
-		: (resolveDefaultAutomationRuntimeId() ?? "")
+	const trimmed = request.runtimeId?.trim() ?? ""
+	const explicit = trimmed.length > 0
+	const runtimeId = explicit ? trimmed : (resolveDefaultAutomationRuntimeId() ?? "")
 	const executor = runtimeId ? executors.get(runtimeId) : undefined
 	if (!executor) {
 		return {
@@ -98,4 +96,9 @@ export async function executeAutomationRun(
 		}
 	}
 	return executor.execute(request.config, request.workspace, request.onSessionCreated)
+}
+
+/** Clear all executors (tests / re-composition). */
+export function clearAutomationRuntimeExecutors(): void {
+	executors.clear()
 }

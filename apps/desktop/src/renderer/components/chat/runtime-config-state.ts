@@ -28,9 +28,9 @@ import {
 	useSessionRuntimeState,
 } from "../../lib/runtime-session-config"
 import {
-	DEFAULT_SESSION_RUNTIME_ID,
 	installedProcessRuntimeDescriptors,
 	loadRuntimeDescriptors,
+	resolveDefaultSessionRuntimeId,
 	type SessionRuntimeId,
 } from "../../lib/session-runtimes"
 import type {
@@ -277,7 +277,7 @@ export function buildConfigurableRuntimeNewChatRuntimeConfig(args: {
 	onSelectVariant: (variant: string | undefined) => void
 	worktreeMode: "local" | "worktree"
 }): NewChatRuntimeConfig {
-	const runtimeId = args.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID
+	const runtimeId = args.runtimeId ?? resolveDefaultSessionRuntimeId()
 	return {
 		runtimeId,
 		toolbarProps: {
@@ -337,7 +337,7 @@ export function buildConfigurableRuntimeChatRuntimeConfig(args: {
 	sendOptions: RuntimePromptOptions
 }): ChatRuntimeConfig {
 	return buildChatRuntimeConfig({
-		runtimeId: args.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
+		runtimeId: args.runtimeId ?? resolveDefaultSessionRuntimeId(),
 		toolbarProps: {
 			sections: buildConfigurableRuntimeToolbarSections(args),
 		},

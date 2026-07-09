@@ -76,7 +76,13 @@ describe("neutral automation executor registry", () => {
 		expect(result.summary).not.toBe("opencode-ran")
 	})
 
-	test("omitted runtimeId defaults to opencode executor when registered", async () => {
+	test("omitted runtimeId uses first registered executor (registration order)", async () => {
+		// Clear any prior executors from other tests by re-registering as sole first:
+		// Map keeps insertion order — first register wins as default.
+		const { clearAutomationRuntimeExecutors } = await import(
+			"../src/main/automation/runtime-executor"
+		)
+		clearAutomationRuntimeExecutors()
 		registerAutomationRuntimeExecutor({
 			runtimeId: "opencode",
 			async execute(config) {

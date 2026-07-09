@@ -5,8 +5,9 @@ import { cliSessionsAtom, getCliMeta, patchCliMeta, type CliSessionMeta } from "
 import { appStore } from "../atoms/store"
 import type { ModelRef } from "../hooks/use-project-runtime-data"
 import {
-	DEFAULT_SESSION_RUNTIME_ID,
 	isCliRuntime,
+	resolveDefaultManagedRuntimeId,
+	resolveDefaultSessionRuntimeId,
 	runtimeTransportForId,
 	runtimeDescriptor,
 	type SessionRuntimeId,
@@ -90,12 +91,13 @@ export const CLI_SESSION_RUNTIME_CAPABILITIES: SessionRuntimeCapabilities = {
 }
 
 export function runtimeIdCapabilities(id: SessionRuntimeId): SessionRuntimeCapabilities {
-	return (
-		runtimeDescriptor(id)?.sessionCapabilities ??
-		(id === DEFAULT_SESSION_RUNTIME_ID
-			? PROJECT_SESSION_RUNTIME_CAPABILITIES
-			: CLI_SESSION_RUNTIME_CAPABILITIES)
-	)
+	const descriptor = runtimeDescriptor(id)
+	if (descriptor?.sessionCapabilities) return descriptor.sessionCapabilities
+	// Bootstrap: managed-server ids get full session caps; process adapters do not.
+	const transport = runtimeTransportForId(id)
+	return transport === "managed-server"
+		? PROJECT_SESSION_RUNTIME_CAPABILITIES
+		: CLI_SESSION_RUNTIME_CAPABILITIES
 }
 
 /**
@@ -124,7 +126,7 @@ export function resolvePromptRuntime(
 	state: Pick<SessionRuntimeState, "runtimeId"> | null | undefined,
 	options?: RuntimePromptOptions,
 ): SessionRuntimeId {
-	return options?.runtimeId ?? state?.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID
+	return options?.runtimeId ?? state?.runtimeId ?? resolveDefaultSessionRuntimeId()
 }
 
 export function resolveConfiguredPromptOptions(
@@ -185,7 +187,7 @@ export function readSessionRuntimeState(
 	return {
 		sessionId,
 		directory: directory ?? null,
-		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+		runtimeId: resolveDefaultManagedRuntimeId(),
 		meta: null,
 		modelPreference,
 	}
@@ -211,7 +213,7 @@ export function useSessionRuntimeState(
 	return {
 		sessionId,
 		directory: directory ?? null,
-		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+		runtimeId: resolveDefaultManagedRuntimeId(),
 		meta: null,
 		modelPreference,
 	}

@@ -24,12 +24,14 @@ import {
 	type AutomationExecutionResult,
 	type AutomationOnSessionCreated,
 	type AutomationRuntimeExecutor,
+	clearAutomationRuntimeExecutors,
 	executeAutomationRun,
 	registerAutomationRuntimeExecutor,
+	resolveDefaultAutomationRuntimeId,
 } from "./runtime-executor"
 import type { AutomationConfig, PermissionPreset } from "./types"
-// Register Codex/Claude (agent-host) automation backends alongside OpenCode.
-import "./agent-host-executor"
+import { registerBuiltInAgentHostAutomationExecutors } from "./agent-host-executor"
+import { resolveProcessAutomationIds, shouldIncludeOpenCode } from "../agents/composition"
 
 export type { AutomationExecutionResult as ExecutionResult, AutomationOnSessionCreated as OnSessionCreated }
 export { executeAutomationRun }
@@ -589,20 +591,38 @@ export const openCodeAutomationExecutor: AutomationRuntimeExecutor = {
 	execute: executeOpenCodeAutomationRun,
 }
 
-registerAutomationRuntimeExecutor(openCodeAutomationExecutor)
+let automationComposed = false
+
+/**
+ * Register automation backends from {@link configureRuntimeComposition}.
+ * Idempotent until force=true (tests / re-composition).
+ */
+export function composeAutomationExecutors(force = false): void {
+	if (automationComposed && !force) return
+	if (force) clearAutomationRuntimeExecutors()
+	automationComposed = true
+	// OpenCode only when included; process adapters only when listed as process builtins.
+	if (shouldIncludeOpenCode()) {
+		registerAutomationRuntimeExecutor(openCodeAutomationExecutor)
+	}
+	registerBuiltInAgentHostAutomationExecutors(resolveProcessAutomationIds())
+}
 
 /**
  * Neutral product entry: dispatches via {@link executeAutomationRun}.
- * Uses `config.runtimeId` when set; otherwise the OpenCode managed-server
- * adapter (current default for existing automation configs).
+ * Uses `config.runtimeId` when set; otherwise the first registered executor
+ * (registration order — no frozen OpenCode product base).
  */
 export async function executeRun(
 	config: AutomationConfig & { id: string; prompt: string },
 	workspace: string,
 	onSessionCreated?: AutomationOnSessionCreated,
 ): Promise<AutomationExecutionResult> {
+	composeAutomationExecutors()
 	return executeAutomationRun({
-		runtimeId: config.runtimeId || "opencode",
+		runtimeId: config.runtimeId?.trim()
+			? config.runtimeId
+			: (resolveDefaultAutomationRuntimeId() ?? ""),
 		config,
 		workspace,
 		onSessionCreated,
