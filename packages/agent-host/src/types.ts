@@ -371,6 +371,11 @@ export interface AgentSessionProvider {
 	 * account state on the model, not as "no models available".
 	 */
 	listModels(): Promise<AgentModelInfo[]>
+	/**
+	 * Adapter-owned catalog when {@link listModels} throws or returns [].
+	 * Host must never hard-code brand fallbacks — each provider owns its catalog.
+	 */
+	fallbackModels?: AgentModelInfo[]
 	/** Open a persistent session. */
 	openSession(
 		opts: AgentSessionOptions,
@@ -379,6 +384,9 @@ export interface AgentSessionProvider {
 	/** Release provider-wide resources (shared processes). */
 	dispose(): Promise<void>
 }
+
+/** Built-in process adapter ids shipped with agent-host (optional to register). */
+export type BuiltInProviderId = "codex" | "claude"
 
 /** Default capability flags for process/CLI adapters (Codex, Claude). */
 export const DEFAULT_PROCESS_RUNTIME_CAPABILITIES: AgentRuntimeCapabilities = {

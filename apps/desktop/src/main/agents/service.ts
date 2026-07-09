@@ -13,13 +13,12 @@ import {
 	AgentHost,
 	DEFAULT_MANAGED_SERVER_RUNTIME_CAPABILITIES,
 	MCP_PROXY_SOURCE,
+	type AgentHostOptions,
 	type AgentRuntimeCapabilities,
 	type AgentPermissionDecision,
 	type AgentRunResult,
-	type AgentRuntimeDescriptor,
 	type AgentRuntimeId,
 	type AgentSandbox,
-	type RuntimeTransport,
 	resolveRuntimeTransport,
 } from "@palot/agent-host"
 import { whichOnPath } from "@palot/cli-registry"
@@ -28,16 +27,48 @@ import { detectAgentClis } from "../agent-clis"
 import { checkProjectRuntime } from "../compatibility"
 import { createLogger } from "../logger"
 import { PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
+import { registerManagedServerRuntimeId } from "../../shared/runtime-transport-registry"
+import {
+	describeRegisteredManagedDescriptors,
+	registerRuntimeDescriptorSource,
+	type SessionRuntimeDescriptor,
+} from "./descriptor-registry"
+
+export type { SessionRuntimeDescriptor } from "./descriptor-registry"
 
 const log = createLogger("agent-host")
 
 let hostSingleton: AgentHost | null = null
 let bridgeSingleton: AgentBridge | null = null
 let bridgeStarting: Promise<void> | null = null
+let hostOptions: AgentHostOptions = {}
+let managedSourcesRegistered = false
+
+/**
+ * Compose which process adapters load into AgentHost (before first getAgentHost).
+ * Example custom-only build: `{ builtinProviders: false, providers: [myHarness] }`.
+ */
+export function configureAgentHost(options: AgentHostOptions): void {
+	if (hostSingleton) {
+		log.warn("configureAgentHost called after host was created; restart required for full effect")
+	}
+	hostOptions = options
+}
 
 export function getAgentHost(): AgentHost {
-	hostSingleton ??= new AgentHost()
+	hostSingleton ??= new AgentHost(hostOptions)
 	return hostSingleton
+}
+
+/** Register default managed-server descriptor sources (OpenCode). Idempotent. */
+export function registerDefaultManagedDescriptorSources(): void {
+	if (managedSourcesRegistered) return
+	managedSourcesRegistered = true
+	registerManagedServerRuntimeId(PROJECT_RUNTIME_ID)
+	registerRuntimeDescriptorSource({
+		id: PROJECT_RUNTIME_ID,
+		describe: () => describeOpenCodeAdapter(),
+	})
 }
 
 /**
@@ -76,26 +107,6 @@ export interface AgentImageAttachment {
 	filename?: string
 }
 
-export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
-	sessionCapabilities: {
-		supportsSessionRevert: boolean
-		supportsSessionSummarize: boolean
-		supportsServerSlashCommands: boolean
-		supportsFork: boolean
-		supportsRuntimeConfiguration: boolean
-		supportsWorktreeLaunch: boolean
-		supportsServerHistory: boolean
-	}
-	/** How the product talks to this runtime (never branch on product id for UI). */
-	transport: RuntimeTransport
-	setup: {
-		description: string
-		version: string | null
-		compatible: boolean
-		warning: string | null
-	}
-}
-
 /** OpenCode is one managed-server adapter — not the product base. */
 const OPENCODE_ADAPTER_LABEL = "OpenCode"
 const OPENCODE_ADAPTER_CAPABILITIES: AgentRuntimeCapabilities =
@@ -132,11 +143,11 @@ function writeImageFiles(images: AgentImageAttachment[]): { paths: string[]; cle
 	return { paths, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
-function describeOpenCodeAdapter(detection?: {
-	binaryPath: string | null
-	installHint: string
-}): Promise<SessionRuntimeDescriptor> {
-	return checkProjectRuntime().then((runtime) => ({
+async function describeOpenCodeAdapter(): Promise<SessionRuntimeDescriptor> {
+	const detections = await detectAgentClis()
+	const detection = detections.find((d) => d.id === PROJECT_RUNTIME_ID)
+	const runtime = await checkProjectRuntime()
+	return {
 		id: PROJECT_RUNTIME_ID,
 		displayName: OPENCODE_ADAPTER_LABEL,
 		installed: runtime.installed,
@@ -144,45 +155,52 @@ function describeOpenCodeAdapter(detection?: {
 		sessionCapabilities: OPENCODE_SESSION_CAPABILITIES,
 		transport: "managed-server" as const,
 		setup: {
-			description: runtime.path ?? detection?.binaryPath ?? detection?.installHint ?? "Checking...",
+			description:
+				runtime.path ?? detection?.binaryPath ?? detection?.installHint ?? "Checking...",
 			version: runtime.version,
 			compatible: runtime.compatible,
 			warning: runtime.compatible ? null : runtime.message,
 		},
 		// Models come from the managed server provider catalog at session time.
 		models: [],
-	}))
+	}
 }
 
-/** Session runtime descriptors (all adapters) for runtime pickers and setup UI. */
+/**
+ * Session runtime descriptors for pickers and setup UI.
+ * Managed-server sources (OpenCode, …) come from the descriptor registry;
+ * process adapters come from AgentHost — both are pluggable.
+ */
 export async function describeSessionRuntimes(): Promise<SessionRuntimeDescriptor[]> {
-	const [cliDetections, agentHostRuntimes] = await Promise.all([
+	registerDefaultManagedDescriptorSources()
+
+	const [cliDetections, managedDescriptors, agentHostRuntimes] = await Promise.all([
 		detectAgentClis(),
+		describeRegisteredManagedDescriptors(),
 		getAgentHost().describeRuntimes(),
 	])
 	const detections = new Map<string, (typeof cliDetections)[number]>(
 		cliDetections.map((runtime) => [runtime.id, runtime]),
 	)
-	const openCode = await describeOpenCodeAdapter(detections.get(PROJECT_RUNTIME_ID))
-	return [
-		openCode,
-		...agentHostRuntimes.map((runtime) => {
-			const transport = resolveRuntimeTransport(runtime)
-			const detection = detections.get(runtime.id)
-			return {
-				...runtime,
-				transport,
-				setup: {
-					description: detection?.installed
-						? (detection.binaryPath ?? "")
-						: (detection?.installHint ?? ""),
-					version: detection?.version ?? null,
-					compatible: detection?.installed ?? false,
-					warning: null,
-				},
-			}
-		}),
-	]
+
+	const processDescriptors: SessionRuntimeDescriptor[] = agentHostRuntimes.map((runtime) => {
+		const transport = resolveRuntimeTransport(runtime)
+		const detection = detections.get(runtime.id)
+		return {
+			...runtime,
+			transport,
+			setup: {
+				description: detection?.installed
+					? (detection.binaryPath ?? "")
+					: (detection?.installHint ?? ""),
+				version: detection?.version ?? null,
+				compatible: detection?.installed ?? false,
+				warning: null,
+			},
+		}
+	})
+
+	return [...managedDescriptors, ...processDescriptors]
 }
 
 export interface AgentSessionOpenOptions {

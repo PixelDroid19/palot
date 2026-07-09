@@ -59,9 +59,20 @@ export function listAutomationRuntimeExecutors(): AutomationRuntimeExecutor[] {
 }
 
 /**
+ * Default runtime for legacy automation configs with no runtimeId:
+ * prefer a registered "opencode" executor if present, else the first registered
+ * executor — never invent a brand that is not registered.
+ */
+export function resolveDefaultAutomationRuntimeId(): string | null {
+	if (executors.has("opencode")) return "opencode"
+	const first = executors.keys().next()
+	return first.done ? null : first.value
+}
+
+/**
  * Neutral automation entry point. Selects executor by runtimeId.
  *
- * - Omitted / empty runtimeId → default `"opencode"` (legacy configs).
+ * - Omitted / empty runtimeId → {@link resolveDefaultAutomationRuntimeId}.
  * - Explicit runtimeId with no registered executor → **fail closed** (never
  *   silently run a different runtime's backend).
  */
@@ -69,8 +80,10 @@ export async function executeAutomationRun(
 	request: AutomationRunRequest,
 ): Promise<AutomationExecutionResult> {
 	const explicit = Boolean(request.runtimeId && request.runtimeId.trim())
-	const runtimeId = explicit ? request.runtimeId.trim() : "opencode"
-	const executor = executors.get(runtimeId)
+	const runtimeId = explicit
+		? request.runtimeId.trim()
+		: (resolveDefaultAutomationRuntimeId() ?? "")
+	const executor = runtimeId ? executors.get(runtimeId) : undefined
 	if (!executor) {
 		return {
 			sessionId: "",
@@ -79,7 +92,9 @@ export async function executeAutomationRun(
 			summary: "",
 			hasActionable: false,
 			branch: null,
-			error: `No automation executor registered for runtime "${runtimeId}"`,
+			error: runtimeId
+				? `No automation executor registered for runtime "${runtimeId}"`
+				: "No automation executor registered",
 		}
 	}
 	return executor.execute(request.config, request.workspace, request.onSessionCreated)

@@ -1,4 +1,5 @@
 export { AgentBridge, type BridgeOptions } from "./bridge"
+export { ALL_BUILTIN_PROVIDER_IDS, createBuiltInProviders } from "./builtins"
 export { type ContextEntry, SharedContextStore } from "./context"
 export { EventBus } from "./events"
 export { AgentHost, type AgentHostOptions, type HostEvents } from "./host"

@@ -16,6 +16,7 @@ class ThrowingListModelsProvider implements AgentSessionProvider {
 	readonly id = "codex"
 	readonly displayName = "Throwing Codex"
 	readonly binary = "codex-does-not-exist-xyz"
+	readonly fallbackModels = CODEX_MODEL_FALLBACK
 	readonly capabilities = { ...DEFAULT_PROCESS_RUNTIME_CAPABILITIES }
 	readonly sessionCapabilities = {
 		supportsSessionRevert: false,
@@ -45,6 +46,7 @@ class EmptyListModelsProvider implements AgentSessionProvider {
 	readonly id = "claude"
 	readonly displayName = "Empty Claude"
 	readonly binary = "claude-does-not-exist-xyz"
+	readonly fallbackModels = CLAUDE_MODEL_FALLBACK
 	readonly capabilities = { ...DEFAULT_PROCESS_RUNTIME_CAPABILITIES }
 	readonly sessionCapabilities = {
 		supportsSessionRevert: false,

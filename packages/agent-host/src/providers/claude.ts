@@ -648,6 +648,8 @@ export class ClaudeProvider implements AgentSessionProvider {
 	readonly id = "claude"
 	readonly displayName = "Claude Code"
 	readonly binary = "claude"
+	/** Adapter-owned fallback — host must not special-case this brand. */
+	readonly fallbackModels = CLAUDE_MODEL_FALLBACK
 	readonly capabilities = {
 		...DEFAULT_PROCESS_RUNTIME_CAPABILITIES,
 		steering: true,

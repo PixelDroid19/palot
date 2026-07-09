@@ -491,6 +491,8 @@ export class CodexProvider implements AgentSessionProvider {
 	readonly id = "codex"
 	readonly displayName = "Codex"
 	readonly binary = "codex"
+	/** Adapter-owned fallback — host must not special-case this brand. */
+	readonly fallbackModels = CODEX_MODEL_FALLBACK
 	readonly capabilities = {
 		...DEFAULT_PROCESS_RUNTIME_CAPABILITIES,
 		steering: true,

@@ -11,12 +11,15 @@
  * The host knows nothing about Electron, IPC, or UI — embedders subscribe to
  * events and drive sessions. That keeps the core portable (desktop app today,
  * a standalone CLI or server tomorrow).
+ *
+ * Composition is registry-only: pass `builtinProviders: false` + custom
+ * `providers`, or a subset of built-in ids, to ship without Codex/Claude or
+ * with only a custom harness. Brand logic lives in adapters, never here.
  */
 import { whichOnPath } from "@palot/cli-registry"
+import { createBuiltInProviders } from "./builtins"
 import { SharedContextStore } from "./context"
 import { EventBus } from "./events"
-import { CLAUDE_MODEL_FALLBACK, ClaudeProvider } from "./providers/claude"
-import { CODEX_MODEL_FALLBACK, CodexProvider } from "./providers/codex"
 import type {
 	AgentModelInfo,
 	AgentPermissionDecision,
@@ -29,15 +32,9 @@ import type {
 	AgentTurnInput,
 	AgentUpdate,
 	BridgeInfo,
+	BuiltInProviderId,
 } from "./types"
 import { resolveRuntimeTransport } from "./types"
-
-/** Last-resort catalog when listModels throws (providers should not throw). */
-function catalogFallbackForProvider(id: AgentRuntimeId): AgentModelInfo[] {
-	if (id === "codex") return CODEX_MODEL_FALLBACK
-	if (id === "claude") return CLAUDE_MODEL_FALLBACK
-	return []
-}
 
 const RUNTIME_CACHE_TTL_MS = 60_000
 const DELEGATE_TIMEOUT_MS = 5 * 60 * 1000
@@ -49,8 +46,18 @@ export interface HostEvents extends Record<string, unknown> {
 }
 
 export interface AgentHostOptions {
-	/** Skip registering the built-in providers (tests / custom embedders). */
-	builtinProviders?: boolean
+	/**
+	 * Built-in process adapters to register:
+	 * - `true` / omitted → codex + claude
+	 * - `false` → none (custom-only host)
+	 * - `["codex"]` / `["claude"]` / both → selective plug-in
+	 */
+	builtinProviders?: boolean | readonly BuiltInProviderId[]
+	/**
+	 * Extra providers (custom harnesses or third-party adapters). Always
+	 * registered after built-ins; may replace a built-in with the same id.
+	 */
+	providers?: AgentSessionProvider[]
 	/** Resolve a provider's binary to an absolute path. Default: PATH lookup. */
 	resolveBinary?: (binary: string) => Promise<string | null>
 	/** Provide bridge info to inject into sessions (set by the bridge server). */
@@ -60,6 +67,11 @@ export interface AgentHostOptions {
 interface SessionEntry {
 	session: AgentSession
 	runtimeId: AgentRuntimeId
+}
+
+/** Prefer adapter-owned fallbackModels; never hard-code brand catalogs here. */
+function catalogFallbackForProvider(provider: AgentSessionProvider): AgentModelInfo[] {
+	return provider.fallbackModels ?? []
 }
 
 export class AgentHost {
@@ -75,15 +87,32 @@ export class AgentHost {
 	constructor(options: AgentHostOptions = {}) {
 		this.resolveBinary = options.resolveBinary ?? ((binary) => whichOnPath(binary))
 		this.bridgeInfo = options.bridgeInfo ?? (() => null)
-		if (options.builtinProviders !== false) {
-			this.registerProvider(new CodexProvider(() => this.resolveBinary("codex")))
-			this.registerProvider(new ClaudeProvider(() => this.resolveBinary("claude")))
+
+		const builtins = resolveBuiltinSelection(options.builtinProviders)
+		if (builtins) {
+			for (const provider of createBuiltInProviders(this.resolveBinary, builtins)) {
+				this.registerProvider(provider)
+			}
+		}
+		for (const provider of options.providers ?? []) {
+			this.registerProvider(provider)
 		}
 	}
 
 	registerProvider(provider: AgentSessionProvider): void {
 		this.providers.set(provider.id, provider)
 		this.runtimeCache = null
+	}
+
+	/** Unplug an adapter (sessions for that runtime must be closed first). */
+	unregisterProvider(id: AgentRuntimeId): boolean {
+		const removed = this.providers.delete(id)
+		if (removed) this.runtimeCache = null
+		return removed
+	}
+
+	hasProvider(id: AgentRuntimeId): boolean {
+		return this.providers.has(id)
 	}
 
 	/** Late-bind the bridge (it needs the host first, then the host needs it). */
@@ -107,13 +136,13 @@ export class AgentHost {
 		}
 		const descriptors = await Promise.all(
 			[...this.providers.values()].map(async (provider): Promise<AgentRuntimeDescriptor> => {
+				const fallback = catalogFallbackForProvider(provider)
 				const [binary, listed] = await Promise.all([
 					this.resolveBinary(provider.binary).catch(() => null),
-					provider.listModels().catch(() => catalogFallbackForProvider(provider.id)),
+					provider.listModels().catch(() => fallback),
 				])
-				// Never ship an empty catalog when the adapter advertises models — keep
-				// toolbar selectors usable offline / after discovery failures.
-				const fallback = catalogFallbackForProvider(provider.id)
+				// Never ship an empty catalog when the adapter advertises models —
+				// use adapter-owned fallback only (no brand switch in the host).
 				const models =
 					listed.length > 0 ? listed : provider.capabilities.models ? fallback : listed
 				return {
@@ -278,4 +307,12 @@ export class AgentHost {
 		await Promise.all([...this.sessions.keys()].map((id) => this.closeSession(id)))
 		await Promise.all([...this.providers.values()].map((p) => p.dispose().catch(() => {})))
 	}
+}
+
+function resolveBuiltinSelection(
+	option: AgentHostOptions["builtinProviders"],
+): readonly BuiltInProviderId[] | null {
+	if (option === false) return null
+	if (option === true || option === undefined) return ["codex", "claude"]
+	return option
 }
