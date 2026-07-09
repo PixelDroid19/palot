@@ -14,12 +14,21 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/to
 import { Outlet, useNavigate } from "@tanstack/react-router"
 import { useAtomValue, useSetAtom } from "jotai"
 import { PanelLeftIcon, PlusIcon } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { activeServerConfigAtom, serverConnectedAtom } from "../atoms/connection"
-import { hideProjectDirAtom, unhideProjectDirAtom } from "../atoms/hidden-projects"
+import { discoveryAtom } from "../atoms/discovery"
+import {
+	hiddenProjectDirsAtom,
+	hideProjectDirAtom,
+	unhideProjectDirAtom,
+} from "../atoms/hidden-projects"
 import { useAgents, useProjectList, useSetCommandPaletteOpen } from "../hooks/use-agents"
 import { useAgentActions } from "../hooks/use-server"
 import type { Agent, SidebarProject } from "../lib/types"
+import {
+	isProductWorktree,
+	listHiddenProductDirs,
+} from "../lib/project-visibility"
 import { pickDirectory } from "../services/backend"
 import { loadProjectSessions } from "../services/connection-manager"
 import { AddProjectDialog } from "./add-project-dialog"
@@ -154,6 +163,28 @@ export function SidebarLayout() {
 	const serverConnected = useAtomValue(serverConnectedAtom)
 	const hideProjectDir = useSetAtom(hideProjectDirAtom)
 	const unhideProjectDir = useSetAtom(unhideProjectDirAtom)
+	const discovery = useAtomValue(discoveryAtom)
+	const hiddenDirs = useAtomValue(hiddenProjectDirsAtom)
+	const setHiddenDirs = useSetAtom(hiddenProjectDirsAtom)
+
+	const hiddenProductDirs = useMemo(() => {
+		const discovered = discovery.loaded
+			? discovery.projects.map((p) => p.worktree).filter((d): d is string => !!d)
+			: []
+		return listHiddenProductDirs(discovered, hiddenDirs)
+	}, [discovery.loaded, discovery.projects, hiddenDirs])
+
+	const handleShowHiddenProjects = useCallback(() => {
+		if (hiddenProductDirs.length === 0) return
+		const restore = new Set(hiddenProductDirs)
+		setHiddenDirs(hiddenDirs.filter((d) => !restore.has(d)))
+		// Prefetch sessions for restored folders (best-effort)
+		for (const dir of hiddenProductDirs) {
+			if (isProductWorktree(dir)) {
+				void loadProjectSessions(dir).catch(() => {})
+			}
+		}
+	}, [hiddenDirs, hiddenProductDirs, setHiddenDirs])
 
 	// Sub-agents are filtered at the API level (roots: true)
 	const visibleAgents = agents
@@ -264,6 +295,8 @@ export function SidebarLayout() {
 						projects={projects}
 						onOpenCommandPalette={handleOpenCommandPalette}
 						onAddProject={handleAddProject}
+						onShowHiddenProjects={handleShowHiddenProjects}
+						hiddenProductCount={hiddenProductDirs.length}
 						onRenameSession={handleRenameSession}
 						onDeleteSession={handleDeleteSession}
 						onDeleteProject={handleDeleteProject}

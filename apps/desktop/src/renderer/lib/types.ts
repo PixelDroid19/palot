@@ -173,4 +173,9 @@ export interface Agent {
 	createdAt: number
 	/** Timestamp (ms) of last activity — for sorting and relative time display */
 	lastActiveAt: number
+	/**
+	 * Runtime that owns this session (`opencode`, `claude`, `codex`, custom).
+	 * Used for multi-runtime catalog labels — never filter Recent/Active by brand.
+	 */
+	runtimeId?: string
 }

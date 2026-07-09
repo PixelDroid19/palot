@@ -871,11 +871,11 @@ export function NewChat() {
 						</div>
 					)}
 
-					{/* No projects warning */}
+					{/* No projects warning — composer still allows picking a runtime once a folder is open */}
 					{projects.length === 0 && (
 						<p className="mt-2 text-center text-xs text-muted-foreground">
-							No workspaces found yet. Open a project folder or connect a runtime that indexes
-							local projects to get started.
+							No workspaces visible yet. Add a project folder, or restore hidden projects from
+							the sidebar — Claude, Codex, and OpenCode share the same workspace list.
 						</p>
 					)}
 				</div>

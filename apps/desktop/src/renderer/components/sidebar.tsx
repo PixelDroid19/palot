@@ -47,6 +47,15 @@ import { automationsEnabledAtom } from "../atoms/feature-flags"
 import { projectPaginationFamily } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import type { Agent, AgentStatus, SidebarProject } from "../lib/types"
+import { resolveProjectsEmptyKind, type ProjectsEmptyKind } from "../lib/project-visibility"
+import {
+	filterTasksByQuery,
+	selectActiveSessions,
+	selectRecentSessions,
+	selectTimelineTasks,
+	type TaskCatalogView,
+} from "../lib/session-catalog"
+import { runtimeLabel } from "../lib/session-runtimes"
 import { loadMoreProjectSessions, loadProjectSessions } from "../services/connection-manager"
 import { ServerIndicator } from "./server-indicator"
 
@@ -84,6 +93,10 @@ interface AppSidebarContentProps {
 	projects: SidebarProject[]
 	onOpenCommandPalette: () => void
 	onAddProject?: () => void
+	/** Restore hidden product workspaces (all-hidden empty state). */
+	onShowHiddenProjects?: () => void
+	/** How many product workspaces are currently hidden (for empty-state copy). */
+	hiddenProductCount?: number
 	onRenameSession?: (agent: Agent, title: string) => Promise<void>
 	onDeleteSession?: (agent: Agent) => Promise<void>
 	onDeleteProject?: (project: SidebarProject) => Promise<void>
@@ -104,6 +117,8 @@ export function AppSidebarContent({
 	projects,
 	onOpenCommandPalette,
 	onAddProject,
+	onShowHiddenProjects,
+	hiddenProductCount = 0,
 	onRenameSession,
 	onDeleteSession,
 	onDeleteProject,
@@ -121,6 +136,9 @@ export function AppSidebarContent({
 	const [projectSearch, setProjectSearch] = useState("")
 	const [projectSearchActive, setProjectSearchActive] = useState(false)
 	const projectSearchRef = useRef<HTMLInputElement>(null)
+	// Task catalog view: Workspace | Timeline
+	const [taskView, setTaskView] = useState<TaskCatalogView>("workspace")
+	const [taskQuery, setTaskQuery] = useState("")
 
 	// Filter projects by search query (client-side, case-insensitive)
 	const filteredProjects = useMemo(() => {
@@ -148,52 +166,92 @@ export function AppSidebarContent({
 		}
 	}, [projectSearchActive])
 
-	// Derive sections — filter out sub-agents (parentId) from sidebar display
-	const activeSessions = useMemo(
-		() =>
-			agents
-				.filter(
-					(a) =>
-						!a.parentId &&
-						(a.status === "running" || a.status === "waiting" || a.status === "failed"),
-				)
-				.sort((a, b) => b.createdAt - a.createdAt),
-		[agents],
-	)
+	// Multi-runtime catalog (Claude/Codex/OpenCode/custom) — never brand-filtered
+	const catalogAgents = useMemo(() => {
+		if (!taskQuery.trim()) return agents
+		return filterTasksByQuery(agents, taskQuery)
+	}, [agents, taskQuery])
+
+	const activeSessions = useMemo(() => selectActiveSessions(catalogAgents), [catalogAgents])
 
 	const activeIds = useMemo(() => new Set(activeSessions.map((a) => a.id)), [activeSessions])
 
 	const recentSessions = useMemo(
-		() =>
-			agents
-				.filter((a) => !a.parentId && !activeIds.has(a.id))
-				.sort((a, b) => b.lastActiveAt - a.lastActiveAt)
-				.slice(0, RECENT_COUNT),
-		[agents, activeIds],
+		() => selectRecentSessions(catalogAgents, activeIds, RECENT_COUNT),
+		[catalogAgents, activeIds],
+	)
+
+	const timelineSessions = useMemo(
+		() => selectTimelineTasks(catalogAgents, "updated", RECENT_COUNT + 8),
+		[catalogAgents],
 	)
 
 	const hasContent = agents.length > 0 || projects.length > 0
+	const emptyKind: ProjectsEmptyKind = resolveProjectsEmptyKind({
+		serverConnected,
+		productDiscoveredCount: projects.length + hiddenProductCount,
+		visibleProjectCount: projects.length,
+		hiddenProductCount,
+	})
 	const showEmptyState = !hasContent
 
 	return (
 		<>
 			{/* Scrollable content */}
 			<SidebarContent>
-				{/* Empty state */}
+				{/* Empty state — distinguish offline / none / all-hidden */}
 				{showEmptyState && (
 					<div className="flex flex-1 items-center justify-center p-4">
 						<div className="space-y-2 text-center">
-							{!serverConnected ? (
+							{emptyKind === "offline" ? (
 								<>
 									<p className="text-sm text-muted-foreground">Server offline</p>
 									<p className="text-xs text-muted-foreground/60">
 										Check your connection in Settings
 									</p>
 								</>
+							) : emptyKind === "all-hidden" ? (
+								<>
+									<p className="text-sm text-muted-foreground">
+										{hiddenProductCount} project{hiddenProductCount === 1 ? "" : "s"} hidden
+									</p>
+									<p className="text-xs text-muted-foreground/60">
+										Restore them or open a folder to continue
+									</p>
+									{onShowHiddenProjects && (
+										<button
+											type="button"
+											onClick={onShowHiddenProjects}
+											className="text-xs text-foreground underline-offset-2 hover:underline"
+										>
+											Show hidden projects
+										</button>
+									)}
+									{onAddProject && (
+										<button
+											type="button"
+											onClick={onAddProject}
+											className="block w-full text-xs text-muted-foreground underline-offset-2 hover:underline"
+										>
+											Add a project
+										</button>
+									)}
+								</>
 							) : (
 								<>
 									<p className="text-sm text-muted-foreground">No projects yet</p>
-									<p className="text-xs text-muted-foreground/60">Add a project to get started</p>
+									<p className="text-xs text-muted-foreground/60">
+										Add a project folder to get started — any runtime can use it
+									</p>
+									{onAddProject && (
+										<button
+											type="button"
+											onClick={onAddProject}
+											className="text-xs text-foreground underline-offset-2 hover:underline"
+										>
+											Add a project
+										</button>
+									)}
 								</>
 							)}
 						</div>
@@ -230,7 +288,44 @@ export function AppSidebarContent({
 				</SidebarGroupContent>
 			</SidebarGroup>
 
-				{/* Active Now */}
+				{/* Task catalog controls (Workspace vs Timeline + search) */}
+				{hasContent && (
+					<div className="flex flex-col gap-1.5 px-2 pb-1">
+						<div className="flex items-center gap-1">
+							<button
+								type="button"
+								onClick={() => setTaskView("workspace")}
+								className={`rounded-md px-2 py-0.5 text-[11px] transition-colors ${
+									taskView === "workspace"
+										? "bg-sidebar-accent text-sidebar-accent-foreground"
+										: "text-muted-foreground hover:text-foreground"
+								}`}
+							>
+								Workspace
+							</button>
+							<button
+								type="button"
+								onClick={() => setTaskView("timeline")}
+								className={`rounded-md px-2 py-0.5 text-[11px] transition-colors ${
+									taskView === "timeline"
+										? "bg-sidebar-accent text-sidebar-accent-foreground"
+										: "text-muted-foreground hover:text-foreground"
+								}`}
+							>
+								Timeline
+							</button>
+						</div>
+						<Input
+							value={taskQuery}
+							onChange={(e) => setTaskQuery(e.target.value)}
+							placeholder="Search tasks…"
+							className="h-7 border-sidebar-border/40 bg-transparent text-xs"
+							aria-label="Search tasks"
+						/>
+					</div>
+				)}
+
+				{/* Active Now — all runtimes */}
 				{activeSessions.length > 0 && (
 					<SidebarGroup>
 						<SidebarGroupLabel>Active Now</SidebarGroupLabel>
@@ -252,8 +347,30 @@ export function AppSidebarContent({
 					</SidebarGroup>
 				)}
 
-				{/* Recent */}
-				{recentSessions.length > 0 && (
+				{/* Timeline: flat reverse-chronological multi-runtime stream */}
+				{taskView === "timeline" && timelineSessions.length > 0 && (
+					<SidebarGroup>
+						<SidebarGroupLabel>Timeline</SidebarGroupLabel>
+						<SidebarGroupContent>
+							<SidebarMenu>
+							{timelineSessions.map((agent) => (
+								<SessionItem
+									key={agent.id}
+									agent={agent}
+									isSelected={agent.id === selectedSessionId}
+									onRename={onRenameSession}
+									onDelete={onDeleteSession}
+									onFork={onForkSession}
+									showProject
+								/>
+							))}
+							</SidebarMenu>
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
+
+				{/* Recent (workspace view companion to project folders) */}
+				{taskView === "workspace" && recentSessions.length > 0 && (
 					<SidebarGroup>
 						<SidebarGroupLabel>Recent</SidebarGroupLabel>
 						<SidebarGroupContent>
@@ -274,11 +391,13 @@ export function AppSidebarContent({
 					</SidebarGroup>
 				)}
 
-				{/* Projects */}
-				{hasContent && (activeSessions.length > 0 || recentSessions.length > 0) && (
+				{/* Projects (Workspace view) */}
+				{taskView === "workspace" &&
+					hasContent &&
+					(activeSessions.length > 0 || recentSessions.length > 0) && (
 					<SidebarSeparator className="bg-sidebar-border/5" />
 				)}
-				{hasContent && (
+				{taskView === "workspace" && hasContent && (
 					<SidebarGroup>
 						<SidebarGroupLabel>Projects</SidebarGroupLabel>
 						{/* Action buttons row */}
@@ -692,7 +811,10 @@ const SessionItem = memo(function SessionItem({
 		}
 	}, [isEditing])
 
-	const tooltipLabel = showProject ? agent.project : agent.name
+	const runtimeName = agent.runtimeId ? runtimeLabel(agent.runtimeId) : null
+	const tooltipLabel = [showProject ? agent.project : agent.name, runtimeName]
+		.filter(Boolean)
+		.join(" · ")
 
 	const btn = (
 		<SidebarMenuItem>
@@ -732,10 +854,17 @@ const SessionItem = memo(function SessionItem({
 							{agent.name}
 						</span>
 
-						{agent.status === "waiting" && agent.currentActivity && (
+						{agent.status === "waiting" && agent.currentActivity ? (
 							<span className="block truncate text-[11px] leading-tight text-yellow-500">
 								{agent.currentActivity}
 							</span>
+						) : (
+							runtimeName &&
+							showProject && (
+								<span className="block truncate text-[10px] leading-tight text-muted-foreground/70">
+									{runtimeName}
+								</span>
+							)
 						)}
 					</div>
 				)}

@@ -487,7 +487,8 @@ export function CreateAutomationDialog({
 					<div className="space-y-2">
 						<Label>Agent &amp; model</Label>
 						<p className="text-xs text-muted-foreground">
-							Choose which agent mode and model to use. Defaults to your server configuration.{" "}
+							Choose agent mode and model for this job. Uses the host runtime catalog for the
+							selected project (not limited to a single CLI).{" "}
 							{!directory && "Add a project above to load available models."}
 						</p>
 						<div className="flex flex-wrap items-center gap-1 rounded-md border px-1 py-1">

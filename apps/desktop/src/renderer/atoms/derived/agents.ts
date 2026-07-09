@@ -7,8 +7,11 @@ import type {
 	SessionStatus,
 	SidebarProject,
 } from "../../lib/types"
+import { isProductWorktree } from "../../lib/project-visibility"
+import { PROJECT_RUNTIME_ID } from "../../lib/session-runtimes"
 import { discoveryAtom } from "../discovery"
 import { hiddenProjectDirsAtom } from "../hidden-projects"
+import { cliSessionsAtom } from "../cli-sessions"
 import { sessionFamily, sessionIdsAtom } from "../sessions"
 import { effectivePermissionFamily, effectiveQuestionFamily } from "./session-requests"
 
@@ -43,6 +46,7 @@ function agentEqual(prev: Agent | null, next: Agent | null): boolean {
 		prev.worktreeBranch === next.worktreeBranch &&
 		prev.createdAt === next.createdAt &&
 		prev.lastActiveAt === next.lastActiveAt &&
+		prev.runtimeId === next.runtimeId &&
 		prev.permissions.length === next.permissions.length &&
 		prev.questions.length === next.questions.length &&
 		prev.permissions[0] === next.permissions[0] &&
@@ -293,6 +297,7 @@ export const agentFamily = atomFamily((sessionId: string) => {
 		const slugMap = get(projectSlugMapAtom)
 		const { sandboxToParent } = get(sandboxMappingsAtom)
 		const { session, status, directory } = entry
+		const cliMeta = get(cliSessionsAtom)[session.id]
 
 		// Use tree-scoped requests to determine blocking status so the parent
 		// session shows "waiting" when any descendant sub-agent has a pending
@@ -315,6 +320,10 @@ export const agentFamily = atomFamily((sessionId: string) => {
 		// This ensures "waiting for approval" shows even when the permission is from a sub-agent.
 		const effectivePerm = get(effectivePermissionFamily(session.id))
 		const effectiveQ = get(effectiveQuestionFamily(session.id))
+
+		// Process adapters store runtimeId in cli meta; managed-server sessions use
+		// the project runtime id (OpenCode today) — both appear in the same catalog.
+		const runtimeId = cliMeta?.runtimeId ?? PROJECT_RUNTIME_ID
 
 		const next: Agent = {
 			id: session.id,
@@ -343,6 +352,7 @@ export const agentFamily = atomFamily((sessionId: string) => {
 			worktreeBranch: entry.worktreeBranch,
 			createdAt: created,
 			lastActiveAt,
+			runtimeId,
 		}
 
 		// Return the previous reference if structurally equal to avoid
@@ -497,6 +507,8 @@ export const projectListAtom = (() => {
 			// Remap sandbox directories to their parent project
 			const parentDir = sandboxToParent.get(entry.directory)
 			const dir = parentDir ?? entry.directory
+			// Skip OpenCode global "/" bookkeeping worktrees
+			if (!isProductWorktree(dir)) continue
 			const projectInfo = slugMap.get(dir)
 			const name = projectNameFromDir(dir)
 			const sessionTime = entry.session.time.updated ?? entry.session.time.created ?? 0
@@ -538,6 +550,7 @@ export const projectListAtom = (() => {
 		if (discovery.loaded) {
 			for (const project of discovery.projects) {
 				if (!project.worktree) continue
+				if (!isProductWorktree(project.worktree)) continue
 				if (projects.has(project.worktree)) continue
 				if (sandboxDirs.has(project.worktree)) continue
 

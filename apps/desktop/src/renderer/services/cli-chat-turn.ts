@@ -29,6 +29,7 @@ import type {
 	TextPart,
 	UserMessage,
 } from "../lib/types"
+import { sanitizeAgentError } from "../lib/sanitize-agent-error"
 import { persistCliSession } from "./cli-chat-persistence"
 import { buildConversationHandoff } from "./cli-chat-session"
 
@@ -42,22 +43,9 @@ function bump(sessionId: string) {
 	appStore.set(streamingVersionFamily(sessionId), (v) => v + 1)
 }
 
+/** @deprecated Prefer sanitizeAgentError — kept as alias for call sites. */
 function humanizeError(text: string): string {
-	const trimmed = text.trim()
-	if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return text
-	try {
-		const parsed = JSON.parse(trimmed)
-		const msg =
-			parsed?.error?.message ??
-			parsed?.error?.error?.message ??
-			parsed?.message ??
-			(typeof parsed?.error === "string" ? parsed.error : null)
-		if (typeof msg === "string" && msg) {
-			const type = parsed?.error?.type ?? parsed?.type
-			return type && type !== "error" ? `${msg} (${type})` : msg
-		}
-	} catch {}
-	return text
+	return sanitizeAgentError(text)
 }
 
 export async function runCliTurn(
