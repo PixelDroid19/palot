@@ -85,4 +85,15 @@ describe("GCode brand identity", () => {
 		const latin = buf.toString("latin1").toLowerCase()
 		expect(latin.includes("palot.")).toBe(false)
 	})
+
+	test("blue showcase HTML ships GCode wordmarks, not legacy palot path outlines", () => {
+		const monorepo = join(root, "../..")
+		const html = readFileSync(join(monorepo, "assets/palot-blue-showcase.html"), "utf8")
+		// Real shipped showcase — must render GCode text, never palot. glyph paths
+		expect(html).toContain(">GCode</text>")
+		expect(html).not.toContain("M612.104")
+		expect(html).not.toMatch(/viewBox="352 253 278 101"/)
+		// Product wordmark copy (not just CSS token names like --palot-blue)
+		expect(html).toMatch(/"GCode" wordmark/)
+	})
 })
