@@ -117,13 +117,13 @@ export function AboutSettings() {
 
 			<SettingsSection title="CLI">
 				<SettingsRow
-					label="palot CLI"
+					label="gcode CLI"
 					description={
 						cliError
 							? cliError
 							: cliInstalled
 								? "Installed at /usr/local/bin/gcode"
-								: "Install the palot command-line tool"
+								: "Install the gcode command-line tool"
 					}
 				>
 					{cliLoading ? (

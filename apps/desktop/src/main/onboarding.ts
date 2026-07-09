@@ -233,11 +233,11 @@ export async function installProjectRuntime(): Promise<{ success: boolean; error
 		try {
 			if (!OPENCODE_INSTALL_SHA256) {
 				sendOutput(
-					"[palot] Warning: OPENCODE_INSTALLER_SHA256 is not configured. Running installer without checksum verification.\n",
+					"[gcode] Warning: OPENCODE_INSTALLER_SHA256 is not configured. Running installer without checksum verification.\n",
 				)
 			} else if (!shouldVerifyInstallScript) {
 				sendOutput(
-					"[palot] Warning: OPENCODE_ALLOW_UNVERIFIED_INSTALL is set. Running installer without checksum verification.\n",
+					"[gcode] Warning: OPENCODE_ALLOW_UNVERIFIED_INSTALL is set. Running installer without checksum verification.\n",
 				)
 			}
 
@@ -245,14 +245,14 @@ export async function installProjectRuntime(): Promise<{ success: boolean; error
 		const installerUrl = isWindows ? `${OPENCODE_INSTALL_URL}.ps1` : OPENCODE_INSTALL_URL
 		const installerFilename = isWindows ? "install-opencode.ps1" : "install-opencode.sh"
 
-		tempDir = await mkdtemp(path.join(tmpdir(), "palot-opencode-install-"))
+		tempDir = await mkdtemp(path.join(tmpdir(), "gcode-opencode-install-"))
 		const installScriptPath = path.join(tempDir, installerFilename)
 
 		timeoutHandle = setTimeout(() => {
 			installTimedOut = true
 			killInstallProcess()
 			fetchController?.abort()
-			sendOutput(`[palot] Installation timed out after ${OPENCODE_INSTALL_TIMEOUT_MS}ms.\n`)
+			sendOutput(`[gcode] Installation timed out after ${OPENCODE_INSTALL_TIMEOUT_MS}ms.\n`)
 		}, OPENCODE_INSTALL_TIMEOUT_MS)
 
 		fetchController = new AbortController()
@@ -269,7 +269,7 @@ export async function installProjectRuntime(): Promise<{ success: boolean; error
 
 		await writeFile(installScriptPath, script, "utf8")
 		const installerShell = isWindows ? "powershell" : resolveInstallShell()
-		sendOutput(`[palot] Running installer with ${installerShell}.\n`)
+		sendOutput(`[gcode] Running installer with ${installerShell}.\n`)
 		installProcess = spawn(
 			installerShell,
 			isWindows ? ["-ExecutionPolicy", "Bypass", "-File", installScriptPath] : [installScriptPath],
@@ -293,7 +293,7 @@ export async function installProjectRuntime(): Promise<{ success: boolean; error
 		})
 
 		await waitForProcessExit(proc)
-		sendOutput("[palot] OpenCode install completed.\n")
+		sendOutput("[gcode] OpenCode install completed.\n")
 		return { success: true }
 	} catch (err) {
 		if (installTimedOut) {
