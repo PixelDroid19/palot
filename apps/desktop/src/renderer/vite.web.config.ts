@@ -4,17 +4,20 @@
  *
  * In this mode, the GCode Bun server (apps/server) must be running
  * on port 3100 to handle filesystem operations and process management.
- * Product UI is Lit-only — no React / Tailwind plugins.
  */
 
+import path from "node:path"
+import tailwindcss from "@tailwindcss/vite"
+import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
 export default defineConfig({
 	root: __dirname,
-	plugins: [],
+	plugins: [react(), tailwindcss()],
 	resolve: {
 		alias: {
 			"@": __dirname,
+			"@gcode/ui": path.resolve(__dirname, "../../../../packages/ui/src"),
 		},
 	},
 	clearScreen: false,

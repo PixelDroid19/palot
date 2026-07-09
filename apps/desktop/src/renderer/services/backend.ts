@@ -240,8 +240,21 @@ export async function gitStashPop(directory: string): Promise<GitStashResult> {
 	throw new Error("Git operations are only available in Electron mode")
 }
 
+// ============================================================
+// Worktree operations — OpenCode API only
+// ============================================================
 
+export type { WorktreeResult } from "./worktree-service"
+export {
+	createWorktree as createWorktreeViaApi,
+	listWorktrees as listWorktreesViaApi,
+	removeWorktree as removeWorktreeViaApi,
+	resetWorktree,
+} from "./worktree-service"
 
+/**
+ * Gets the git repository root for a directory.
+ */
 export async function getGitRoot(directory: string): Promise<string | null> {
 	if (isElectron) {
 		return window.gcode.git.getRoot(directory)
