@@ -10,6 +10,12 @@ import {
 	useProviders,
 	useServerCommands,
 	useVcs,
+	useAllProviders,
+	useConnectedProviders,
+	useProviderAuthMethods,
+	queryKeys,
+	type CatalogProvider,
+	type ConnectedProviderInfo,
 	type ConfigData,
 	type CompactionConfig,
 	type ModelRef,
@@ -24,6 +30,8 @@ import {
 } from "./project-runtime-data-source"
 
 export type {
+	CatalogProvider,
+	ConnectedProviderInfo,
 	ConfigData,
 	CompactionConfig,
 	ModelRef,
@@ -42,7 +50,11 @@ export {
 	getModelInputCapabilities,
 	getModelVariants,
 	parseModelRef,
+	queryKeys,
 	resolveEffectiveModel,
+	useAllProviders,
+	useConnectedProviders,
+	useProviderAuthMethods,
 }
 
 export const useRuntimeConfig = useConfig
@@ -58,11 +70,17 @@ export const useProjectRuntimeAgents = useRuntimeAgents
 export const useProjectRuntimeCommands = useRuntimeCommands
 export const useProjectRuntimeVcs = useRuntimeVcs
 export const useProjectRuntimeModelState = useRuntimeModelState
+/** @deprecated Prefer useRuntime* names */
 export const useManagedRuntimeConfig = useRuntimeConfig
+/** @deprecated Prefer useRuntime* names */
 export const useManagedRuntimeProviders = useRuntimeProviders
+/** @deprecated Prefer useRuntime* names */
 export const useManagedRuntimeAgents = useRuntimeAgents
+/** @deprecated Prefer useRuntime* names */
 export const useManagedRuntimeCommands = useRuntimeCommands
+/** @deprecated Prefer useRuntime* names */
 export const useManagedRuntimeVcs = useRuntimeVcs
+/** @deprecated Prefer useRuntime* names */
 export const useManagedRuntimeModelState = useRuntimeModelState
 
 export function useRuntimeSessionData(args: {

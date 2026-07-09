@@ -44,29 +44,35 @@ export const isElectron = typeof window !== "undefined" && "palot" in window
 // ============================================================
 
 /**
- * Ensures the single project runtime server is running and returns its URL.
- * For local servers, this spawns/attaches via IPC.
+ * Ensures the managed local server (OpenCode adapter today) is running and
+ * returns its URL. Product code should prefer this over legacy projectRuntime /
+ * ensureManagedRuntime names.
+ *
+ * For local servers, spawns/attaches via neutral `runtime:ensure` IPC.
  * For remote servers, the URL is already known and returned directly.
  */
-export async function fetchProjectRuntimeUrl(): Promise<{ url: string }> {
-	log.debug("fetchProjectRuntimeUrl", { via: isElectron ? "ipc" : "http" })
+export async function fetchRuntimeServerUrl(): Promise<{ url: string }> {
+	log.debug("fetchRuntimeServerUrl", { via: isElectron ? "ipc" : "http" })
 	try {
 		if (isElectron) {
-			const info = await window.palot.projectRuntime.ensure()
-			log.info("OpenCode server URL resolved", { url: info.url })
+			const info = await window.palot.runtime.ensure()
+			log.info("Managed runtime server URL resolved", { url: info.url })
 			return { url: info.url }
 		}
 		const { fetchProjectRuntimeUrl: httpFetch } = await import("./palot-server")
 		const result = await httpFetch()
-		log.info("OpenCode server URL resolved", { url: result.url })
+		log.info("Managed runtime server URL resolved", { url: result.url })
 		return result
 	} catch (err) {
-		log.error("fetchProjectRuntimeUrl failed", err)
+		log.error("fetchRuntimeServerUrl failed", err)
 		throw err
 	}
 }
 
-export const fetchManagedRuntimeUrl = fetchProjectRuntimeUrl
+/** @deprecated Use {@link fetchRuntimeServerUrl} */
+export const fetchProjectRuntimeUrl = fetchRuntimeServerUrl
+/** @deprecated Use {@link fetchRuntimeServerUrl} */
+export const fetchManagedRuntimeUrl = fetchRuntimeServerUrl
 
 /**
  * Resolve the connection URL for a server config.
@@ -78,7 +84,7 @@ export async function resolveServerUrl(
 ): Promise<string> {
 	switch (server.type) {
 		case "local": {
-			const { url } = await fetchProjectRuntimeUrl()
+			const { url } = await fetchRuntimeServerUrl()
 			return url
 		}
 		case "remote":
