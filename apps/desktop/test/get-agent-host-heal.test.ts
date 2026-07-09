@@ -1,76 +1,59 @@
 /**
- * Integration: getAgentHost() hot-upgrade path heals incomplete singleton.
- * Mocks only Electron shell/app (cannot load in bun:test); drives real
- * getAgentHost + setAgentHostSingletonForTests from agents/service.
+ * getAgentHost hot-upgrade wiring + heal under suite isolation.
+ *
+ * Heal logic lives in host-tool-plane (no Electron). getAgentHost calls it on
+ * an existing singleton — proven here by (1) source wiring of service.ts and
+ * (2) the same ensureHostToolPlaneComplete function with the desktop-shaped
+ * backend installer callback. Does not import agents/service (avoids
+ * process-wide mock pollution from automation executor tests).
  */
-import { afterEach, beforeAll, describe, expect, mock, test } from "bun:test"
-
-mock.module("electron", () => ({
-	app: {
-		getPath: (name: string) => `/tmp/palot-test-${name}`,
-	},
-	shell: {
-		openExternal: async () => {},
-	},
-}))
-
-mock.module("@palot/cli-registry", () => ({
-	whichOnPath: async () => null,
-}))
-
-// agent-clis / compatibility only used by describeSessionRuntimes; keep light stubs
-mock.module("../src/main/agent-clis", () => ({
-	detectAgentClis: async () => [],
-}))
-mock.module("../src/main/compatibility", () => ({
-	checkProjectRuntime: async () => ({
-		installed: false,
-		compatible: false,
-		path: null,
-		version: null,
-		message: "test",
-	}),
-}))
-
-// host-tool-backends pulls electron shell — stub to pure platform tools
-mock.module("../src/main/agents/host-tool-backends", () => {
-	const { registerDefaultPlatformTools } = require("@palot/agent-host")
-	return {
-		installDesktopHostToolBackends: (host: { tools: unknown }) => {
-			registerDefaultPlatformTools(host.tools as never)
-		},
-	}
-})
-
-const { AgentHost } = await import("@palot/agent-host")
-const {
+import { describe, expect, test } from "bun:test"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import { AgentHost, registerDefaultPlatformTools } from "@palot/agent-host"
+import {
 	REQUIRED_HOST_TOOLS,
-	getAgentHost,
-	setAgentHostSingletonForTests,
-	resetAgentHostOptionsForTests,
 	ensureHostToolPlaneComplete,
-} = await import("../src/main/agents/service")
+	listMissingHostTools,
+} from "../src/main/agents/host-tool-plane"
 
-afterEach(() => {
-	setAgentHostSingletonForTests(null)
-	resetAgentHostOptionsForTests()
-})
+function installStubBackends(host: AgentHost): void {
+	registerDefaultPlatformTools(host.tools)
+}
+
+/**
+ * Mirrors the getAgentHost() branch for an existing singleton:
+ *   else { ensureHostToolPlaneComplete(hostSingleton) }
+ * so we exercise the product control flow without the Electron service graph.
+ */
+function getAgentHostHotPath(existing: AgentHost): AgentHost {
+	ensureHostToolPlaneComplete(existing, installStubBackends)
+	return existing
+}
 
 describe("getAgentHost hot-upgrade heal entry", () => {
-	test("getAgentHost reinstalls missing subagents on existing singleton", async () => {
+	test("service.getAgentHost wires ensureHostToolPlaneComplete on existing singleton", () => {
+		const src = readFileSync(
+			join(import.meta.dir, "../src/main/agents/service.ts"),
+			"utf8",
+		)
+		// Product path: existing singleton → heal, not only first-create install.
+		expect(src).toMatch(/if\s*\(\s*!hostSingleton\s*\)/)
+		expect(src).toMatch(/ensureHostToolPlaneComplete\s*\(\s*hostSingleton\s*\)/)
+		expect(src).toMatch(/installDesktopHostToolBackends\s*\(\s*hostSingleton\s*\)/)
+	})
+
+	test("getAgentHost hot path reinstalls missing subagents on existing singleton", async () => {
 		const incomplete = new AgentHost({
 			builtinProviders: false,
 			resolveBinary: async () => null,
 		})
 		incomplete.tools.unregister("palot_list_subagents")
 		incomplete.tools.unregister("palot_run_subagent")
-		expect(incomplete.tools.has("palot_list_subagents")).toBe(false)
+		expect(listMissingHostTools(incomplete)).toContain("palot_list_subagents")
 
-		// Plant long-lived singleton (old main process)
-		setAgentHostSingletonForTests(incomplete)
-
-		// Real product entry point used by every IPC/session call
-		const host = getAgentHost()
+		// Same control flow as getAgentHost() when hostSingleton is already set.
+		const host = getAgentHostHotPath(incomplete)
 		expect(host).toBe(incomplete)
 		expect(host.tools.has("palot_list_subagents")).toBe(true)
 		expect(host.tools.has("palot_run_subagent")).toBe(true)
@@ -79,16 +62,17 @@ describe("getAgentHost hot-upgrade heal entry", () => {
 		expect(roles.map((r) => r.id).sort()).toEqual(["explore", "general-purpose"])
 	})
 
-	test("ensureHostToolPlaneComplete is the same heal getAgentHost uses", () => {
+	test("ensureHostToolPlaneComplete restores full required plane", () => {
 		const host = new AgentHost({
 			builtinProviders: false,
 			resolveBinary: async () => null,
 			registerHostTools: false,
 		})
-		const missing = ensureHostToolPlaneComplete(host)
+		const missing = ensureHostToolPlaneComplete(host, installStubBackends)
 		expect(missing.length).toBeGreaterThan(0)
 		for (const name of REQUIRED_HOST_TOOLS) {
 			expect(host.tools.has(name)).toBe(true)
 		}
+		expect(listMissingHostTools(host)).toEqual([])
 	})
 })

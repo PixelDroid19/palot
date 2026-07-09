@@ -2,7 +2,12 @@
  * Drives the shipped agent-host automation factory and pure helpers.
  * Mocks only the agents/service outer boundary — not the mapping/timeout logic.
  */
-import { beforeEach, describe, expect, mock, test } from "bun:test"
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test"
+import {
+	REQUIRED_HOST_TOOLS,
+	ensureHostToolPlaneComplete as pureHeal,
+	listMissingHostTools,
+} from "../src/main/agents/host-tool-plane"
 
 const openCalls: unknown[] = []
 const promptCalls: unknown[] = []
@@ -14,6 +19,11 @@ const eventListeners: Array<(evt: unknown) => void> = []
 
 let promptImpl: () => Promise<{ message: string }> = async () => ({ message: "ok\nActionable: yes" })
 
+/**
+ * Partial mock of agents/service for automation executor only.
+ * Re-export heal plane helpers so other test files that share the process
+ * still get the real hot-upgrade API (mock.module is process-wide in bun:test).
+ */
 mock.module("../src/main/agents/service", () => ({
 	getAgentHost: () => ({
 		events: {
@@ -49,7 +59,19 @@ mock.module("../src/main/agents/service", () => ({
 		questionCalls.push({ sessionId, requestId })
 		return true
 	},
+	// Real heal plane — not reimplemented; same module getAgentHost uses.
+	REQUIRED_HOST_TOOLS,
+	listMissingHostTools,
+	ensureHostToolPlaneComplete: (host: Parameters<typeof pureHeal>[0]) =>
+		pureHeal(host, () => {}),
+	setAgentHostSingletonForTests: () => {},
+	resetAgentHostOptionsForTests: () => {},
 }))
+
+afterAll(() => {
+	// Release process-wide mock so later suites can load the real service.
+	mock.restore()
+})
 
 // Do not mock runtime-executor — registration is a side-effect and other tests
 // import the real registry. agents/service is the only outer boundary mocked.
