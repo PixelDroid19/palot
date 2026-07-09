@@ -14,7 +14,11 @@ import {
 	patchCliMeta,
 	setCliMeta,
 } from "../atoms/cli-sessions"
-import { messagesFamily, setMessagesAtom } from "../atoms/messages"
+import {
+	messagesFamily,
+	setMessagesAtom,
+	sortMessagesChronological,
+} from "../atoms/messages"
 import { partsFamily } from "../atoms/parts"
 import {
 	removeSessionAtom,
@@ -98,9 +102,10 @@ export function transferSessionTranscript(fromSessionId: string, toSessionId: st
 	// Detach from source BEFORE removeSessionAtom can delete shared part atoms.
 	appStore.set(messagesFamily(fromSessionId), [])
 
+	// Always land on the destination in chronological order (time.created), not id order.
 	appStore.set(setMessagesAtom, {
 		sessionId: toSessionId,
-		messages,
+		messages: sortMessagesChronological(messages),
 		parts,
 	})
 
