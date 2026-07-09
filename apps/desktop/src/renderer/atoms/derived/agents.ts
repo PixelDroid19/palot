@@ -8,6 +8,7 @@ import type {
 	SidebarProject,
 } from "../../lib/types"
 import { discoveryAtom } from "../discovery"
+import { hiddenProjectDirsAtom } from "../hidden-projects"
 import { sessionFamily, sessionIdsAtom } from "../sessions"
 import { effectivePermissionFamily, effectiveQuestionFamily } from "./session-requests"
 
@@ -475,6 +476,7 @@ export const projectListAtom = (() => {
 		const discovery = get(discoveryAtom)
 		const slugMap = get(projectSlugMapAtom)
 		const { sandboxToParent } = get(sandboxMappingsAtom)
+		const hiddenDirs = new Set(get(hiddenProjectDirsAtom))
 
 		const projects = new Map<string, SidebarProject>()
 
@@ -552,6 +554,11 @@ export const projectListAtom = (() => {
 					hasActiveAgent: false,
 				})
 			}
+		}
+
+		// Drop projects the user removed from Palot (local hide; OpenCode has no delete API).
+		for (const dir of hiddenDirs) {
+			projects.delete(dir)
 		}
 
 		// Tiered sort for stable, predictable ordering:

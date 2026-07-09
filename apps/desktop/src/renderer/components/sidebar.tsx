@@ -86,6 +86,7 @@ interface AppSidebarContentProps {
 	onAddProject?: () => void
 	onRenameSession?: (agent: Agent, title: string) => Promise<void>
 	onDeleteSession?: (agent: Agent) => Promise<void>
+	onDeleteProject?: (project: SidebarProject) => Promise<void>
 	onForkSession?: (agent: Agent) => Promise<void>
 	serverConnected: boolean
 }
@@ -105,6 +106,7 @@ export function AppSidebarContent({
 	onAddProject,
 	onRenameSession,
 	onDeleteSession,
+	onDeleteProject,
 	onForkSession,
 	serverConnected,
 }: AppSidebarContentProps) {
@@ -367,6 +369,7 @@ export function AppSidebarContent({
 									selectedSessionId={selectedSessionId}
 									onRename={onRenameSession}
 									onDelete={onDeleteSession}
+									onDeleteProject={onDeleteProject}
 									onFork={onForkSession}
 								/>
 							))}
@@ -445,12 +448,14 @@ const ProjectFolder = memo(function ProjectFolder({
 	selectedSessionId,
 	onRename,
 	onDelete,
+	onDeleteProject,
 	onFork,
 }: {
 	project: SidebarProject
 	selectedSessionId: string | null
 	onRename?: (agent: Agent, title: string) => Promise<void>
 	onDelete?: (agent: Agent) => Promise<void>
+	onDeleteProject?: (project: SidebarProject) => Promise<void>
 	onFork?: (agent: Agent) => Promise<void>
 }) {
 	const navigate = useNavigate()
@@ -502,25 +507,44 @@ const ProjectFolder = memo(function ProjectFolder({
 	const isInitialLoading = expanded && !pagination.loaded && !pagination.loading
 	const isLoading = pagination.loading || isInitialLoading
 
+	const folderButton = (
+		<SidebarMenuButton
+			tooltip={project.name}
+			onClick={() => {
+				setExpanded(!expanded)
+				navigate({
+					to: "/project/$projectSlug",
+					params: { projectSlug: project.slug },
+				})
+			}}
+		>
+			<ChevronRightIcon
+				className="size-3 shrink-0 text-muted-foreground transition-transform duration-150 ease-out"
+				style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}
+			/>
+			<span className="truncate font-medium">{project.name}</span>
+		</SidebarMenuButton>
+	)
+
 	return (
 		<SidebarMenuItem>
 			<Collapsible open={expanded} onOpenChange={setExpanded}>
-				<SidebarMenuButton
-					tooltip={project.name}
-					onClick={() => {
-						setExpanded(!expanded)
-						navigate({
-							to: "/project/$projectSlug",
-							params: { projectSlug: project.slug },
-						})
-					}}
-				>
-					<ChevronRightIcon
-						className="size-3 shrink-0 text-muted-foreground transition-transform duration-150 ease-out"
-						style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}
-					/>
-					<span className="truncate font-medium">{project.name}</span>
-				</SidebarMenuButton>
+				{onDeleteProject ? (
+					<ContextMenu>
+						<ContextMenuTrigger render={folderButton} />
+						<ContextMenuContent>
+							<ContextMenuItem
+								variant="destructive"
+								onClick={() => void onDeleteProject(project)}
+							>
+								<TrashIcon className="size-4" />
+								Remove project
+							</ContextMenuItem>
+						</ContextMenuContent>
+					</ContextMenu>
+				) : (
+					folderButton
+				)}
 
 				<CollapsibleContent
 					keepMounted
@@ -734,20 +758,20 @@ const SessionItem = memo(function SessionItem({
 			<ContextMenuTrigger render={btn} />
 			<ContextMenuContent>
 				{onRename && (
-					<ContextMenuItem onSelect={startEditing}>
+					<ContextMenuItem onClick={startEditing}>
 						<PencilIcon className="size-4" />
 						Rename
 					</ContextMenuItem>
 				)}
 				{onFork && (
-					<ContextMenuItem onSelect={() => onFork(agent)}>
+					<ContextMenuItem onClick={() => void onFork(agent)}>
 						<GitForkIcon className="size-4" />
 						Fork
 					</ContextMenuItem>
 				)}
 				{(onRename || onFork) && onDelete && <ContextMenuSeparator />}
 				{onDelete && (
-					<ContextMenuItem variant="destructive" onSelect={() => onDelete(agent)}>
+					<ContextMenuItem variant="destructive" onClick={() => void onDelete(agent)}>
 						<TrashIcon className="size-4" />
 						Delete
 					</ContextMenuItem>

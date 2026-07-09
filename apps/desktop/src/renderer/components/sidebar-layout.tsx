@@ -12,13 +12,14 @@ import {
 } from "@palot/ui/components/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
 import { Outlet, useNavigate } from "@tanstack/react-router"
-import { useAtomValue } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import { PanelLeftIcon, PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { activeServerConfigAtom, serverConnectedAtom } from "../atoms/connection"
+import { hideProjectDirAtom, unhideProjectDirAtom } from "../atoms/hidden-projects"
 import { useAgents, useProjectList, useSetCommandPaletteOpen } from "../hooks/use-agents"
 import { useAgentActions } from "../hooks/use-server"
-import type { Agent } from "../lib/types"
+import type { Agent, SidebarProject } from "../lib/types"
 import { pickDirectory } from "../services/backend"
 import { loadProjectSessions } from "../services/connection-manager"
 import { AddProjectDialog } from "./add-project-dialog"
@@ -151,6 +152,8 @@ export function SidebarLayout() {
 	const setCommandPaletteOpen = useSetCommandPaletteOpen()
 	const { renameSession, deleteSession, forkSession } = useAgentActions()
 	const serverConnected = useAtomValue(serverConnectedAtom)
+	const hideProjectDir = useSetAtom(hideProjectDirAtom)
+	const unhideProjectDir = useSetAtom(unhideProjectDirAtom)
 
 	// Sub-agents are filtered at the API level (roots: true)
 	const visibleAgents = agents
@@ -165,8 +168,27 @@ export function SidebarLayout() {
 	const handleDeleteSession = useCallback(
 		async (agent: Agent) => {
 			await deleteSession(agent.directory, agent.sessionId)
+			const path = `${window.location.pathname}${window.location.hash}`
+			if (path.includes(agent.sessionId)) {
+				navigate({ to: "/" })
+			}
 		},
-		[deleteSession],
+		[deleteSession, navigate],
+	)
+
+	const handleDeleteProject = useCallback(
+		async (project: SidebarProject) => {
+			// OpenCode has no project.delete — remove from Palot UI and drop local chats.
+			const sessions = agents.filter(
+				(a) => a.directory === project.directory || a.projectSlug === project.slug,
+			)
+			await Promise.allSettled(
+				sessions.map((agent) => deleteSession(agent.directory, agent.sessionId)),
+			)
+			hideProjectDir(project.directory)
+			navigate({ to: "/" })
+		},
+		[agents, deleteSession, hideProjectDir, navigate],
 	)
 
 	const handleForkSession = useCallback(
@@ -195,19 +217,21 @@ export function SidebarLayout() {
 			// Local server: open native folder picker directly
 			const directory = await pickDirectory()
 			if (!directory) return
+			unhideProjectDir(directory)
 			await loadProjectSessions(directory)
 			navigate({ to: "/" })
 		} else {
 			// Remote server: show dialog with text input
 			setAddProjectOpen(true)
 		}
-	}, [activeServer.type, navigate])
+	}, [activeServer.type, navigate, unhideProjectDir])
 
 	const handleProjectAdded = useCallback(
-		(_directory: string) => {
+		(directory: string) => {
+			unhideProjectDir(directory)
 			navigate({ to: "/" })
 		},
-		[navigate],
+		[navigate, unhideProjectDir],
 	)
 
 	return (
@@ -242,6 +266,7 @@ export function SidebarLayout() {
 						onAddProject={handleAddProject}
 						onRenameSession={handleRenameSession}
 						onDeleteSession={handleDeleteSession}
+						onDeleteProject={handleDeleteProject}
 						onForkSession={handleForkSession}
 						serverConnected={serverConnected}
 					/>

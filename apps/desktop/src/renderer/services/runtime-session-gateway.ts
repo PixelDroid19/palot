@@ -241,7 +241,20 @@ const managedServerGateway: SessionRuntimeGateway & {
 	},
 	async deleteSession(directory: string, sessionId: string): Promise<void> {
 		const client = requireRuntimeSessionClient(directory)
-		await client.session.delete({ sessionID: sessionId })
+		try {
+			await client.session.delete({ sessionID: sessionId })
+		} catch (err) {
+			// Still drop local state if the server already removed it (or is offline).
+			const message = err instanceof Error ? err.message : String(err)
+			const gone = /404|not found|unknown session/i.test(message)
+			if (!gone) {
+				// Best-effort local cleanup so the user is never stuck with a ghost row.
+				appStore.set(removeSessionAtom, sessionId)
+				throw err
+			}
+		}
+		// Do not rely solely on SSE session.deleted — remove optimistically.
+		appStore.set(removeSessionAtom, sessionId)
 	},
 	async revertSession(
 		directory: string,
