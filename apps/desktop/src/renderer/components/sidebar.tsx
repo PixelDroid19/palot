@@ -57,6 +57,7 @@ import {
 } from "../lib/session-catalog"
 import { runtimeLabel } from "../lib/session-runtimes"
 import { loadMoreProjectSessions, loadProjectSessions } from "../services/connection-manager"
+import { RuntimeMark } from "./runtime-mark"
 import { ServerIndicator } from "./server-indicator"
 
 // ============================================================
@@ -824,15 +825,27 @@ const SessionItem = memo(function SessionItem({
 				size={compact ? "sm" : "default"}
 				onClick={isEditing ? undefined : onSelect}
 			>
-				{isWorktree ? (
-					<GitForkIcon
-						className={`shrink-0 ${statusColor} ${agent.status === "running" ? "animate-pulse" : ""}`}
-					/>
-				) : (
-					<StatusIcon
-						className={`shrink-0 ${statusColor} ${agent.status === "running" ? "animate-spin" : ""}`}
-					/>
-				)}
+				{/* Runtime brand mark (animated by status); worktree keeps fork badge overlay */}
+				<span className="relative inline-flex shrink-0 items-center">
+					{agent.runtimeId ? (
+						<RuntimeMark
+							runtimeId={agent.runtimeId}
+							status={agent.status}
+							label={runtimeName ?? undefined}
+							size={compact ? 12 : 14}
+						/>
+					) : (
+						<StatusIcon
+							className={`shrink-0 ${statusColor} ${agent.status === "running" ? "animate-spin" : ""}`}
+						/>
+					)}
+					{isWorktree && (
+						<GitForkIcon
+							className="absolute -right-1 -bottom-0.5 size-2.5 text-muted-foreground"
+							aria-hidden="true"
+						/>
+					)}
+				</span>
 
 				{isEditing ? (
 					<Input
