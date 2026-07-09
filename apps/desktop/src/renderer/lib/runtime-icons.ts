@@ -3,6 +3,9 @@
  *
  * Registry-keyed by runtimeId (not product layout forks). New harnesses add an
  * entry + SVG; unknown ids fall back to a neutral glyph.
+ *
+ * Primary brand paths come from models.dev logos (anthropic, openai, opencode) —
+ * the same CDN used by ProviderIcon — rendered inline for offline/animation.
  */
 
 /** Stable public icon keys used by the SVG component map. */
