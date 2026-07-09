@@ -651,8 +651,9 @@ export class ClaudeProvider implements AgentSessionProvider {
 	readonly capabilities = {
 		...DEFAULT_PROCESS_RUNTIME_CAPABILITIES,
 		steering: true,
-		// Background agents via `claude agents` / Task tool when available.
-		backgroundAgents: true,
+		// listBackgroundAgents exists for future UI; keep false until the shared
+		// toolbar maps background agents into a product slot (avoid empty promises).
+		backgroundAgents: false,
 	}
 	readonly sessionCapabilities = {
 		supportsSessionRevert: false,

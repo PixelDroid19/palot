@@ -45,9 +45,22 @@ describe("neutral automation executor registry", () => {
 		expect(calls).toEqual(["auto-1@/tmp/ws"])
 	})
 
-	test("unknown runtime without OpenCode fallback reports error (when none registered)", async () => {
-		// Ensure we don't accidentally hit a real OpenCode executor in pure unit test
-		// if the module side-effect registered one — still assert shape of missing path.
+	test("explicit unknown runtimeId fails closed (never silently runs another backend)", async () => {
+		// Register a decoy OpenCode executor — must NOT be used for an explicit other id.
+		registerAutomationRuntimeExecutor({
+			runtimeId: "opencode",
+			async execute(config) {
+				return {
+					sessionId: "should-not-run",
+					worktreePath: null,
+					title: config.name,
+					summary: "opencode-ran",
+					hasActionable: false,
+					branch: null,
+					error: null,
+				}
+			},
+		})
 		const result = await executeAutomationRun({
 			runtimeId: "definitely-missing-runtime-xyz",
 			config: {
@@ -57,10 +70,38 @@ describe("neutral automation executor registry", () => {
 			} as never,
 			workspace: "/tmp/ws",
 		})
-		// Either falls back to opencode executor (if registered via executor.ts import)
-		// or returns a registry error — both are valid neutral-path outcomes.
 		expect(result.title).toBe("Missing")
-		expect(typeof result.error === "string" || result.error === null).toBe(true)
+		expect(result.sessionId).toBe("")
+		expect(result.error).toContain("definitely-missing-runtime-xyz")
+		expect(result.summary).not.toBe("opencode-ran")
+	})
+
+	test("omitted runtimeId defaults to opencode executor when registered", async () => {
+		registerAutomationRuntimeExecutor({
+			runtimeId: "opencode",
+			async execute(config) {
+				return {
+					sessionId: "oc-default",
+					worktreePath: null,
+					title: config.name,
+					summary: "default-opencode",
+					hasActionable: false,
+					branch: null,
+					error: null,
+				}
+			},
+		})
+		const result = await executeAutomationRun({
+			runtimeId: "",
+			config: {
+				id: "auto-legacy",
+				name: "Legacy",
+				prompt: "x",
+			} as never,
+			workspace: "/tmp/ws",
+		})
+		expect(result.sessionId).toBe("oc-default")
+		expect(result.summary).toBe("default-opencode")
 	})
 
 	test("dispatches to registered runtimeId (config.runtimeId path is product-owned)", async () => {

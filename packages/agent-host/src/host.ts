@@ -15,9 +15,10 @@
 import { whichOnPath } from "@palot/cli-registry"
 import { SharedContextStore } from "./context"
 import { EventBus } from "./events"
-import { ClaudeProvider } from "./providers/claude"
-import { CodexProvider } from "./providers/codex"
+import { CLAUDE_MODEL_FALLBACK, ClaudeProvider } from "./providers/claude"
+import { CODEX_MODEL_FALLBACK, CodexProvider } from "./providers/codex"
 import type {
+	AgentModelInfo,
 	AgentPermissionDecision,
 	AgentRunResult,
 	AgentRuntimeDescriptor,
@@ -30,6 +31,13 @@ import type {
 	BridgeInfo,
 } from "./types"
 import { resolveRuntimeTransport } from "./types"
+
+/** Last-resort catalog when listModels throws (providers should not throw). */
+function catalogFallbackForProvider(id: AgentRuntimeId): AgentModelInfo[] {
+	if (id === "codex") return CODEX_MODEL_FALLBACK
+	if (id === "claude") return CLAUDE_MODEL_FALLBACK
+	return []
+}
 
 const RUNTIME_CACHE_TTL_MS = 60_000
 const DELEGATE_TIMEOUT_MS = 5 * 60 * 1000
@@ -99,10 +107,15 @@ export class AgentHost {
 		}
 		const descriptors = await Promise.all(
 			[...this.providers.values()].map(async (provider): Promise<AgentRuntimeDescriptor> => {
-				const [binary, models] = await Promise.all([
+				const [binary, listed] = await Promise.all([
 					this.resolveBinary(provider.binary).catch(() => null),
-					provider.listModels().catch(() => []),
+					provider.listModels().catch(() => catalogFallbackForProvider(provider.id)),
 				])
+				// Never ship an empty catalog when the adapter advertises models — keep
+				// toolbar selectors usable offline / after discovery failures.
+				const fallback = catalogFallbackForProvider(provider.id)
+				const models =
+					listed.length > 0 ? listed : provider.capabilities.models ? fallback : listed
 				return {
 					id: provider.id,
 					displayName: provider.displayName,

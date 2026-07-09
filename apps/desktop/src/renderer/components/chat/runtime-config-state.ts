@@ -29,7 +29,6 @@ import {
 } from "../../lib/runtime-session-config"
 import {
 	DEFAULT_SESSION_RUNTIME_ID,
-	PROJECT_RUNTIME_ID,
 	installedProcessRuntimeDescriptors,
 	loadRuntimeDescriptors,
 	type SessionRuntimeId,
@@ -215,7 +214,8 @@ function buildChatRuntimeConfig(args: {
 }
 
 export function buildProcessNewChatRuntimeConfig(args: {
-	runtimeId: Exclude<SessionRuntimeId, typeof PROJECT_RUNTIME_ID>
+	/** Any agent-host process runtime id (Codex, Claude, future CLIs). */
+	runtimeId: SessionRuntimeId
 	models: AgentRuntimeDescriptor["models"]
 	modelValue: string
 	onModelChange: (value: string) => void
@@ -262,6 +262,8 @@ export function buildProcessNewChatRuntimeConfig(args: {
 export const buildCliNewChatRuntimeConfig = buildProcessNewChatRuntimeConfig
 
 export function buildConfigurableRuntimeNewChatRuntimeConfig(args: {
+	/** Managed-server runtime id (defaults to OpenCode adapter id). */
+	runtimeId?: SessionRuntimeId
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -275,8 +277,9 @@ export function buildConfigurableRuntimeNewChatRuntimeConfig(args: {
 	onSelectVariant: (variant: string | undefined) => void
 	worktreeMode: "local" | "worktree"
 }): NewChatRuntimeConfig {
+	const runtimeId = args.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID
 	return {
-		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+		runtimeId,
 		toolbarProps: {
 			sections: buildConfigurableRuntimeToolbarSections(args),
 		},
@@ -286,6 +289,7 @@ export function buildConfigurableRuntimeNewChatRuntimeConfig(args: {
 			},
 			worktreeMode: args.worktreeMode,
 			promptOptions: {
+				runtimeId,
 				model: args.effectiveModel ?? undefined,
 				agentName: args.selectedAgent ?? undefined,
 				variant: args.selectedVariant,
@@ -315,6 +319,8 @@ export function buildProcessChatRuntimeConfig(args: {
 export const buildCliChatRuntimeConfig = buildProcessChatRuntimeConfig
 
 export function buildConfigurableRuntimeChatRuntimeConfig(args: {
+	/** Managed-server runtime id (defaults to OpenCode adapter id). */
+	runtimeId?: SessionRuntimeId
 	agents: SdkAgent[]
 	selectedAgent: string | null
 	defaultAgent?: string
@@ -331,7 +337,7 @@ export function buildConfigurableRuntimeChatRuntimeConfig(args: {
 	sendOptions: RuntimePromptOptions
 }): ChatRuntimeConfig {
 	return buildChatRuntimeConfig({
-		runtimeId: DEFAULT_SESSION_RUNTIME_ID,
+		runtimeId: args.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
 		toolbarProps: {
 			sections: buildConfigurableRuntimeToolbarSections(args),
 		},

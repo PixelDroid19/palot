@@ -11,6 +11,8 @@ describe("adapter capabilities declare UI-driving flags", () => {
 		expect(claude.capabilities.reasoningEffort).toBe(true)
 		expect(claude.capabilities.managedLocalServer).toBe(false)
 		expect(claude.capabilities.agentsProfiles).toBe(false)
+		// backgroundAgents stays false until toolbar maps listBackgroundAgents
+		expect(claude.capabilities.backgroundAgents).toBe(false)
 		expect(claude.sessionCapabilities.supportsRuntimeConfiguration).toBe(false)
 		expect(resolveRuntimeTransport({ capabilities: claude.capabilities })).toBe("agent-host")
 	})

@@ -28,6 +28,8 @@ import {
 	registerAutomationRuntimeExecutor,
 } from "./runtime-executor"
 import type { AutomationConfig, PermissionPreset } from "./types"
+// Register Codex/Claude (agent-host) automation backends alongside OpenCode.
+import "./agent-host-executor"
 
 export type { AutomationExecutionResult as ExecutionResult, AutomationOnSessionCreated as OnSessionCreated }
 export { executeAutomationRun }

@@ -59,15 +59,18 @@ export function listAutomationRuntimeExecutors(): AutomationRuntimeExecutor[] {
 }
 
 /**
- * Neutral automation entry point. Selects executor by runtimeId; falls back to
- * the OpenCode adapter when unspecified (current automation configs are
- * OpenCode-shaped until multi-runtime automation config lands).
+ * Neutral automation entry point. Selects executor by runtimeId.
+ *
+ * - Omitted / empty runtimeId → default `"opencode"` (legacy configs).
+ * - Explicit runtimeId with no registered executor → **fail closed** (never
+ *   silently run a different runtime's backend).
  */
 export async function executeAutomationRun(
 	request: AutomationRunRequest,
 ): Promise<AutomationExecutionResult> {
-	const runtimeId = request.runtimeId || "opencode"
-	const executor = executors.get(runtimeId) ?? executors.get("opencode")
+	const explicit = Boolean(request.runtimeId && request.runtimeId.trim())
+	const runtimeId = explicit ? request.runtimeId.trim() : "opencode"
+	const executor = executors.get(runtimeId)
 	if (!executor) {
 		return {
 			sessionId: "",

@@ -10,6 +10,7 @@ import { partsFamily, upsertPartAtom } from "../atoms/parts"
 import { removeSessionAtom, sessionFamily, upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
+import { runtimeLabel } from "../lib/session-runtimes"
 import type { Part, Session, TextPart } from "../lib/types"
 import {
 	closeCliSessionBackend,
@@ -21,11 +22,6 @@ import { cancelCliTurn } from "./cli-chat-turn"
 const log = createLogger("cli-chat-session")
 
 const isElectron = typeof window !== "undefined" && "palot" in window
-
-const RUNTIME_LABELS: Record<string, string> = {
-	codex: "Codex",
-	claude: "Claude Code",
-}
 
 const HANDOFF_MAX_CHARS = 12_000
 
@@ -147,7 +143,7 @@ export function createCliSession(args: {
 	const sessionId = createUuidV7()
 	const session: Session = {
 		id: sessionId,
-		title: `${RUNTIME_LABELS[args.runtimeId] ?? args.runtimeId} session`,
+		title: `${runtimeLabel(args.runtimeId)} session`,
 		directory: args.directory,
 		time: { created: Date.now() },
 	} as Session
