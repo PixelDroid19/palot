@@ -13,21 +13,22 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`packages/configconv`**: Universal agent config converter library (`@palot/configconv`) -- converts between Claude Code, OpenCode, and Cursor formats
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
 - **`packages/cli-registry`**: Detects installed coding-agent CLIs (`@palot/cli-registry`) -- OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI; reports version and auth state via a host-injected, testable detection layer
-- **`packages/agent-host`**: The multi-agent core (`@palot/agent-host`) -- provider-agnostic `AgentHost` (adapter registry, run lifecycle, per-session serialization, event bus, shared context) plus the `AgentBridge` (loopback HTTP + stdio MCP proxy) that gives every running CLI `palot_delegate`/`palot_context_*` tools so agents can use each other's capabilities. Adapters for Claude Code (stream-json) and Codex (jsonl) live here; a new CLI registers an adapter, never touches the core. `apps/desktop/src/main/agents/service.ts` is only the Electron wiring. Caveat: sandboxed `codex exec` auto-cancels MCP tool calls (openai/codex#24135), so Codex only gets the bridge in full-access runs. OpenCode remains the built-in runtime for its rich SDK-backed chat.
+- **`packages/agent-host`**: Multi-agent core (`@palot/agent-host`) -- registry-only `AgentHost` (pluggable adapters, sessions, event bus, shared context) plus the **host tool plane** (`host.tools` / `HostToolRegistry`: automation, system, browser, agents, context) via `AgentBridge` (loopback HTTP + dynamic MCP proxy). Product tools are **host-owned** (desktop-host style), not CLI-owned; adapters only inject the bridge. Claude/Codex process adapters live here. Caveat: sandboxed `codex exec` auto-cancels MCP tool calls (openai/codex#24135) — Codex only gets the bridge in full-access runs.
 - **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`)
-- **`apps/server`**: Bun + Hono backend -- used only in browser-mode dev (`dev:web`), NOT bundled with Electron
-- **`apps/server` also exports**: the `@palot/server` package for shared client/types used by desktop and server-facing flows
-- **CLI runtime boundary**: runtime orchestration lives in `apps/desktop/src/main/agents/` plus `packages/agent-host` (provider adapters, runner lifecycle, queued run cancellation, context handoff, persistence behavior)
-- **OpenCode runtime boundary**: `apps/desktop/src/main/opencode-runtime.ts` owns CLI discovery, auth header construction, readiness probes, and server startup. `opencode-manager.ts`, tray, automation, and notification flows should reuse it rather than rebuilding OpenCode client/bootstrap logic.
-- **Migration boundary**: `packages/configconv` is the single source of truth for Claude/Cursor/OpenCode migration. Skills now migrate as linked directories (`linkedDirs`), not as copied markdown stubs.
+- **`apps/server`**: Bun + Hono backend -- browser-mode dev only (`dev:web`), NOT bundled with Electron; also exports `@palot/server` client/types
+- **Runtime composition**: `apps/desktop/src/main/agents/composition.ts` + `AgentHost` options (`builtinProviders`, custom `providers`) plug/unplug harnesses. OpenCode is a **managed-server** adapter (descriptor registry), not the product base. Gateway: `renderer` → `runtime-session-gateway` → managed-server or agent-host by **transport**, never by brand product grammar.
+- **OpenCode runtime boundary**: `apps/desktop/src/main/opencode-runtime.ts` owns CLI discovery, auth headers, readiness, server startup. Tray/automation/notifications must reuse it — do not rebuild bootstrap logic.
+- **Host tool backends (desktop)**: `apps/desktop/src/main/agents/host-tool-backends.ts` wires real automation/system/browser into `host.tools` at `getAgentHost()` time.
+- **Migration boundary**: `packages/configconv` is the single source of truth for Claude/Cursor/OpenCode migration. Skills migrate as linked directories (`linkedDirs`), not copied markdown stubs.
 
 ### Desktop App Layout (`apps/desktop/src/`)
 
-- **`main/`** -- Electron main process (Node.js): window management, IPC handlers, OpenCode server lifecycle, filesystem reads
-- **`main/agents/`** -- CLI runtime orchestration and process/session lifecycle for non-OpenCode runtimes (Claude/Codex/etc.)
-- **`preload/`** -- Electron preload bridge: exposes `window.palot` API via `contextBridge`
-- **`renderer/`** -- React app (browser context): components, hooks, services, atoms (Jotai)
-- **`shared/`** -- Cross-process shared constants/types used by main and renderer setup
+- **`main/`** -- Electron main process (Node.js): window management, IPC, server lifecycle, filesystem
+- **`main/agents/`** -- Host composition, AgentHost wiring, host tool backends, process-session lifecycle
+- **`main/automation/`** -- Schedulers + neutral `executeAutomationRun` dispatch by registered runtime executors (fail closed if missing)
+- **`preload/`** -- `window.palot` via `contextBridge`
+- **`renderer/`** -- React app: components, hooks, `services/backend.ts`, Jotai atoms
+- **`shared/`** -- Cross-process constants/types (runtime ids, transport registry)
 
 ## Skills
 
@@ -128,15 +129,21 @@ generic knowledge.
 
 - Always add `aria-hidden="true"` to decorative inline SVGs
 
-### Current runtime realities (post-Damien changes)
+### Current runtime realities
 
-- CLI Agents is the first-class, multi-conversation workspace (`subagents-page`, `agent-detail`, `cli-sessions` atoms), not a side-panel prototype.
-- CLI sessions persist across app reloads and support mid-session runtime switching with explicit context handoff.
-- Streaming tool/tooling output, queued-message cancellation, approval gates, and model/effort/sandbox controls are normal paths.
-- Terminal-in-chat integration (`terminal.ts`, `terminal-panel`) is now part of runtime workflows.
-- Onboarding is no longer install-only; it owns typed migration previews/execution for Claude Code, Cursor, and OpenCode, including skill-directory migration.
+- Multi-conversation workspace (`cli-sessions`, chat gateway, handoff) is first-class; sessions persist and support mid-session runtime switch with explicit transcript handoff.
+- Streaming tools, queued-message cancel, approval gates, model/effort/sandbox controls, and terminal-in-chat are normal paths.
+- Onboarding owns typed migration previews/execution (Claude/Cursor/OpenCode), including skill-directory links.
 
 ## Critical Footguns
+
+### Host tool plane -- do not brand-fork product tools
+
+Automation, system, browser, agents, and context tools register on `AgentHost.tools` and are listed/called only via `AgentBridge` (`GET/POST /v1/tools*`) and the dynamic MCP proxy. Never reimplement `palot_*` tools inside Claude/Codex/OpenCode adapters. Never gate tool availability with `runtimeId === "opencode"|"codex"|"claude"`. Missing tool/runtime → fail closed (explicit error), never silent brand fallback.
+
+### Runtime dispatch -- registry and transport only
+
+Chat create/prompt/switch goes through the neutral gateway + transport (`managed-server` vs process). Automation goes through `executeAutomationRun` + registered executors. Adding a harness = register adapter/executor + composition; do not add product `if (runtimeId === ...)` branches in UI/shell.
 
 ### Electron -- Two Runtime Contexts
 

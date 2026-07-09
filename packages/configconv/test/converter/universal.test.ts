@@ -172,6 +172,7 @@ describe("universalConvert", () => {
 							path: "/test/project/.claude/skills/research/SKILL.md",
 							name: "research",
 							description: "Research helper",
+							isSymlink: false,
 						},
 					],
 					projectMcpServers: {},
