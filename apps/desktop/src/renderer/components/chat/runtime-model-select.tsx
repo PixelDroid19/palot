@@ -32,18 +32,19 @@ export function RuntimeModelSelect({
 			searchPlaceholder="Search models..."
 			emptyLabel="No models found"
 			disabled={disabled}
-			renderTriggerValue={(item) =>
-				item ? (
+			renderTriggerValue={(item) => {
+				const model = item as RuntimeModelSelectItem | null
+				return model ? (
 					<>
-						{item.provider ? (
-							<ProviderIcon id={item.provider.id} name={item.provider.name} size="xs" />
+						{model.provider ? (
+							<ProviderIcon id={model.provider.id} name={model.provider.name} size="xs" />
 						) : null}
-						<span>{item.label}</span>
+						<span>{model.label}</span>
 					</>
 				) : (
 					<span className="text-muted-foreground">Select model...</span>
 				)
-			}
+			}}
 		/>
 	)
 }

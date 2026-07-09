@@ -39,6 +39,7 @@ import type {
 	RuntimeToolbarSections,
 } from "./runtime-config-toolbar"
 import type { RuntimeModelSelectItem } from "./runtime-model-select"
+import { buildProcessToolbarSectionsFromCatalog } from "./runtime-toolbar-sections"
 
 export interface NewChatRuntimeConfig {
 	runtimeId: SessionRuntimeId
@@ -182,7 +183,11 @@ function buildConfigurableRuntimeToolbarSections(args: {
 	}
 }
 
-function buildCliRuntimeToolbarSections(args: {
+/**
+ * Process-adapter (agent-host) toolbar sections: model · sandbox · effort.
+ * Same slot grammar as managed-server; only populated slots differ by capability.
+ */
+export function buildProcessRuntimeToolbarSections(args: {
 	models: AgentRuntimeDescriptor["models"]
 	modelValue: string | null
 	onModelChange: (value: string) => void
@@ -192,30 +197,7 @@ function buildCliRuntimeToolbarSections(args: {
 	effortValue: string
 	onEffortChange: (value: string) => void
 }): RuntimeToolbarSections {
-	return {
-		model: {
-			items: args.models.map((model) => ({
-				value: model.slug,
-				label: model.label,
-				group: "Models",
-				description: model.slug === model.label ? undefined : model.slug,
-				searchTerms: [model.slug, model.label],
-			})),
-			value: args.modelValue,
-			onValueChange: args.onModelChange,
-		},
-		sandbox: {
-			value: args.sandboxValue,
-			onValueChange: args.onSandboxChange,
-		},
-		effort: args.efforts.length
-			? {
-					efforts: args.efforts,
-					value: args.effortValue,
-					onValueChange: args.onEffortChange,
-				}
-			: undefined,
-	}
+	return buildProcessToolbarSectionsFromCatalog(args) as RuntimeToolbarSections
 }
 
 function buildChatRuntimeConfig(args: {
@@ -232,7 +214,7 @@ function buildChatRuntimeConfig(args: {
 	}
 }
 
-export function buildCliNewChatRuntimeConfig(args: {
+export function buildProcessNewChatRuntimeConfig(args: {
 	runtimeId: Exclude<SessionRuntimeId, typeof PROJECT_RUNTIME_ID>
 	models: AgentRuntimeDescriptor["models"]
 	modelValue: string
@@ -249,7 +231,7 @@ export function buildCliNewChatRuntimeConfig(args: {
 	return {
 		runtimeId: args.runtimeId,
 		toolbarProps: {
-			sections: buildCliRuntimeToolbarSections({
+			sections: buildProcessRuntimeToolbarSections({
 				models: args.models,
 				modelValue: args.modelValue || null,
 				onModelChange: args.onModelChange,
@@ -275,6 +257,9 @@ export function buildCliNewChatRuntimeConfig(args: {
 		},
 	}
 }
+
+/** @deprecated Use {@link buildProcessNewChatRuntimeConfig} */
+export const buildCliNewChatRuntimeConfig = buildProcessNewChatRuntimeConfig
 
 export function buildConfigurableRuntimeNewChatRuntimeConfig(args: {
 	agents: SdkAgent[]
@@ -309,7 +294,7 @@ export function buildConfigurableRuntimeNewChatRuntimeConfig(args: {
 	}
 }
 
-export function buildCliChatRuntimeConfig(args: {
+export function buildProcessChatRuntimeConfig(args: {
 	runtimeId: string
 	toolbarProps: RuntimeConfigToolbarProps
 	/** Optional per-send overrides from session meta (model/effort/sandbox). */
@@ -325,6 +310,9 @@ export function buildCliChatRuntimeConfig(args: {
 		},
 	})
 }
+
+/** @deprecated Use {@link buildProcessChatRuntimeConfig} */
+export const buildCliChatRuntimeConfig = buildProcessChatRuntimeConfig
 
 export function buildConfigurableRuntimeChatRuntimeConfig(args: {
 	agents: SdkAgent[]
@@ -352,7 +340,8 @@ export function buildConfigurableRuntimeChatRuntimeConfig(args: {
 	})
 }
 
-export function useCliChatRuntimeToolbarProps(
+/** Process-adapter session toolbar (Codex/Claude catalogs → shared slots). */
+export function useProcessChatRuntimeToolbarProps(
 	sessionId: string,
 ): RuntimeConfigToolbarProps | null {
 	const runtimeState = useSessionRuntimeState(sessionId)
@@ -397,7 +386,7 @@ export function useCliChatRuntimeToolbarProps(
 	}
 
 	return {
-		sections: buildCliRuntimeToolbarSections({
+		sections: buildProcessRuntimeToolbarSections({
 			models,
 			modelValue: currentSlug || null,
 			onModelChange: (value) => apply({ model: value, effort: "" }),
@@ -409,3 +398,6 @@ export function useCliChatRuntimeToolbarProps(
 		}),
 	}
 }
+
+/** @deprecated Use {@link useProcessChatRuntimeToolbarProps} */
+export const useCliChatRuntimeToolbarProps = useProcessChatRuntimeToolbarProps

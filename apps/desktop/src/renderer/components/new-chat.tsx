@@ -59,11 +59,11 @@ import {
 import { launchRuntimeSession } from "../services/runtime-session-launch"
 import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
-import { CliOptionSelect } from "./chat/cli-toolbar"
+import { RuntimeOptionSelect } from "./chat/runtime-option-select"
 import { PromptAttachmentPreview } from "./chat/prompt-attachments"
 import { StatusBar } from "./chat/prompt-toolbar"
 import {
-	buildCliNewChatRuntimeConfig,
+	buildProcessNewChatRuntimeConfig,
 	buildConfigurableRuntimeNewChatRuntimeConfig,
 	type NewChatRuntimeConfig,
 } from "./chat/runtime-config-state"
@@ -526,7 +526,7 @@ export function NewChat() {
 			runtimeTransportForId(sessionRuntime) === "agent-host" &&
 			activeProcessRuntime
 		) {
-			return buildCliNewChatRuntimeConfig({
+			return buildProcessNewChatRuntimeConfig({
 				runtimeId: activeProcessRuntime.id as Exclude<
 					SessionRuntimeId,
 					typeof DEFAULT_SESSION_RUNTIME_ID
@@ -831,7 +831,7 @@ export function NewChat() {
 							extraSlot={
 								<div className="flex items-center gap-2">
 									{installedRuntimes.length > 0 && (
-										<CliOptionSelect
+										<RuntimeOptionSelect
 											aria-label={t("runtimePicker.runtime")}
 											value={sessionRuntime}
 											onValueChange={(value) => {

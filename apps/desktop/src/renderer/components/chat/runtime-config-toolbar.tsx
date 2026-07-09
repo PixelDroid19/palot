@@ -10,9 +10,9 @@
 import type { AgentSandbox } from "../../../preload/api"
 import type { SdkAgent } from "../../hooks/use-runtime-data"
 import { useTranslation } from "../../i18n/use-translation"
-import { CliOptionSelect } from "./cli-toolbar"
 import { AgentSelector, VariantSelector } from "./prompt-toolbar"
 import { RuntimeModelSelect, type RuntimeModelSelectItem } from "./runtime-model-select"
+import { RuntimeOptionSelect } from "./runtime-option-select"
 import {
 	buildToolbarSectionsFromSlots,
 	type RuntimeToolbarSections as PureRuntimeToolbarSections,
@@ -124,7 +124,7 @@ function RuntimeToolbarSectionsView({ sections }: { sections: RuntimeToolbarSect
 			/>
 		),
 		normalized.sandbox && (
-			<CliOptionSelect
+			<RuntimeOptionSelect
 				key="sandbox"
 				aria-label={t("runtimePicker.sandbox")}
 				value={normalized.sandbox.value}
@@ -138,7 +138,7 @@ function RuntimeToolbarSectionsView({ sections }: { sections: RuntimeToolbarSect
 			/>
 		),
 		hasEffort && normalized.effort && (
-			<CliOptionSelect
+			<RuntimeOptionSelect
 				key="effort"
 				aria-label={t("runtimePicker.effort")}
 				value={normalized.effort.value || "__default__"}

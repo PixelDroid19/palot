@@ -27,7 +27,7 @@ import type {
 	SdkProvider,
 	VcsData,
 } from "../../hooks/use-runtime-data"
-import { getModelVariants, parseModelRef } from "../../hooks/use-runtime-data"
+import { parseModelRef } from "../../hooks/use-runtime-data"
 import {
 	computeContextUsage,
 	formatPercentage,

@@ -102,13 +102,13 @@ import {
 } from "./prompt-mentions"
 import { CliApprovalBar } from "./cli-approval-bar"
 import { CliQuestionBar } from "./cli-question-bar"
-import { SessionRuntimeSwitch } from "./cli-toolbar"
+import { SessionRuntimeSwitch } from "./session-runtime-switch"
 import { StatusBar } from "./prompt-toolbar"
 import {
-	buildCliChatRuntimeConfig,
+	buildProcessChatRuntimeConfig,
 	buildConfigurableRuntimeChatRuntimeConfig,
 	type ChatRuntimeConfig,
-	useCliChatRuntimeToolbarProps,
+	useProcessChatRuntimeToolbarProps,
 } from "./runtime-config-state"
 import { RuntimeConfigToolbar } from "./runtime-config-toolbar"
 import { SessionTaskList } from "./session-task-list"
@@ -838,7 +838,7 @@ function ChatInputSection({
 	const runtimeCapabilities = sessionRuntimeCapabilities(runtimeState)
 	const cliMeta = cliRuntimeMeta(runtimeState)
 	const usesAgentHost = sessionUsesAgentHostTransport(runtimeState)
-	const processToolbarProps = useCliChatRuntimeToolbarProps(agent.sessionId)
+	const processToolbarProps = useProcessChatRuntimeToolbarProps(agent.sessionId)
 
 	// Tree-scoped interactive requests — bubbles up from sub-agent sessions.
 	// These replace the direct `agent.permissions` / `agent.questions` arrays
@@ -1008,7 +1008,7 @@ function ChatInputSection({
 		() =>
 			// Capability/transport gate: agent-host process adapters vs managed-server config.
 			usesAgentHost || !runtimeCapabilities.supportsRuntimeConfiguration
-				? buildCliChatRuntimeConfig({
+				? buildProcessChatRuntimeConfig({
 						runtimeId: cliMeta?.runtimeId ?? runtimeState.runtimeId ?? DEFAULT_SESSION_RUNTIME_ID,
 						toolbarProps: processToolbarProps ?? { sections: {} },
 						sendOptions: {

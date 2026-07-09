@@ -84,3 +84,52 @@ export function buildToolbarSectionsFromSlots<TAgent, TSandbox>(
 			sections.effort && sections.effort.efforts.length > 0 ? sections.effort : undefined,
 	}
 }
+
+/** Catalog model entry used by process adapters (Codex / Claude). */
+export interface ProcessRuntimeCatalogModel {
+	slug: string
+	label: string
+	efforts: string[]
+	defaultEffort?: string
+}
+
+/**
+ * Build process-adapter (agent-host) toolbar sections from a model catalog.
+ * Pure — no React / Jotai. Same slot keys as managed-server configs.
+ */
+export function buildProcessToolbarSectionsFromCatalog<TSandbox>(args: {
+	models: ProcessRuntimeCatalogModel[]
+	modelValue: string | null
+	onModelChange: (value: string) => void
+	sandboxValue: TSandbox
+	onSandboxChange: (value: TSandbox) => void
+	efforts: string[]
+	effortValue: string
+	onEffortChange: (value: string) => void
+}): RuntimeToolbarSections<unknown, TSandbox> {
+	return {
+		model: {
+			items: args.models.map((model) => ({
+				value: model.slug,
+				label: model.label,
+				group: "Models",
+				description: model.slug === model.label ? undefined : model.slug,
+				searchTerms: [model.slug, model.label],
+			})),
+			value: args.modelValue,
+			onValueChange: args.onModelChange,
+			emptyLabel: args.models.length === 0 ? "No models reported" : undefined,
+		},
+		sandbox: {
+			value: args.sandboxValue,
+			onValueChange: args.onSandboxChange,
+		},
+		effort: args.efforts.length
+			? {
+					efforts: args.efforts,
+					value: args.effortValue,
+					onValueChange: args.onEffortChange,
+				}
+			: undefined,
+	}
+}
