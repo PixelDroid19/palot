@@ -47,6 +47,7 @@ import {
 	unregisterRuntimeDescriptorSource,
 	type SessionRuntimeDescriptor,
 } from "./descriptor-registry"
+import { installDesktopHostToolBackends } from "./host-tool-backends"
 
 export type { SessionRuntimeDescriptor } from "./descriptor-registry"
 
@@ -79,7 +80,12 @@ export function getAgentHost(): AgentHost {
 			builtinProviders: ids.length === 0 ? false : ids,
 		}
 	}
-	hostSingleton ??= new AgentHost(hostOptions)
+	if (!hostSingleton) {
+		hostSingleton = new AgentHost(hostOptions)
+		// Host-owned tool plane: automation / system / browser for every harness.
+		// Independent of which CLI adapters are plugged in.
+		installDesktopHostToolBackends(hostSingleton)
+	}
 	return hostSingleton
 }
 
@@ -108,9 +114,10 @@ export function resetManagedDescriptorRegistration(): void {
 }
 
 /**
- * Start the inter-agent bridge (idempotent). CLIs launched afterwards get the
- * `palot` MCP server injected, giving them palot_delegate + shared context.
- * A bridge failure only disables cross-agent tools — sessions still work.
+ * Start the host tool bridge (idempotent). CLIs launched afterwards get the
+ * `palot` MCP server injected with the full host tool plane (automation,
+ * system, browser, agents, context) — independent of which harness is running.
+ * A bridge failure only disables host tools — sessions still work.
  */
 async function ensureBridge(): Promise<void> {
 	if (bridgeSingleton?.getInfo()) return
@@ -129,10 +136,14 @@ async function ensureBridge(): Promise<void> {
 		const info = await bridge.start()
 		if (!systemNode) info.proxyEnv = { ELECTRON_RUN_AS_NODE: "1" }
 		bridgeSingleton = bridge
-		log.info("Agent bridge started", { url: info.url, node: systemNode ?? "electron" })
+		log.info("Agent bridge started", {
+			url: info.url,
+			node: systemNode ?? "electron",
+			hostTools: getAgentHost().tools.list().map((t) => t.name),
+		})
 	})().catch((err) => {
 		bridgeStarting = null
-		log.error("Agent bridge failed to start; cross-agent tools disabled", {}, err)
+		log.error("Agent bridge failed to start; host tools disabled for CLIs", {}, err)
 	})
 	await bridgeStarting
 }
