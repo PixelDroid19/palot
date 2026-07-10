@@ -139,10 +139,10 @@ export class AgentHost {
 		})
 		registerSubagentTools(this.tools, {
 			resolveWorkerRuntimeId: () => {
-				// Prefer process adapters for isolated workers; any registered runtime works.
+				// The composition decides which harnesses are available. Workers use the
+				// first registered runtime without brand-specific exclusions.
 				const ids = this.listRuntimes().map((r) => r.id)
-				const preferred = ids.find((id) => id !== "opencode") ?? ids[0]
-				return preferred ?? null
+				return ids[0] ?? null
 			},
 			delegate: (args) => this.delegate(args),
 		})

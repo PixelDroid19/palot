@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { ClaudeProvider } from "../src/providers/claude"
 import { CodexProvider } from "../src/providers/codex"
+import { AcpProvider, OPENCODE_ACP_SPEC } from "../src/providers/acp"
 import { resolveRuntimeTransport } from "../src/types"
 
 describe("adapter capabilities declare UI-driving flags", () => {
@@ -24,6 +25,15 @@ describe("adapter capabilities declare UI-driving flags", () => {
 		expect(codex.capabilities.reasoningEffort).toBe(true)
 		expect(codex.capabilities.managedLocalServer).toBe(false)
 		expect(resolveRuntimeTransport({ capabilities: codex.capabilities })).toBe("agent-host")
+	})
+
+	test("OpenCode ACP adapter is a process runtime, not a managed server", async () => {
+		const opencode = new AcpProvider(OPENCODE_ACP_SPEC, async () => null)
+		expect(opencode.binary).toBe("opencode")
+		expect(opencode.capabilities.managedLocalServer).toBe(false)
+		expect(opencode.sessionCapabilities.supportsRuntimeConfiguration).toBe(false)
+		expect(resolveRuntimeTransport({ capabilities: opencode.capabilities })).toBe("agent-host")
+		expect(await opencode.listModels()).toEqual(OPENCODE_ACP_SPEC.fallbackModels ?? [])
 	})
 
 	test("Claude listModels returns non-empty fallback without binary", async () => {

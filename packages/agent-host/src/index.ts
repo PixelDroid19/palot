@@ -20,6 +20,7 @@ export {
 	registerSubagentTools,
 } from "./host-tools"
 export { MCP_PROXY_SOURCE } from "./mcp-proxy"
+export { type AcpAgentSpec, AcpProvider, OPENCODE_ACP_SPEC } from "./providers/acp"
 export { ClaudeProvider } from "./providers/claude"
 export { CodexProvider } from "./providers/codex"
 export { JsonRpcConnection } from "./rpc"

@@ -1,8 +1,8 @@
 import type { CliAdapter } from "../types"
 
 /**
- * OpenCode — the agent runtime GCode manages directly today. Its auth lives in
- * an `auth.json` under the platform data/config dir.
+ * OpenCode — a first-class CLI runtime driven through `opencode acp`. Its auth
+ * lives in an `auth.json` under the platform data/config dir.
  */
 export const opencodeAdapter: CliAdapter = {
 	id: "opencode",
@@ -17,5 +17,5 @@ export const opencodeAdapter: CliAdapter = {
 	],
 	docsUrl: "https://opencode.ai/docs",
 	installHint: "curl -fsSL https://opencode.ai/install | bash",
-	managed: true,
+	managed: false,
 }

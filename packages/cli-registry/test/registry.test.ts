@@ -31,10 +31,8 @@ describe("adapter registry integrity", () => {
 		}
 	})
 
-	test("exactly one adapter is the managed backend (OpenCode)", () => {
-		const managed = ADAPTERS.filter((a) => a.managed)
-		expect(managed).toHaveLength(1)
-		expect(managed[0].id).toBe("opencode")
+	test("OpenCode is registered as a CLI, not an HTTP-managed backend", () => {
+		expect(getAdapter("opencode")?.managed).toBe(false)
 	})
 
 	test("getAdapter resolves known ids and returns undefined otherwise", () => {

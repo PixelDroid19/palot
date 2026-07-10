@@ -46,8 +46,9 @@ export interface CliAdapter {
 	/** One-line install hint shown when the CLI is missing. */
 	installHint: string
 	/**
-	 * Whether GCode can drive this CLI as a managed backend today. Detection is
-	 * offered for every adapter; `managed` marks first-class runtime support.
+	 * Whether GCode can drive this CLI as a first-class runtime. Detection is
+	 * offered for every adapter; this flag is retained for registry compatibility
+	 * and is not an HTTP-server capability.
 	 */
 	managed: boolean
 }

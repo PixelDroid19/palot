@@ -152,14 +152,11 @@ export interface AgentRuntimeCapabilities {
 	sandboxModes: boolean
 	/** Can launch into a git worktree / isolated workspace. */
 	worktree: boolean
-	/** Sessions persist across app restarts (server- or CLI-backed). */
+	/** Sessions persist across app restarts (host- or adapter-backed). */
 	persistentSessions: boolean
 	/** Supports background / subagent sessions. */
 	backgroundAgents: boolean
-	/**
-	 * Needs a local managed HTTP server lifecycle (today: OpenCode).
-	 * Other runtimes speak process/stdio and leave this false.
-	 */
+	/** Needs a managed HTTP lifecycle supplied by an explicitly registered adapter. */
 	managedLocalServer: boolean
 }
 
@@ -384,7 +381,7 @@ export interface AgentSessionProvider {
 }
 
 /** Built-in process adapter ids shipped with agent-host (optional to register). */
-export type BuiltInProviderId = "codex" | "claude"
+export type BuiltInProviderId = "codex" | "claude" | "opencode"
 
 /** Default capability flags for process/CLI adapters (Codex, Claude). */
 export const DEFAULT_PROCESS_RUNTIME_CAPABILITIES: AgentRuntimeCapabilities = {
@@ -404,7 +401,7 @@ export const DEFAULT_PROCESS_RUNTIME_CAPABILITIES: AgentRuntimeCapabilities = {
 	managedLocalServer: false,
 }
 
-/** Default capability flags for managed-server adapters (OpenCode today). */
+/** Default capability flags for explicitly registered managed-server adapters. */
 export const DEFAULT_MANAGED_SERVER_RUNTIME_CAPABILITIES: AgentRuntimeCapabilities = {
 	imageInput: true,
 	reasoningEffort: false,
