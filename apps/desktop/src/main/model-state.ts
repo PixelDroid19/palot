@@ -24,22 +24,8 @@ interface ModelState {
 const EMPTY_STATE: ModelState = { recent: [], favorite: [], variant: {} }
 const MAX_RECENT = 10
 
-/**
- * Resolves the OpenCode state directory path.
- * Queries the running server first, falls back to default XDG path.
- */
+/** Resolve the CLI's standard XDG state directory without contacting a server. */
 async function resolveStatePath(): Promise<string> {
-	try {
-		const pathRes = await fetch("http://127.0.0.1:4101/path", {
-			signal: AbortSignal.timeout(2000),
-		})
-		if (pathRes.ok) {
-			const paths = (await pathRes.json()) as { state: string }
-			return paths.state
-		}
-	} catch {
-		// Server unreachable — fall through
-	}
 	return join(homedir(), ".local", "state", "opencode")
 }
 
@@ -50,9 +36,7 @@ async function resolveStatePath(): Promise<string> {
 /**
  * Reads the OpenCode model state (recent models, favorites, variants).
  *
- * First discovers the state directory by querying the running OpenCode server,
- * then reads `{state}/model.json`.
- * Falls back to the default XDG path if the server is unreachable.
+ * Reads `{state}/model.json` from the CLI's standard XDG state directory.
  */
 export async function readModelState(): Promise<ModelState> {
 	try {

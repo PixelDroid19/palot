@@ -1,76 +1,51 @@
 /**
- * Approval bar for CLI-backed sessions. When the agent asks to run a command
- * or edit files outside its sandbox, the request blocks until answered here —
- * the same allow / allow-for-session / deny flow the CLIs offer in their own
- * UIs, surfaced above the prompt input.
+ * Approval bar for CLI-backed sessions — React host + jotai wiring for Lit panel.
  */
-import { Button } from "@gcode/ui/components/button"
 import { useAtomValue } from "jotai"
-import { ShieldQuestion } from "lucide-react"
+import { createElement, useEffect, useRef } from "react"
 import { cliPermissionsAtom } from "../../atoms/cli-sessions"
 import { useTranslation } from "../../i18n/use-translation"
+import type { CliApprovalRequestView } from "../../lit/components/gcode-cli-approval"
+import "../../lit/components/gcode-cli-approval"
 import { respondRuntimePermissionRequest } from "../../services/runtime-session-actions"
 
 export function CliApprovalBar({ sessionId }: { sessionId: string }) {
 	const { t } = useTranslation()
 	const pending = useAtomValue(cliPermissionsAtom)[sessionId] ?? []
+	const ref = useRef<HTMLElement | null>(null)
+
+	useEffect(() => {
+		const node = ref.current
+		if (!node) return
+		const onDecision = (e: Event) => {
+			const ce = e as CustomEvent<{
+				requestId: string
+				decision: "accept" | "acceptForSession" | "decline"
+			}>
+			void respondRuntimePermissionRequest(sessionId, ce.detail.requestId, ce.detail.decision)
+		}
+		node.addEventListener("gcode-permission-decision", onDecision)
+		return () => node.removeEventListener("gcode-permission-decision", onDecision)
+	}, [sessionId, pending.length])
+
 	if (pending.length === 0) return null
 
-	return (
-		<div className="mb-2 flex flex-col gap-2">
-			{pending.map((request) => (
-				<div
-					key={request.requestId}
-					className="flex flex-col gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3"
-				>
-					<div className="flex items-start gap-2">
-						<ShieldQuestion className="mt-0.5 size-4 shrink-0 text-amber-500" />
-						<div className="min-w-0 flex-1">
-							<div className="font-medium text-sm">
-								{t("cliApprovals.title", { name: request.name })}
-							</div>
-							{request.detail && (
-								<code className="mt-1 block truncate rounded bg-black/20 px-1.5 py-0.5 font-mono text-xs">
-									{request.detail}
-								</code>
-							)}
-							{request.reason && (
-								<div className="mt-1 text-muted-foreground text-xs">{request.reason}</div>
-							)}
-						</div>
-					</div>
-					<div className="flex gap-2 self-end">
-						<Button
-							size="sm"
-							variant="outline"
-							onClick={() => respondRuntimePermissionRequest(sessionId, request.requestId, "decline")}
-						>
-							{t("cliApprovals.deny")}
-						</Button>
-						{request.decisions.includes("acceptForSession") && (
-							<Button
-								size="sm"
-								variant="outline"
-								onClick={() =>
-									respondRuntimePermissionRequest(
-										sessionId,
-										request.requestId,
-										"acceptForSession",
-									)
-								}
-							>
-								{t("cliApprovals.allowSession")}
-							</Button>
-						)}
-						<Button
-							size="sm"
-							onClick={() => respondRuntimePermissionRequest(sessionId, request.requestId, "accept")}
-						>
-							{t("cliApprovals.allow")}
-						</Button>
-					</div>
-				</div>
-			))}
-		</div>
-	)
+	const requests: CliApprovalRequestView[] = pending.map((request) => ({
+		requestId: request.requestId,
+		name: request.name,
+		title: t("cliApprovals.title", { name: request.name }),
+		detail: request.detail,
+		reason: request.reason,
+		decisions: request.decisions ?? [],
+	}))
+
+	return createElement("gcode-cli-approval", {
+		ref,
+		"session-id": sessionId,
+		requests,
+		"label-allow": t("cliApprovals.allow"),
+		"label-allow-session": t("cliApprovals.allowSession"),
+		"label-deny": t("cliApprovals.deny"),
+		"data-lit-cli-approval": "1",
+	})
 }

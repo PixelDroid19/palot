@@ -6,7 +6,6 @@ import { html, LitElement } from "lit"
 import { customElement, state } from "lit/decorators.js"
 import type { SessionRuntimeDescriptor } from "../../../preload/api"
 import { LocaleController } from "../locale-controller"
-import { createManagedSession } from "../managed-chat"
 import { navigate } from "../router"
 import { sessionStore } from "../session-store"
 import { styles } from "./gcode-home.css.js"
@@ -79,11 +78,6 @@ export class GcodeHome extends LitElement {
 		}
 		this.busy = true
 		try {
-			if (this.runtimeId === "opencode") {
-				const session = await createManagedSession(this.locale.t("litShell.newSessionTitle"))
-				navigate(`/session/${session.id}`)
-				return
-			}
 			const id = crypto.randomUUID()
 			const cwd = this.cwd || ""
 			sessionStore.upsertAndPersist({
@@ -106,7 +100,7 @@ export class GcodeHome extends LitElement {
 				}
 			).gcode
 			if (!bridge?.agentSession) {
-				throw new Error("Desktop agentSession bridge is required for Claude/Codex sessions.")
+				throw new Error("Desktop agentSession bridge is required for CLI sessions.")
 			}
 			await bridge.agentSession.open(id, this.runtimeId, {
 				cwd: cwd || ".",
@@ -144,7 +138,7 @@ export class GcodeHome extends LitElement {
 					</select>
 				</label>
 				${
-					this.runtimeId && this.runtimeId !== "opencode"
+					this.runtimeId
 						? html`
 								<label>
 									${this.locale.t("subagent.workingDirLabel")}

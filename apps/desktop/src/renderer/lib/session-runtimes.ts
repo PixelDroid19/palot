@@ -5,8 +5,8 @@
  * capabilities/transport — never by hard-coded "OpenCode vs CLI" branches.
  *
  * Runtime descriptors are sourced in main (`describeRuntimes`): OpenCode is
- * registered as one managed-server adapter alongside Codex and Claude. This
- * module keeps a small cache the UI reads synchronously after
+ * registered as one process adapter alongside Codex and Claude. This module
+ * keeps a small cache the UI reads synchronously after
  * `loadRuntimeDescriptors()` resolves.
  */
 import type { AgentRuntimeId, SessionRuntimeDescriptor } from "../../preload/api"
@@ -80,8 +80,9 @@ export function resolveDefaultSessionRuntimeId(
 }
 
 /**
- * Runtime for sessions without process-adapter meta (managed-server path).
- * Uses registry ids synced from descriptors only.
+ * Legacy helper retained for callers that still ask for a managed runtime.
+ * The default product composition does not register OpenCode here; process
+ * runtimes are selected from the descriptor list instead.
  */
 export function resolveDefaultManagedRuntimeId(): SessionRuntimeId {
 	const managed = listManagedServerRuntimeIds()
@@ -134,7 +135,7 @@ export function runtimeDescriptor(id: SessionRuntimeId): SessionRuntimeDescripto
 export function runtimeTransportForId(id: SessionRuntimeId): RuntimeTransport {
 	const descriptor = runtimeDescriptor(id)
 	if (descriptor) return resolveRuntimeTransport(descriptor)
-	// Before descriptors load, pure id map (OpenCode adapter id → managed-server).
+	// Before descriptors load, only explicitly registered managed ids map here.
 	return gatewayTransportForRuntimeId(id)
 }
 
@@ -185,7 +186,7 @@ export function isCliRuntime(id: SessionRuntimeId): id is AgentRuntimeId {
 	return runtimeTransportForId(id) === "agent-host"
 }
 
-/** True when the runtime uses the managed local server (OpenCode adapter today). */
+/** True when the runtime uses an explicitly registered managed-server adapter. */
 export function usesManagedServerTransport(id: SessionRuntimeId): boolean {
 	return runtimeTransportForId(id) === "managed-server"
 }

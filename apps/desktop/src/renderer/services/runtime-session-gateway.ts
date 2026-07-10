@@ -4,8 +4,8 @@
  * descriptor), never by product branches named "OpenCode vs CLI".
  *
  * Concrete wire protocols live only in transport adapters:
- *  - managed-server → OpenCode SDK client (one adapter implementation)
- *  - agent-host → process CLIs via IPC (Codex, Claude, …)
+ *  - managed-server → optional remote/third-party HTTP adapter
+ *  - agent-host → local process CLIs via IPC (OpenCode ACP, Codex, Claude, …)
  */
 import type { AgentSandbox } from "../../preload/api"
 import { upsertMessageAtom } from "../atoms/messages"

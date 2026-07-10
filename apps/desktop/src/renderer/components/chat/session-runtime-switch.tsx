@@ -31,7 +31,7 @@ export function SessionRuntimeSwitch({
 	const switchTo = async (target: string) => {
 		if (target === current) return
 		// Keep the same conversation: process→process stays on this id;
-		// process→OpenCode may return a new managed session id after transcript transfer.
+		// A process→managed switch may return a new session id after transcript transfer.
 		const nextId = await switchRuntimeSession(sessionId, target)
 		if (nextId && nextId !== sessionId && params.projectSlug) {
 			navigate({

@@ -33,7 +33,6 @@ import {
 } from "./git-service"
 import { getResolvedChromeTier } from "./liquid-glass"
 import { createLogger } from "./logger"
-import { getDiscoveredServers } from "./mdns-scanner"
 import type { ConversionCategory } from "@gcode/configconv"
 
 type MigrationCategory = ConversionCategory | "extra"
@@ -55,7 +54,6 @@ import {
 	respondAgentPermission,
 	steerAgent,
 } from "./agents/service"
-import { getRemoteAccessInfo } from "./remote-access"
 import { type SkillSyncDirection, syncSkills } from "./skill-sync"
 import { type WebhookTarget, testWebhook } from "./webhooks"
 import type { MigrationProvider } from "./onboarding"
@@ -74,12 +72,6 @@ import {
 	openInTarget,
 	setPreferredTarget,
 } from "./open-in-targets"
-import {
-	ensureProjectRuntimeServer,
-	getProjectRuntimeUrl,
-	restartProjectRuntimeServer,
-	stopProjectRuntimeServer,
-} from "./project-runtime-manager"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
 	checkForUpdates,
@@ -197,52 +189,6 @@ export function registerIpcHandlers(): void {
 		version: app.getVersion(),
 		isDev: !app.isPackaged,
 	}))
-
-	// --- Managed local server lifecycle (OpenCode adapter; neutral `runtime:*` API) ---
-
-	ipcMain.handle(
-		"runtime:ensure",
-		withLogging("runtime:ensure", async () => await ensureProjectRuntimeServer()),
-	)
-	// @deprecated legacy channel names — keep until callers migrate fully
-	ipcMain.handle(
-		"opencode:ensure",
-		withLogging("opencode:ensure", async () => await ensureProjectRuntimeServer()),
-	)
-	ipcMain.handle(
-		"project-runtime:ensure",
-		withLogging("project-runtime:ensure", async () => await ensureProjectRuntimeServer()),
-	)
-
-	ipcMain.handle("runtime:url", () => getProjectRuntimeUrl())
-	ipcMain.handle("opencode:url", () => getProjectRuntimeUrl())
-	ipcMain.handle("project-runtime:url", () => getProjectRuntimeUrl())
-
-	ipcMain.handle(
-		"runtime:stop",
-		withLogging("runtime:stop", () => stopProjectRuntimeServer()),
-	)
-	ipcMain.handle(
-		"opencode:stop",
-		withLogging("opencode:stop", () => stopProjectRuntimeServer()),
-	)
-	ipcMain.handle(
-		"project-runtime:stop",
-		withLogging("project-runtime:stop", () => stopProjectRuntimeServer()),
-	)
-
-	ipcMain.handle(
-		"runtime:restart",
-		withLogging("runtime:restart", async () => await restartProjectRuntimeServer()),
-	)
-	ipcMain.handle(
-		"opencode:restart",
-		withLogging("opencode:restart", async () => await restartProjectRuntimeServer()),
-	)
-	ipcMain.handle(
-		"project-runtime:restart",
-		withLogging("project-runtime:restart", async () => await restartProjectRuntimeServer()),
-	)
 
 	// --- Model state ---
 
@@ -398,10 +344,6 @@ export function registerIpcHandlers(): void {
 
 	ipcMain.handle("skills:sync", (_event, direction: SkillSyncDirection) => syncSkills(direction))
 
-	// --- Remote / mobile access ---
-
-	ipcMain.handle("remote-access:info", () => getRemoteAccessInfo())
-
 	// --- Agent CLI detection (OpenCode, Claude Code, Codex, Cursor, Gemini) ---
 
 	ipcMain.handle("agent-clis:detect", (_event, force?: boolean) => detectAgentClis(force))
@@ -548,10 +490,6 @@ export function registerIpcHandlers(): void {
 			deleteCredential(serverId)
 		}),
 	)
-
-	// --- mDNS discovery ---
-
-	ipcMain.handle("mdns:get-discovered", () => getDiscoveredServers())
 
 	// --- Remote server connectivity test ---
 

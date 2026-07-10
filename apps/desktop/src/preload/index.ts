@@ -34,34 +34,6 @@ contextBridge.exposeInMainWorld("gcode", {
 	/** Get the current chrome tier (pull-based, avoids race with push event). */
 	getChromeTier: () => ipcRenderer.invoke("chrome-tier:get"),
 
-	/** Ensures the managed local server (OpenCode adapter) is running. */
-	ensureManagedRuntime: () => ipcRenderer.invoke("runtime:ensure"),
-
-	/** Gets the URL of the running managed local server, or null. */
-	getServerUrl: () => ipcRenderer.invoke("runtime:url"),
-
-	/** Stops the managed local server. */
-	stopManagedRuntime: () => ipcRenderer.invoke("runtime:stop"),
-
-	/** Restarts the managed local server (stops and re-starts with current settings). */
-	restartManagedRuntime: () => ipcRenderer.invoke("runtime:restart"),
-
-	/** Neutral runtime local-server lifecycle (preferred). */
-	runtime: {
-		ensure: () => ipcRenderer.invoke("runtime:ensure"),
-		getServerUrl: () => ipcRenderer.invoke("runtime:url"),
-		stop: () => ipcRenderer.invoke("runtime:stop"),
-		restart: () => ipcRenderer.invoke("runtime:restart"),
-	},
-
-	/** @deprecated Use `runtime` — temporary shim for project-runtime naming. */
-	projectRuntime: {
-		ensure: () => ipcRenderer.invoke("runtime:ensure"),
-		getServerUrl: () => ipcRenderer.invoke("runtime:url"),
-		stop: () => ipcRenderer.invoke("runtime:stop"),
-		restart: () => ipcRenderer.invoke("runtime:restart"),
-	},
-
 	// --- Credential storage (safeStorage-backed) ---
 
 	credential: {
@@ -74,21 +46,6 @@ contextBridge.exposeInMainWorld("gcode", {
 	/** Test connectivity to a remote OpenCode server. Returns null on success or error message. */
 	testServerConnection: (url: string, username?: string, password?: string) =>
 		ipcRenderer.invoke("server:test-connection", url, username, password),
-
-	// --- mDNS discovery ---
-
-	mdns: {
-		/** Get the current list of discovered servers. */
-		getDiscovered: () => ipcRenderer.invoke("mdns:get-discovered"),
-		/** Subscribe to discovered server list changes. */
-		onChanged: (callback: (servers: unknown[]) => void) => {
-			const listener = (_event: unknown, servers: unknown[]) => callback(servers)
-			ipcRenderer.on("mdns:servers-changed", listener)
-			return () => {
-				ipcRenderer.removeListener("mdns:servers-changed", listener)
-			}
-		},
-	},
 
 	/** Reads model state (recent models, favorites, variants). */
 	getModelState: () => ipcRenderer.invoke("model-state"),
@@ -182,10 +139,6 @@ contextBridge.exposeInMainWorld("gcode", {
 	skills: {
 		sync: (direction: "push" | "pull") => ipcRenderer.invoke("skills:sync", direction),
 	},
-
-	// --- Remote / mobile access ---
-
-	getRemoteAccessInfo: () => ipcRenderer.invoke("remote-access:info"),
 
 	// --- Agent CLI detection ---
 

@@ -1,4 +1,8 @@
-import { type ReactNode, useId } from "react"
+/**
+ * Settings row — React host for progressive Lit `<gcode-settings-row>`.
+ */
+import { createElement, type ReactNode, useId } from "react"
+import "../../lit/components/gcode-settings-row"
 
 interface SettingsRowProps {
 	label: string
@@ -12,19 +16,14 @@ export function SettingsRow({ label, description, htmlFor, children }: SettingsR
 	const autoId = useId()
 	const controlId = htmlFor ?? autoId
 
-	return (
-		<div className="flex items-center justify-between gap-4 px-4 py-3">
-			<div className="flex min-w-0 flex-col gap-0.5">
-				<label htmlFor={controlId} className="text-sm font-medium">
-					{label}
-				</label>
-				{description && (
-					<span id={`${controlId}-desc`} className="text-sm text-muted-foreground">
-						{description}
-					</span>
-				)}
-			</div>
-			<div className="flex shrink-0 items-center gap-2">{children}</div>
-		</div>
+	return createElement(
+		"gcode-settings-row",
+		{
+			label,
+			description: description ?? "",
+			"html-for": controlId,
+			"data-lit-settings-row": "1",
+		},
+		children,
 	)
 }

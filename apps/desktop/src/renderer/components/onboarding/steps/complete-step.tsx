@@ -101,7 +101,7 @@ export function CompleteStep({
 					<h2 className="text-2xl font-semibold text-foreground">You're all set.</h2>
 					<p className="text-sm text-muted-foreground">
 						{projectRuntimeVersion
-							? `GCode is ready (OpenCode managed runtime ${formatVersion(projectRuntimeVersion)}; Codex and Claude Code work as process adapters too)`
+							? `GCode is ready (OpenCode CLI ${formatVersion(projectRuntimeVersion)} via ACP; Codex and Claude Code work as process adapters too)`
 							: "GCode is ready — use OpenCode, Codex, or Claude Code with the same session UI"}
 						{hasMigrated ? " and your configuration has been migrated." : "."}
 					</p>

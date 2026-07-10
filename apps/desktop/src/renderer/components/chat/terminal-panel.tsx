@@ -1,8 +1,8 @@
 /**
  * Embedded terminal panel — a real shell (PTY in the main process) rendered
  * with xterm.js, opened in the chat's working directory. Gives every session
- * an in-app terminal already `cd`'d into the project, instead of copying an
- * `opencode attach` command to paste elsewhere.
+ * an in-app terminal already `cd`'d into the project, independent of any
+ * runtime-specific CLI attach command.
  */
 import { FitAddon } from "@xterm/addon-fit"
 import { Terminal } from "@xterm/xterm"

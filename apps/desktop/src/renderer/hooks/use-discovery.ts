@@ -5,6 +5,8 @@ import { discoveryAtom } from "../atoms/discovery"
 import { isMockModeAtom } from "../atoms/mock-mode"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
+import { loadRuntimeDescriptors, syncTransportRegistryFromDescriptors } from "../lib/session-runtimes"
+import { resolveRuntimeTransport } from "../lib/runtime-transport"
 import { resolveAuthHeader, resolveServerUrl } from "../services/backend"
 import {
 	connectToProjectRuntime,
@@ -66,6 +68,30 @@ export function useDiscovery() {
 
 		;(async () => {
 			try {
+				// --- Step 0: Local server discovery only applies when a managed-server
+				// runtime is actually registered. All process runtimes (Codex, Claude,
+				// OpenCode over ACP) speak agent-host — spawning a local HTTP server
+				// for them would contradict the composition. Remote servers the user
+				// configured explicitly still connect below.
+				if (activeServer.type === "local") {
+					const descriptors = await loadRuntimeDescriptors()
+					syncTransportRegistryFromDescriptors(descriptors)
+					const hasManagedServer = descriptors.some(
+						(d) => resolveRuntimeTransport(d) === "managed-server",
+					)
+					if (!hasManagedServer) {
+						log.info("No managed-server runtime registered; skipping local server discovery")
+						appStore.set(discoveryAtom, {
+							loaded: true,
+							loading: false,
+							error: null,
+							phase: "ready",
+							projects: [],
+						})
+						return
+					}
+				}
+
 				// --- Step 1: Resolve the server URL ---
 				log.info("Resolving server URL...", {
 					server: activeServer.name,

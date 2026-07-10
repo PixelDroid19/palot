@@ -1,0 +1,45 @@
+// Matches React SettingsSection (title/desc + bordered divide-y list).
+
+:host {
+	display: block;
+	font-family: var(--font-sans, inherit);
+	color: var(--foreground, inherit);
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.heading {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+}
+
+.title {
+	margin: 0;
+	font-size: 0.875rem;
+	font-weight: 500;
+	line-height: 1.25rem;
+	color: var(--foreground, inherit);
+}
+
+.desc {
+	margin: 0;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	color: var(--muted-foreground, #afafaf);
+}
+
+.list {
+	border: 1px solid var(--border, #2e2e2e);
+	border-radius: var(--radius, 0.75rem);
+	overflow: hidden;
+}
+
+/* divide-y between slotted children via ::slotted */
+::slotted(*:not(:first-child)) {
+	border-top: 1px solid var(--border, #2e2e2e);
+}

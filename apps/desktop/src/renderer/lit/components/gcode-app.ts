@@ -15,7 +15,6 @@ import {
 	type LitToolEvent,
 } from "../chat-runtime"
 import { LocaleController } from "../locale-controller"
-import { loadManagedMessages, promptManagedSession } from "../managed-chat"
 import { readOnboardingState } from "../onboarding-store"
 import { navigate, parseHash, type LitRoute } from "../router"
 import { sessionStore, type LitChatMessage } from "../session-store"
@@ -85,27 +84,6 @@ export class GcodeApp extends LitElement {
 
 	private async loadSession(sessionId: string): Promise<void> {
 		sessionStore.select(sessionId)
-		const meta = sessionStore.getMeta(sessionId)
-		if (meta?.runtimeId === "opencode" || sessionId.startsWith("ses_")) {
-			try {
-				const msgs = await loadManagedMessages(sessionId)
-				this.messages =
-					msgs.length > 0
-						? msgs
-						: [
-								{
-									id: "sys",
-									role: "system",
-									text: this.locale.t("litShell.sessionOpened", {
-										id: sessionId.slice(0, 8),
-									}),
-								},
-							]
-				return
-			} catch {
-				// fall through to local persistence
-			}
-		}
 		const local = sessionStore.getMessages(sessionId)
 		this.messages =
 			local.length > 0
@@ -166,18 +144,10 @@ export class GcodeApp extends LitElement {
 		this.question = null
 		this.tools = []
 
-		const meta = sessionStore.getMeta(sessionId)
-		const runtimeId = meta?.runtimeId || ""
 		const assistantId = `a-${Date.now()}`
 
 		try {
-			if (runtimeId === "opencode" || sessionId.startsWith("ses_")) {
-				await promptManagedSession(sessionId, text)
-				await new Promise((r) => setTimeout(r, 1500))
-				const msgs = await loadManagedMessages(sessionId)
-				if (msgs.length) this.messages = msgs
-			} else {
-				const finalText = await runLitAgentTurn(sessionId, text, {
+			const finalText = await runLitAgentTurn(sessionId, text, {
 					onAssistantDelta: (partial) => {
 						this.messages = [
 							...this.messages.filter((m) => m.id !== assistantId),
@@ -203,18 +173,17 @@ export class GcodeApp extends LitElement {
 							},
 						]
 					},
+			})
+			if (finalText) {
+				this.messages = [
+					...this.messages.filter((m) => m.id !== assistantId),
+					{ id: assistantId, role: "assistant", text: finalText },
+				]
+				sessionStore.appendMessage(sessionId, {
+					id: assistantId,
+					role: "assistant",
+					text: finalText,
 				})
-				if (finalText) {
-					this.messages = [
-						...this.messages.filter((m) => m.id !== assistantId),
-						{ id: assistantId, role: "assistant", text: finalText },
-					]
-					sessionStore.appendMessage(sessionId, {
-						id: assistantId,
-						role: "assistant",
-						text: finalText,
-					})
-				}
 			}
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err)

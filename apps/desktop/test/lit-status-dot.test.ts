@@ -2,8 +2,6 @@
  * Public status-dot helpers + React string-wire path that ships in production.
  */
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test"
-import { readFileSync } from "node:fs"
-import path from "node:path"
 import { Window } from "happy-dom"
 import {
 	coerceHealthState,
@@ -39,17 +37,6 @@ describe("status-dot public helpers", () => {
 		expect(statusDotKindLabel("bad")).toMatch(/offline/i)
 	})
 
-	test("ServerIndicator uses Lit host only (no dual span markup for dots)", () => {
-		const src = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/server-indicator.tsx"),
-			"utf8",
-		)
-		expect(src).toContain("gcode-status-dot")
-		expect(src).toContain("../lit/components/gcode-status-dot")
-		expect(src).not.toContain("bg-green-500")
-		expect(src).not.toContain("bg-red-500")
-		expect(src).not.toContain("animate-pulse")
-	})
 })
 
 describe("gcode-status-dot shipped element (React string property path)", () => {

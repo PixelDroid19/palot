@@ -72,7 +72,7 @@ function RuntimeStatusSection() {
 	return (
 		<SettingsSection
 			title="Installed runtimes"
-			description="GCode supports multiple coding runtimes with the same workspace UI. OpenCode can run as a local managed server when installed; Codex and Claude Code run as process adapters. All share the same session flows."
+			description="GCode supports multiple coding runtimes with the same workspace UI. OpenCode, Codex and Claude Code run as local CLI adapters through the shared session host."
 		>
 			<div className="flex items-center justify-end px-4 pt-3">
 				<Button variant="outline" size="sm" onClick={() => load(true)} disabled={loading} className="gap-1.5">

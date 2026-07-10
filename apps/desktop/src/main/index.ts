@@ -2,7 +2,7 @@ import { execSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { app, BrowserWindow, Menu, session, shell } from "electron"
+import { app, BrowserWindow, Menu, shell } from "electron"
 import { initAutomations, shutdownAutomations } from "./automation"
 import { initCredentialStore } from "./credential-store"
 import { stopAgentBridge } from "./agents/service"
@@ -10,8 +10,6 @@ import { getOpaqueWindowsPref, registerIpcHandlers } from "./ipc-handlers"
 import { terminalManager } from "./terminal"
 import { installLiquidGlass, resolveWindowChrome } from "./liquid-glass"
 import { createLogger } from "./logger"
-import { startMdnsScanner, stopMdnsScanner } from "./mdns-scanner"
-import { stopProjectRuntimeServer } from "./project-runtime-manager"
 import { initSettingsStore } from "./settings-store"
 import { startEnvResolution } from "./shell-env"
 import { createTray, destroyTray } from "./tray"
@@ -27,7 +25,7 @@ const __dirname = path.dirname(__filename)
 // GUI launches get a minimal launchd environment missing user PATH additions
 // (homebrew, nvm, bun, etc.). This spawns a login shell in the background --
 // window creation proceeds immediately without waiting. Operations that need the
-// full PATH (e.g., spawning opencode) call waitForEnv() before proceeding.
+// full PATH (e.g., spawning a CLI harness) call waitForEnv() before proceeding.
 startEnvResolution()
 
 // Minimal menu — required on macOS for Cmd+C/V/X/A to work in web contents.
@@ -44,14 +42,6 @@ Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
 // Collect Chromium feature flags — must be merged into a single --disable-features
 // switch because Electron's appendSwitch overwrites (not appends) duplicate keys.
 const disabledFeatures: string[] = []
-
-// Chromium networking: disable HTTPS upgrades for localhost connections.
-// The OpenCode server is plain HTTP/1.1 on 127.0.0.1. Chromium 134+ (Electron 40+)
-// can silently upgrade http:// to https://, which causes ERR_ALPN_NEGOTIATION_FAILED
-// when hitting a plain HTTP server. Disabling this feature prevents that.
-// Must be set before app.whenReady().
-disabledFeatures.push("HttpsUpgrades")
-app.commandLine.appendSwitch("allow-insecure-localhost")
 
 // Linux/Wayland: ensure GTK can find the GdkPixbuf loader modules and enable
 // native Wayland rendering. These must be set before app.whenReady() since GTK
@@ -282,30 +272,10 @@ if (!gotLock) {
 	})
 
 	app.whenReady().then(() => {
-		// Bypass Chromium's Private Network Access checks for OpenCode server requests.
-		// Chromium (134+/Electron 40+) blocks renderer fetch() to private network addresses
-		// (127.0.0.1) with ERR_ALPN_NEGOTIATION_FAILED when the PNA preflight response
-		// doesn't include Access-Control-Allow-Private-Network. The OpenCode server (Bun/Hono)
-		// doesn't send this header. Instead of patching the server, we inject the header
-		// for all responses from the local server.
-		session.defaultSession.webRequest.onHeadersReceived(
-			{ urls: ["http://127.0.0.1:*/*"] },
-			(details, callback) => {
-				callback({
-					responseHeaders: {
-						...details.responseHeaders,
-						"Access-Control-Allow-Private-Network": ["true"],
-					},
-				})
-			},
-		)
-		log.info("Registered PNA header injection for 127.0.0.1 requests")
-
 		initSettingsStore()
 		initCredentialStore()
 		registerIpcHandlers()
 		initAutomations().catch(console.error)
-		startMdnsScanner().catch((err) => log.warn("mDNS scanner failed to start", err))
 		createWindow()
 		createTray(() => BrowserWindow.getAllWindows()[0])
 		initAutoUpdater().catch(console.error)
@@ -315,21 +285,19 @@ if (!gotLock) {
 		})
 	})
 
-	// On macOS, closing all windows keeps the app alive (dock/tray). The server
-	// and background services (automations, mDNS) continue running so agents
-	// can finish their work. On other platforms, closing all windows quits.
+	// On macOS, closing all windows keeps the app alive (dock/tray). Automation
+	// and CLI sessions continue running so agents can finish their work. On other
+	// platforms, closing all windows quits.
 	app.on("window-all-closed", () => {
 		if (process.platform !== "darwin") app.quit()
 	})
 
 	// All cleanup happens here, triggered by Cmd+Q, Dock > Quit, app.quit(),
 	// or system-initiated quit (macOS logout SIGTERM). This is the single
-	// source of truth for teardown -- stopServer() etc. are idempotent.
+	// source of truth for teardown.
 	app.on("before-quit", () => {
 		destroyTray()
 		shutdownAutomations()
-		stopMdnsScanner()
-		stopProjectRuntimeServer()
 		stopAutoUpdater()
 		// Tear down CLI agent sessions/processes (app-server, SDK children).
 		void stopAgentBridge()

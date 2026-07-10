@@ -32,7 +32,7 @@ const log = createLogger("use-servers")
 export function useServerSettingsSync() {
 	const setServers = useSetAtom(serversAtom)
 	const setActiveServerId = useSetAtom(activeServerIdAtom)
-	const setDiscoveredMdns = useSetAtom(discoveredMdnsServersAtom)
+	useSetAtom(discoveredMdnsServersAtom)
 
 	useEffect(() => {
 		if (!isElectron) return
@@ -55,22 +55,6 @@ export function useServerSettingsSync() {
 		})
 		return unsub
 	}, [setServers, setActiveServerId])
-
-	// --- mDNS discovery sync ---
-	useEffect(() => {
-		if (!isElectron) return
-
-		// Load current snapshot
-		window.gcode.mdns.getDiscovered().then((servers) => {
-			setDiscoveredMdns(servers as DiscoveredMdnsServer[])
-		})
-
-		// Subscribe to live updates
-		const unsub = window.gcode.mdns.onChanged((servers) => {
-			setDiscoveredMdns(servers as DiscoveredMdnsServer[])
-		})
-		return unsub
-	}, [setDiscoveredMdns])
 }
 
 /**

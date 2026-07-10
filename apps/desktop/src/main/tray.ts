@@ -22,8 +22,6 @@ import {
 	onStateChanged,
 	type SessionState,
 } from "./notification-watcher"
-import { getProjectRuntimeAuthHeader, getProjectRuntimeUrl } from "./project-runtime-manager"
-import { createMainProcessProjectRuntimeClient } from "./project-runtime-sdk"
 
 const log = createLogger("tray")
 
@@ -42,7 +40,6 @@ const IS_LINUX = process.platform === "linux"
 const MAX_AGENTS_INLINE = 3
 
 /** How often to refresh discovery data (offline sessions). */
-const DISCOVERY_REFRESH_MS = 60_000
 
 /** Status symbols for menu labels. */
 const STATUS_ICON: Record<string, string> = {
@@ -68,7 +65,6 @@ let tray: Tray | null = null
 let getWindow: (() => BrowserWindow | undefined) | null = null
 let unsubscribeWatcher: (() => void) | null = null
 let discoveryCache: DiscoveryCache | null = null
-let discoveryTimer: ReturnType<typeof setInterval> | null = null
 
 // ============================================================
 // Public API
@@ -130,10 +126,6 @@ export function createTray(windowGetter: () => BrowserWindow | undefined): void 
 		rebuildMenu()
 	})
 
-	// Load discovery data for offline sessions, then refresh periodically
-	refreshDiscovery()
-	discoveryTimer = setInterval(refreshDiscovery, DISCOVERY_REFRESH_MS)
-
 	// Build initial menu
 	rebuildMenu()
 
@@ -144,10 +136,6 @@ export function destroyTray(): void {
 	if (unsubscribeWatcher) {
 		unsubscribeWatcher()
 		unsubscribeWatcher = null
-	}
-	if (discoveryTimer) {
-		clearInterval(discoveryTimer)
-		discoveryTimer = null
 	}
 	if (tray) {
 		tray.destroy()
@@ -197,15 +185,6 @@ function rebuildMenu(): void {
 		label: "Show GCode",
 		click: () => showWindow(),
 	})
-
-	// Server status indicator
-	const serverUrl = getProjectRuntimeUrl()
-	if (serverUrl) {
-		template.push({
-			label: `Server Running`,
-			enabled: false,
-		})
-	}
 
 	template.push({ type: "separator" })
 	template.push({
@@ -462,34 +441,8 @@ function updateTrayTitle(
 }
 
 // ============================================================
-// Discovery Data — fetched from OpenCode API via SDK
+// Discovery Data
 // ============================================================
-
-async function refreshDiscovery(): Promise<void> {
-	const serverUrl = getProjectRuntimeUrl()
-	if (!serverUrl) return
-
-	try {
-		const client = createMainProcessProjectRuntimeClient({
-			baseUrl: serverUrl,
-			authHeader: getProjectRuntimeAuthHeader(),
-		})
-		const [projectsResult, sessionsResult] = await Promise.all([
-			client.project.list(),
-			client.session.list({ roots: true }),
-		])
-
-		discoveryCache = {
-			projects: (projectsResult.data ?? []) as Project[],
-			sessions: (sessionsResult.data ?? []) as Session[],
-		}
-
-		// Rebuild menu with fresh discovery data
-		rebuildMenu()
-	} catch (err) {
-		log.warn("Failed to refresh discovery data for tray", err)
-	}
-}
 
 // ============================================================
 // Navigation & Window Helpers

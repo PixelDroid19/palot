@@ -48,6 +48,7 @@ import { projectPaginationFamily } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import type { Agent, AgentStatus, SidebarProject } from "../lib/types"
 import { resolveProjectsEmptyKind, type ProjectsEmptyKind } from "../lib/project-visibility"
+import { loadRuntimeDescriptors } from "../lib/session-runtimes"
 import {
 	filterTasksByQuery,
 	selectActiveSessions,
@@ -58,7 +59,6 @@ import {
 import { runtimeLabel } from "../lib/session-runtimes"
 import { loadMoreProjectSessions, loadProjectSessions } from "../services/connection-manager"
 import { RuntimeMark } from "./runtime-mark"
-import { ServerIndicator } from "./server-indicator"
 
 // ============================================================
 // Constants
@@ -140,6 +140,12 @@ export function AppSidebarContent({
 	// Task catalog view: Workspace | Timeline
 	const [taskView, setTaskView] = useState<TaskCatalogView>("workspace")
 	const [taskQuery, setTaskQuery] = useState("")
+	const [hasCliRuntime, setHasCliRuntime] = useState(false)
+
+	useEffect(() => {
+		if (typeof window === "undefined" || !("gcode" in window)) return
+		loadRuntimeDescriptors().then((descriptors) => setHasCliRuntime(descriptors.length > 0))
+	}, [])
 
 	// Filter projects by search query (client-side, case-insensitive)
 	const filteredProjects = useMemo(() => {
@@ -189,7 +195,7 @@ export function AppSidebarContent({
 
 	const hasContent = agents.length > 0 || projects.length > 0
 	const emptyKind: ProjectsEmptyKind = resolveProjectsEmptyKind({
-		serverConnected,
+		serverConnected: serverConnected || hasCliRuntime,
 		productDiscoveredCount: projects.length + hiddenProductCount,
 		visibleProjectCount: projects.length,
 		hiddenProductCount,
@@ -504,7 +510,6 @@ export function AppSidebarContent({
 				)}
 			</SidebarContent>
 			<SidebarFooter className="space-y-0 p-2">
-				<ServerIndicator />
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton

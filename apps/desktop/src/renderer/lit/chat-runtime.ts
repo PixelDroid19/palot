@@ -3,7 +3,8 @@
  * Public API: runLitAgentTurn + respondLitPermission + answerLitQuestion.
  * Fail-closed when bridge/runtime unavailable (no offline echo).
  */
-import { promptManagedSession } from "./managed-chat"
+import { loadRuntimeDescriptors } from "../lib/session-runtimes"
+import { resolveRuntimeTransport } from "../lib/runtime-transport"
 import { sessionStore } from "./session-store"
 
 export interface LitPermissionRequest {
@@ -101,7 +102,9 @@ export async function answerLitQuestion(
 
 /**
  * Run one agent turn. Process runtimes use agentSession IPC;
- * OpenCode uses managed-chat (promptAsync). No silent offline success.
+ * Every runtime uses the agentSession bridge. The adapter owns its wire
+ * protocol (ACP, app-server, SDK, ...); the Lit product surface does not
+ * branch on provider names or legacy session-id shapes.
  */
 export async function runLitAgentTurn(
 	sessionId: string,
@@ -120,20 +123,13 @@ export async function runLitAgentTurn(
 		throw new Error(msg)
 	}
 
-	// Managed-server path (OpenCode)
-	if (runtimeId === "opencode" || sessionId.startsWith("ses_")) {
-		handlers.onStatus?.("running")
-		try {
-			await promptManagedSession(sessionId, text)
-			handlers.onStatus?.("idle")
-			handlers.onAssistantFinal?.("")
-			return ""
-		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err)
-			handlers.onError?.(message)
-			handlers.onStatus?.("failed")
-			throw err
-		}
+	const descriptors = await loadRuntimeDescriptors()
+	const descriptor = descriptors.find((item) => item.id === runtimeId)
+	if (descriptor && resolveRuntimeTransport(descriptor) !== "agent-host") {
+		const msg = `Runtime ${runtimeId} requires an unsupported managed transport`
+		handlers.onError?.(msg)
+		handlers.onStatus?.("failed")
+		throw new Error(msg)
 	}
 
 	const agent = getBridge()
@@ -180,11 +176,14 @@ export async function runLitAgentTurn(
 			})
 		}
 
-		if (kind === "permission" && update.requestId) {
-			// Do NOT auto-respond — UI must call respondLitPermission
+		if (kind === "permission") {
+			// AgentHost normalizes permission requests under `request`; accept the
+			// legacy flat shape too so every adapter reaches the same Lit surface.
 			const req = (update.request as Record<string, unknown> | undefined) || update
+			if (!req.requestId) return
+			// Do NOT auto-respond — UI must call respondLitPermission
 			handlers.onPermission?.({
-				requestId: String(update.requestId || req.requestId),
+				requestId: String(req.requestId),
 				toolName: String(req.toolName || req.name || update.toolName || "tool"),
 				description: req.description
 					? String(req.description)
@@ -194,11 +193,12 @@ export async function runLitAgentTurn(
 			})
 		}
 
-		if (kind === "question" && update.requestId) {
+		if (kind === "question") {
 			const req = (update.request as Record<string, unknown> | undefined) || update
+			if (!req.requestId) return
 			const questions = (req.questions as LitQuestionRequest["questions"]) || []
 			handlers.onQuestion?.({
-				requestId: String(update.requestId),
+				requestId: String(req.requestId),
 				questions,
 			})
 		}

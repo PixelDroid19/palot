@@ -3,22 +3,17 @@ import { Input } from "@gcode/ui/components/input"
 import { Switch } from "@gcode/ui/components/switch"
 import {
 	CheckCircle2Icon,
-	CopyIcon,
 	Loader2Icon,
 	RefreshCwIcon,
-	SmartphoneIcon,
 	TerminalIcon,
 	XCircleIcon,
 } from "lucide-react"
-import QRCode from "qrcode"
 import { useCallback, useEffect, useState } from "react"
 import type {
 	AgentCliDetection,
 	MigrationCategory,
 	MigrationProvider,
 	MigrationResult,
-	RemoteAccessInfo,
-	RemoteEndpoint,
 	WebhookTarget,
 } from "../../../preload/api"
 import { useSettings } from "../../hooks/use-settings"
@@ -202,168 +197,6 @@ function SkillSyncPanel() {
 					</pre>
 				)}
 			</div>
-		</SettingsSection>
-	)
-}
-
-// ============================================================
-// Remote / mobile access
-// ============================================================
-
-/** Renders a scannable QR code for a URL as a data-URI image (CSP-safe). */
-function QrCode({ url }: { url: string }) {
-	const [src, setSrc] = useState<string | null>(null)
-
-	useEffect(() => {
-		let cancelled = false
-		QRCode.toDataURL(url, { margin: 1, width: 176, errorCorrectionLevel: "M" })
-			.then((dataUrl) => {
-				if (!cancelled) setSrc(dataUrl)
-			})
-			.catch(() => {
-				if (!cancelled) setSrc(null)
-			})
-		return () => {
-			cancelled = true
-		}
-	}, [url])
-
-	if (!src) return <div className="size-44 rounded-md bg-muted" aria-hidden="true" />
-	return (
-		<img
-			src={src}
-			alt={`QR code for ${url}`}
-			className="size-44 rounded-md bg-white p-2"
-			width={176}
-			height={176}
-		/>
-	)
-}
-
-function RemoteAccessPanel() {
-	const [info, setInfo] = useState<RemoteAccessInfo | null>(null)
-	const [loading, setLoading] = useState(false)
-	const [copied, setCopied] = useState<string | null>(null)
-	const [selected, setSelected] = useState<string | null>(null)
-
-	const load = useCallback(async () => {
-		if (!isElectron) return
-		setLoading(true)
-		try {
-			const next = await window.gcode.getRemoteAccessInfo()
-			setInfo(next)
-			// Default to the best (first) non-loopback endpoint for the QR code.
-			const best = next.endpoints.find((e) => e.type !== "loopback")
-			setSelected((prev) =>
-				prev && next.endpoints.some((e) => e.url === prev) ? prev : (best?.url ?? null),
-			)
-		} finally {
-			setLoading(false)
-		}
-	}, [])
-
-	useEffect(() => {
-		load()
-	}, [load])
-
-	const copy = useCallback((url: string) => {
-		navigator.clipboard.writeText(url)
-		setCopied(url)
-		setTimeout(() => setCopied(null), 1500)
-	}, [])
-
-	const endpoints: RemoteEndpoint[] = info?.endpoints.filter((e) => e.type !== "loopback") ?? []
-	const hasTailscale = endpoints.some((e) => e.type === "tailscale")
-
-	return (
-		<SettingsSection
-			title="Remote & mobile access"
-			description="Connect another device (a laptop's GCode, the web build, or a phone browser) to this machine's running project runtime server. Scan the QR code from a phone on the same network — or via Tailscale from anywhere."
-		>
-			<div className="flex items-center justify-between px-4 py-3">
-				<div className="flex items-center gap-2 text-sm text-muted-foreground">
-					<SmartphoneIcon aria-hidden="true" className="size-4" />
-					{info?.port ? `Server listening on port ${info.port}` : "Server not running"}
-				</div>
-				<Button variant="outline" size="sm" onClick={load} disabled={loading}>
-					{loading ? (
-						<Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
-					) : (
-						<RefreshCwIcon aria-hidden="true" className="size-4" />
-					)}
-					Refresh
-				</Button>
-			</div>
-
-			{endpoints.length > 0 ? (
-				<div className="flex flex-col gap-4 px-4 py-3 sm:flex-row sm:items-start">
-					{selected && (
-						<div className="flex flex-col items-center gap-2">
-							<QrCode url={selected} />
-							<span className="text-xs text-muted-foreground">Scan to connect</span>
-						</div>
-					)}
-					<div className="flex min-w-0 flex-1 flex-col gap-1">
-						{endpoints.map((ep) => (
-							// Row is a clickable div (not a button) so the copy Button can nest
-							// inside it without producing invalid <button> inside <button>.
-							<div
-								key={ep.url}
-								role="button"
-								tabIndex={0}
-								onClick={() => setSelected(ep.url)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === " ") {
-										e.preventDefault()
-										setSelected(ep.url)
-									}
-								}}
-								className={`flex cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted ${
-									selected === ep.url ? "bg-muted" : ""
-								}`}
-							>
-								<span className="flex min-w-0 flex-col">
-									<span className="flex items-center gap-2">
-										<span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-											{ep.label}
-										</span>
-									</span>
-									<span className="truncate font-mono text-sm">{ep.url}</span>
-								</span>
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={(e) => {
-										e.stopPropagation()
-										copy(ep.url)
-									}}
-								>
-									{copied === ep.url ? (
-										<CheckCircle2Icon aria-hidden="true" className="size-4 text-green-500" />
-									) : (
-										<CopyIcon aria-hidden="true" className="size-4" />
-									)}
-								</Button>
-							</div>
-						))}
-						{!hasTailscale && (
-							<p className="mt-1 text-xs text-muted-foreground">
-								Tip: install Tailscale to get a stable address that works from anywhere, not just
-								the local network.
-							</p>
-						)}
-					</div>
-				</div>
-			) : (
-				info && (
-					<p className="px-4 py-3 text-sm text-muted-foreground">
-						No reachable remote addresses detected. If your local server is bound to
-						<code className="mx-1">127.0.0.1</code>, change its hostname to
-						<code className="mx-1">0.0.0.0</code> or a LAN IP before trying to connect from another
-						device.
-					</p>
-				)
-			)}
 		</SettingsSection>
 	)
 }
@@ -654,7 +487,6 @@ export function IntegrationsSettings() {
 
 			<AgentClisPanel />
 			<SkillSyncPanel />
-			<RemoteAccessPanel />
 		</div>
 	)
 }

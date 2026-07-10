@@ -1,0 +1,43 @@
+// Matches React SettingsRow layout (flex row, label+desc | control).
+
+:host {
+	display: block;
+	font-family: var(--font-sans, inherit);
+	color: var(--foreground, inherit);
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.75rem 1rem;
+}
+
+.meta {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 0.125rem;
+}
+
+.label {
+	font-size: 0.875rem;
+	font-weight: 500;
+	line-height: 1.25rem;
+	color: var(--foreground, inherit);
+	cursor: default;
+}
+
+.desc {
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	color: var(--muted-foreground, #afafaf);
+}
+
+.control {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 0.5rem;
+}

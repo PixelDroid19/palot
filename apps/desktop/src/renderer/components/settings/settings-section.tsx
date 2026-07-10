@@ -1,4 +1,8 @@
-import { type ReactNode, useId } from "react"
+/**
+ * Settings section — React host for progressive Lit `<gcode-settings-section>`.
+ */
+import { createElement, type ReactNode } from "react"
+import "../../lit/components/gcode-settings-section"
 
 interface SettingsSectionProps {
 	title?: string
@@ -7,19 +11,13 @@ interface SettingsSectionProps {
 }
 
 export function SettingsSection({ title, description, children }: SettingsSectionProps) {
-	const sectionId = useId()
-
-	return (
-		<section className="space-y-3" aria-labelledby={title ? sectionId : undefined}>
-			{title && (
-				<div>
-					<h3 id={sectionId} className="text-sm font-medium">
-						{title}
-					</h3>
-					{description && <p className="text-sm text-muted-foreground">{description}</p>}
-				</div>
-			)}
-			<div className="divide-y divide-border rounded-lg border border-border">{children}</div>
-		</section>
+	return createElement(
+		"gcode-settings-section",
+		{
+			heading: title ?? "",
+			description: description ?? "",
+			"data-lit-settings-section": "1",
+		},
+		children,
 	)
 }

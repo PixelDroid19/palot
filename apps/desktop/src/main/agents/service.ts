@@ -11,10 +11,8 @@ import { extname, join } from "node:path"
 import {
 	AgentBridge,
 	AgentHost,
-	DEFAULT_MANAGED_SERVER_RUNTIME_CAPABILITIES,
 	MCP_PROXY_SOURCE,
 	type AgentHostOptions,
-	type AgentRuntimeCapabilities,
 	type AgentPermissionDecision,
 	type AgentRunResult,
 	type AgentRuntimeId,
@@ -24,17 +22,10 @@ import {
 import { whichOnPath } from "@gcode/cli-registry"
 import { app } from "electron"
 import { detectAgentClis } from "../agent-clis"
-import { checkProjectRuntime } from "../compatibility"
 import { createLogger } from "../logger"
 import { PROJECT_RUNTIME_ID } from "../../shared/runtime-ids"
-import {
-	registerManagedServerRuntimeId,
-	unregisterManagedServerRuntimeId,
-} from "../../shared/runtime-transport-registry"
-import {
-	resolveProcessBuiltinIds,
-	shouldIncludeOpenCode,
-} from "./composition"
+import { unregisterManagedServerRuntimeId } from "../../shared/runtime-transport-registry"
+import { resolveProcessBuiltinIds } from "./composition"
 // Re-export composition API for app entry / tests
 export {
 	configureRuntimeComposition,
@@ -43,7 +34,6 @@ export {
 } from "./composition"
 import {
 	describeRegisteredManagedDescriptors,
-	registerRuntimeDescriptorSource,
 	unregisterRuntimeDescriptorSource,
 	type SessionRuntimeDescriptor,
 } from "./descriptor-registry"
@@ -123,21 +113,17 @@ export function resetAgentHostOptionsForTests(): void {
 
 /**
  * Register managed-server descriptor sources per composition.
- * When OpenCode is omitted, does not re-register it (unplug sticks).
+ *
+ * OpenCode moved to the agent-host process path (`opencode acp` over stdio),
+ * so no managed-server source is registered for it anymore — this function
+ * now only guarantees stale registrations from older sessions are cleared.
+ * Third-party managed adapters may still register their own sources.
  */
 export function registerDefaultManagedDescriptorSources(): void {
 	if (managedSourcesRegistered) return
 	managedSourcesRegistered = true
-	if (!shouldIncludeOpenCode()) {
-		unregisterRuntimeDescriptorSource(PROJECT_RUNTIME_ID)
-		unregisterManagedServerRuntimeId(PROJECT_RUNTIME_ID)
-		return
-	}
-	registerManagedServerRuntimeId(PROJECT_RUNTIME_ID)
-	registerRuntimeDescriptorSource({
-		id: PROJECT_RUNTIME_ID,
-		describe: () => describeOpenCodeAdapter(),
-	})
+	unregisterRuntimeDescriptorSource(PROJECT_RUNTIME_ID)
+	unregisterManagedServerRuntimeId(PROJECT_RUNTIME_ID)
 }
 
 /** Force re-evaluation of managed sources after composition changes (tests). */
@@ -186,20 +172,6 @@ export interface AgentImageAttachment {
 	filename?: string
 }
 
-/** OpenCode is one managed-server adapter — not the product base. */
-const OPENCODE_ADAPTER_LABEL = "OpenCode"
-const OPENCODE_ADAPTER_CAPABILITIES: AgentRuntimeCapabilities =
-	DEFAULT_MANAGED_SERVER_RUNTIME_CAPABILITIES
-const OPENCODE_SESSION_CAPABILITIES: SessionRuntimeDescriptor["sessionCapabilities"] = {
-	supportsSessionRevert: true,
-	supportsSessionSummarize: true,
-	supportsServerSlashCommands: true,
-	supportsFork: true,
-	supportsRuntimeConfiguration: true,
-	supportsWorktreeLaunch: true,
-	supportsServerHistory: true,
-}
-
 /**
  * Materialize renderer image attachments (data URLs) as temp files the CLI can
  * read. Returns the paths plus a cleanup function.
@@ -222,33 +194,10 @@ function writeImageFiles(images: AgentImageAttachment[]): { paths: string[]; cle
 	return { paths, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
-async function describeOpenCodeAdapter(): Promise<SessionRuntimeDescriptor> {
-	const detections = await detectAgentClis()
-	const detection = detections.find((d) => d.id === PROJECT_RUNTIME_ID)
-	const runtime = await checkProjectRuntime()
-	return {
-		id: PROJECT_RUNTIME_ID,
-		displayName: OPENCODE_ADAPTER_LABEL,
-		installed: runtime.installed,
-		capabilities: OPENCODE_ADAPTER_CAPABILITIES,
-		sessionCapabilities: OPENCODE_SESSION_CAPABILITIES,
-		transport: "managed-server" as const,
-		setup: {
-			description:
-				runtime.path ?? detection?.binaryPath ?? detection?.installHint ?? "Checking...",
-			version: runtime.version,
-			compatible: runtime.compatible,
-			warning: runtime.compatible ? null : runtime.message,
-		},
-		// Models come from the managed server provider catalog at session time.
-		models: [],
-	}
-}
-
 /**
  * Session runtime descriptors for pickers and setup UI.
- * Managed-server sources (OpenCode, …) come from the descriptor registry;
- * process adapters come from AgentHost — both are pluggable.
+ * Optional managed-server sources come from the descriptor registry; process
+ * adapters (including OpenCode ACP) come from AgentHost — both are pluggable.
  */
 export async function describeSessionRuntimes(): Promise<SessionRuntimeDescriptor[]> {
 	registerDefaultManagedDescriptorSources()

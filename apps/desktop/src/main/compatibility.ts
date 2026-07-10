@@ -7,9 +7,10 @@
  */
 
 import { execFile } from "node:child_process"
+import { homedir } from "node:os"
+import path from "node:path"
 import { coerce, satisfies, valid } from "semver"
 import { createLogger } from "./logger"
-import { getProjectRuntimeAugmentedPath } from "./project-runtime-sdk"
 import { waitForEnv } from "./shell-env"
 
 const log = createLogger("compatibility")
@@ -48,7 +49,11 @@ export type ManagedRuntimeCheckResult = ProjectRuntimeCheckResult
 
 /** Build the augmented PATH that includes ~/.opencode/bin. */
 function getAugmentedPath(): string {
-	return getProjectRuntimeAugmentedPath()
+	const sep = process.platform === "win32" ? ";" : ":"
+	const binDir = path.join(homedir(), ".opencode", "bin")
+	const basePath = process.env.PATH ?? ""
+	if (basePath.split(sep).includes(binDir)) return basePath
+	return basePath ? `${binDir}${sep}${basePath}` : binDir
 }
 
 /** Run a command and return stdout, or null on failure. */

@@ -24,7 +24,7 @@ export async function switchCliRuntimeSession(
 	await switchCliRuntime(sessionId, runtimeId, fallbackCwd)
 }
 
-/** Process (agent-host) session → managed-server (OpenCode) with transcript handoff. */
+/** Process session → an optional managed adapter with transcript handoff. */
 export async function switchSessionIntoManagedServer(
 	sessionId: string,
 	createManagedSession: (directory: string, title?: string) => Promise<Session | undefined>,

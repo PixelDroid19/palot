@@ -7,23 +7,6 @@ import type { ConversionCategory } from "@gcode/configconv"
  * The renderer accesses these via `window.gcode`.
  */
 
-/**
- * Local managed server info for runtimes that need an HTTP lifecycle
- * (today: OpenCode adapter). Not a product-wide "base runtime" type.
- */
-export interface RuntimeServerInfo {
-	url: string
-	pid: number | null
-	managed: boolean
-}
-
-/** @deprecated Use RuntimeServerInfo */
-export type ProjectRuntimeServerInfo = RuntimeServerInfo
-/** @deprecated Use RuntimeServerInfo */
-export type ManagedRuntimeServerInfo = RuntimeServerInfo
-/** @deprecated Use RuntimeServerInfo — OpenCode is one adapter. */
-export interface OpenCodeServerInfo extends RuntimeServerInfo {}
-
 export interface ModelRef {
 	providerID: string
 	modelID: string
@@ -252,21 +235,6 @@ export interface SkillSyncResult {
 	success: boolean
 	output: string
 	error?: string
-}
-
-export type EndpointType = "loopback" | "lan" | "tailscale"
-
-export interface RemoteEndpoint {
-	url: string
-	type: EndpointType
-	label: string
-}
-
-export interface RemoteAccessInfo {
-	url: string | null
-	lanUrls: string[]
-	endpoints: RemoteEndpoint[]
-	port: number | null
 }
 
 export type WebhookTarget = "feishu" | "wechat" | "generic"
@@ -530,28 +498,6 @@ export interface GCodeAPI {
 	/** Get the current chrome tier (pull-based, avoids race with push event). */
 	getChromeTier: () => Promise<WindowChromeTier>
 
-	/** Ensures the managed local server (OpenCode adapter) is running. */
-	ensureManagedRuntime: () => Promise<RuntimeServerInfo>
-	getServerUrl: () => Promise<string | null>
-	stopManagedRuntime: () => Promise<boolean>
-	restartManagedRuntime: () => Promise<RuntimeServerInfo>
-	/**
-	 * Neutral runtime local-server lifecycle API.
-	 * Preferred over legacy projectRuntime / ensureManagedRuntime names.
-	 */
-	runtime: {
-		ensure: () => Promise<RuntimeServerInfo>
-		getServerUrl: () => Promise<string | null>
-		stop: () => Promise<boolean>
-		restart: () => Promise<RuntimeServerInfo>
-	}
-	/** @deprecated Use `runtime` — temporary shim for project-runtime naming. */
-	projectRuntime: {
-		ensure: () => Promise<RuntimeServerInfo>
-		getServerUrl: () => Promise<string | null>
-		stop: () => Promise<boolean>
-		restart: () => Promise<RuntimeServerInfo>
-	}
 	getModelState: () => Promise<ModelState>
 	updateModelRecent: (model: ModelRef) => Promise<ModelState>
 
@@ -686,10 +632,6 @@ export interface GCodeAPI {
 		/** Sync user-level skills to ("push") or from ("pull") the configured remote host. */
 		sync: (direction: "push" | "pull") => Promise<SkillSyncResult>
 	}
-
-	// Remote / mobile access
-	/** Get LAN-reachable URLs for the running OpenCode server. */
-	getRemoteAccessInfo: () => Promise<RemoteAccessInfo>
 
 	// Agent CLI detection
 	agentClis: {

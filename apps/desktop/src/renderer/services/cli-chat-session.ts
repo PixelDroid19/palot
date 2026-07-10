@@ -2,8 +2,8 @@
  * Session lifecycle for agent-host process runtimes and mid-session switches.
  *
  * Transcript is always GCode-owned (messages/parts atoms). Switching runtimes
- * never wipes the visible chat: CLI↔CLI keeps the same session id; CLI→managed
- * transfers the transcript onto the new managed session before removing the old
+ * never wipes the visible chat: process↔process keeps the same session id;
+ * process→managed transfers the transcript onto the registered adapter before removing the old
  * shell, and stages a text handoff for the next model turn.
  */
 import type { AgentRuntimeId, AgentSandbox } from "../../preload/api"
@@ -161,8 +161,8 @@ export async function switchCliRuntime(
 }
 
 /**
- * Switch a process-backed session onto the managed-server transport (OpenCode).
- * Creates a server session, transfers the UI transcript, stages a text handoff
+ * Switch a process-backed session onto an explicitly registered managed transport.
+ * Creates an adapter session, transfers the UI transcript, stages a text handoff
  * for the next prompt, then removes only the old session shell.
  */
 export async function switchSessionToManagedServer(

@@ -15,7 +15,7 @@ export interface RuntimeComposition {
 	 */
 	processBuiltins?: boolean | readonly BuiltInProviderId[]
 	/**
-	 * Whether to register the OpenCode managed-server descriptor source.
+	 * Whether to register the OpenCode process adapter (ACP over stdio).
 	 * `false` unplugs OpenCode from pickers and transport bootstrap.
 	 */
 	includeOpenCode?: boolean
@@ -49,9 +49,10 @@ export function getRuntimeComposition(): RuntimeComposition {
 /** Resolve which process built-in ids should load into AgentHost. */
 export function resolveProcessBuiltinIds(): BuiltInProviderId[] {
 	const opt = composition.processBuiltins
-	if (opt === false) return []
-	if (opt === true || opt === undefined) return [...ALL_BUILTIN_PROVIDER_IDS]
-	return [...opt]
+	const ids =
+		opt === false ? [] : opt === true || opt === undefined ? [...ALL_BUILTIN_PROVIDER_IDS] : [...opt]
+	// OpenCode is a process adapter (ACP stdio) gated by its own composition flag.
+	return ids.filter((id) => id !== "opencode" || shouldIncludeOpenCode())
 }
 
 /** Resolve which process ids get automation executors. */
@@ -62,7 +63,7 @@ export function resolveProcessAutomationIds(): BuiltInProviderId[] {
 		// Mirror process built-ins when automation not specified separately
 		return resolveProcessBuiltinIds()
 	}
-	return [...opt]
+	return [...opt].filter((id) => id !== "opencode" || shouldIncludeOpenCode())
 }
 
 export function shouldIncludeOpenCode(): boolean {

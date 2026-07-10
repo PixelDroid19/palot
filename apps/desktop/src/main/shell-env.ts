@@ -5,7 +5,7 @@
  * it a minimal launchd environment missing everything added by .zshrc,
  * .zprofile, homebrew, nvm, bun, etc. This module runs the user's login
  * shell once at startup, captures `env`, and merges the result into
- * `process.env` so that child processes (opencode server, git, etc.) see
+ * `process.env` so that child processes (CLI harnesses, git, etc.) see
  * the full PATH and other user-configured variables.
  *
  * The resolution is fully async (using `execFile`, not `execFileSync`) so
@@ -167,7 +167,7 @@ let envReadyPromise: Promise<void> | null = null
  * creation and HTML loading proceed immediately.
  *
  * Use `waitForEnv()` to await completion before operations that need the
- * full PATH (e.g., spawning the opencode server).
+ * full PATH (e.g., spawning a CLI harness).
  */
 export function startEnvResolution(): void {
 	if (process.platform === "win32") {

@@ -1,6 +1,6 @@
 /**
  * Settings — general, providers, plugins, integrations, notifications,
- * worktree, usage, server, about. Real IPC / managed-runtime APIs only.
+ * worktree, usage, about. Real IPC / agent-host APIs only.
  */
 import { html, LitElement } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
@@ -12,7 +12,6 @@ import type {
 	WebhookSettings,
 } from "../../../preload/api"
 import { AVAILABLE_LOCALES, type Locale } from "../../i18n"
-import { fetchRuntimeServerUrl } from "../../services/backend"
 import { listRuntimeProjects } from "../../services/project-runtime-sdk"
 import {
 	addPlugin,
@@ -44,7 +43,6 @@ const SECTIONS = [
 	"notifications",
 	"worktree",
 	"usage",
-	"server",
 	"about",
 ] as const
 
@@ -64,7 +62,6 @@ export class GcodeSettingsPanel extends LitElement {
 	@property({ type: String })
 	section = "general"
 
-	@state() private serverUrl = ""
 	@state() private settings: AppSettings | null = null
 	@state() private providers: SessionRuntimeDescriptor[] = []
 	@state() private plugins: string[] = []
@@ -88,23 +85,30 @@ export class GcodeSettingsPanel extends LitElement {
 
 	private async bootstrap(): Promise<void> {
 		this.error = ""
-		await Promise.all([this.loadServer(), this.loadSettings(), this.loadProviders()])
+		await Promise.all([this.loadSettings(), this.loadProviders()])
 		await this.onSectionEnter(this.section)
 	}
 
 	private async onSectionEnter(section: string): Promise<void> {
+		if (this.isProcessOnlyComposition() && ["plugins", "worktree", "usage"].includes(section)) return
 		if (section === "plugins") await this.loadPlugins()
 		if (section === "worktree") await this.loadWorktrees()
 		if (section === "usage") await this.loadUsage()
 	}
 
-	private async loadServer(): Promise<void> {
-		try {
-			const { url } = await fetchRuntimeServerUrl()
-			this.serverUrl = url || ""
-		} catch {
-			this.serverUrl = ""
-		}
+	private isProcessOnlyComposition(): boolean {
+		const hasAgentSessionBridge =
+			typeof window !== "undefined" && "gcode" in window && !!window.gcode?.agentSession
+		return (
+			(hasAgentSessionBridge && this.providers.length === 0) ||
+			(this.providers.length > 0 &&
+				!this.providers.some((provider) => provider.sessionCapabilities.supportsRuntimeConfiguration))
+		)
+	}
+
+	private visibleSections(): readonly Section[] {
+		if (!this.isProcessOnlyComposition()) return SECTIONS
+		return SECTIONS.filter((section) => !["plugins", "worktree", "usage"].includes(section))
 	}
 
 	private async loadSettings(): Promise<void> {
@@ -233,7 +237,6 @@ export class GcodeSettingsPanel extends LitElement {
 			notifications: this.locale.t("litSettings.notifications"),
 			worktree: this.locale.t("litSettings.worktree"),
 			usage: this.locale.t("litSettings.usage"),
-			server: this.locale.t("litSettings.server"),
 			about: this.locale.t("litSettings.about"),
 		}
 		return map[s]
@@ -769,19 +772,6 @@ export class GcodeSettingsPanel extends LitElement {
 		`
 	}
 
-	private renderServer() {
-		return html`
-			<h1>${this.locale.t("litSettings.server")}</h1>
-			<div class="card">
-				<div class="label">${this.locale.t("litSettings.serverUrl")}</div>
-				<div class="mono" style="margin-top:8px">${this.serverUrl || "—"}</div>
-				<button type="button" class="btn" style="margin-top:12px" @click=${() => this.loadServer()}>
-					${this.locale.t("litSettings.refresh")}
-				</button>
-			</div>
-		`
-	}
-
 	private renderAbout() {
 		return html`
 			<h1>${this.locale.t("litSettings.about")}</h1>
@@ -806,8 +796,6 @@ export class GcodeSettingsPanel extends LitElement {
 				return this.renderWorktree()
 			case "usage":
 				return this.renderUsage()
-			case "server":
-				return this.renderServer()
 			case "about":
 				return this.renderAbout()
 			default:
@@ -816,10 +804,12 @@ export class GcodeSettingsPanel extends LitElement {
 	}
 
 	render() {
-		const section = this.section || "general"
+		const sections = this.visibleSections()
+		const requestedSection = this.section || "general"
+		const section = sections.includes(requestedSection as Section) ? requestedSection : "general"
 		return html`
 			<nav class="nav">
-				${SECTIONS.map(
+				${sections.map(
 					(s) => html`
 						<button
 							type="button"

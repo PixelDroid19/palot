@@ -17,14 +17,14 @@ const BASE_URL = "http://localhost:3100"
 export const client = createClient(BASE_URL)
 
 /**
- * Fetches all running OpenCode servers (detected + managed).
+ * Compatibility API for explicitly configured remote runtime servers.
  */
 export async function fetchServers() {
 	const res = await client.api.servers.$get()
 	if (!res.ok) {
 		throw new Error(`Server list failed: ${res.status} ${res.statusText}`)
 	}
-	return res.json()
+	return (await res.json()) as unknown as { url: string }
 }
 
 /**
@@ -37,7 +37,7 @@ export async function fetchProjectRuntimeUrl(): Promise<{ url: string }> {
 		const data = await res.json()
 		throw new Error("error" in data ? data.error : "Failed to get OpenCode server URL")
 	}
-	return res.json()
+	return (await res.json()) as unknown as { url: string }
 }
 
 export const fetchManagedRuntimeUrl = fetchProjectRuntimeUrl

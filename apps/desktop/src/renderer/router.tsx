@@ -20,7 +20,6 @@ import { NotificationSettings } from "./components/settings/notification-setting
 import { IntegrationsSettings } from "./components/settings/integrations-settings"
 import { PluginsSettings } from "./components/settings/plugins-settings"
 import { ProviderSettings } from "./components/settings/provider-settings"
-import { ServerSettings } from "./components/settings/server-settings"
 import { SettingsPage } from "./components/settings/settings-page"
 import { SetupSettings } from "./components/settings/setup-settings"
 import { UsageSettings } from "./components/settings/usage-settings"
@@ -84,12 +83,6 @@ const settingsGeneralRoute = createRoute({
 	getParentRoute: () => settingsRoute,
 	path: "general",
 	component: GeneralSettings,
-})
-
-const settingsServersRoute = createRoute({
-	getParentRoute: () => settingsRoute,
-	path: "servers",
-	component: ServerSettings,
 })
 
 const settingsNotificationsRoute = createRoute({
@@ -180,7 +173,6 @@ const routeTree = rootRoute.addChildren([
 		settingsRoute.addChildren([
 			settingsIndexRoute,
 			settingsGeneralRoute,
-			settingsServersRoute,
 			settingsNotificationsRoute,
 			settingsProvidersRoute,
 			settingsWorktreesRoute,

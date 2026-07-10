@@ -15,6 +15,28 @@ import { MOCK_AGENTS, MOCK_CONFIG, MOCK_PROVIDERS } from "../lib/mock-data"
 import { fetchModelState, updateModelRecent } from "../services/backend"
 import { getBaseClient, getProjectClient } from "../services/connection-manager"
 
+function hasAgentSessionBridge(): boolean {
+	return typeof window !== "undefined" && "gcode" in window && !!window.gcode?.agentSession
+}
+
+async function listProcessRuntimeCatalog(): Promise<AllProvidersData> {
+	if (!hasAgentSessionBridge()) throw new Error("No agent-session bridge available")
+	const runtimes = await window.gcode.agentSession.describeRuntimes()
+	const installed = runtimes.filter((runtime) => runtime.installed !== false)
+	return {
+		all: runtimes.map((runtime) => ({
+			id: runtime.id,
+			name: runtime.displayName,
+			env: [],
+			models: Object.fromEntries(
+				runtime.models.map((model) => [model.slug, { name: model.label }]),
+			),
+		})),
+		defaults: {},
+		connected: installed.map((runtime) => runtime.id),
+	}
+}
+
 // ============================================================
 // Re-exports — use SDK types directly
 // ============================================================
@@ -487,7 +509,7 @@ export function useAllProviders(): {
 		queryKey: queryKeys.allProviders,
 		queryFn: async (): Promise<AllProvidersData> => {
 			const client = getBaseClient()
-			if (!client) throw new Error("Not connected to server")
+			if (!client) return listProcessRuntimeCatalog()
 			const result = await client.provider.list()
 			const raw = result.data as {
 				all: CatalogProvider[]
@@ -500,7 +522,7 @@ export function useAllProviders(): {
 				connected: raw.connected ?? [],
 			}
 		},
-		enabled: connected && !isMockMode,
+		enabled: (connected || hasAgentSessionBridge()) && !isMockMode,
 	})
 
 	const reload = useCallback(() => {
@@ -535,7 +557,22 @@ export function useConnectedProviders(): {
 		queryKey: queryKeys.connectedProviders,
 		queryFn: async (): Promise<Map<string, ConnectedProviderInfo>> => {
 			const client = getBaseClient()
-			if (!client) throw new Error("Not connected to server")
+			if (!client) {
+				const catalog = await listProcessRuntimeCatalog()
+				return new Map(
+					catalog.all
+						.filter((provider) => catalog.connected.includes(provider.id))
+						.map((provider) => [
+							provider.id,
+							{
+								id: provider.id,
+								name: provider.name,
+								source: "custom" as const,
+								env: provider.env,
+							},
+							]),
+				)
+			}
 			const result = await client.config.providers()
 			const raw = result.data as {
 				providers: Array<{
@@ -551,7 +588,7 @@ export function useConnectedProviders(): {
 			}
 			return map
 		},
-		enabled: connected && !isMockMode,
+		enabled: (connected || hasAgentSessionBridge()) && !isMockMode,
 	})
 
 	const reload = useCallback(() => {
@@ -582,11 +619,11 @@ export function useProviderAuthMethods(): {
 		queryKey: queryKeys.providerAuthMethods,
 		queryFn: async (): Promise<Record<string, SdkProviderAuthMethod[]>> => {
 			const client = getBaseClient()
-			if (!client) throw new Error("Not connected to server")
+			if (!client) return {}
 			const result = await client.provider.auth()
 			return (result.data ?? {}) as Record<string, SdkProviderAuthMethod[]>
 		},
-		enabled: connected && !isMockMode,
+		enabled: (connected || hasAgentSessionBridge()) && !isMockMode,
 	})
 
 	return {

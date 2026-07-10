@@ -2,7 +2,7 @@
  * Pluggable session-runtime descriptor sources.
  *
  * Process adapters (Codex, Claude, custom harnesses) come from AgentHost.
- * Managed-server adapters (OpenCode today, future servers) register here so
+ * Optional managed-server adapters register here so
  * describeSessionRuntimes does not hard-splice a single brand.
  */
 import type { AgentRuntimeDescriptor, RuntimeTransport } from "@gcode/agent-host"
@@ -28,7 +28,7 @@ export interface SessionRuntimeDescriptor extends AgentRuntimeDescriptor {
 }
 
 export type RuntimeDescriptorSource = {
-	/** Stable source id (e.g. "opencode", "custom-server"). */
+	/** Stable source id (e.g. "custom-server"). */
 	id: string
 	describe: () => Promise<SessionRuntimeDescriptor | SessionRuntimeDescriptor[] | null>
 }

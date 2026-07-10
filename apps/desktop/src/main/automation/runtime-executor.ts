@@ -1,7 +1,7 @@
 /**
  * Neutral automation runtime executor contract.
  *
- * Product automation must not call the OpenCode SDK (or any provider SDK) at
+ * Product automation must not call a provider SDK at
  * the top level. Register one {@link AutomationRuntimeExecutor} per runtime;
  * `executeAutomationRun` dispatches by runtimeId (default: OpenCode adapter).
  */
@@ -30,7 +30,7 @@ export interface AutomationRunRequest {
 }
 
 /**
- * One concrete automation backend (OpenCode managed-server, future Codex, …).
+ * One concrete automation backend (agent-host or another registered adapter).
  * Adapters own provider SDKs; this interface stays neutral.
  */
 export interface AutomationRuntimeExecutor {

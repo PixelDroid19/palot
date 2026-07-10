@@ -42,7 +42,6 @@ import type {
 	SdkAgent,
 	VcsData,
 } from "../hooks/use-runtime-data"
-import { useServerConnection } from "../hooks/use-server"
 import type { ChatTurn } from "../hooks/use-session-chat"
 import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
 import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backend"
@@ -535,7 +534,6 @@ function SessionAppBarContent({
 				{/* Open in terminal */}
 				<div className="hidden md:block">
 					<AttachCommand
-						sessionId={agent.sessionId}
 						directory={agent.worktreePath ?? agent.directory}
 					/>
 				</div>
@@ -757,14 +755,13 @@ function WorktreeBranchBadge({ branch }: { branch: string }) {
 }
 
 /**
- * Popover with the `opencode attach` command for opening this session in a terminal.
+ * Popover with the OpenCode ACP command for opening the same workspace in a terminal.
  */
-function AttachCommand({ sessionId, directory }: { sessionId: string; directory: string }) {
-	const { url } = useServerConnection()
+function AttachCommand({ directory }: { directory: string }) {
 	const [copied, setCopied] = useState(false)
 	const [open, setOpen] = useState(false)
 
-	const command = `opencode attach ${url ?? "http://127.0.0.1:4101"} --session ${sessionId} --dir ${directory}`
+	const command = `cd ${JSON.stringify(directory)} && opencode acp`
 
 	const handleOpen = useCallback(
 		async (nextOpen: boolean) => {
@@ -822,7 +819,7 @@ function AttachCommand({ sessionId, directory }: { sessionId: string; directory:
 						</Button>
 					</div>
 					<p className="text-[11px] leading-normal text-muted-foreground">
-						Paste in your terminal to attach. Both views will stay in sync.
+						Paste in your terminal to start an independent ACP session in this workspace.
 					</p>
 				</div>
 			</PopoverContent>

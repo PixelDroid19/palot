@@ -44,29 +44,16 @@ export const isElectron = typeof window !== "undefined" && "gcode" in window
 // ============================================================
 
 /**
- * Ensures the managed local server (OpenCode adapter today) is running and
- * returns its URL. Product code should prefer this over legacy projectRuntime /
- * ensureManagedRuntime names.
+ * Legacy compatibility entry point for callers that still request a local
+ * runtime URL. Local OpenCode sessions use agentSession ACP instead.
  *
- * For local servers, spawns/attaches via neutral `runtime:ensure` IPC.
- * For remote servers, the URL is already known and returned directly.
+ * Local OpenCode is intentionally not resolved here: it runs through the
+ * agent-session ACP bridge. Remote HTTP server configs remain supported by
+ * the generic discovery compatibility path below.
  */
 export async function fetchRuntimeServerUrl(): Promise<{ url: string }> {
-	log.debug("fetchRuntimeServerUrl", { via: isElectron ? "ipc" : "http" })
-	try {
-		if (isElectron) {
-			const info = await window.gcode.runtime.ensure()
-			log.info("Managed runtime server URL resolved", { url: info.url })
-			return { url: info.url }
-		}
-		const { fetchProjectRuntimeUrl: httpFetch } = await import("./gcode-server")
-		const result = await httpFetch()
-		log.info("Managed runtime server URL resolved", { url: result.url })
-		return result
-	} catch (err) {
-		log.error("fetchRuntimeServerUrl failed", err)
-		throw err
-	}
+	log.warn("OpenCode HTTP runtime requested after ACP migration", { electron: isElectron })
+	throw new Error("OpenCode HTTP runtime has been removed; use the agent-session CLI runtime")
 }
 
 /** @deprecated Use {@link fetchRuntimeServerUrl} */
@@ -76,8 +63,8 @@ export const fetchManagedRuntimeUrl = fetchRuntimeServerUrl
 
 /**
  * Resolve the connection URL for a server config.
- * For local servers, spawns/attaches via the existing IPC mechanism.
- * For remote servers, returns the configured URL directly.
+ * Local server configs fail closed because no local HTTP runtime is managed.
+ * Remote configs return their explicitly configured URL.
  */
 export async function resolveServerUrl(
 	server: import("../../preload/api").ServerConfig,
@@ -182,8 +169,8 @@ export async function pickDirectory(): Promise<string | null> {
 
 // ============================================================
 // Git operations — Electron-only (main process via IPC)
-// In browser mode, these are not available (OpenCode server
-// doesn't expose git checkout/stash APIs).
+// In browser mode, these are not available because git operations are exposed
+// through the Electron host rather than an agent runtime HTTP API.
 // ============================================================
 
 /**
