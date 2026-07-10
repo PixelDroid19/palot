@@ -193,11 +193,25 @@ button {
 	border: 1px solid transparent;
 	border-radius: 8px;
 	background: transparent;
+	width: 100%;
+	border: 1px solid transparent;
+	color: inherit;
+	text-align: left;
 }
 
 .row:hover {
 	border-color: var(--gcode-border);
 	background: var(--gcode-bg-muted);
+}
+
+.row[data-active="true"] {
+	border-color: var(--gcode-border);
+	background: var(--gcode-accent-soft);
+}
+
+.unread {
+	color: var(--gcode-fg-muted);
+	font-size: 11px;
 }
 
 .name {
@@ -237,6 +251,31 @@ button.primary,
 	color: var(--gcode-fg-muted);
 	font-size: 13px;
 }
+
+.run-detail {
+	width: min(760px, 100%);
+	box-sizing: border-box;
+	margin: 0 auto;
+	padding: 28px 32px;
+}
+
+.detail-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--gcode-border);
+}
+
+.detail-header h2 { font-size: 18px; font-weight: 600; }
+.detail-header p, .run-meta, .run-placeholder { color: var(--gcode-fg-muted); font-size: 13px; line-height: 1.5; }
+.detail-header p { margin-top: 5px; }
+.run-meta { display: grid; gap: 3px; margin: 16px 0 22px; font-family: var(--gcode-font-mono); font-size: 11px; }
+.run-detail gcode-markdown { margin-top: 20px; }
+.run-placeholder { margin: 24px 0; }
+.external { display: inline-block; margin-top: 22px; color: #6fcbf3; font-size: 13px; text-decoration: none; }
+.external:hover { text-decoration: underline; }
 
 .error {
 	color: var(--gcode-danger);

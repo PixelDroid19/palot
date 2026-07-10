@@ -12,7 +12,9 @@ import {
 	runAutomationNow,
 } from "../../services/backend"
 import { LocaleController } from "../locale-controller"
+import { navigate } from "../router"
 import { styles } from "./gcode-automations.css.js"
+import "./gcode-markdown"
 
 @customElement("gcode-automations")
 export class GcodeAutomations extends LitElement {
@@ -28,6 +30,7 @@ export class GcodeAutomations extends LitElement {
 	@state() private prompt = ""
 	@state() private workspace = ""
 	@state() private creating = false
+	@state() private selectedRunId: string | null = null
 
 	connectedCallback(): void {
 		super.connectedCallback()
@@ -95,6 +98,11 @@ export class GcodeAutomations extends LitElement {
 		} catch (err) {
 			this.error = err instanceof Error ? err.message : String(err)
 		}
+	}
+
+	private selectRun(run: AutomationRun): void {
+		this.selectedRunId = run.id
+		if (!run.readAt) void this.markRead(run.id)
 	}
 
 	private renderList() {
@@ -177,7 +185,12 @@ export class GcodeAutomations extends LitElement {
 			<div class="list">
 				${this.runs.map(
 					(r) => html`
-						<div class="row">
+						<button
+							type="button"
+							class="row"
+							data-active=${String(r.id === this.selectedRunId)}
+							@click=${() => this.selectRun(r)}
+						>
 							<div>
 								<div class="name">${r.resultTitle || r.id}</div>
 								<div class="meta">
@@ -193,13 +206,11 @@ export class GcodeAutomations extends LitElement {
 							${
 								!r.readAt
 									? html`
-											<button type="button" @click=${() => this.markRead(r.id)}>
-												${this.locale.t("litAutomations.markRead")}
-											</button>
+											<span class="unread">${this.locale.t("litAutomations.markRead")}</span>
 										`
 									: null
 							}
-						</div>
+						</button>
 					`,
 				)}
 			</div>
@@ -230,6 +241,44 @@ export class GcodeAutomations extends LitElement {
 							: null
 					}
 				</div>
+			</div>
+		`
+	}
+
+	private renderRunDetail(): ReturnType<typeof html> {
+		const run = this.runs.find((item) => item.id === this.selectedRunId)
+		if (!run) return this.renderEmptyDetail()
+		const automation = this.items.find((item) => item.id === run.automationId)
+		const duration = run.startedAt && run.completedAt ? run.completedAt - run.startedAt : null
+		return html`
+			<div class="run-detail">
+				<div class="detail-header">
+					<div>
+						<h2>${run.resultTitle || automation?.name || "Automation run"}</h2>
+						<p>${run.status} · ${new Date(run.updatedAt).toLocaleString()}</p>
+					</div>
+					${run.sessionId
+						? html`<button type="button" class="primary" @click=${() => navigate(`/session/${run.sessionId}`)}>
+							Open session
+						</button>`
+						: null}
+				</div>
+				<div class="run-meta">
+					<span>Workspace: ${run.workspace}</span>
+					${duration ? html`<span>Duration: ${Math.round(duration / 1000)}s</span>` : null}
+					${run.resultBranch ? html`<span>Branch: ${run.resultBranch}</span>` : null}
+				</div>
+				${run.resultSummary
+					? html`<gcode-markdown source=${run.resultSummary}></gcode-markdown>`
+					: html`<p class="run-placeholder">
+						${run.status === "running"
+							? "This run is in progress. Its live session will be available shortly."
+							: run.errorMessage || "No output recorded for this run."}
+					</p>`}
+				${run.errorMessage ? html`<p class="error">${run.errorMessage}</p>` : null}
+				${run.resultPrUrl
+					? html`<a class="external" href=${run.resultPrUrl} target="_blank" rel="noreferrer">Open pull request ↗</a>`
+					: null}
 			</div>
 		`
 	}
@@ -284,7 +333,7 @@ export class GcodeAutomations extends LitElement {
 					</div>
 				</aside>
 				<section class="detail-panel">
-					${this.tab === "create" ? this.renderCreate() : this.renderEmptyDetail()}
+					${this.tab === "create" ? this.renderCreate() : this.renderRunDetail()}
 				</section>
 			</div>
 		`

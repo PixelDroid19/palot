@@ -145,6 +145,9 @@ describe("Lit app-frame parity contract", () => {
 		expect(automation).toContain('class="detail-panel"')
 		expect(styles).toContain("width: 35%")
 		expect(styles).toContain(".detail-empty")
+		expect(automation).toContain("selectedRunId")
+		expect(automation).toContain("renderRunDetail")
+		expect(automation).toContain("navigate(`/session/${run.sessionId}`)")
 	})
 
 	test("onboarding uses React-like progress and a centered step surface", () => {
