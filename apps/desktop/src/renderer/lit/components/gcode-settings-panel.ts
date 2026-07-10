@@ -32,7 +32,6 @@ import {
 } from "../../services/worktree-service"
 import { ensureRuntimeClient } from "../ensure-runtime-client"
 import { LocaleController } from "../locale-controller"
-import { navigate } from "../router"
 import { styles } from "./gcode-settings-panel.css.js"
 
 const SECTIONS = [
@@ -222,10 +221,6 @@ export class GcodeSettingsPanel extends LitElement {
 
 	private onLocaleChange(e: Event): void {
 		this.locale.setLocale((e.target as HTMLSelectElement).value as Locale)
-	}
-
-	private go(section: string): void {
-		navigate(`/settings/${section}`)
 	}
 
 	private sectionLabel(s: Section): string {
@@ -809,21 +804,26 @@ export class GcodeSettingsPanel extends LitElement {
 		const section = sections.includes(requestedSection as Section) ? requestedSection : "general"
 		return html`
 			<nav class="nav">
+				<div class="titlebar-spacer" aria-hidden="true"></div>
+				<a class="back" href="#/">← Back to app</a>
+				<div class="nav-list">
 				${sections.map(
 					(s) => html`
-						<button
-							type="button"
+						<a
+							href=${`#/settings/${s}`}
 							data-active=${String(s === section)}
-							@click=${() => this.go(s)}
 						>
 							${this.sectionLabel(s)}
-						</button>
+						</a>
 					`,
 				)}
+				</div>
 			</nav>
 			<div class="content">
-				${this.error ? html`<div class="error">${this.error}</div>` : null}
-				${this.renderSection(section)}
+				<div class="content-inner">
+					${this.error ? html`<div class="error">${this.error}</div>` : null}
+					${this.renderSection(section)}
+				</div>
 			</div>
 		`
 	}

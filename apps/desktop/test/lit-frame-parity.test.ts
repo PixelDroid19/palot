@@ -45,4 +45,16 @@ describe("Lit app-frame parity contract", () => {
 			expect(source).not.toMatch(/from ["']react|from ["']jotai|@tanstack\/react/)
 		}
 	})
+
+	test("settings owns its dedicated sidebar instead of nesting under sessions", () => {
+		const app = read("lit/components/gcode-app.ts")
+		const settings = read("lit/components/gcode-settings-panel.ts")
+		expect(app).toContain('const settingsRoute = this.route.name === "settings"')
+		expect(app).toContain("const showSidebar = !hideChrome && !settingsRoute")
+		expect(settings).toContain('class="back" href="#/"')
+		expect(settings).toContain('href=${`#/settings/${s}`}')
+		expect(read("lit/components/gcode-settings-panel.scss")).toContain(
+			"margin: 0 auto",
+		)
+	})
 })

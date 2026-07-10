@@ -49,8 +49,10 @@ export class GcodeApp extends LitElement {
 	connectedCallback(): void {
 		super.connectedCallback()
 		sessionStore.refresh()
-		document.getElementById("splash")?.classList.add("hiding")
-		setTimeout(() => document.getElementById("splash")?.remove(), 320)
+		// The Lit frame is fully painted by the time this element connects. Remove
+		// the HTML bootstrap splash immediately so it cannot ghost over settings
+		// or chat during route rendering.
+		document.getElementById("splash")?.remove()
 
 		window.addEventListener("hashchange", this.onHash)
 		this.unsubs.push(
@@ -298,12 +300,14 @@ export class GcodeApp extends LitElement {
 
 	render() {
 		const hideChrome = this.route.name === "onboarding"
+		const settingsRoute = this.route.name === "settings"
+		const showSidebar = !hideChrome && !settingsRoute
+		const showAppbar = !hideChrome && !settingsRoute
 		return html`
 			<div class="frame" data-sidebar-open=${String(this.sidebarOpen)}>
 				${
-					hideChrome
-						? null
-						: html`
+					showSidebar
+						? html`
 								<gcode-sidebar
 									.activeId=${this.activeSessionId()}
 									data-open=${String(this.sidebarOpen)}
@@ -313,18 +317,19 @@ export class GcodeApp extends LitElement {
 									@gcode-session-select=${(event: CustomEvent<{ id: string }>) => {
 										navigate(`/session/${event.detail.id}`)
 									}}
-								></gcode-sidebar>
+							></gcode-sidebar>
 							`
+						: null
 				}
 				<main class="main">
 					${
-						hideChrome
-							? null
-							: html`
+						showAppbar
+							? html`
 									<header class="appbar">
 										<gcode-wordmark></gcode-wordmark>
 									</header>
 								`
+							: null
 					}
 					<div class="content">${this.renderMain()}</div>
 				</main>
