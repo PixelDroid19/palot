@@ -87,6 +87,14 @@ describe("Lit app-frame parity contract", () => {
 		expect(app).toContain("sessionStore.updateStatus")
 	})
 
+	test("Lit sidebar uses the shared multi-runtime task catalogue", () => {
+		const sidebar = read("lit/components/gcode-sidebar.ts")
+		expect(sidebar).toContain("selectActiveSessions")
+		expect(sidebar).toContain("selectRecentSessions")
+		expect(sidebar).toContain("groupTasksByWorkspace")
+		expect(sidebar).toContain('class="project"')
+	})
+
 	test("Lit session chrome owns the desktop terminal without React", () => {
 		const app = read("lit/components/gcode-app.ts")
 		const terminal = read("lit/components/gcode-terminal-panel.ts")

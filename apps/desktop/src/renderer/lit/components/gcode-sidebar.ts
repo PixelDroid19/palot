@@ -5,6 +5,11 @@
 import { html, LitElement } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
 import type { TranslationKey } from "../../i18n"
+import {
+	groupTasksByWorkspace,
+	selectActiveSessions,
+	selectRecentSessions,
+} from "../../lib/session-catalog"
 import { BusTopics, emitBubbled, gcodeBus } from "../bus"
 import { LocaleController } from "../locale-controller"
 import { navigate } from "../router"
@@ -46,28 +51,67 @@ export class GcodeSidebar extends LitElement {
 		navigate(`/session/${id}`)
 	}
 
+	private renderSession(session: LitSessionSummary, compact = false) {
+		return html`
+			<button
+				type="button"
+				class="item"
+				data-compact=${String(compact)}
+				role="listitem"
+				data-active=${String(session.id === this.activeId)}
+				@click=${() => this.onSelect(session.id)}
+			>
+				<span class="title">${session.title}</span>
+				<span class="meta">${compact ? session.runtimeId : session.directory || session.runtimeId}</span>
+			</button>
+		`
+	}
+
+	private renderSection(label: string, sessions: LitSessionSummary[], compact = false) {
+		if (sessions.length === 0) return null
+		return html`
+			<div class="section-label">${label}</div>
+			<div class="section-list" role="list">${sessions.map((session) => this.renderSession(session, compact))}</div>
+		`
+	}
+
 	render() {
+		const catalog = this.sessions.map((session) => ({
+			id: session.id,
+			status: session.status || "idle",
+			createdAt: session.updatedAt,
+			lastActiveAt: session.updatedAt,
+			runtimeId: session.runtimeId,
+			name: session.title,
+			projectDirectory: session.directory,
+		}))
+		const active = selectActiveSessions(catalog)
+		const activeIds = new Set(active.map((session) => session.id))
+		const recent = selectRecentSessions(catalog, activeIds, 5)
+		const groups = groupTasksByWorkspace(catalog)
+		const byId = new Map(this.sessions.map((session) => [session.id, session]))
+		const summaries = (items: readonly { id: string }[]) =>
+			items.map((item) => byId.get(item.id)).filter((item): item is LitSessionSummary => !!item)
 		return html`
 			<div class="titlebar-spacer" aria-hidden="true"></div>
-			<div class="section-label">${this.t("taskCatalog.activeNow")}</div>
 			<div class="list" role="list">
 				${
 					this.sessions.length === 0
 						? html`<div class="empty">${this.t("litShell.emptySessions")}</div>`
-						: this.sessions.map(
-								(session) => html`
-									<button
-										type="button"
-										class="item"
-										role="listitem"
-										data-active=${String(session.id === this.activeId)}
-										@click=${() => this.onSelect(session.id)}
-									>
-										<span class="title">${session.title}</span>
-										<span class="meta">${session.runtimeId}</span>
-									</button>
-								`,
-							)
+						: html`
+								${this.renderSection(this.t("taskCatalog.activeNow"), summaries(active))}
+								${this.renderSection("Recent", summaries(recent))}
+								${groups.length > 0 ? html`<div class="section-label">Projects</div>` : null}
+								${groups.map(
+									(group) => html`
+										<section class="project">
+											<div class="project-label">${group.label}</div>
+											<div class="section-list" role="list">${this.renderSession(summaries(group.tasks)[0]!)}</div>
+											${summaries(group.tasks).slice(1).map((session) => this.renderSession(session, true))}
+										</section>
+									`,
+								)}
+							`
 				}
 			</div>
 			<div class="footer">
