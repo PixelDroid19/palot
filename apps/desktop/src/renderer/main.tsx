@@ -1,8 +1,19 @@
 /**
- * Renderer entry point.
+ * Renderer entry — full product via React app shell.
  *
- * The desktop product is mounted through the Lit shell. Keeping this tiny
- * indirection lets electron-vite retain its configured entry file while the
- * actual component registration and boot sequence live beside the Lit app.
+ * Lit web components are registered for progressive migration (SCSS→css.js,
+ * event bus, i18n controller). Unmigrated routes stay on React until their
+ * visual and behavioral parity is proven. Lit modules themselves do not
+ * import React.
  */
-import "./lit/main-lit"
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
+import { App } from "./app"
+import "./index.css"
+import "./lit/register"
+
+createRoot(document.getElementById("root")!).render(
+	<StrictMode>
+		<App />
+	</StrictMode>,
+)

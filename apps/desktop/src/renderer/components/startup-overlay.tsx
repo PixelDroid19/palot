@@ -29,7 +29,7 @@ const FADE_DURATION_MS = 400
 /** Human-readable status messages for each discovery phase. */
 const PHASE_LABELS: Record<DiscoveryPhase, string> = {
 	idle: "Initializing...",
-	"starting-server": "Starting server...",
+	"starting-server": "Preparing workspace...",
 	connecting: "Connecting...",
 	"loading-projects": "Loading projects...",
 	"loading-sessions": "Loading sessions...",
