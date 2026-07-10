@@ -103,6 +103,8 @@ describe("Lit app-frame parity contract", () => {
 		expect(terminal).toContain("window.gcode.terminal.create")
 		expect(terminal).toContain("@xterm/xterm")
 		expect(terminal).not.toMatch(/from [\"']react/)
+		expect(app).toContain('event.key.toLowerCase() !== "j"')
+		expect(app).toContain("window.addEventListener(\"keydown\"")
 	})
 
 	test("Lit session chrome exposes descriptor-driven model, effort and sandbox controls", () => {

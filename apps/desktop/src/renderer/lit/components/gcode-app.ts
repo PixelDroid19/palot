@@ -72,6 +72,21 @@ export class GcodeApp extends LitElement {
 		this.route = parseHash()
 		this.onRoute()
 	}
+	private onGlobalKeydown = (event: KeyboardEvent) => {
+		const route = this.route
+		if (
+			(!(event.metaKey || event.ctrlKey) || event.shiftKey || event.altKey) ||
+			event.key.toLowerCase() !== "j" ||
+			route.name !== "session"
+		) {
+			return
+		}
+		const session = sessionStore.list().find((item) => item.id === route.sessionId)
+		const cwd = session?.directory || sessionStore.getMeta(route.sessionId)?.cwd
+		if (!cwd) return
+		event.preventDefault()
+		this.toggleTerminal()
+	}
 
 	connectedCallback(): void {
 		super.connectedCallback()
@@ -82,6 +97,7 @@ export class GcodeApp extends LitElement {
 		document.getElementById("splash")?.remove()
 
 		window.addEventListener("hashchange", this.onHash)
+		window.addEventListener("keydown", this.onGlobalKeydown)
 		this.unsubs.push(
 			gcodeBus.subscribe(BusTopics.localeChanged, () => this.requestUpdate()),
 			gcodeBus.subscribe(BusTopics.sessionListChanged, () => this.requestUpdate()),
@@ -104,6 +120,7 @@ export class GcodeApp extends LitElement {
 
 	disconnectedCallback(): void {
 		window.removeEventListener("hashchange", this.onHash)
+		window.removeEventListener("keydown", this.onGlobalKeydown)
 		for (const u of this.unsubs) u()
 		this.unsubs = []
 		super.disconnectedCallback()
