@@ -71,6 +71,24 @@ gcode-sidebar {
 	white-space: nowrap;
 }
 
+.appbar-action {
+	margin-left: auto;
+	padding: 5px 8px;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--gcode-fg-muted);
+	font: 12px var(--gcode-font);
+	-webkit-app-region: no-drag;
+}
+
+.appbar-action:hover,
+.appbar-action[data-active="true"] {
+	border-color: var(--gcode-border);
+	background: var(--gcode-bg-muted);
+	color: var(--gcode-fg);
+}
+
 .content {
 	position: relative;
 	display: flex;
@@ -84,6 +102,23 @@ gcode-sidebar {
 	min-width: 0;
 	min-height: 0;
 	flex: 1 1 auto;
+}
+
+.session-layout {
+	display: flex;
+	min-width: 0;
+	min-height: 0;
+	flex: 1 1 auto;
+	flex-direction: column;
+}
+
+.session-layout > gcode-chat-panel {
+	min-height: 0;
+	flex: 1 1 auto;
+}
+
+.session-layout > gcode-terminal-panel {
+	flex: 0 0 42%;
 }
 
 .window-controls {

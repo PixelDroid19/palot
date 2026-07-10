@@ -25,6 +25,7 @@ import "./gcode-home"
 import "./gcode-onboarding"
 import "./gcode-settings-panel"
 import "./gcode-sidebar"
+import "./gcode-terminal-panel"
 import { styles } from "./gcode-app.css.js"
 
 const PARITY_CHAT_MESSAGES: ChatMessageView[] = [
@@ -61,6 +62,7 @@ export class GcodeApp extends LitElement {
 	@state() private permission: LitPermissionRequest | null = null
 	@state() private question: LitQuestionRequest | null = null
 	@state() private sidebarOpen = true
+	@state() private terminalOpen = false
 
 	private unsubs: Array<() => void> = []
 	private onHash = () => {
@@ -288,6 +290,10 @@ export class GcodeApp extends LitElement {
 		this.sidebarOpen = !this.sidebarOpen
 	}
 
+	private toggleTerminal(): void {
+		this.terminalOpen = !this.terminalOpen
+	}
+
 	private renderMain() {
 		const route = this.route
 		switch (route.name) {
@@ -303,23 +309,29 @@ export class GcodeApp extends LitElement {
 			case "session": {
 				const active = sessionStore.list().find((s) => s.id === route.sessionId)
 				const parityFixture = this.isChatParityFixture()
+				const cwd = active?.directory || sessionStore.getMeta(route.sessionId)?.cwd || ""
 				return html`
-					<gcode-chat-panel
-						title=${parityFixture ? "Lit visual parity" : active?.title || route.sessionId.slice(0, 8)}
-						runtime-id=${parityFixture ? "codex" : active?.runtimeId || ""}
-						.messages=${parityFixture ? PARITY_CHAT_MESSAGES : this.messages}
-						.tools=${parityFixture ? PARITY_CHAT_TOOLS : this.tools}
-						.permission=${this.permission}
-						.question=${this.question}
-						?busy=${this.busy}
-						@gcode-send=${(e: CustomEvent<{ text: string }>) => this.onSend(e)}
-						@gcode-permission=${(
-							e: CustomEvent<{ requestId: string; decision: LitPermissionDecision }>,
-						) => this.onPermission(e)}
-						@gcode-question-answer=${(
-							e: CustomEvent<{ requestId: string; answers: Record<string, string> }>,
-						) => this.onQuestionAnswer(e)}
-					></gcode-chat-panel>
+					<div class="session-layout">
+						<gcode-chat-panel
+							title=${parityFixture ? "Lit visual parity" : active?.title || route.sessionId.slice(0, 8)}
+							runtime-id=${parityFixture ? "codex" : active?.runtimeId || ""}
+							.messages=${parityFixture ? PARITY_CHAT_MESSAGES : this.messages}
+							.tools=${parityFixture ? PARITY_CHAT_TOOLS : this.tools}
+							.permission=${this.permission}
+							.question=${this.question}
+							?busy=${this.busy}
+							@gcode-send=${(e: CustomEvent<{ text: string }>) => this.onSend(e)}
+							@gcode-permission=${(
+								e: CustomEvent<{ requestId: string; decision: LitPermissionDecision }>,
+							) => this.onPermission(e)}
+							@gcode-question-answer=${(
+								e: CustomEvent<{ requestId: string; answers: Record<string, string> }>,
+							) => this.onQuestionAnswer(e)}
+						></gcode-chat-panel>
+						${this.terminalOpen && cwd
+							? html`<gcode-terminal-panel session-id=${route.sessionId} cwd=${cwd}></gcode-terminal-panel>`
+							: null}
+					</div>
 				`
 			}
 			case "home":
@@ -338,6 +350,9 @@ export class GcodeApp extends LitElement {
 		const activeSession = activeSessionId
 			? sessionStore.list().find((session) => session.id === activeSessionId)
 			: null
+		const activeSessionCwd = activeSessionId
+			? activeSession?.directory || sessionStore.getMeta(activeSessionId)?.cwd
+			: ""
 		return html`
 			<div class="frame" data-sidebar-open=${String(this.sidebarOpen)}>
 				${
@@ -370,10 +385,20 @@ export class GcodeApp extends LitElement {
 															${
 																this.isChatParityFixture()
 																	? "Lit visual parity"
-																	: activeSession?.title || "Session"
-															}
-														</span>
-													`
+															: activeSession?.title || "Session"
+													}
+												</span>
+												${activeSessionCwd
+													? html`<button
+														type="button"
+														class="appbar-action"
+														data-active=${String(this.terminalOpen)}
+														@click=${() => this.toggleTerminal()}
+													>
+														Terminal
+													</button>`
+													: null}
+										`
 												: null
 										}
 									</header>

@@ -87,6 +87,16 @@ describe("Lit app-frame parity contract", () => {
 		expect(app).toContain("sessionStore.updateStatus")
 	})
 
+	test("Lit session chrome owns the desktop terminal without React", () => {
+		const app = read("lit/components/gcode-app.ts")
+		const terminal = read("lit/components/gcode-terminal-panel.ts")
+		expect(app).toContain("gcode-terminal-panel")
+		expect(app).toContain("terminalOpen")
+		expect(terminal).toContain("window.gcode.terminal.create")
+		expect(terminal).toContain("@xterm/xterm")
+		expect(terminal).not.toMatch(/from [\"']react/)
+	})
+
 	test("automations mirrors the React inbox split instead of a flat page", () => {
 		const automation = read("lit/components/gcode-automations.ts")
 		const styles = read("lit/components/gcode-automations.scss")
