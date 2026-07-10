@@ -46,3 +46,16 @@ export function markOnboardingComplete(): OnboardingState {
 		completedAt: new Date().toISOString(),
 	})
 }
+
+/** Reset the wizard so Setup can deliberately relaunch onboarding. */
+export function markOnboardingIncomplete(): OnboardingState {
+	return writeOnboardingState({
+		completed: false,
+		completedAt: null,
+		skippedSteps: [],
+		migrationPerformed: false,
+		migratedFrom: [],
+		projectRuntimeVersion: null,
+		providersConnected: 0,
+	})
+}

@@ -58,6 +58,15 @@ describe("Lit app-frame parity contract", () => {
 		)
 	})
 
+	test("settings preserves every React settings destination and setup recovery actions", () => {
+		const settings = read("lit/components/gcode-settings-panel.ts")
+		expect(settings).toContain('"worktrees"')
+		expect(settings).toContain('"setup"')
+		expect(settings).toContain("loadRuntimeSetupStatuses")
+		expect(settings).toContain("restoreBackup")
+		expect(settings).toContain("markOnboardingIncomplete")
+	})
+
 	test("session uses the shared app bar and a single bottom composer", () => {
 		const app = read("lit/components/gcode-app.ts")
 		const chat = read("lit/components/gcode-chat-panel.ts")

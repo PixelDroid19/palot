@@ -169,6 +169,12 @@ select {
 	margin-bottom: var(--gcode-space-3);
 }
 
+.warning {
+	margin-top: 4px;
+	font-size: 12px;
+	color: #f5b74e;
+}
+
 input[type="checkbox"] {
 	width: 16px;
 	height: 16px;

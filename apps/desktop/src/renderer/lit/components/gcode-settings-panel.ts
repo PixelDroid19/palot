@@ -1,6 +1,6 @@
 /**
  * Settings — general, providers, plugins, integrations, notifications,
- * worktree, usage, about. Real IPC / agent-host APIs only.
+ * worktrees, usage, setup, about. Real IPC / agent-host APIs only.
  */
 import { html, LitElement } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
@@ -32,6 +32,11 @@ import {
 } from "../../services/worktree-service"
 import { ensureRuntimeClient } from "../ensure-runtime-client"
 import { LocaleController } from "../locale-controller"
+import { markOnboardingIncomplete, readOnboardingState } from "../onboarding-store"
+import {
+	loadRuntimeSetupStatuses,
+	type RuntimeSetupStatus,
+} from "../../services/runtime-setup-status"
 import { styles } from "./gcode-settings-panel.css.js"
 
 const SECTIONS = [
@@ -40,8 +45,9 @@ const SECTIONS = [
 	"plugins",
 	"integrations",
 	"notifications",
-	"worktree",
+	"worktrees",
 	"usage",
+	"setup",
 	"about",
 ] as const
 
@@ -66,6 +72,8 @@ export class GcodeSettingsPanel extends LitElement {
 	@state() private plugins: string[] = []
 	@state() private pluginDraft = ""
 	@state() private worktrees: WorktreeEntry[] = []
+	@state() private setupRuntimes: RuntimeSetupStatus[] = []
+	@state() private setupRestoreResult = ""
 	@state() private usage: UsageStats = EMPTY_USAGE_STATS
 	@state() private error = ""
 	@state() private loading = ""
@@ -89,10 +97,11 @@ export class GcodeSettingsPanel extends LitElement {
 	}
 
 	private async onSectionEnter(section: string): Promise<void> {
-		if (this.isProcessOnlyComposition() && ["plugins", "worktree", "usage"].includes(section)) return
+		if (this.isProcessOnlyComposition() && ["plugins", "worktrees", "usage"].includes(section)) return
 		if (section === "plugins") await this.loadPlugins()
-		if (section === "worktree") await this.loadWorktrees()
+		if (section === "worktrees") await this.loadWorktrees()
 		if (section === "usage") await this.loadUsage()
+		if (section === "setup") await this.loadSetupRuntimes()
 	}
 
 	private isProcessOnlyComposition(): boolean {
@@ -107,7 +116,7 @@ export class GcodeSettingsPanel extends LitElement {
 
 	private visibleSections(): readonly Section[] {
 		if (!this.isProcessOnlyComposition()) return SECTIONS
-		return SECTIONS.filter((section) => !["plugins", "worktree", "usage"].includes(section))
+		return SECTIONS.filter((section) => !["plugins", "worktrees", "usage"].includes(section))
 	}
 
 	private async loadSettings(): Promise<void> {
@@ -200,6 +209,19 @@ export class GcodeSettingsPanel extends LitElement {
 		}
 	}
 
+	private async loadSetupRuntimes(force = false): Promise<void> {
+		this.loading = "setup"
+		this.error = ""
+		try {
+			this.setupRuntimes = await loadRuntimeSetupStatuses(force)
+		} catch (err) {
+			this.setupRuntimes = []
+			this.error = err instanceof Error ? err.message : String(err)
+		} finally {
+			this.loading = ""
+		}
+	}
+
 	private async patchSettings(partial: Record<string, unknown>): Promise<void> {
 		try {
 			const g = (
@@ -230,8 +252,9 @@ export class GcodeSettingsPanel extends LitElement {
 			plugins: this.locale.t("litSettings.plugins"),
 			integrations: this.locale.t("litSettings.integrations"),
 			notifications: this.locale.t("litSettings.notifications"),
-			worktree: this.locale.t("litSettings.worktree"),
+			worktrees: this.locale.t("litSettings.worktrees"),
 			usage: this.locale.t("litSettings.usage"),
+			setup: this.locale.t("litSettings.setup"),
 			about: this.locale.t("litSettings.about"),
 		}
 		return map[s]
@@ -623,7 +646,7 @@ export class GcodeSettingsPanel extends LitElement {
 
 	private renderWorktree() {
 		return html`
-			<h1>${this.locale.t("litSettings.worktree")}</h1>
+			<h1>${this.locale.t("litSettings.worktrees")}</h1>
 			<div class="card">
 				<div class="desc" style="margin-bottom:12px">
 					${this.locale.t("litSettings.worktreeBody")}
@@ -676,6 +699,97 @@ export class GcodeSettingsPanel extends LitElement {
 				}
 				<button type="button" class="btn" @click=${() => this.loadWorktrees()}>
 					${this.locale.t("litSettings.refresh")}
+				</button>
+			</div>
+		`
+	}
+
+	private renderSetup() {
+		const onboarding = readOnboardingState()
+		return html`
+			<h1>${this.locale.t("litSettings.setup")}</h1>
+			<div class="card">
+				<div class="label">${this.locale.t("litSettings.setupRuntimes")}</div>
+				<div class="desc" style="margin-bottom:12px">
+					${this.locale.t("litSettings.setupRuntimesDesc")}
+				</div>
+				${
+					this.loading === "setup"
+						? html`<div class="mono">…</div>`
+						: this.setupRuntimes.length === 0
+							? html`<div class="mono">${this.locale.t("litSettings.providersEmpty")}</div>`
+							: this.setupRuntimes.map(
+								(runtime) => html`
+									<div class="row" style="margin-bottom:10px">
+										<div>
+											<div class="label">${runtime.displayName}</div>
+											<div class="desc">${runtime.description}</div>
+											${runtime.warning
+												? html`<div class="warning">${runtime.warning}</div>`
+												: null}
+										</div>
+										<div class="mono">
+											${runtime.installed ? runtime.version || "installed" : "not installed"}
+										</div>
+									</div>
+								`,
+							)
+				}
+				<button type="button" class="btn" @click=${() => this.loadSetupRuntimes(true)}>
+					${this.locale.t("litSettings.setupRescan")}
+				</button>
+			</div>
+			<div class="card">
+				<div class="label">${this.locale.t("litSettings.setupImport")}</div>
+				<div class="desc" style="margin:6px 0 12px">
+					${onboarding.migrationPerformed
+						? `${this.locale.t("litSettings.setupImportedFrom")}: ${onboarding.migratedFrom.join(", ") || "—"}`
+						: this.locale.t("litSettings.setupNoImport")}
+				</div>
+				<button
+					type="button"
+					class="btn"
+					?disabled=${this.loading === "restore"}
+					@click=${async () => {
+						const restore = window.gcode?.onboarding?.restoreBackup
+						if (!restore) {
+							this.error = this.locale.t("litSettings.desktopOnly")
+							return
+						}
+						this.loading = "restore"
+						this.setupRestoreResult = ""
+						try {
+							const result = await restore()
+							this.setupRestoreResult = result.success
+								? `${this.locale.t("litSettings.setupRestoreDone")} (${result.restored.length})`
+								: result.errors.join(", ") || this.locale.t("litSettings.webhookFail")
+						} catch (err) {
+							this.setupRestoreResult = err instanceof Error ? err.message : String(err)
+						} finally {
+							this.loading = ""
+						}
+					}}
+				>
+					${this.locale.t("litSettings.setupRestore")}
+				</button>
+				${this.setupRestoreResult ? html`<span class="mono" style="margin-left:8px">${this.setupRestoreResult}</span>` : null}
+			</div>
+			<div class="card">
+				<div class="label">${this.locale.t("litSettings.setupOnboarding")}</div>
+				<div class="desc" style="margin:6px 0 12px">${this.locale.t("litSettings.setupOnboardingDesc")}</div>
+				<button
+					type="button"
+					class="btn"
+					@click=${() => {
+						markOnboardingIncomplete()
+						if (window.gcode?.relaunch) {
+							void window.gcode.relaunch()
+							return
+						}
+						location.hash = "#/onboarding"
+					}}
+				>
+					${this.locale.t("litSettings.setupRerun")}
 				</button>
 			</div>
 		`
@@ -787,10 +901,12 @@ export class GcodeSettingsPanel extends LitElement {
 				return this.renderIntegrations()
 			case "notifications":
 				return this.renderNotifications()
-			case "worktree":
+			case "worktrees":
 				return this.renderWorktree()
 			case "usage":
 				return this.renderUsage()
+			case "setup":
+				return this.renderSetup()
 			case "about":
 				return this.renderAbout()
 			default:
