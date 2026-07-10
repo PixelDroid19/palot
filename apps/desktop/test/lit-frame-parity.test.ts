@@ -77,4 +77,14 @@ describe("Lit app-frame parity contract", () => {
 		expect(styles).toContain("width: 35%")
 		expect(styles).toContain(".detail-empty")
 	})
+
+	test("onboarding uses React-like progress and a centered step surface", () => {
+		const onboarding = read("lit/components/gcode-onboarding.ts")
+		const styles = read("lit/components/gcode-onboarding.scss")
+		expect(onboarding).toContain('class="progress"')
+		expect(onboarding).toContain('class="step-area"')
+		expect(onboarding).toContain("Get Started")
+		expect(styles).toContain(".dots")
+		expect(styles).toContain(".step-content")
+	})
 })

@@ -1,101 +1,167 @@
 @use "../styles/tokens";
 
 :host {
-	display: grid;
-	place-items: center;
-	min-height: 100%;
-	padding: var(--gcode-space-6);
+	display: block;
+	width: 100%;
+	height: 100%;
+	min-height: 100vh;
 	background: var(--gcode-bg);
-	font-family: var(--gcode-font);
 	color: var(--gcode-fg);
+	font-family: var(--gcode-font);
 }
 
-.card {
-	width: min(440px, 100%);
-	border: 1px solid var(--gcode-border);
-	border-radius: var(--gcode-radius);
-	background: var(--gcode-bg-elevated);
-	padding: var(--gcode-space-5);
+.onboarding-shell {
 	display: flex;
+	height: 100%;
+	min-height: 100vh;
 	flex-direction: column;
-	gap: var(--gcode-space-4);
+}
+
+.titlebar-spacer {
+	height: var(--gcode-titlebar-height);
+	flex: 0 0 var(--gcode-titlebar-height);
+	-webkit-app-region: drag;
+}
+
+.progress {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 8px 32px;
+	color: var(--gcode-fg-muted);
+	font-size: 12px;
+}
+
+.dots {
+	display: flex;
+	gap: 8px;
+}
+
+.dots span {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: color-mix(in srgb, var(--gcode-fg-muted) 20%, transparent);
+}
+
+.dots span[data-complete="true"] {
+	background: var(--gcode-fg);
+}
+
+.dots span[data-active="true"] {
+	background: color-mix(in srgb, var(--gcode-fg) 65%, transparent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--gcode-fg) 20%, transparent);
+}
+
+.step-area {
+	display: flex;
+	min-height: 0;
+	flex: 1;
+	align-items: center;
+	justify-content: center;
+	overflow: auto;
+	padding: 32px 24px;
+}
+
+.step-content {
+	display: flex;
+	width: min(520px, 100%);
+	flex-direction: column;
+	align-items: center;
+	gap: 20px;
+	text-align: center;
+}
+
+.wordmark {
+	height: 24px;
+	width: auto;
+	margin-bottom: 8px;
+}
+
+h1,
+p {
+	margin: 0;
 }
 
 h1 {
-	margin: 0;
-	font-size: 22px;
+	font-size: 24px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
 }
 
-p {
-	margin: 0;
+.body {
+	max-width: 480px;
 	color: var(--gcode-fg-muted);
-	font-size: 13px;
-	line-height: 1.5;
+	font-size: 16px;
+	line-height: 1.55;
 }
 
-.steps {
+.actions {
 	display: flex;
 	flex-direction: column;
-	gap: var(--gcode-space-2);
-	font-size: 13px;
+	align-items: center;
+	gap: 12px;
+	margin-top: 8px;
 }
 
-.step {
-	padding: var(--gcode-space-3);
-	border-radius: var(--gcode-radius-sm);
-	background: var(--gcode-bg-muted);
+button {
+	font: inherit;
+	cursor: pointer;
 }
 
 button.primary {
-	padding: 10px 14px;
-	border-radius: var(--gcode-radius-sm);
+	padding: 10px 16px;
+	border: 0;
+	border-radius: 8px;
 	background: var(--gcode-accent);
-	color: #041018;
-	font-weight: 700;
-	border: none;
-	cursor: pointer;
+	color: var(--gcode-accent-foreground);
+	font-weight: 600;
 }
 
 button.secondary {
 	padding: 8px 12px;
-	border-radius: var(--gcode-radius-sm);
+	border: 1px solid var(--gcode-border);
+	border-radius: 8px;
 	background: var(--gcode-bg-muted);
 	color: var(--gcode-fg);
-	border: 1px solid var(--gcode-border);
 	font-size: 12px;
-	cursor: pointer;
-	align-self: flex-start;
 }
 
-.step[data-active="true"] {
-	outline: 1px solid var(--gcode-accent);
+.hint {
+	color: var(--gcode-fg-subtle);
+	font-size: 12px;
 }
 
-.detect-list {
+.detect-list,
+.preview {
 	display: flex;
+	width: 100%;
 	flex-direction: column;
 	gap: 6px;
+	text-align: left;
 }
 
 .detect-label {
+	margin-bottom: 4px;
+	color: var(--gcode-fg-muted);
 	font-size: 12px;
 	font-weight: 600;
-	color: var(--gcode-fg-muted);
-	margin-bottom: 4px;
+}
+
+.detect-row,
+.preview {
+	padding: 10px 12px;
+	border: 1px solid var(--gcode-border);
+	border-radius: 8px;
+	background: var(--gcode-bg-elevated);
+	font-size: 12px;
 }
 
 .detect-row {
 	display: flex;
 	justify-content: space-between;
 	gap: 12px;
-	padding: 8px 10px;
-	border-radius: var(--gcode-radius-sm);
-	background: var(--gcode-bg-muted);
-	font-size: 12px;
-}
-
-.detect-row[data-ok="true"] strong {
-	color: var(--gcode-fg);
 }
 
 .detect-row[data-ok="false"] {
@@ -108,13 +174,6 @@ button.secondary {
 }
 
 .preview {
-	margin-top: 12px;
-	padding: 10px;
-	border-radius: var(--gcode-radius-sm);
-	background: var(--gcode-bg-muted);
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
 	max-height: 280px;
 	overflow: auto;
 }
@@ -123,18 +182,18 @@ button.secondary {
 	font-size: 12px;
 }
 
-.file {
-	font-size: 11px;
+.file,
+.mono {
 	color: var(--gcode-fg-subtle);
+	font-family: var(--gcode-font-mono);
+	font-size: 11px;
+}
+
+.file {
 	padding-left: 8px;
 }
 
 .warn {
-	font-size: 12px;
 	color: #d4a017;
-}
-
-.mono {
-	font-family: var(--gcode-font-mono);
-	font-size: 11px;
+	font-size: 12px;
 }

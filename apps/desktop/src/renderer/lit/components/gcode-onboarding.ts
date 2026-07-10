@@ -169,7 +169,7 @@ export class GcodeOnboarding extends LitElement {
 		}
 	}
 
-	private async next(): Promise<void> {
+	private async advance(): Promise<void> {
 		if (this.step === 0) {
 			this.step = 1
 			void this.detect()
@@ -340,39 +340,45 @@ export class GcodeOnboarding extends LitElement {
 			this.locale.t("litOnboarding.readyBody"),
 		]
 		return html`
-			<div class="card">
-				<h1>${titles[this.step]}</h1>
-				<p>${bodies[this.step]}</p>
-				<div class="steps">
-					<div class="step" data-active=${String(this.step === 0)}>
-						1 · ${this.locale.t("litOnboarding.stepWelcome")}
+			<div class="onboarding-shell">
+				<div class="titlebar-spacer" aria-hidden="true"></div>
+				<div class="progress" aria-label="Onboarding progress">
+					<div class="dots">
+						${[0, 1, 2, 3].map(
+							(index) => html`<span
+								data-active=${String(index === this.step)}
+								data-complete=${String(index < this.step)}
+							></span>`,
+						)}
 					</div>
-					<div class="step" data-active=${String(this.step === 1)}>
-						2 · ${this.locale.t("litOnboarding.stepRuntimes")}
-					</div>
-					<div class="step" data-active=${String(this.step === 2)}>
-						3 · ${this.locale.t("litOnboarding.stepMigrate")}
-					</div>
-					<div class="step" data-active=${String(this.step === 3)}>
-						4 · ${this.locale.t("litOnboarding.stepReady")}
-					</div>
+					<span>${this.step + 1} of 4</span>
 				</div>
-				${this.step === 1 ? this.renderRuntimesStep() : null}
-				${this.step === 2 ? this.renderMigrationStep() : null}
-				${this.error ? html`<div class="error">${this.error}</div>` : null}
-				${
-					this.step < 3
-						? html`
-								<button type="button" class="primary" @click=${() => this.next()}>
-									${this.locale.t("litOnboarding.next")}
-								</button>
-							`
-						: html`
-								<button type="button" class="primary" @click=${() => this.finish()}>
-									${this.locale.t("litOnboarding.finish")}
-								</button>
-							`
-				}
+				<main class="step-area">
+					<section class="step-content">
+						${this.step === 0 ? html`<gcode-wordmark class="wordmark"></gcode-wordmark>` : null}
+						<h1>${titles[this.step]}</h1>
+						<p class="body">${bodies[this.step]}</p>
+						${this.step === 1 ? this.renderRuntimesStep() : null}
+						${this.step === 2 ? this.renderMigrationStep() : null}
+						${this.error ? html`<div class="error">${this.error}</div>` : null}
+						<div class="actions">
+							${
+								this.step < 3
+									? html`
+											<button type="button" class="primary" @click=${() => this.advance()}>
+												${this.step === 0 ? "Get Started" : this.locale.t("litOnboarding.next")} →
+											</button>
+										`
+									: html`
+											<button type="button" class="primary" @click=${() => this.finish()}>
+												${this.locale.t("litOnboarding.finish")}
+											</button>
+										`
+							}
+							${this.step === 0 ? html`<p class="hint">This takes less than a minute.</p>` : null}
+						</div>
+					</section>
+				</main>
 			</div>
 		`
 	}
