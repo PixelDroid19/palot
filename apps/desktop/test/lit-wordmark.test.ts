@@ -40,7 +40,7 @@ describe("GCode wordmark (public)", () => {
 		expect(lit).toContain('@customElement("gcode-wordmark")')
 	})
 
-	test("renderer registers Lit in an isolated parity preview", () => {
+	test("renderer registers Lit as the product shell", () => {
 		const reg = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/lit/register.ts"),
 			"utf8",
@@ -52,7 +52,7 @@ describe("GCode wordmark (public)", () => {
 		expect(reg).toContain("./components/gcode-wordmark")
 		expect(main).toContain("./app")
 		expect(main).toContain("./lit/register")
-		expect(main).toContain('get("shell") === "lit"')
+		expect(main).toContain('get("shell") === "react"')
 		expect(main).toContain("./lit/main-lit")
 	})
 })

@@ -1,24 +1,24 @@
 /**
- * Renderer entry with a non-default Lit parity preview.
+ * Renderer entry with Lit as the desktop product shell.
  *
- * `?shell=lit` mounts the Lit candidate for side-by-side visual QA. The
- * default remains the React reference until the parity gate is complete.
+ * `?shell=react` keeps the former implementation available as a temporary
+ * visual reference while the remaining legacy code is retired.
  */
 import "./index.css"
 
-const useLitPreview = new URLSearchParams(location.search).get("shell") === "lit"
+const useReactReference = new URLSearchParams(location.search).get("shell") === "react"
 
-if (useLitPreview) {
-	await import("./lit/register")
-	await import("./lit/main-lit")
-} else {
+if (useReactReference) {
 	const [{ StrictMode, createElement }, { createRoot }, { App }] = await Promise.all([
 		import("react"),
 		import("react-dom/client"),
 		import("./app"),
-		import("./lit/register"),
 	])
 	createRoot(document.getElementById("root")!).render(
 		createElement(StrictMode, null, createElement(App)),
 	)
+
+} else {
+	await import("./lit/register")
+	await import("./lit/main-lit")
 }

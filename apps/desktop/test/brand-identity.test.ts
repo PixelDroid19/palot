@@ -52,12 +52,12 @@ describe("GCode brand identity", () => {
 		expect(yml).not.toContain("com.palot")
 	})
 
-	test("renderer defaults to React while exposing a Lit parity preview", () => {
+	test("renderer defaults to Lit while preserving an explicit React reference", () => {
 		const main = readFileSync(join(root, "src/renderer/main.tsx"), "utf8")
 		expect(main).toContain("./app")
 		expect(main).toContain("createRoot")
 		expect(main).toContain("./lit/register")
-		expect(main).toContain('get("shell") === "lit"')
+		expect(main).toContain('get("shell") === "react"')
 		expect(main).toContain("./lit/main-lit")
 	})
 })

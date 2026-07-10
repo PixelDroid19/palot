@@ -4,7 +4,7 @@
 
 **Goal:** Replace the React app frame with a Lit frame that matches the current desktop UI before migrating individual content routes.
 
-**Architecture:** Keep React as an unmounted reference behind a local preview switch while Lit owns a second preview switch. Introduce Lit-native frame primitives and a desktop state store over the existing framework-neutral services. The default entrypoint changes only after screenshot and interaction parity passes.
+**Architecture:** Lit is the default product shell. React remains temporarily available only through the explicit local `?shell=react` reference switch while its legacy source is retired. Lit-native frame primitives and desktop state sit over the existing framework-neutral services.
 
 **Tech Stack:** Lit 3, TypeScript, SCSS compiled by `scripts/scss-to-cssjs.ts`, Bun tests, Electron/Vite, browser screenshot QA.
 
@@ -17,15 +17,15 @@
 
 ---
 
-### Task 1: Add a non-default Lit visual-preview entry
+### Task 1: Add the Lit visual-preview entry
 
 **Files:**
 - Modify: `apps/desktop/src/renderer/main.tsx`
 - Test: `apps/desktop/test/lit-shell-imports.test.ts`
 
 **Interfaces:**
-- Consumes: URL search parameter `shell=lit`.
-- Produces: a Lit-only preview renderer while the default remains the React reference.
+- Consumes: URL search parameter `shell=react` for the temporary reference renderer.
+- Produces: a Lit-only product renderer by default.
 
 - [ ] Add a test that asserts the preview imports `./lit/main-lit` only when `shell=lit` and that the default imports `./app`.
 - [ ] Make `main.tsx` select the preview at runtime with dynamic imports, importing `./index.css` in both branches.
