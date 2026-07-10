@@ -40,7 +40,7 @@ describe("GCode wordmark (public)", () => {
 		expect(lit).toContain('@customElement("gcode-wordmark")')
 	})
 
-	test("register imports progressive wordmark without main-lit product boot", () => {
+	test("renderer entry boots the Lit product shell", () => {
 		const reg = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/lit/register.ts"),
 			"utf8",
@@ -50,8 +50,7 @@ describe("GCode wordmark (public)", () => {
 			"utf8",
 		)
 		expect(reg).toContain("./components/gcode-wordmark")
-		expect(main).toContain("./app")
-		expect(main).toContain("./lit/register")
-		expect(main).not.toContain("./lit/main-lit")
+		expect(main).toContain('./lit/main-lit')
+		expect(main).not.toContain("./app")
 	})
 })

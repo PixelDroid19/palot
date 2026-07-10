@@ -52,11 +52,9 @@ describe("GCode brand identity", () => {
 		expect(yml).not.toContain("com.palot")
 	})
 
-	test("renderer entry is React product shell with Lit registration", () => {
+	test("renderer entry is the Lit product shell", () => {
 		const main = readFileSync(join(root, "src/renderer/main.tsx"), "utf8")
-		expect(main).toContain("./app")
-		expect(main).toContain("createRoot")
-		expect(main).toContain("./lit/register")
-		expect(main).not.toContain("./lit/main-lit")
+		expect(main).toContain("./lit/main-lit")
+		expect(main).not.toContain("createRoot")
 	})
 })
