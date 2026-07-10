@@ -77,6 +77,16 @@ describe("Lit app-frame parity contract", () => {
 		expect(chatStyles).toContain("max-width: 896px")
 	})
 
+	test("Lit route and session state cover the React project entry and live turn status", () => {
+		const router = read("lit/router.ts")
+		const sessions = read("lit/session-store.ts")
+		const app = read("lit/components/gcode-app.ts")
+		expect(router).toContain('name: "project"')
+		expect(router).toContain('parts[0] === "project" && parts[1]')
+		expect(sessions).toContain("updateStatus(sessionId")
+		expect(app).toContain("sessionStore.updateStatus")
+	})
+
 	test("automations mirrors the React inbox split instead of a flat page", () => {
 		const automation = read("lit/components/gcode-automations.ts")
 		const styles = read("lit/components/gcode-automations.scss")

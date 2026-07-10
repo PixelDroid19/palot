@@ -124,6 +124,16 @@ class SessionStore {
 		gcodeBus.publish(BusTopics.sessionSelect, id)
 	}
 
+	/** Update transient runtime state without coupling Lit to a framework store. */
+	updateStatus(sessionId: string, status: NonNullable<LitSessionSummary["status"]>): void {
+		const index = this.sessions.findIndex((session) => session.id === sessionId)
+		if (index < 0) return
+		const next = [...this.sessions]
+		next[index] = { ...next[index]!, status, updatedAt: Date.now() }
+		this.sessions = next.sort((a, b) => b.updatedAt - a.updatedAt)
+		gcodeBus.publish(BusTopics.sessionListChanged, this.list())
+	}
+
 	/** Transcript messages for a session (text parts only). */
 	getMessages(sessionId: string): LitChatMessage[] {
 		const data = readPayload(sessionId)

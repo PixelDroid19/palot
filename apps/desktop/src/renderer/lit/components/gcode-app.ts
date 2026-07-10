@@ -183,7 +183,10 @@ export class GcodeApp extends LitElement {
 
 		try {
 			const finalText = await runLitAgentTurn(sessionId, text, {
-					onAssistantDelta: (partial) => {
+				onStatus: (status) => {
+					sessionStore.updateStatus(sessionId, status)
+				},
+				onAssistantDelta: (partial) => {
 						this.messages = [
 							...this.messages.filter((m) => m.id !== assistantId),
 							{ id: assistantId, role: "assistant", text: partial },
@@ -320,6 +323,7 @@ export class GcodeApp extends LitElement {
 				`
 			}
 			case "home":
+			case "project":
 			default:
 				return html`<gcode-home></gcode-home>`
 		}

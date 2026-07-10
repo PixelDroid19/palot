@@ -4,6 +4,7 @@
  */
 export type LitRoute =
 	| { name: "home" }
+	| { name: "project"; projectSlug: string }
 	| { name: "session"; sessionId: string }
 	| { name: "settings"; section: string }
 	| { name: "automations" }
@@ -28,9 +29,13 @@ export function parseHash(hash: string = location.hash): LitRoute {
 	if (parts[0] === "session" && parts[1]) {
 		return { name: "session", sessionId: parts[1] }
 	}
-	// legacy: project/*/session/*
+	// The React tree renders NewChat for /project/$projectSlug and a shared
+	// session view for /project/$projectSlug/session/$sessionId.
 	if (parts[0] === "project" && parts[2] === "session" && parts[3]) {
 		return { name: "session", sessionId: parts[3] }
+	}
+	if (parts[0] === "project" && parts[1]) {
+		return { name: "project", projectSlug: parts[1] }
 	}
 	return { name: "not-found" }
 }
@@ -48,6 +53,8 @@ export function hrefForRoute(route: LitRoute): string {
 	switch (route.name) {
 		case "home":
 			return "#/"
+		case "project":
+			return `#/project/${route.projectSlug}`
 		case "session":
 			return `#/session/${route.sessionId}`
 		case "settings":
