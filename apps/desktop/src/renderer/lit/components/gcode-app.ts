@@ -24,6 +24,7 @@ import "./gcode-chat-panel"
 import "./gcode-home"
 import "./gcode-onboarding"
 import "./gcode-settings-panel"
+import "./gcode-session-controls"
 import "./gcode-sidebar"
 import "./gcode-terminal-panel"
 import { styles } from "./gcode-app.css.js"
@@ -397,6 +398,12 @@ export class GcodeApp extends LitElement {
 													>
 														Terminal
 													</button>`
+													: null}
+												${activeSessionId && activeSession
+													? html`<gcode-session-controls
+															session-id=${activeSessionId}
+															runtime-id=${activeSession.runtimeId}
+														></gcode-session-controls>`
 													: null}
 										`
 												: null

@@ -154,6 +154,29 @@ class SessionStore {
 		return readPayload(sessionId)?.meta
 	}
 
+	/** Persist descriptor-driven execution choices for the next agent turn. */
+	updateMeta(
+		sessionId: string,
+		patch: Partial<NonNullable<PersistedPayload["meta"]>>,
+	): void {
+		const data = readPayload(sessionId)
+		if (!data) return
+		const next: PersistedPayload = {
+			...data,
+			meta: { ...data.meta, ...patch },
+			session: {
+				...data.session,
+				id: sessionId,
+				time: {
+					created: data.session?.time?.created || Date.now(),
+					updated: Date.now(),
+				},
+			},
+		}
+		localStorage.setItem(SESSION_KEY_PREFIX + sessionId, JSON.stringify(next))
+		this.refresh()
+	}
+
 	/**
 	 * Create or update a session in the real persistence format and index.
 	 */

@@ -105,6 +105,17 @@ describe("Lit app-frame parity contract", () => {
 		expect(terminal).not.toMatch(/from [\"']react/)
 	})
 
+	test("Lit session chrome exposes descriptor-driven model, effort and sandbox controls", () => {
+		const app = read("lit/components/gcode-app.ts")
+		const controls = read("lit/components/gcode-session-controls.ts")
+		const sessions = read("lit/session-store.ts")
+		expect(app).toContain("gcode-session-controls")
+		expect(controls).toContain("describeRuntimes")
+		expect(controls).toContain("selectedModel?.efforts")
+		expect(controls).toContain("updateMeta")
+		expect(sessions).toContain("updateMeta(")
+	})
+
 	test("automations mirrors the React inbox split instead of a flat page", () => {
 		const automation = read("lit/components/gcode-automations.ts")
 		const styles = read("lit/components/gcode-automations.scss")

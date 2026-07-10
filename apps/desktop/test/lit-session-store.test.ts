@@ -97,4 +97,23 @@ describe("lit sessionStore (shipped persistence shape)", () => {
 		const msgs = sessionStore.getMessages("chat-1")
 		expect(msgs.some((m) => m.text === "ping" && m.role === "user")).toBe(true)
 	})
+
+	test("persists descriptor-driven model, effort and sandbox choices", () => {
+		sessionStore.upsertAndPersist({
+			id: "configured-1",
+			title: "Configured session",
+			runtimeId: "codex",
+			directory: "/workspace",
+		})
+		sessionStore.updateMeta("configured-1", {
+			model: "gpt-5.1-codex",
+			effort: "high",
+			sandbox: "read-only",
+		})
+		expect(sessionStore.getMeta("configured-1")).toMatchObject({
+			model: "gpt-5.1-codex",
+			effort: "high",
+			sandbox: "read-only",
+		})
+	})
 })
