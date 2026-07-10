@@ -27,6 +27,28 @@ import "./gcode-settings-panel"
 import "./gcode-sidebar"
 import { styles } from "./gcode-app.css.js"
 
+const PARITY_CHAT_MESSAGES: ChatMessageView[] = [
+	{
+		id: "parity-user",
+		role: "user",
+		text: "Review the current implementation and identify the smallest safe change.",
+	},
+	{
+		id: "parity-assistant",
+		role: "assistant",
+		text: "I found the layout boundary. I will keep the session UI stable while moving the visual shell to Lit.",
+	},
+]
+
+const PARITY_CHAT_TOOLS: LitToolEvent[] = [
+	{
+		id: "parity-read",
+		name: "Read",
+		status: "completed",
+		detail: "apps/desktop/src/renderer/lit/components/gcode-chat-panel.ts",
+	},
+]
+
 @customElement("gcode-app")
 export class GcodeApp extends LitElement {
 	static styles = styles
@@ -110,6 +132,10 @@ export class GcodeApp extends LitElement {
 
 	private activeSessionId(): string | null {
 		return this.route.name === "session" ? this.route.sessionId : sessionStore.getActiveId()
+	}
+
+	private isChatParityFixture(): boolean {
+		return new URLSearchParams(location.search).get("fixture") === "chat"
 	}
 
 	private upsertTool(tool: LitToolEvent): void {
@@ -273,12 +299,13 @@ export class GcodeApp extends LitElement {
 				return html`<gcode-automations></gcode-automations>`
 			case "session": {
 				const active = sessionStore.list().find((s) => s.id === route.sessionId)
+				const parityFixture = this.isChatParityFixture()
 				return html`
 					<gcode-chat-panel
-						title=${active?.title || route.sessionId.slice(0, 8)}
-						runtime-id=${active?.runtimeId || ""}
-						.messages=${this.messages}
-						.tools=${this.tools}
+						title=${parityFixture ? "Lit visual parity" : active?.title || route.sessionId.slice(0, 8)}
+						runtime-id=${parityFixture ? "codex" : active?.runtimeId || ""}
+						.messages=${parityFixture ? PARITY_CHAT_MESSAGES : this.messages}
+						.tools=${parityFixture ? PARITY_CHAT_TOOLS : this.tools}
 						.permission=${this.permission}
 						.question=${this.question}
 						?busy=${this.busy}
@@ -303,6 +330,10 @@ export class GcodeApp extends LitElement {
 		const settingsRoute = this.route.name === "settings"
 		const showSidebar = !hideChrome && !settingsRoute
 		const showAppbar = !hideChrome && !settingsRoute
+		const activeSessionId = this.route.name === "session" ? this.route.sessionId : null
+		const activeSession = activeSessionId
+			? sessionStore.list().find((session) => session.id === activeSessionId)
+			: null
 		return html`
 			<div class="frame" data-sidebar-open=${String(this.sidebarOpen)}>
 				${
@@ -327,6 +358,20 @@ export class GcodeApp extends LitElement {
 							? html`
 									<header class="appbar">
 										<gcode-wordmark></gcode-wordmark>
+										${
+											activeSession || this.route.name === "session"
+												? html`
+														<span class="appbar-divider" aria-hidden="true"></span>
+														<span class="appbar-session">
+															${
+																this.isChatParityFixture()
+																	? "Lit visual parity"
+																	: activeSession?.title || "Session"
+															}
+														</span>
+													`
+												: null
+										}
 									</header>
 								`
 							: null

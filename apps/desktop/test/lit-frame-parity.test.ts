@@ -57,4 +57,14 @@ describe("Lit app-frame parity contract", () => {
 			"margin: 0 auto",
 		)
 	})
+
+	test("session uses the shared app bar and a single bottom composer", () => {
+		const app = read("lit/components/gcode-app.ts")
+		const chat = read("lit/components/gcode-chat-panel.ts")
+		const chatStyles = read("lit/components/gcode-chat-panel.scss")
+		expect(app).toContain('class="appbar-session"')
+		expect(app).toContain('get("fixture") === "chat"')
+		expect(chat).not.toContain('class="topbar"')
+		expect(chatStyles).toContain("max-width: 896px")
+	})
 })

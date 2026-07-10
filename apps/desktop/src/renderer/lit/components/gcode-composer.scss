@@ -2,9 +2,9 @@
 
 :host {
 	display: block;
-	padding: var(--gcode-space-3) var(--gcode-space-4) var(--gcode-space-4);
+	padding: 12px 32px 20px;
 	border-top: 1px solid var(--gcode-border);
-	background: var(--gcode-bg-elevated);
+	background: var(--gcode-bg);
 	font-family: var(--gcode-font);
 	color: var(--gcode-fg);
 }
@@ -13,13 +13,16 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--gcode-space-2);
-	border: 1px solid var(--gcode-border-strong);
+	max-width: 896px;
+	margin: 0 auto;
+	border: 1px solid var(--gcode-border);
 	border-radius: var(--gcode-radius);
-	background: var(--gcode-bg);
+	background: color-mix(in srgb, var(--gcode-bg-elevated) 65%, transparent);
 	padding: var(--gcode-space-3);
 }
 
 textarea {
+	box-sizing: border-box;
 	width: 100%;
 	min-height: 72px;
 	max-height: 200px;
@@ -27,6 +30,8 @@ textarea {
 	border: none;
 	outline: none;
 	background: transparent;
+	color: var(--gcode-fg);
+	font-family: inherit;
 	line-height: 1.45;
 	font-size: 14px;
 }
@@ -47,7 +52,7 @@ textarea {
 	padding: 6px 14px;
 	border-radius: var(--gcode-radius-sm);
 	background: var(--gcode-accent);
-	color: #041018;
+	color: var(--gcode-accent-foreground);
 	font-weight: 600;
 	font-size: 13px;
 }

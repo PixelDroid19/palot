@@ -60,14 +60,6 @@ export class GcodeChatPanel extends LitElement {
 	render() {
 		const empty = this.messages.length === 0 && this.tools.length === 0
 		return html`
-			<div class="topbar">
-				<div class="topbar-title">${this.title}</div>
-				${
-					this.runtimeId
-						? html`<span class="runtime-pill">${this.runtimeId}</span>`
-						: html`<span></span>`
-				}
-			</div>
 			${
 				empty
 					? html`

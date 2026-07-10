@@ -55,6 +55,22 @@ gcode-sidebar {
 	color: color-mix(in srgb, var(--gcode-fg) 70%, transparent);
 }
 
+.appbar-divider {
+	width: 1px;
+	height: 12px;
+	margin: 0 10px;
+	background: color-mix(in srgb, var(--gcode-border) 75%, transparent);
+}
+
+.appbar-session {
+	overflow: hidden;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .content {
 	position: relative;
 	display: flex;
