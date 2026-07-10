@@ -1,3 +1,5 @@
+import { homedir } from "node:os"
+import { join } from "node:path"
 import { Hono } from "hono"
 
 interface ModelRef {
@@ -13,22 +15,15 @@ interface ModelState {
 
 const MAX_RECENT = 10
 
-/**
- * Resolves the OpenCode state directory path from the running server.
- */
-async function resolveStatePath(): Promise<string> {
-	const pathRes = await fetch("http://127.0.0.1:4101/path")
-	if (!pathRes.ok) {
-		throw new Error("Failed to get OpenCode state path")
-	}
-	const paths = (await pathRes.json()) as { state: string }
-	return paths.state
+/** Resolve CLI state directly; browser mode never contacts an OpenCode server. */
+function resolveStatePath(): string {
+	return join(homedir(), ".local", "state", "opencode")
 }
 
 const app = new Hono()
 	.get("/", async (c) => {
 		try {
-			const statePath = await resolveStatePath()
+			const statePath = resolveStatePath()
 			const modelFile = Bun.file(`${statePath}/model.json`)
 
 			if (!(await modelFile.exists())) {
@@ -57,7 +52,7 @@ const app = new Hono()
 				return c.json({ error: "providerID and modelID are required" }, 400)
 			}
 
-			const statePath = await resolveStatePath()
+			const statePath = resolveStatePath()
 			const modelFile = Bun.file(`${statePath}/model.json`)
 
 			// Read existing state

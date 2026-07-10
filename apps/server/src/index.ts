@@ -3,7 +3,6 @@ import { cors } from "hono/cors"
 import health from "./routes/health"
 import modelState from "./routes/model-state"
 import servers from "./routes/servers"
-import { ensureSingleServer } from "./services/server-manager"
 
 // ============================================================
 // App — CORS middleware applied first, then routes chained for RPC
@@ -35,14 +34,9 @@ const port = Number(process.env.PORT) || 3100
 
 console.log(`GCode server starting on port ${port}`)
 
-// Eagerly start the single OpenCode server in the background
-ensureSingleServer()
-	.then((server) => {
-		console.log(`OpenCode server ready at ${server.url}`)
-	})
-	.catch((err) => {
-		console.error("Failed to start OpenCode server on boot:", err)
-	})
+// OpenCode is an ACP stdio runtime owned by the desktop agent host. This
+// Browser mode intentionally does not start an OpenCode process; desktop
+// sessions use the agent-host ACP transport instead.
 
 export default {
 	port,
