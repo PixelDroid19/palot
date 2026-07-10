@@ -178,6 +178,27 @@ class SessionStore {
 		this.refresh()
 	}
 
+	/** Rename a local session while preserving transcript and runtime settings. */
+	rename(sessionId: string, title: string): void {
+		const nextTitle = title.trim()
+		const data = readPayload(sessionId)
+		if (!data || !nextTitle) return
+		const next: PersistedPayload = {
+			...data,
+			session: {
+				...data.session,
+				id: sessionId,
+				title: nextTitle,
+				time: {
+					created: data.session?.time?.created || Date.now(),
+					updated: Date.now(),
+				},
+			},
+		}
+		localStorage.setItem(SESSION_KEY_PREFIX + sessionId, JSON.stringify(next))
+		this.refresh()
+	}
+
 	/**
 	 * Create or update a session in the real persistence format and index.
 	 */

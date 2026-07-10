@@ -117,6 +117,14 @@ describe("Lit app-frame parity contract", () => {
 		expect(sessions).toContain("updateMeta(")
 	})
 
+	test("Lit app bar keeps React-style inline session renaming", () => {
+		const app = read("lit/components/gcode-app.ts")
+		const sessions = read("lit/session-store.ts")
+		expect(app).toContain("editingSessionTitle")
+		expect(app).toContain("renameSession")
+		expect(sessions).toContain("rename(sessionId")
+	})
+
 	test("automations mirrors the React inbox split instead of a flat page", () => {
 		const automation = read("lit/components/gcode-automations.ts")
 		const styles = read("lit/components/gcode-automations.scss")

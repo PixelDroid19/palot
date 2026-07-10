@@ -64,6 +64,8 @@ export class GcodeApp extends LitElement {
 	@state() private question: LitQuestionRequest | null = null
 	@state() private sidebarOpen = true
 	@state() private terminalOpen = false
+	@state() private editingSessionTitle = false
+	@state() private sessionTitleDraft = ""
 
 	private unsubs: Array<() => void> = []
 	private onHash = () => {
@@ -295,6 +297,24 @@ export class GcodeApp extends LitElement {
 		this.terminalOpen = !this.terminalOpen
 	}
 
+	private startRename(title: string): void {
+		this.sessionTitleDraft = title
+		this.editingSessionTitle = true
+	}
+
+	private renameSession(): void {
+		const sessionId = this.activeSessionId()
+		if (sessionId && this.sessionTitleDraft.trim()) {
+			sessionStore.rename(sessionId, this.sessionTitleDraft)
+		}
+		this.editingSessionTitle = false
+	}
+
+	private cancelRename(): void {
+		this.sessionTitleDraft = ""
+		this.editingSessionTitle = false
+	}
+
 	private renderMain() {
 		const route = this.route
 		switch (route.name) {
@@ -386,9 +406,29 @@ export class GcodeApp extends LitElement {
 															${
 																this.isChatParityFixture()
 																	? "Lit visual parity"
-															: activeSession?.title || "Session"
-													}
-												</span>
+																	: this.editingSessionTitle
+																		? html`<input
+																			class="appbar-title-input"
+																			.value=${this.sessionTitleDraft}
+																			@input=${(event: Event) => {
+																				this.sessionTitleDraft = (event.target as HTMLInputElement).value
+																			}}
+																			@keydown=${(event: KeyboardEvent) => {
+																				if (event.key === "Enter") this.renameSession()
+																		if (event.key === "Escape") this.cancelRename()
+																		}}
+																			@blur=${() => {
+																				if (this.editingSessionTitle) this.renameSession()
+																			}}
+																		/>`
+																		: html`<button
+																				type="button"
+																				class="appbar-session appbar-session-button"
+																				@click=${() => this.startRename(activeSession?.title || "Session")}
+																			>
+																				${activeSession?.title || "Session"}
+																			</button>`
+																}
 												${activeSessionCwd
 													? html`<button
 														type="button"

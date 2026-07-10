@@ -71,6 +71,33 @@ gcode-sidebar {
 	white-space: nowrap;
 }
 
+.appbar-session-button {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	-webkit-app-region: no-drag;
+}
+
+.appbar-session-button:hover {
+	color: var(--gcode-fg-muted);
+}
+
+.appbar-title-input {
+	width: min(240px, 30vw);
+	padding: 3px 6px;
+	border: 1px solid var(--gcode-border-strong);
+	border-radius: 5px;
+	outline: 0;
+	background: var(--gcode-bg-elevated);
+	color: var(--gcode-fg);
+	font: 12px var(--gcode-font);
+	-webkit-app-region: no-drag;
+}
+
+.appbar-title-input:focus { border-color: var(--gcode-fg-muted); }
+
 .appbar-action {
 	margin-left: auto;
 	padding: 5px 8px;

@@ -116,4 +116,19 @@ describe("lit sessionStore (shipped persistence shape)", () => {
 			sandbox: "read-only",
 		})
 	})
+
+	test("renames a persisted session without losing its runtime metadata", () => {
+		sessionStore.upsertAndPersist({
+			id: "rename-1",
+			title: "Untitled",
+			runtimeId: "claude",
+			directory: "/workspace",
+		})
+		sessionStore.rename("rename-1", "Review renderer")
+		expect(sessionStore.list().find((session) => session.id === "rename-1")).toMatchObject({
+			title: "Review renderer",
+			runtimeId: "claude",
+		})
+		expect(sessionStore.getMeta("rename-1")?.runtimeId).toBe("claude")
+	})
 })
