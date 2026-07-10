@@ -127,6 +127,16 @@ describe("Lit app-frame parity contract", () => {
 		expect(sessions).toContain("rename(sessionId")
 	})
 
+	test("Lit shell owns the command palette and its session navigation", () => {
+		const app = read("lit/components/gcode-app.ts")
+		const palette = read("lit/components/gcode-command-palette.ts")
+		expect(app).toContain("gcode-command-palette")
+		expect(app).toContain("paletteOpen")
+		expect(palette).toContain("Search sessions and actions")
+		expect(palette).toContain("this.select(`/session/${session.id}`)")
+		expect(palette).not.toMatch(/from [\"']react/)
+	})
+
 	test("automations mirrors the React inbox split instead of a flat page", () => {
 		const automation = read("lit/components/gcode-automations.ts")
 		const styles = read("lit/components/gcode-automations.scss")

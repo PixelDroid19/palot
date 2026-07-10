@@ -21,6 +21,7 @@ import { sessionStore, type LitChatMessage } from "../session-store"
 import type { ChatMessageView } from "./gcode-chat-panel"
 import "./gcode-automations"
 import "./gcode-chat-panel"
+import "./gcode-command-palette"
 import "./gcode-home"
 import "./gcode-onboarding"
 import "./gcode-settings-panel"
@@ -66,6 +67,7 @@ export class GcodeApp extends LitElement {
 	@state() private terminalOpen = false
 	@state() private editingSessionTitle = false
 	@state() private sessionTitleDraft = ""
+	@state() private paletteOpen = false
 
 	private unsubs: Array<() => void> = []
 	private onHash = () => {
@@ -73,6 +75,16 @@ export class GcodeApp extends LitElement {
 		this.onRoute()
 	}
 	private onGlobalKeydown = (event: KeyboardEvent) => {
+		if (
+			(event.metaKey || event.ctrlKey) &&
+			!event.shiftKey &&
+			!event.altKey &&
+			event.key.toLowerCase() === "k"
+		) {
+			event.preventDefault()
+			this.paletteOpen = !this.paletteOpen
+			return
+		}
 		const route = this.route
 		if (
 			(!(event.metaKey || event.ctrlKey) || event.shiftKey || event.altKey) ||
@@ -499,6 +511,13 @@ export class GcodeApp extends LitElement {
 								</div>
 							`
 				}
+				<gcode-command-palette
+					?open=${this.paletteOpen}
+					.sessions=${sessionStore.list()}
+					@gcode-palette-close=${() => {
+						this.paletteOpen = false
+					}}
+				></gcode-command-palette>
 			</div>
 		`
 	}
