@@ -11,6 +11,7 @@ import type {
 } from "../chat-runtime"
 import { LocaleController } from "../locale-controller"
 import "./gcode-composer"
+import "./gcode-markdown"
 import { styles } from "./gcode-chat-panel.css.js"
 
 export interface ChatMessageView {
@@ -84,7 +85,11 @@ export class GcodeChatPanel extends LitElement {
 															: "system"
 												}
 											</div>
-											<div class="msg-body">${m.text}</div>
+											<div class="msg-body">
+												${m.role === "assistant"
+													? html`<gcode-markdown source=${m.text}></gcode-markdown>`
+													: m.text}
+											</div>
 										</div>
 									`,
 								)}

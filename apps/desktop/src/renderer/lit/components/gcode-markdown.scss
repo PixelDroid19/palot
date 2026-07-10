@@ -1,0 +1,78 @@
+@use "../styles/tokens";
+
+:host {
+	display: block;
+	color: var(--gcode-fg);
+	font: 14px/1.55 var(--gcode-font);
+}
+
+:host ::slotted(*) {
+	margin: 0;
+}
+
+p,
+ul,
+ol,
+blockquote,
+pre {
+	margin: 0 0 12px;
+}
+
+p:last-child,
+ul:last-child,
+ol:last-child,
+blockquote:last-child,
+pre:last-child {
+	margin-bottom: 0;
+}
+
+h1,
+h2,
+h3 {
+	margin: 18px 0 8px;
+	font-weight: 650;
+	line-height: 1.25;
+}
+
+h1 { font-size: 20px; }
+h2 { font-size: 17px; }
+h3 { font-size: 15px; }
+
+ul,
+ol {
+	padding-left: 22px;
+}
+
+blockquote {
+	padding-left: 12px;
+	border-left: 2px solid var(--gcode-border-strong);
+	color: var(--gcode-fg-muted);
+}
+
+code {
+	padding: 1px 4px;
+	border-radius: 4px;
+	background: var(--gcode-bg-muted);
+	font: 12px var(--gcode-font-mono);
+}
+
+pre {
+	overflow: auto;
+	padding: 12px;
+	border: 1px solid var(--gcode-border);
+	border-radius: var(--gcode-radius-sm);
+	background: #111;
+}
+
+pre code {
+	padding: 0;
+	background: transparent;
+	font-size: 12px;
+}
+
+a {
+	color: #6fcbf3;
+	text-decoration: none;
+}
+
+a:hover { text-decoration: underline; }

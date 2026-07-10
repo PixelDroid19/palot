@@ -37,7 +37,7 @@ const PARITY_CHAT_MESSAGES: ChatMessageView[] = [
 	{
 		id: "parity-assistant",
 		role: "assistant",
-		text: "I found the layout boundary. I will keep the session UI stable while moving the visual shell to Lit.",
+		text: "## Visual parity\n\nI found the layout boundary. The Lit chat now keeps the same calm reading rhythm.\n\n- Shared app frame\n- Native tool and terminal surfaces\n\n```ts\nconst renderer = \"lit\"\n```",
 	},
 ]
 
