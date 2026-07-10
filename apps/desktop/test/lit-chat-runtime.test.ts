@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test } from "bun:test"
 import {
 	respondLitPermission,
 	runLitAgentTurn,
+	switchLitRuntime,
 } from "../src/renderer/lit/chat-runtime"
 import { sessionStore } from "../src/renderer/lit/session-store"
 
@@ -185,5 +186,42 @@ describe("runLitAgentTurn (public)", () => {
 		})
 		await expect(runLitAgentTurn("oc1", "hi")).resolves.toBe("from opencode acp")
 		expect(calls).toEqual(["open:opencode", "prompt"])
+	})
+
+	test("switches process runtimes with a persisted transcript handoff", async () => {
+		const closed: string[] = []
+		// @ts-expect-error test window
+		globalThis.window = {
+			gcode: {
+				agentSession: {
+					close: async (sessionId: string) => {
+						closed.push(sessionId)
+					},
+					open: async () => ({ threadId: "new-thread" }),
+					prompt: async () => ({ message: "continued" }),
+					onUpdate: () => () => {},
+					respondPermission: async () => true,
+				},
+			},
+		}
+		sessionStore.upsertAndPersist({
+			id: "switch-1",
+			title: "Switch",
+			runtimeId: "codex",
+			directory: "/repo",
+		})
+		sessionStore.appendMessage("switch-1", { id: "u1", role: "user", text: "Keep this context" })
+		await switchLitRuntime("switch-1", "claude")
+		expect(closed).toEqual(["switch-1"])
+		expect(sessionStore.getMeta("switch-1")).toMatchObject({
+			runtimeId: "claude",
+			handoff: true,
+			threadId: null,
+		})
+		await runLitAgentTurn("switch-1", "continue")
+		expect(sessionStore.getMeta("switch-1")).toMatchObject({
+			threadId: "new-thread",
+			handoff: false,
+		})
 	})
 })

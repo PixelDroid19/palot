@@ -112,6 +112,7 @@ describe("Lit app-frame parity contract", () => {
 		expect(app).toContain("gcode-session-controls")
 		expect(controls).toContain("describeRuntimes")
 		expect(controls).toContain("selectedModel?.efforts")
+		expect(controls).toContain("switchLitRuntime")
 		expect(controls).toContain("updateMeta")
 		expect(sessions).toContain("updateMeta(")
 	})

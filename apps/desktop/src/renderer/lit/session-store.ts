@@ -40,6 +40,7 @@ interface PersistedPayload {
 		model?: string
 		effort?: string
 		threadId?: string | null
+		handoff?: boolean
 	}
 	messages?: Array<{
 		id?: string

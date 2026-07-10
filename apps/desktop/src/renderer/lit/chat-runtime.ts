@@ -43,6 +43,7 @@ export interface TurnHandlers {
 export type LitPermissionDecision = "allow" | "allow-session" | "allow-always" | "deny"
 
 interface AgentSessionBridge {
+	close: (sessionId: string) => Promise<void>
 	open: (
 		sessionId: string,
 		runtimeId: string,
@@ -51,6 +52,7 @@ interface AgentSessionBridge {
 			sandbox?: string
 			model?: string
 			reasoningEffort?: string
+			resumeId?: string
 		},
 	) => Promise<{ threadId: string | null }>
 	prompt: (
@@ -68,6 +70,43 @@ interface AgentSessionBridge {
 		requestId: string,
 		answers: Record<string, string>,
 	) => Promise<boolean>
+}
+
+const HANDOFF_MAX_CHARS = 12_000
+
+/** Build bounded transcript context owned by the Lit session store. */
+export function buildLitConversationHandoff(sessionId: string): string {
+	const turns = sessionStore
+		.getMessages(sessionId)
+		.map((message) => `${message.role === "user" ? "User" : "Assistant"}: ${message.text.trim()}`)
+		.filter((turn) => turn.length > 0)
+	let transcript = ""
+	for (let index = turns.length - 1; index >= 0; index--) {
+		const candidate = `${turns[index]}\n\n${transcript}`
+		if (candidate.length > HANDOFF_MAX_CHARS) break
+		transcript = candidate
+	}
+	return transcript.trim()
+}
+
+/**
+ * Move a Lit session between process runtimes while retaining the visible
+ * transcript and staging it for exactly one continuation turn.
+ */
+export async function switchLitRuntime(sessionId: string, runtimeId: string): Promise<void> {
+	const meta = sessionStore.getMeta(sessionId)
+	if (!meta || meta.runtimeId === runtimeId) return
+	const bridge = getBridge()
+	if (!bridge?.close) throw new Error("agentSession bridge is not available")
+	const hasHistory = sessionStore.getMessages(sessionId).length > 0
+	await bridge.close(sessionId)
+	sessionStore.updateMeta(sessionId, {
+		runtimeId,
+		model: undefined,
+		effort: undefined,
+		threadId: null,
+		handoff: hasHistory,
+	})
 }
 
 function getBridge(): AgentSessionBridge | undefined {
@@ -205,14 +244,29 @@ export async function runLitAgentTurn(
 	})
 
 	try {
-		await agent.open(sessionId, runtimeId, {
+		const opened = await agent.open(sessionId, runtimeId, {
 			cwd: cwd || ".",
 			sandbox: meta?.sandbox || "workspace-write",
 			model: meta?.model,
 			reasoningEffort: meta?.effort,
+			resumeId: meta?.threadId || undefined,
 		})
+		if (opened.threadId && opened.threadId !== meta?.threadId) {
+			sessionStore.updateMeta(sessionId, { threadId: opened.threadId })
+		}
+		let promptText = text
+		if (meta?.handoff) {
+			const history = buildLitConversationHandoff(sessionId)
+			if (history) {
+				promptText =
+					"You are taking over an ongoing conversation from another coding agent. Conversation so far:\n\n" +
+					`<conversation-history>\n${history}\n</conversation-history>\n\n` +
+					`Continue seamlessly. The user's next message follows.\n\n${text}`
+			}
+			sessionStore.updateMeta(sessionId, { handoff: false })
+		}
 		const result = await agent.prompt(sessionId, {
-			text,
+			text: promptText,
 			model: meta?.model,
 			sandbox: meta?.sandbox || "workspace-write",
 		})

@@ -2,6 +2,7 @@
 import { html, LitElement } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
 import type { SessionRuntimeDescriptor } from "../../../preload/api"
+import { switchLitRuntime } from "../chat-runtime"
 import { sessionStore } from "../session-store"
 import { styles } from "./gcode-session-controls.css.js"
 
@@ -34,6 +35,12 @@ export class GcodeSessionControls extends LitElement {
 		this.requestUpdate()
 	}
 
+	private async switchRuntime(runtimeId: string): Promise<void> {
+		if (!this.sessionId || runtimeId === this.runtimeId) return
+		await switchLitRuntime(this.sessionId, runtimeId)
+		this.runtimeId = runtimeId
+	}
+
 	render() {
 		const runtime = this.runtimes.find((item) => item.id === this.runtimeId)
 		if (!runtime?.installed) return null
@@ -42,6 +49,17 @@ export class GcodeSessionControls extends LitElement {
 		const efforts = selectedModel?.efforts || []
 		return html`
 			<div class="controls" aria-label="Session configuration">
+				<select
+					aria-label="Session runtime"
+					.value=${this.runtimeId}
+					@change=${(event: Event) => {
+						void this.switchRuntime((event.target as HTMLSelectElement).value)
+					}}
+				>
+					${this.runtimes
+						.filter((item) => item.installed)
+						.map((item) => html`<option value=${item.id}>${item.displayName}</option>`)}
+				</select>
 				${
 					runtime.models.length > 0
 						? html`<select
