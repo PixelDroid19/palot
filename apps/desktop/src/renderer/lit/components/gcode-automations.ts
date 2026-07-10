@@ -206,52 +206,87 @@ export class GcodeAutomations extends LitElement {
 		`
 	}
 
-	render() {
+	private renderEmptyDetail(): ReturnType<typeof html> {
+		const hasAutomations = this.items.length > 0
 		return html`
-			<div class="header">
-				<h1>${this.locale.t("litAutomations.title")}</h1>
-				<div class="tabs">
-					<button
-						type="button"
-						data-active=${String(this.tab === "list")}
-						@click=${() => {
-							this.tab = "list"
-						}}
-					>
-						${this.locale.t("litAutomations.tabList")}
-					</button>
-					<button
-						type="button"
-						data-active=${String(this.tab === "create")}
-						@click=${() => {
-							this.tab = "create"
-						}}
-					>
-						${this.locale.t("litAutomations.tabCreate")}
-					</button>
-					<button
-						type="button"
-						data-active=${String(this.tab === "inbox")}
-						@click=${() => {
-							this.tab = "inbox"
-							void this.reload()
-						}}
-					>
-						${this.locale.t("litAutomations.tabInbox")}
-					</button>
-					<button type="button" @click=${() => this.reload()}>
-						${this.locale.t("litAutomations.refresh")}
-					</button>
+			<div class="detail-empty">
+				<div class="empty-mark" aria-hidden="true">⚡</div>
+				<div>
+					<h2>${hasAutomations ? "No unread automations" : this.locale.t("litAutomations.title")}</h2>
+					<p>
+						${
+							hasAutomations
+								? "Select a run from the inbox to inspect its result."
+								: "Set up recurring AI tasks that run on a schedule."
+						}
+					</p>
+					${
+						!hasAutomations
+							? html`
+								<button type="button" class="primary" @click=${() => (this.tab = "create")}>
+									Create automation
+								</button>
+							`
+							: null
+					}
 				</div>
 			</div>
-			${this.error ? html`<div class="error">${this.error}</div>` : null}
-			${
-				this.tab === "create"
-					? this.renderCreate()
-					: this.tab === "inbox"
-						? this.renderInbox()
-						: this.renderList()
-			}
+		`
+	}
+
+	render() {
+		return html`
+			<div class="automation-shell">
+				<aside class="inbox-panel">
+					<div class="toolbar">
+						<div>
+							<h1>${this.locale.t("litAutomations.title")}</h1>
+							<p>Scheduled work and unattended results</p>
+						</div>
+						<button
+							type="button"
+							class="new-automation"
+							title=${this.locale.t("litAutomations.tabCreate")}
+							@click=${() => {
+								this.tab = "create"
+							}}
+						>
+							+
+						</button>
+					</div>
+					<div class="tabs">
+						<button
+							type="button"
+							data-active=${String(this.tab === "list")}
+							@click=${() => {
+								this.tab = "list"
+							}}
+						>
+							${this.locale.t("litAutomations.tabList")}
+						</button>
+						<button
+							type="button"
+							data-active=${String(this.tab === "inbox")}
+							@click=${() => {
+								this.tab = "inbox"
+								void this.reload()
+							}}
+						>
+							${this.locale.t("litAutomations.tabInbox")}
+						</button>
+						<button type="button" title=${this.locale.t("litAutomations.refresh")} @click=${() => this.reload()}>
+							↻
+						</button>
+					</div>
+					<div class="inbox-content">
+						${this.error ? html`<div class="error">${this.error}</div>` : null}
+						${this.tab === "inbox" ? this.renderInbox() : this.renderList()}
+					</div>
+				</aside>
+				<section class="detail-panel">
+					${this.tab === "create" ? this.renderCreate() : this.renderEmptyDetail()}
+				</section>
+			</div>
 		`
 	}
 }

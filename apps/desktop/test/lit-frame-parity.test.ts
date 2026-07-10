@@ -67,4 +67,14 @@ describe("Lit app-frame parity contract", () => {
 		expect(chat).not.toContain('class="topbar"')
 		expect(chatStyles).toContain("max-width: 896px")
 	})
+
+	test("automations mirrors the React inbox split instead of a flat page", () => {
+		const automation = read("lit/components/gcode-automations.ts")
+		const styles = read("lit/components/gcode-automations.scss")
+		expect(automation).toContain('class="automation-shell"')
+		expect(automation).toContain('class="inbox-panel"')
+		expect(automation).toContain('class="detail-panel"')
+		expect(styles).toContain("width: 35%")
+		expect(styles).toContain(".detail-empty")
+	})
 })
