@@ -38,6 +38,7 @@ export class GcodeApp extends LitElement {
 	@state() private busy = false
 	@state() private permission: LitPermissionRequest | null = null
 	@state() private question: LitQuestionRequest | null = null
+	@state() private sidebarOpen = true
 
 	private unsubs: Array<() => void> = []
 	private onHash = () => {
@@ -57,7 +58,13 @@ export class GcodeApp extends LitElement {
 			gcodeBus.subscribe(BusTopics.sessionListChanged, () => this.requestUpdate()),
 		)
 
-		if (!readOnboardingState().completed && this.route.name !== "onboarding") {
+		const bypassOnboardingForParityPreview =
+			new URLSearchParams(location.search).get("onboarding") === "complete"
+		if (
+			!bypassOnboardingForParityPreview &&
+			!readOnboardingState().completed &&
+			this.route.name !== "onboarding"
+		) {
 			navigate("/onboarding")
 		} else if (!location.hash || location.hash === "#") {
 			navigate("/")
@@ -246,6 +253,10 @@ export class GcodeApp extends LitElement {
 		navigate("/")
 	}
 
+	private toggleSidebar(): void {
+		this.sidebarOpen = !this.sidebarOpen
+	}
+
 	private renderMain() {
 		const route = this.route
 		switch (route.name) {
@@ -288,22 +299,64 @@ export class GcodeApp extends LitElement {
 	render() {
 		const hideChrome = this.route.name === "onboarding"
 		return html`
-			${
-				hideChrome
-					? null
-					: html`
-							<gcode-sidebar
-								.activeId=${this.activeSessionId()}
-								@gcode-new-session=${() => this.onNewSession()}
-								@gcode-open-settings=${() => navigate("/settings/general")}
-								@gcode-open-automations=${() => navigate("/automations")}
-								@gcode-session-select=${(e: CustomEvent<{ id: string }>) => {
-									navigate(`/session/${e.detail.id}`)
-								}}
-							></gcode-sidebar>
-						`
-			}
-			<div class="main">${this.renderMain()}</div>
+			<div class="frame" data-sidebar-open=${String(this.sidebarOpen)}>
+				${
+					hideChrome
+						? null
+						: html`
+								<gcode-sidebar
+									.activeId=${this.activeSessionId()}
+									data-open=${String(this.sidebarOpen)}
+									@gcode-new-session=${() => this.onNewSession()}
+									@gcode-open-settings=${() => navigate("/settings/general")}
+									@gcode-open-automations=${() => navigate("/automations")}
+									@gcode-session-select=${(event: CustomEvent<{ id: string }>) => {
+										navigate(`/session/${event.detail.id}`)
+									}}
+								></gcode-sidebar>
+							`
+				}
+				<main class="main">
+					${
+						hideChrome
+							? null
+							: html`
+									<header class="appbar">
+										<gcode-wordmark></gcode-wordmark>
+									</header>
+								`
+					}
+					<div class="content">${this.renderMain()}</div>
+				</main>
+				${
+					hideChrome
+						? null
+						: html`
+								<div class="window-controls" aria-label="Window controls">
+									<button
+										type="button"
+										class="window-control"
+										title="Toggle sidebar"
+										@click=${() => this.toggleSidebar()}
+									>
+										<svg viewBox="0 0 16 16" aria-hidden="true">
+											<path d="M2.5 3.5h11v9h-11zM6 3.5v9" />
+										</svg>
+									</button>
+									<button
+										type="button"
+										class="window-control"
+										title=${this.locale.t("litShell.newSession")}
+										@click=${() => this.onNewSession()}
+									>
+										<svg viewBox="0 0 16 16" aria-hidden="true">
+											<path d="M8 3v10M3 8h10" />
+										</svg>
+									</button>
+								</div>
+							`
+				}
+			</div>
 		`
 	}
 }

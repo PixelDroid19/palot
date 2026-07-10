@@ -3,24 +3,28 @@
 
 :host,
 .gcode-tokens {
-	--gcode-bg: #0c0d10;
-	--gcode-bg-elevated: #14161b;
-	--gcode-bg-muted: #1a1d24;
-	--gcode-border: rgba(255, 255, 255, 0.08);
-	--gcode-border-strong: rgba(255, 255, 255, 0.14);
-	--gcode-fg: #eceef2;
-	--gcode-fg-muted: #9aa3b2;
-	--gcode-fg-subtle: #6b7380;
-	--gcode-accent: #05bdf5;
-	--gcode-accent-soft: rgba(5, 189, 245, 0.14);
-	--gcode-danger: #f07178;
-	--gcode-success: #7fd99a;
-	--gcode-radius: 10px;
-	--gcode-radius-sm: 6px;
+	// Values sampled from the React product frame. Lit must consume these
+	// rather than maintaining a competing visual system.
+	--gcode-bg: #181818;
+	--gcode-bg-elevated: #212121;
+	--gcode-bg-muted: #282828;
+	--gcode-sidebar: #0d0d0d;
+	--gcode-border: #2e2e2e;
+	--gcode-border-strong: #3d3d3d;
+	--gcode-fg: #ffffff;
+	--gcode-fg-muted: #afafaf;
+	--gcode-fg-subtle: #777777;
+	--gcode-accent: #ffffff;
+	--gcode-accent-foreground: #0d0d0d;
+	--gcode-accent-soft: #001a2b;
+	--gcode-danger: #ff6b6b;
+	--gcode-success: #74d99f;
+	--gcode-radius: 12.5px;
+	--gcode-radius-sm: 8px;
 	--gcode-font: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
 	--gcode-font-mono: "IBM Plex Mono", ui-monospace, Menlo, Monaco, monospace;
-	--gcode-sidebar-width: 260px;
-	--gcode-titlebar-height: 40px;
+	--gcode-sidebar-width: 280px;
+	--gcode-titlebar-height: 46px;
 	--gcode-space-1: 4px;
 	--gcode-space-2: 8px;
 	--gcode-space-3: 12px;

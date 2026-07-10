@@ -1,20 +1,122 @@
 @use "../styles/tokens";
 
 :host {
-	display: flex;
+	display: block;
 	width: 100%;
 	height: 100%;
 	min-height: 100vh;
 	background: var(--gcode-bg);
 	color: var(--gcode-fg);
 	font-family: var(--gcode-font);
+}
+
+.frame {
+	position: relative;
+	display: flex;
+	width: 100%;
+	height: 100%;
+	min-height: 100vh;
 	overflow: hidden;
+	background: var(--gcode-bg);
+}
+
+gcode-sidebar {
+	flex: 0 0 var(--gcode-sidebar-width);
+	width: var(--gcode-sidebar-width);
+	transition: margin-left 200ms ease, opacity 200ms ease;
+}
+
+.frame[data-sidebar-open="false"] gcode-sidebar {
+	margin-left: calc(var(--gcode-sidebar-width) * -1);
 }
 
 .main {
-	flex: 1;
-	min-width: 0;
 	display: flex;
-	flex-direction: column;
+	min-width: 0;
 	min-height: 0;
+	flex: 1 1 auto;
+	flex-direction: column;
+	background: var(--gcode-bg);
+}
+
+.appbar {
+	display: flex;
+	height: var(--gcode-titlebar-height);
+	flex: 0 0 var(--gcode-titlebar-height);
+	align-items: center;
+	padding: 0 12px 0 16px;
+	border-bottom: 1px solid var(--gcode-border);
+	-webkit-app-region: drag;
+}
+
+.appbar gcode-wordmark {
+	height: 11px;
+	width: auto;
+	color: color-mix(in srgb, var(--gcode-fg) 70%, transparent);
+}
+
+.content {
+	position: relative;
+	display: flex;
+	min-width: 0;
+	min-height: 0;
+	flex: 1 1 auto;
+	overflow: hidden;
+}
+
+.content > * {
+	min-width: 0;
+	min-height: 0;
+	flex: 1 1 auto;
+}
+
+.window-controls {
+	position: absolute;
+	z-index: 20;
+	top: 8px;
+	left: 8px;
+	display: flex;
+	gap: 2px;
+	-webkit-app-region: no-drag;
+}
+
+.window-control {
+	display: grid;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 0;
+	border-radius: 6px;
+	place-items: center;
+	background: transparent;
+	color: var(--gcode-fg-muted);
+}
+
+.window-control:hover {
+	background: var(--gcode-bg-muted);
+	color: var(--gcode-fg);
+}
+
+.window-control svg {
+	width: 14px;
+	height: 14px;
+	fill: none;
+	stroke: currentcolor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.25;
+}
+
+@media (max-width: 600px) {
+	gcode-sidebar {
+		position: absolute;
+		z-index: 10;
+		top: 0;
+		bottom: 0;
+		box-shadow: 16px 0 40px rgb(0 0 0 / 35%);
+	}
+
+	.appbar {
+		padding-left: 80px;
+	}
 }

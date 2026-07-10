@@ -1,19 +1,24 @@
 /**
- * Renderer entry — full product via React app shell.
+ * Renderer entry with a non-default Lit parity preview.
  *
- * Lit web components are registered for progressive migration (SCSS→css.js,
- * event bus, i18n controller). Unmigrated routes stay on React until their
- * visual and behavioral parity is proven. Lit modules themselves do not
- * import React.
+ * `?shell=lit` mounts the Lit candidate for side-by-side visual QA. The
+ * default remains the React reference until the parity gate is complete.
  */
-import { StrictMode } from "react"
-import { createRoot } from "react-dom/client"
-import { App } from "./app"
 import "./index.css"
-import "./lit/register"
 
-createRoot(document.getElementById("root")!).render(
-	<StrictMode>
-		<App />
-	</StrictMode>,
-)
+const useLitPreview = new URLSearchParams(location.search).get("shell") === "lit"
+
+if (useLitPreview) {
+	await import("./lit/register")
+	await import("./lit/main-lit")
+} else {
+	const [{ StrictMode, createElement }, { createRoot }, { App }] = await Promise.all([
+		import("react"),
+		import("react-dom/client"),
+		import("./app"),
+		import("./lit/register"),
+	])
+	createRoot(document.getElementById("root")!).render(
+		createElement(StrictMode, null, createElement(App)),
+	)
+}

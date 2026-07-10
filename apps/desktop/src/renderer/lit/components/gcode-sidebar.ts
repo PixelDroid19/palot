@@ -1,5 +1,6 @@
 /**
- * Session list + nav chrome.
+ * Lit session navigation. Geometry follows the React sidebar frame while
+ * session data remains framework-neutral through sessionStore.
  */
 import { html, LitElement } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
@@ -18,9 +19,7 @@ export class GcodeSidebar extends LitElement {
 	@property({ type: String, attribute: "active-id" })
 	activeId: string | null = null
 
-	@state()
-	private sessions: LitSessionSummary[] = []
-
+	@state() private sessions: LitSessionSummary[] = []
 	private unsubList: (() => void) | null = null
 
 	connectedCallback(): void {
@@ -49,66 +48,47 @@ export class GcodeSidebar extends LitElement {
 
 	render() {
 		return html`
-			<div class="header">
-				<div class="brand">GCode</div>
-				<div class="actions">
-					<button
-						class="icon-btn"
-						type="button"
-						title=${this.t("litShell.newSession")}
-						@click=${() => {
-							emitBubbled(this, "gcode-new-session", {})
-							navigate("/")
-						}}
-					>
-						+
-					</button>
-				</div>
-			</div>
+			<div class="titlebar-spacer" aria-hidden="true"></div>
 			<div class="section-label">${this.t("taskCatalog.activeNow")}</div>
 			<div class="list" role="list">
 				${
 					this.sessions.length === 0
 						? html`<div class="empty">${this.t("litShell.emptySessions")}</div>`
 						: this.sessions.map(
-								(s) => html`
+								(session) => html`
 									<button
 										type="button"
 										class="item"
 										role="listitem"
-										data-active=${String(s.id === this.activeId)}
-										@click=${() => this.onSelect(s.id)}
+										data-active=${String(session.id === this.activeId)}
+										@click=${() => this.onSelect(session.id)}
 									>
-										<span class="title">${s.title}</span>
-										<span class="meta">${s.runtimeId}</span>
+										<span class="title">${session.title}</span>
+										<span class="meta">${session.runtimeId}</span>
 									</button>
 								`,
 							)
 				}
 			</div>
 			<div class="footer">
-				<button type="button" @click=${() => this.locale.toggleLocale()}>
-					${this.locale.locale === "en" ? "ES" : "EN"}
-				</button>
-				<button
-					type="button"
-					@click=${() => {
-						emitBubbled(this, "gcode-open-automations", {})
-						navigate("/automations")
-					}}
+				<div class="footer-actions">
+					<a href="#/" @click=${() => emitBubbled(this, "gcode-new-session", {})}>
+						<span aria-hidden="true">＋</span>${this.t("litShell.newSession")}
+					</a>
+					<a
+						href="#/automations"
+						@click=${() => emitBubbled(this, "gcode-open-automations", {})}
+					>
+						<span aria-hidden="true">◌</span>${this.t("litAutomations.title")}
+					</a>
+				</div>
+				<a
+					href="#/settings/general"
+					class="settings"
+					@click=${() => emitBubbled(this, "gcode-open-settings", {})}
 				>
-					${this.t("litAutomations.title")}
-				</button>
-				<button
-					type="button"
-					class="primary"
-					@click=${() => {
-						emitBubbled(this, "gcode-open-settings", {})
-						navigate("/settings/general")
-					}}
-				>
-					${this.t("litShell.settings")}
-				</button>
+					<span aria-hidden="true">⚙</span>${this.t("litShell.settings")}
+				</a>
 			</div>
 		`
 	}

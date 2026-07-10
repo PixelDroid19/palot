@@ -10,7 +10,7 @@ const root = join(import.meta.dir, "..")
 describe("GCode brand identity", () => {
 	test("Lit shell brand text is GCode", () => {
 		const src = readFileSync(
-			join(root, "src/renderer/lit/components/gcode-sidebar.ts"),
+			join(root, "src/renderer/lit/components/gcode-wordmark.ts"),
 			"utf8",
 		)
 		expect(src).toContain("GCode")
@@ -52,11 +52,12 @@ describe("GCode brand identity", () => {
 		expect(yml).not.toContain("com.palot")
 	})
 
-	test("renderer entry is the React product shell with Lit registration", () => {
+	test("renderer defaults to React while exposing a Lit parity preview", () => {
 		const main = readFileSync(join(root, "src/renderer/main.tsx"), "utf8")
 		expect(main).toContain("./app")
 		expect(main).toContain("createRoot")
 		expect(main).toContain("./lit/register")
-		expect(main).not.toContain("./lit/main-lit")
+		expect(main).toContain('get("shell") === "lit"')
+		expect(main).toContain("./lit/main-lit")
 	})
 })

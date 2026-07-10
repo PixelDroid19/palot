@@ -33,14 +33,14 @@ describe("Lit product import graph (no React)", () => {
 		expect(offenders).toEqual([])
 	})
 
-	test("main.tsx boots React and registers Lit progressively", () => {
+	test("main.tsx exposes a non-default Lit parity preview", () => {
 		const main = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/main.tsx"),
 			"utf8",
 		)
-		expect(main).toContain("./app")
-		expect(main).toContain("createRoot")
-		expect(main).toContain("./lit/register")
-		expect(main).not.toContain("./lit/main-lit")
+		expect(main).toContain('get("shell") === "lit"')
+		expect(main).toContain('import("./lit/main-lit")')
+		expect(main).toContain('import("./app")')
+		expect(main).toContain('import("react-dom/client")')
 	})
 })
