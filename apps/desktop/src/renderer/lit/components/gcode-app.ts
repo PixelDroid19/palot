@@ -188,6 +188,14 @@ export class GcodeApp extends LitElement {
 		return new URLSearchParams(location.search).get("fixture") === "chat"
 	}
 
+	private hostPlatform(): string {
+		return (
+			window as unknown as {
+				gcode?: { platform?: string }
+			}
+		).gcode?.platform || "browser"
+	}
+
 	private upsertTool(tool: LitToolEvent): void {
 		const idx = this.tools.findIndex((t) => t.id === tool.id)
 		if (idx >= 0) {
@@ -420,7 +428,11 @@ export class GcodeApp extends LitElement {
 			? activeSession?.directory || sessionStore.getMeta(activeSessionId)?.cwd
 			: ""
 		return html`
-			<div class="frame" data-sidebar-open=${String(this.sidebarOpen)}>
+			<div
+				class="frame"
+				data-sidebar-open=${String(this.sidebarOpen)}
+				data-platform=${this.hostPlatform()}
+			>
 				${
 					showSidebar
 						? html`

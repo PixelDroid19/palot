@@ -163,6 +163,14 @@ gcode-sidebar {
 	-webkit-app-region: no-drag;
 }
 
+.frame[data-platform="darwin"] .window-controls {
+	left: 93px;
+}
+
+.frame[data-platform="darwin"][data-sidebar-open="false"] .appbar {
+	padding-left: 160px;
+}
+
 .window-control {
 	display: grid;
 	width: 28px;
