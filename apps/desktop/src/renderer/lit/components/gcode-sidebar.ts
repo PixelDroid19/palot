@@ -75,6 +75,22 @@ export class GcodeSidebar extends LitElement {
 		`
 	}
 
+	private renderIcon(kind: "plus" | "automation" | "settings") {
+		if (kind === "plus") {
+			return html`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>`
+		}
+		if (kind === "automation") {
+			return html`<svg viewBox="0 0 16 16" aria-hidden="true">
+				<path d="M8 2.5a5.5 5.5 0 1 0 5.5 5.5A5.5 5.5 0 0 0 8 2.5Z" />
+				<path d="M8 5v3l2 1.25" />
+			</svg>`
+		}
+		return html`<svg viewBox="0 0 16 16" aria-hidden="true">
+			<path d="m6.4 2.8.35-.8h2.5l.35.8 1 .42.82-.28 1.77 1.77-.28.82.42 1 .8.35v2.5l-.8.35-.42 1 .28.82-1.77 1.77-.82-.28-1 .42-.35.8h-2.5l-.35-.8-1-.42-.82.28-1.77-1.77.28-.82-.42-1-.8-.35v-2.5l.8-.35.42-1-.28-.82L4.58 2.94l.82.28 1-.42Z" />
+			<circle cx="8" cy="8" r="2.1" />
+		</svg>`
+	}
+
 	render() {
 		const catalog = this.sessions.map((session) => ({
 			id: session.id,
@@ -95,6 +111,18 @@ export class GcodeSidebar extends LitElement {
 		return html`
 			<div class="titlebar-spacer" aria-hidden="true"></div>
 			<div class="list" role="list">
+				<div class="top-actions" aria-label="Primary navigation">
+					<a href="#/" class="nav-item" @click=${() => emitBubbled(this, "gcode-new-session", {})}>
+						${this.renderIcon("plus")}<span>${this.t("litShell.newSession")}</span>
+					</a>
+					<a
+						href="#/automations"
+						class="nav-item"
+						@click=${() => emitBubbled(this, "gcode-open-automations", {})}
+					>
+						${this.renderIcon("automation")}<span>${this.t("litAutomations.title")}</span>
+					</a>
+				</div>
 				${
 					this.sessions.length === 0
 						? html`<div class="empty">${this.t("litShell.emptySessions")}</div>`
@@ -115,23 +143,12 @@ export class GcodeSidebar extends LitElement {
 				}
 			</div>
 			<div class="footer">
-				<div class="footer-actions">
-					<a href="#/" @click=${() => emitBubbled(this, "gcode-new-session", {})}>
-						<span aria-hidden="true">＋</span>${this.t("litShell.newSession")}
-					</a>
-					<a
-						href="#/automations"
-						@click=${() => emitBubbled(this, "gcode-open-automations", {})}
-					>
-						<span aria-hidden="true">◌</span>${this.t("litAutomations.title")}
-					</a>
-				</div>
 				<a
 					href="#/settings/general"
 					class="settings"
 					@click=${() => emitBubbled(this, "gcode-open-settings", {})}
 				>
-					<span aria-hidden="true">⚙</span>${this.t("litShell.settings")}
+					${this.renderIcon("settings")}<span>${this.t("litShell.settings")}</span>
 				</a>
 			</div>
 		`

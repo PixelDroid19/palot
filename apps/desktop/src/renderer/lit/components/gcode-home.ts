@@ -120,6 +120,16 @@ export class GcodeHome extends LitElement {
 		}
 	}
 
+	private renderSuggestionIcon(index: number) {
+		const paths = [
+			html`<path d="m6 4-3 4 3 4M10 4l3 4-3 4M8.5 3 7.5 13" />`,
+			html`<path d="M4 2.75h5l3 3V13.25H4zM9 2.75v3h3M6 8h4M6 10.5h4" />`,
+			html`<path d="M5 3v10M5 5h5a2 2 0 0 1 0 4H5M5 9h4l3 4" />`,
+			html`<path d="M3.5 3.5h6l3 3v6h-9zM9.5 3.5v3h3M5.5 8h5M5.5 10.5h3" />`,
+		]
+		return html`<svg viewBox="0 0 16 16" aria-hidden="true">${paths[index] ?? paths[0]}</svg>`
+	}
+
 	render() {
 		const canLaunch = !!this.runtimeId && !!this.cwd && !this.busy
 		const canCompose = !!this.runtimeId && !!this.cwd
@@ -131,7 +141,7 @@ export class GcodeHome extends LitElement {
 						<div class="hero-heading"><h1>Build what's next</h1></div>
 						<div class="suggestions">
 							${SUGGESTIONS.map(
-								(suggestion) => html`
+									(suggestion, index) => html`
 									<button
 										type="button"
 										class="suggestion"
@@ -140,7 +150,7 @@ export class GcodeHome extends LitElement {
 											this.draft = suggestion
 										}}
 									>
-										<span class="suggestion-mark" aria-hidden="true">⌁</span>
+										<span class="suggestion-mark">${this.renderSuggestionIcon(index)}</span>
 										<p>${suggestion}</p>
 									</button>
 								`,

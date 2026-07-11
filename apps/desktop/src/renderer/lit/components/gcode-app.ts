@@ -63,7 +63,8 @@ export class GcodeApp extends LitElement {
 	@state() private busy = false
 	@state() private permission: LitPermissionRequest | null = null
 	@state() private question: LitQuestionRequest | null = null
-	@state() private sidebarOpen = true
+	@state() private sidebarOpen =
+		typeof window === "undefined" ? true : window.innerWidth > 600
 	@state() private terminalOpen = false
 	@state() private editingSessionTitle = false
 	@state() private sessionTitleDraft = ""
@@ -73,6 +74,19 @@ export class GcodeApp extends LitElement {
 	private onHash = () => {
 		this.route = parseHash()
 		this.onRoute()
+	}
+	private sidebarCollapsedByResize = false
+	private onResize = () => {
+		const narrow = window.innerWidth <= 600
+		if (narrow && this.sidebarOpen) {
+			this.sidebarCollapsedByResize = true
+			this.sidebarOpen = false
+		} else if (!narrow && !this.sidebarOpen && this.sidebarCollapsedByResize) {
+			this.sidebarCollapsedByResize = false
+			this.sidebarOpen = true
+		} else if (!narrow) {
+			this.sidebarCollapsedByResize = false
+		}
 	}
 	private onGlobalKeydown = (event: KeyboardEvent) => {
 		if (
@@ -110,6 +124,7 @@ export class GcodeApp extends LitElement {
 
 		window.addEventListener("hashchange", this.onHash)
 		window.addEventListener("keydown", this.onGlobalKeydown)
+		window.addEventListener("resize", this.onResize)
 		this.unsubs.push(
 			gcodeBus.subscribe(BusTopics.localeChanged, () => this.requestUpdate()),
 			gcodeBus.subscribe(BusTopics.sessionListChanged, () => this.requestUpdate()),
@@ -133,6 +148,7 @@ export class GcodeApp extends LitElement {
 	disconnectedCallback(): void {
 		window.removeEventListener("hashchange", this.onHash)
 		window.removeEventListener("keydown", this.onGlobalKeydown)
+		window.removeEventListener("resize", this.onResize)
 		for (const u of this.unsubs) u()
 		this.unsubs = []
 		super.disconnectedCallback()

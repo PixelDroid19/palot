@@ -94,10 +94,20 @@ h1 {
 }
 
 .suggestion-mark {
-	font-family: var(--gcode-font-mono);
-	font-size: 20px;
-	line-height: 20px;
+	display: inline-flex;
+	width: 20px;
+	height: 20px;
 	color: currentcolor;
+}
+
+.suggestion-mark svg {
+	width: 20px;
+	height: 20px;
+	fill: none;
+	stroke: currentcolor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.5;
 }
 
 .suggestion p {
