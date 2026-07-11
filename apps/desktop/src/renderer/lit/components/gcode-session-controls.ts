@@ -58,7 +58,12 @@ export class GcodeSessionControls extends LitElement {
 				>
 					${this.runtimes
 						.filter((item) => item.installed)
-						.map((item) => html`<option value=${item.id}>${item.displayName}</option>`)}
+						.map(
+							(item) =>
+								html`<option value=${item.id} ?selected=${item.id === this.runtimeId}>
+									${item.displayName}
+								</option>`,
+						)}
 				</select>
 				${
 					runtime.models.length > 0
@@ -68,7 +73,10 @@ export class GcodeSessionControls extends LitElement {
 							@change=${(event: Event) => this.patch({ model: (event.target as HTMLSelectElement).value })}
 						>
 							${runtime.models.map(
-								(model) => html`<option value=${model.slug}>${model.label}</option>`,
+								(model) =>
+									html`<option value=${model.slug} ?selected=${model.slug === selectedModel?.slug}>
+										${model.label}
+									</option>`,
 							)}
 						</select>`
 						: null
@@ -80,7 +88,12 @@ export class GcodeSessionControls extends LitElement {
 							.value=${meta?.effort || selectedModel?.defaultEffort || efforts[0] || ""}
 							@change=${(event: Event) => this.patch({ effort: (event.target as HTMLSelectElement).value })}
 						>
-							${efforts.map((effort) => html`<option value=${effort}>${effort}</option>`)}
+							${efforts.map(
+								(effort) =>
+									html`<option value=${effort} ?selected=${effort === (meta?.effort || selectedModel?.defaultEffort || efforts[0])}>
+										${effort}
+									</option>`,
+							)}
 						</select>`
 						: null
 				}
@@ -91,9 +104,9 @@ export class GcodeSessionControls extends LitElement {
 							.value=${meta?.sandbox || "workspace-write"}
 							@change=${(event: Event) => this.patch({ sandbox: (event.target as HTMLSelectElement).value })}
 						>
-							<option value="read-only">Read only</option>
-							<option value="workspace-write">Workspace write</option>
-							<option value="danger-full-access">Full access</option>
+							<option value="read-only" ?selected=${(meta?.sandbox || "workspace-write") === "read-only"}>Read only</option>
+							<option value="workspace-write" ?selected=${(meta?.sandbox || "workspace-write") === "workspace-write"}>Workspace write</option>
+							<option value="danger-full-access" ?selected=${meta?.sandbox === "danger-full-access"}>Full access</option>
 						</select>`
 						: null
 				}
