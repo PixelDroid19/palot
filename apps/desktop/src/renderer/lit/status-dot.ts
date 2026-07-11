@@ -1,6 +1,6 @@
 /**
  * Public helpers for connection/health status dots (framework-free).
- * Coerces React string props ("true"|"false"|"null") so wire path is safe.
+ * Coerces string wire values ("true"|"false"|"null") so the host path is safe.
  */
 export type HealthState = boolean | null
 
@@ -9,8 +9,8 @@ export type StatusDotKind = "checking" | "ok" | "bad"
 
 /**
  * Normalize health from attribute strings, boolean, or null.
- * React 19 may set custom-element props as strings when createElement
- * is given string values — never treat "false"/"null" as truthy.
+ * Host boundaries may set custom-element props as strings — never treat
+ * "false"/"null" as truthy.
  */
 export function coerceHealthState(value: unknown): HealthState {
 	if (value === true || value === false) return value
@@ -26,7 +26,7 @@ export function coerceHealthState(value: unknown): HealthState {
 }
 
 /**
- * Map health (boolean|null or React string wire) to a stable visual kind.
+ * Map health (boolean|null or string wire) to a stable visual kind.
  * null / "null" = still probing; true / "true" = healthy; false / "false" = offline.
  */
 export function healthToStatusDotKind(health: unknown): StatusDotKind {

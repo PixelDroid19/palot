@@ -1,6 +1,6 @@
 /**
  * Minimal hash router for the Lit product shell.
- * Routes mirror the former React app surface.
+ * Routes preserve the established desktop product surface.
  */
 export type LitRoute =
 	| { name: "home" }
@@ -29,8 +29,7 @@ export function parseHash(hash: string = location.hash): LitRoute {
 	if (parts[0] === "session" && parts[1]) {
 		return { name: "session", sessionId: parts[1] }
 	}
-	// The React tree renders NewChat for /project/$projectSlug and a shared
-	// session view for /project/$projectSlug/session/$sessionId.
+	// Project and session destinations remain stable across the Lit surface.
 	if (parts[0] === "project" && parts[2] === "session" && parts[3]) {
 		return { name: "session", sessionId: parts[3] }
 	}

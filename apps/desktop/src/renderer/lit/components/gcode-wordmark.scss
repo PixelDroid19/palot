@@ -1,11 +1,11 @@
-// Host inherits theme color from React/Tailwind (text-foreground, etc.).
+// Host inherits the Lit theme color from the desktop token surface.
 // Cortex tokens from @gcode/ui globals on :root / .dark.
 
 :host {
 	display: inline-block;
 	line-height: 0;
 	vertical-align: middle;
-	// Tailwind text-* sets color on the host; fall back to Cortex --foreground
+	// Fall back to the Cortex foreground token when no host color is set.
 	color: inherit;
 }
 

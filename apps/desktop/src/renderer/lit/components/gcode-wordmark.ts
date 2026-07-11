@@ -1,6 +1,6 @@
 /**
  * Product wordmark — progressive Lit migration of GCodeWordmark.
- * Inherits color/size from host (React passes Tailwind classes onto the host).
+ * Inherits color and size from the Lit host token surface.
  */
 import { html, LitElement } from "lit"
 import { customElement } from "lit/decorators.js"

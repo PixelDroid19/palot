@@ -1,6 +1,6 @@
 /**
  * Public constants for the GCode wordmark (framework-free).
- * Used by Lit element and unit tests — not React-specific.
+ * Used by the Lit element and unit tests.
  */
 export const WORDMARK_LABEL = "GCode" as const
 

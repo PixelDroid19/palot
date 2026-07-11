@@ -1,6 +1,6 @@
 /**
  * Settings row chrome — progressive Lit of SettingsRow.
- * Control projects into default slot (React children).
+ * Control projects into the default slot.
  */
 import { html, LitElement, nothing } from "lit"
 import { customElement, property } from "lit/decorators.js"

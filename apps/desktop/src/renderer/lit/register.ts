@@ -1,7 +1,5 @@
 /**
- * Progressive Lit registration (side-effect imports).
- * Product boot stays React (`main.tsx` → `App`). Only slices wired from React
- * mount as custom elements — do not boot a parallel Lit product shell here.
+ * Lit registration (side-effect imports) for the desktop product shell.
  */
 import "./components/gcode-wordmark"
 import "./components/gcode-runtime-mark"
@@ -11,7 +9,7 @@ import "./components/gcode-settings-row"
 import "./components/gcode-settings-section"
 import "./components/gcode-cli-approval"
 import "./components/gcode-empty-state"
-// Experimental / unmounted product prototypes (not default UI):
+// Product route components:
 import "./components/gcode-app"
 import "./components/gcode-automations"
 import "./components/gcode-chat-panel"

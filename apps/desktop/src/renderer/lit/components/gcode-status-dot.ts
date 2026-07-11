@@ -1,6 +1,6 @@
 /**
  * Health/connection status dot — progressive Lit leaf used by ServerIndicator.
- * Normalizes React string props ("true"|"false"|"null") via coerceHealthState.
+ * Normalizes string wire values ("true"|"false"|"null") via coerceHealthState.
  */
 import { LitElement } from "lit"
 import { customElement, property } from "lit/decorators.js"
@@ -18,7 +18,7 @@ export class GcodeStatusDotElement extends LitElement {
 	static styles = styles
 
 	/**
-	 * May arrive as boolean|null (typed) or as React string props.
+	 * May arrive as boolean|null (typed) or as string wire values.
 	 * Always coerce before mapping to kind.
 	 */
 	@property({
@@ -41,13 +41,13 @@ export class GcodeStatusDotElement extends LitElement {
 	@property({ type: Boolean, reflect: true })
 	bordered = false
 
-	/** Public: resolved kind after coercing React/string wire values. */
+	/** Public: resolved kind after coercing boolean/string wire values. */
 	resolvedKind(): StatusDotKind {
 		return healthToStatusDotKind(this.health)
 	}
 
 	protected willUpdate(): void {
-		// Normalize any string property set by React createElement
+		// Normalize string values received from a host boundary.
 		const coerced = coerceHealthState(this.health)
 		if (this.health !== coerced) {
 			this.health = coerced

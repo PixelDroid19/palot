@@ -1,5 +1,5 @@
 /**
- * Lit session navigation. Geometry follows the React sidebar frame while
+ * Lit session navigation. Geometry follows the established desktop sidebar frame while
  * session data remains framework-neutral through sessionStore.
  */
 import { html, LitElement } from "lit"

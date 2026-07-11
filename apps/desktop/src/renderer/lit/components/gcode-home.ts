@@ -1,7 +1,7 @@
 /**
  * New-session home.
  *
- * The visual hierarchy mirrors the React reference: a centered prompt
+ * The visual hierarchy follows the established desktop reference: a centered prompt
  * catalogue and a bottom composer. Runtime launch remains ACP-native.
  */
 import { html, LitElement } from "lit"
@@ -49,8 +49,7 @@ export class GcodeHome extends LitElement {
 				}
 			).gcode
 			if (!g?.agentSession?.describeRuntimes) {
-				// Browser-mode parity previews have no preload bridge. This maps to
-				// the same disabled-workspace state as the React reference.
+				// Browser mode has no preload bridge; keep launch controls disabled.
 				this.runtimes = []
 				return
 			}

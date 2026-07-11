@@ -1,6 +1,6 @@
 /**
  * Pure tool category mapping (framework-free).
- * Used by Lit tool chrome and React callers.
+ * Used by the Lit tool chrome.
  */
 export type ToolCategory =
 	| "explore"

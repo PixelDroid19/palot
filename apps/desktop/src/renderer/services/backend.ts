@@ -139,7 +139,7 @@ export async function updateModelRecent(model: {
 /**
  * Checks if the backend is available.
  * In Electron, always returns true (main process is always there).
- * In browser, pings the GCode HTTP server.
+ * In standalone browser mode, it fails closed because there is no renderer server.
  */
 export async function checkBackendHealth(): Promise<boolean> {
 	if (isElectron) {

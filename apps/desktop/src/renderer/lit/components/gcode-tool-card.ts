@@ -1,6 +1,6 @@
 /**
  * Progressive Lit tool-call chrome (header + collapsible body slot).
- * Icon / trailing / body content come from light-DOM slots (React children).
+ * Icon / trailing / body content come from light-DOM slots.
  */
 import { html, LitElement, nothing } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
