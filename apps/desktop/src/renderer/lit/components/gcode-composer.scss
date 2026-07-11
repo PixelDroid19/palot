@@ -2,8 +2,7 @@
 
 :host {
 	display: block;
-	padding: 12px 32px 20px;
-	border-top: 1px solid var(--gcode-border);
+	padding: 8px 32px 16px;
 	background: var(--gcode-bg);
 	font-family: var(--gcode-font);
 	color: var(--gcode-fg);
@@ -17,16 +16,17 @@
 	margin: 0 auto;
 	border: 1px solid var(--gcode-border);
 	border-radius: var(--gcode-radius);
-	background: color-mix(in srgb, var(--gcode-bg-elevated) 65%, transparent);
-	padding: var(--gcode-space-3);
+	background: color-mix(in srgb, var(--gcode-bg-elevated) 35%, transparent);
+	padding: 0;
 }
 
 textarea {
 	box-sizing: border-box;
 	width: 100%;
-	min-height: 72px;
+	min-height: 64px;
 	max-height: 200px;
 	resize: vertical;
+	padding: 10px 12px;
 	border: none;
 	outline: none;
 	background: transparent;

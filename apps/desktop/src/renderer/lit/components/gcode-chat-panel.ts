@@ -85,11 +85,9 @@ export class GcodeChatPanel extends LitElement {
 															: "system"
 												}
 											</div>
-											<div class="msg-body">
-												${m.role === "assistant"
-													? html`<gcode-markdown source=${m.text}></gcode-markdown>`
-													: m.text}
-											</div>
+										<div class="msg-body">${m.role === "assistant"
+											? html`<gcode-markdown source=${m.text}></gcode-markdown>`
+											: m.text}</div>
 										</div>
 									`,
 								)}
