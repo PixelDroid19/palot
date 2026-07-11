@@ -13,8 +13,7 @@
 		"noUnusedParameters": true,
 		"noEmit": true,
 		"paths": {
-			"@/*": ["./src/renderer/*"],
-			"@gcode/ui/*": ["../../packages/ui/src/*"]
+			"@/*": ["./src/renderer/*"]
 		},
 		"experimentalDecorators": true,
 		"useDefineForClassFields": false
