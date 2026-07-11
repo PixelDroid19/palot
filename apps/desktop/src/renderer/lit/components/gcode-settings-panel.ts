@@ -12,7 +12,6 @@ import type {
 	WebhookSettings,
 } from "../../../preload/api"
 import { AVAILABLE_LOCALES, type Locale } from "../../i18n"
-import { listRuntimeProjects } from "../../services/project-runtime-sdk"
 import {
 	addPlugin,
 	listPlugins,
@@ -25,11 +24,6 @@ import {
 	formatTokens,
 	type UsageStats,
 } from "../../services/usage-stats"
-import {
-	listWorktrees,
-	removeWorktree,
-	resetWorktree,
-} from "../../services/worktree-service"
 import { ensureRuntimeClient } from "../ensure-runtime-client"
 import { LocaleController } from "../locale-controller"
 import { markOnboardingIncomplete, readOnboardingState } from "../onboarding-store"
@@ -167,32 +161,8 @@ export class GcodeSettingsPanel extends LitElement {
 	private async loadWorktrees(): Promise<void> {
 		this.loading = "worktree"
 		this.error = ""
-		try {
-			const client = await ensureRuntimeClient()
-			const projects = await listRuntimeProjects(client)
-			const entries: WorktreeEntry[] = []
-			const results = await Promise.allSettled(
-				projects.map(async (project) => {
-					const dirs = await listWorktrees(project.worktree)
-					return dirs.map(
-						(dir): WorktreeEntry => ({
-							directory: dir,
-							projectDir: project.worktree,
-							projectName: project.worktree.split("/").filter(Boolean).pop() || project.worktree,
-						}),
-					)
-				}),
-			)
-			for (const r of results) {
-				if (r.status === "fulfilled") entries.push(...r.value)
-			}
-			this.worktrees = entries
-		} catch (err) {
-			this.worktrees = []
-			this.error = err instanceof Error ? err.message : String(err)
-		} finally {
-			this.loading = ""
-		}
+		this.worktrees = []
+		this.loading = ""
 	}
 
 	private async loadUsage(): Promise<void> {
@@ -668,12 +638,7 @@ export class GcodeSettingsPanel extends LitElement {
 													type="button"
 													class="btn"
 													@click=${async () => {
-														try {
-															await resetWorktree(wt.projectDir, wt.directory)
-															await this.loadWorktrees()
-														} catch (err) {
-															this.error = err instanceof Error ? err.message : String(err)
-														}
+														await this.loadWorktrees()
 													}}
 												>
 													${this.locale.t("litSettings.worktreeReset")}
@@ -682,12 +647,7 @@ export class GcodeSettingsPanel extends LitElement {
 													type="button"
 													class="btn danger"
 													@click=${async () => {
-														try {
-															await removeWorktree(wt.projectDir, wt.directory)
-															await this.loadWorktrees()
-														} catch (err) {
-															this.error = err instanceof Error ? err.message : String(err)
-														}
+														await this.loadWorktrees()
 													}}
 												>
 													${this.locale.t("litSettings.worktreeRemove")}

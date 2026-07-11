@@ -22,6 +22,7 @@ describe("OpenCode ACP boundary", () => {
 			"main/model-state.ts",
 			"preload/index.ts",
 			"renderer/services/backend.ts",
+			"renderer/lit/components/gcode-settings-panel.ts",
 		]
 			.map(read)
 			.join("\n")
@@ -30,5 +31,7 @@ describe("OpenCode ACP boundary", () => {
 		expect(sourceFiles).not.toContain("127.0.0.1:4101")
 		expect(sourceFiles).not.toContain('ipcMain.handle("runtime:ensure"')
 		expect(sourceFiles).not.toContain('ipcRenderer.invoke("runtime:ensure"')
+		expect(sourceFiles).not.toContain("createOpencodeClient")
+		expect(sourceFiles).not.toContain("project-runtime-sdk")
 	})
 })
