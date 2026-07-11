@@ -29,7 +29,6 @@ export class GcodeSidebar extends LitElement {
 
 	connectedCallback(): void {
 		super.connectedCallback()
-		sessionStore.refresh()
 		this.sessions = sessionStore.list()
 		this.unsubList = gcodeBus.subscribe(BusTopics.sessionListChanged, (list) => {
 			this.sessions = list as LitSessionSummary[]
