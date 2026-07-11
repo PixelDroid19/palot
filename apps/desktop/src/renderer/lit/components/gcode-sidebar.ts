@@ -10,6 +10,7 @@ import {
 	selectActiveSessions,
 	selectRecentSessions,
 } from "../../lib/session-catalog"
+import { runtimeLabel } from "../../lib/session-runtimes"
 import { BusTopics, emitBubbled, gcodeBus } from "../bus"
 import { LocaleController } from "../locale-controller"
 import { navigate } from "../router"
@@ -60,8 +61,15 @@ export class GcodeSidebar extends LitElement {
 				data-active=${String(session.id === this.activeId)}
 				@click=${() => this.onSelect(session.id)}
 			>
-				<span class="title">${session.title}</span>
-				<span class="meta">${compact ? session.runtimeId : session.directory || session.runtimeId}</span>
+				<gcode-runtime-mark
+					runtime-id=${session.runtimeId}
+					status=${session.status || "idle"}
+					size=${compact ? 12 : 14}
+				></gcode-runtime-mark>
+				<span class="session-copy">
+					<span class="title">${session.title}</span>
+					<span class="meta">${runtimeLabel(session.runtimeId)}</span>
+				</span>
 			</button>
 		`
 	}

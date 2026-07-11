@@ -79,8 +79,8 @@
 .item {
 	display: flex;
 	width: 100%;
-	flex-direction: column;
-	gap: 2px;
+	align-items: center;
+	gap: 8px;
 	margin-bottom: 2px;
 	padding: 8px 10px;
 	border: 0;
@@ -97,6 +97,14 @@
 	padding-bottom: 6px;
 }
 
+.session-copy {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	flex-direction: column;
+	gap: 1px;
+}
+
 .item:hover {
 	background: var(--gcode-bg-muted);
 }
@@ -109,6 +117,7 @@
 	overflow: hidden;
 	font-size: 13px;
 	font-weight: 500;
+	line-height: 1.2;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
@@ -117,7 +126,8 @@
 	overflow: hidden;
 	color: var(--gcode-fg-subtle);
 	font-family: var(--gcode-font-mono);
-	font-size: 11px;
+	font-size: 10px;
+	line-height: 1.2;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
