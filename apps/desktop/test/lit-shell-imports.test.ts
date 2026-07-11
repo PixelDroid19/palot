@@ -33,14 +33,25 @@ describe("Lit product import graph (no React)", () => {
 		expect(offenders).toEqual([])
 	})
 
-	test("main.tsx mounts Lit by default and React only as a reference", () => {
+	test("main.tsx mounts Lit without a React fallback", () => {
 		const main = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/main.tsx"),
 			"utf8",
 		)
-		expect(main).toContain('get("shell") === "react"')
 		expect(main).toContain('import("./lit/main-lit")')
-		expect(main).toContain('import("./app")')
-		expect(main).toContain('import("react-dom/client")')
+		expect(main).not.toMatch(/react|\.\/app/)
+	})
+
+	test("desktop manifest and Vite configuration do not depend on React", () => {
+		const desktopRoot = path.resolve(import.meta.dir, "..")
+		const packageJson = readFileSync(path.join(desktopRoot, "package.json"), "utf8")
+		const electronVite = readFileSync(path.join(desktopRoot, "electron.vite.config.ts"), "utf8")
+		const webVite = readFileSync(
+			path.join(desktopRoot, "src/renderer/vite.web.config.ts"),
+			"utf8",
+		)
+		for (const source of [packageJson, electronVite, webVite]) {
+			expect(source).not.toMatch(/(?:react|jotai|tailwind)(?:[-"/]|$)/i)
+		}
 	})
 })

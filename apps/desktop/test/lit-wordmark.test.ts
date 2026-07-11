@@ -18,18 +18,6 @@ describe("GCode wordmark (public)", () => {
 		expect(WORDMARK_LABEL).not.toMatch(/palot/i)
 	})
 
-	test("React host mounts Lit custom element only (no inline SVG markup)", () => {
-		const host = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/gcode-wordmark.tsx"),
-			"utf8",
-		)
-		expect(host).toContain("gcode-wordmark")
-		expect(host).toContain("../lit/components/gcode-wordmark")
-		// Dual SVG must not remain in React — sole path is Lit
-		expect(host).not.toContain("<svg")
-		expect(host).not.toContain("viewBox")
-	})
-
 	test("Lit element renders WORDMARK_LABEL via public constants", () => {
 		const lit = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/lit/components/gcode-wordmark.ts"),
@@ -40,7 +28,7 @@ describe("GCode wordmark (public)", () => {
 		expect(lit).toContain('@customElement("gcode-wordmark")')
 	})
 
-	test("renderer registers Lit as the product shell", () => {
+	test("renderer registers the Lit wordmark in the product shell", () => {
 		const reg = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/lit/register.ts"),
 			"utf8",
@@ -50,9 +38,8 @@ describe("GCode wordmark (public)", () => {
 			"utf8",
 		)
 		expect(reg).toContain("./components/gcode-wordmark")
-		expect(main).toContain("./app")
 		expect(main).toContain("./lit/register")
-		expect(main).toContain('get("shell") === "react"')
 		expect(main).toContain("./lit/main-lit")
+		expect(main).not.toContain("react")
 	})
 })

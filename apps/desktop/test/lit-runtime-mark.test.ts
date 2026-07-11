@@ -28,18 +28,6 @@ describe("runtime mark paths (public)", () => {
 		expect(runtimeIdToIconKey("opencode")).toBe("opencode")
 	})
 
-	test("React host mounts Lit custom element only (no dual path markup)", () => {
-		const host = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/runtime-mark.tsx"),
-			"utf8",
-		)
-		expect(host).toContain("gcode-runtime-mark")
-		expect(host).toContain("../lit/components/gcode-runtime-mark")
-		expect(host).not.toContain("CLAUDE_MARK_PATH")
-		expect(host).not.toContain('d="M26.9568')
-		expect(host).not.toContain("function ClaudeMark")
-	})
-
 	test("Lit element uses public path module and pure icon helpers", () => {
 		const lit = readFileSync(
 			path.resolve(import.meta.dir, "../src/renderer/lit/components/gcode-runtime-mark.ts"),

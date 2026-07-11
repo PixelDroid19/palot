@@ -1,6 +1,6 @@
 /**
  * CLI permission approval panel — progressive Lit of CliApprovalBar chrome.
- * Parent React wires jotai + respondRuntimePermissionRequest via events.
+ * The Lit host wires respondRuntimePermissionRequest through bubbled events.
  */
 import { html, LitElement } from "lit"
 import { customElement, property } from "lit/decorators.js"

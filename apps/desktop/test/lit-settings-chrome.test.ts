@@ -6,48 +6,36 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 
 describe("settings chrome Lit hosts", () => {
-	test("SettingsRow is Lit-only host", () => {
+	test("SettingsRow is a Lit custom element", () => {
 		const src = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/settings/settings-row.tsx"),
+			path.resolve(import.meta.dir, "../src/renderer/lit/components/gcode-settings-row.ts"),
 			"utf8",
 		)
-		expect(src).toContain("gcode-settings-row")
-		expect(src).not.toContain("className=")
-		expect(src).not.toContain("flex items-center justify-between")
+		expect(src).toContain('@customElement("gcode-settings-row")')
 	})
 
-	test("SettingsSection is Lit-only host", () => {
+	test("SettingsSection is a Lit custom element", () => {
 		const src = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/settings/settings-section.tsx"),
+			path.resolve(import.meta.dir, "../src/renderer/lit/components/gcode-settings-section.ts"),
 			"utf8",
 		)
-		expect(src).toContain("gcode-settings-section")
-		expect(src).not.toContain("divide-y")
+		expect(src).toContain('@customElement("gcode-settings-section")')
 	})
 
-	test("CliApprovalBar hosts Lit panel", () => {
+	test("CliApprovalBar is a Lit custom element", () => {
 		const src = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/chat/cli-approval-bar.tsx"),
+			path.resolve(import.meta.dir, "../src/renderer/lit/components/gcode-cli-approval.ts"),
 			"utf8",
 		)
-		expect(src).toContain("gcode-cli-approval")
-		expect(src).toContain("gcode-permission-decision")
-		expect(src).not.toContain("bg-amber-500/10")
+		expect(src).toContain('@customElement("gcode-cli-approval")')
 	})
 
-	test("NotFound + Error pages host Lit empty-state", () => {
-		const nf = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/not-found-page.tsx"),
+	test("EmptyState is a Lit custom element", () => {
+		const src = readFileSync(
+			path.resolve(import.meta.dir, "../src/renderer/lit/components/gcode-empty-state.ts"),
 			"utf8",
 		)
-		const er = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/error-page.tsx"),
-			"utf8",
-		)
-		expect(nf).toContain("gcode-empty-state")
-		expect(er).toContain("gcode-empty-state")
-		expect(nf).not.toContain("SearchXIcon")
-		expect(er).not.toContain("AlertTriangleIcon")
+		expect(src).toContain('@customElement("gcode-empty-state")')
 	})
 
 	test("Lit SCSS uses Cortex tokens not neon rails", () => {

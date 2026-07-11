@@ -3,7 +3,6 @@
 		"target": "ES2022",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
-		"jsx": "react-jsx",
 		"strict": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
@@ -24,10 +23,31 @@
 		"src/main/**/*.ts",
 		"src/preload/**/*.ts",
 		"src/preload/**/*.d.ts",
-		"src/renderer/**/*.ts",
-		"src/renderer/**/*.tsx",
+		"src/renderer/lit/**/*.ts",
+		"src/renderer/services/backend.ts",
+		"src/renderer/services/plugins-service.ts",
+		"src/renderer/services/project-runtime-sdk.ts",
+		"src/renderer/services/runtime-setup-status.ts",
+		"src/renderer/services/usage-stats.ts",
+		"src/renderer/services/worktree-service.ts",
+		"src/renderer/lib/logger.ts",
+		"src/renderer/lib/runtime-icons.ts",
+		"src/renderer/lib/runtime-transport.ts",
+		"src/renderer/lib/session-catalog.ts",
+		"src/renderer/lib/session-runtimes.ts",
+		"src/renderer/lib/types.ts",
+		"src/renderer/i18n/index.ts",
+		"src/renderer/i18n/locales/**/*.ts",
+		"src/renderer/main.tsx",
 		"src/renderer/**/*.css.js",
 		"src/renderer/**/*.d.ts"
 	],
-	"exclude": ["node_modules", "dist", "out", "release"]
+	"exclude": [
+		"node_modules",
+		"dist",
+		"out",
+		"release",
+		"src/renderer/lib/query-client.ts",
+		"src/renderer/lib/runtime-session-config.ts"
+	]
 }

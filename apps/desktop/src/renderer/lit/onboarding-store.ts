@@ -1,5 +1,5 @@
 /**
- * Onboarding completion state — same localStorage key as former jotai atom.
+ * Onboarding completion state persisted in the renderer-owned local store.
  */
 export interface OnboardingState {
 	completed: boolean

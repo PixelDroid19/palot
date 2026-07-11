@@ -26,18 +26,6 @@ describe("tool-category public helpers", () => {
 		expect(isToolCardError("completed")).toBe(false)
 	})
 
-	test("React ToolCard hosts Lit only (no dual Collapsible chrome)", () => {
-		const host = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/chat/tool-card.tsx"),
-			"utf8",
-		)
-		expect(host).toContain("gcode-tool-card")
-		expect(host).toContain("../../lit/components/gcode-tool-card")
-		expect(host).not.toContain("Collapsible")
-		expect(host).not.toContain("border-l-blue")
-		expect(host).not.toContain("border-l-2")
-	})
-
 	test("Lit element is quiet chrome (no neon category borders)", () => {
 		const scss = readFileSync(
 			path.resolve(
@@ -51,13 +39,13 @@ describe("tool-category public helpers", () => {
 		expect(scss).not.toContain("blue-500")
 	})
 
-	test("Bash content avoids Terminal ai-element chrome", () => {
+	test("Lit tool card avoids terminal-library chrome", () => {
 		const src = readFileSync(
-			path.resolve(import.meta.dir, "../src/renderer/components/chat/chat-tool-call.tsx"),
+			path.resolve(import.meta.dir, "../src/renderer/lit/components/gcode-tool-card.ts"),
 			"utf8",
 		)
-		expect(src).toContain("tool-bash-body")
-		expect(src).not.toContain('from "@gcode/ui/components/ai-elements/terminal"')
-		expect(src).not.toContain("<Terminal")
+		expect(src).toContain('@customElement("gcode-tool-card")')
+		expect(src).not.toContain("@gcode/ui")
+		expect(src).not.toContain("Terminal")
 	})
 })

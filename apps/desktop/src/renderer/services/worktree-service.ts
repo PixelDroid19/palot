@@ -9,7 +9,11 @@
 import type { OpencodeClient, Worktree } from "@opencode-ai/sdk/v2/client"
 import { createLogger } from "../lib/logger"
 import { isElectron } from "./backend"
-import { getProjectClient } from "./connection-manager"
+
+/** Managed-server worktrees are unavailable in the CLI-only product. */
+function getProjectClient(_projectDir: string): OpencodeClient | undefined {
+	return undefined
+}
 
 const log = createLogger("worktree-service")
 

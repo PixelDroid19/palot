@@ -1,12 +1,11 @@
 /**
  * Unified backend service layer.
  *
- * Detects whether we're running inside Electron (preload bridge available)
- * or in a plain browser (Bun + Hono server on port 3100). All hooks import
- * from here instead of `gcode-server.ts` directly.
+ * Detects whether we're running inside Electron (preload bridge available).
+ * The Lit desktop product is host-driven; it does not attach to a browser
+ * server as a fallback.
  *
  * In Electron mode, calls go through IPC to the main process.
- * In browser mode, calls go through HTTP to the GCode server.
  */
 
 import type {
@@ -119,8 +118,7 @@ export async function fetchModelState(): Promise<ModelState> {
 	if (isElectron) {
 		return window.gcode.getModelState()
 	}
-	const { fetchModelState: httpFetch } = await import("./gcode-server")
-	return httpFetch() as unknown as Promise<ModelState>
+	throw new Error("Model state is only available through the Electron host")
 }
 
 /**
@@ -135,8 +133,7 @@ export async function updateModelRecent(model: {
 	if (isElectron) {
 		return window.gcode.updateModelRecent(model)
 	}
-	const { updateModelRecent: httpUpdate } = await import("./gcode-server")
-	return httpUpdate(model) as unknown as Promise<ModelState>
+	throw new Error("Model state is only available through the Electron host")
 }
 
 /**
@@ -148,8 +145,7 @@ export async function checkBackendHealth(): Promise<boolean> {
 	if (isElectron) {
 		return true
 	}
-	const { checkServerHealth } = await import("./gcode-server")
-	return checkServerHealth()
+	return false
 }
 
 // ============================================================

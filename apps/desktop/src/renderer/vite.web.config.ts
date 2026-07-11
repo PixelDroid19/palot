@@ -6,18 +6,14 @@
  * on port 3100 to handle filesystem operations and process management.
  */
 
-import path from "node:path"
-import tailwindcss from "@tailwindcss/vite"
-import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
 export default defineConfig({
 	root: __dirname,
-	plugins: [react(), tailwindcss()],
+	plugins: [],
 	resolve: {
 		alias: {
 			"@": __dirname,
-			"@gcode/ui": path.resolve(__dirname, "../../../../packages/ui/src"),
 		},
 	},
 	clearScreen: false,

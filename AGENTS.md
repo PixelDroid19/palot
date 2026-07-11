@@ -14,7 +14,7 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
 - **`packages/cli-registry`**: Detects installed coding-agent CLIs (`@gcode/cli-registry`) -- OpenCode, Claude Code, Codex, Cursor Agent, Gemini CLI; reports version and auth state via a host-injected, testable detection layer
 - **`packages/agent-host`**: Multi-agent core (`@gcode/agent-host`) -- registry-only `AgentHost` (pluggable adapters, sessions, event bus, shared context) plus the **host tool plane** (`host.tools` / `HostToolRegistry`: automation, system, browser, agents, context) via `AgentBridge` (loopback HTTP + dynamic MCP proxy). Product tools are **host-owned** (desktop-host style), not CLI-owned; adapters only inject the bridge. Claude/Codex process adapters live here. Caveat: sandboxed `codex exec` auto-cancels MCP tool calls (openai/codex#24135) — Codex only gets the bridge in full-access runs.
-- **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`). **Product UI is the React shell** (`app.tsx` + components). Lit under `renderer/lit/` is progressive migration only (registered, not the default product).
+- **`apps/desktop`**: Electron 40 + Vite + Lit desktop app (via `electron-vite`). **Product UI is the Lit shell** under `renderer/lit/`; the former React/Jotai renderer has been removed.
 - **`apps/server`**: Bun + Hono backend -- browser-mode dev only (`dev:web`), NOT bundled with Electron; also exports `@gcode/server` client/types
 - **Runtime composition**: `apps/desktop/src/main/agents/composition.ts` + `AgentHost` options (`builtinProviders`, custom `providers`) plug/unplug harnesses. OpenCode is a **managed-server** adapter (descriptor registry), not the product base. Gateway services remain framework-free under `renderer/services/`.
 - **OpenCode runtime boundary**: `apps/desktop/src/main/opencode-runtime.ts` owns CLI discovery, auth headers, readiness, server startup. Tray/automation/notifications must reuse it — do not rebuild bootstrap logic.
@@ -27,8 +27,8 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`main/agents/`** -- Host composition, AgentHost wiring, host tool backends, process-session lifecycle
 - **`main/automation/`** -- Schedulers + neutral `executeAutomationRun` dispatch by registered runtime executors (fail closed if missing)
 - **`preload/`** -- `window.gcode` via `contextBridge`
-- **`renderer/`** -- React product UI (components, atoms/Jotai, hooks) + `services/` + `i18n/`
-- **`renderer/lit/`** -- Progressive Lit migration (SCSS→css.js); do not replace the React product shell until visual/behavior parity is proven
+- **`renderer/`** -- Lit product UI (components, event bus/state, services, i18n)
+- **`renderer/lit/`** -- Lit product shell (SCSS→css.js), the only desktop renderer surface
 - **`shared/`** -- Cross-process constants/types (runtime ids, transport registry)
 
 ## Skills
@@ -153,7 +153,7 @@ The main process runs in Node.js, the renderer runs in a Chromium sandbox. They 
 
 ### Backend Service Layer -- `services/backend.ts`
 
-All hooks must import from `services/backend.ts`, NOT from `services/gcode-server.ts` directly. The backend module detects Electron (`"gcode" in window`) and routes to IPC or HTTP automatically.
+Lit services must import from `services/backend.ts`; there is no renderer-side `gcode-server.ts`. The backend module detects Electron (`"gcode" in window`) and fails closed outside the Electron host.
 
 ### Lit product UI -- SCSS → css.js
 
@@ -176,7 +176,7 @@ All hooks must import from `services/backend.ts`, NOT from `services/gcode-serve
 
 ### Lit-only desktop UI (no React)
 
-- **Entry**: `renderer/main.tsx` → `lit/main-lit.ts` mounts `<gcode-app>` only. No `createRoot` / React App.
+- **Entry**: `renderer/main.tsx` → `lit/main-lit.ts` mounts `<gcode-app>` only. No `createRoot` or React fallback.
 - **Components**: `renderer/lit/components/*` (one concern each). Styles: co-located `.scss` → `scripts/scss-to-cssjs.ts` → `.css.js`.
 - **State**: bubbled `CustomEvent` + `gcodeBus` (`lit/bus.ts`). Locale: `LocaleController` + `gcode:locale` (en/es).
 - **I/O**: `services/backend.ts`, `project-runtime-sdk.ts`, `lit/chat-runtime.ts` (agentSession), `lit/managed-chat.ts` (OpenCode).
