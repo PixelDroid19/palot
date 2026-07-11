@@ -93,6 +93,7 @@ export const es: LocaleMessages = {
 		emptySessions: "Aún no hay sesiones. Crea una para chatear con OpenCode, Codex o Claude.",
 		welcomeTitle: "¿Qué construimos?",
 		welcomeBody: "Elige una sesión o crea una nueva. Espacio multi-agente denso: runtimes, herramientas y aprobaciones en un solo lugar.",
+		noMessages: "Aún no hay mensajes",
 		composerHint: "Enter para enviar · Shift+Enter para nueva línea",
 		systemReady: "Shell Lit de GCode listo. Las sesiones y herramientas usan el bridge del host cuando Electron está disponible.",
 		sessionOpened: "Sesión abierta {{id}}",

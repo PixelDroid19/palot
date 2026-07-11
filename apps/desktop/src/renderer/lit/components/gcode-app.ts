@@ -166,18 +166,7 @@ export class GcodeApp extends LitElement {
 	private async loadSession(sessionId: string): Promise<void> {
 		sessionStore.select(sessionId)
 		const local = sessionStore.getMessages(sessionId)
-		this.messages =
-			local.length > 0
-				? local
-				: [
-						{
-							id: "sys",
-							role: "system",
-							text: this.locale.t("litShell.sessionOpened", {
-								id: sessionId.slice(0, 8),
-							}),
-						},
-					]
+		this.messages = local
 	}
 
 	private activeSessionId(): string | null {

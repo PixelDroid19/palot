@@ -66,8 +66,7 @@ export class GcodeChatPanel extends LitElement {
 					? html`
 							<div class="empty">
 								<div>
-									<h2>${this.locale.t("litShell.welcomeTitle")}</h2>
-									<p>${this.locale.t("litShell.welcomeBody")}</p>
+									<p>${this.locale.t("litShell.noMessages")}</p>
 								</div>
 							</div>
 						`

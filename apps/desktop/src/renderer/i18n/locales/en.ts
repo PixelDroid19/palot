@@ -93,6 +93,7 @@ export const en = {
 		emptySessions: "No sessions yet. Start one to chat with OpenCode, Codex, or Claude.",
 		welcomeTitle: "What should we build?",
 		welcomeBody: "Pick a session or start a new one. Dense multi-agent workspace — runtimes, tools, and approvals in one place.",
+		noMessages: "No messages yet",
 		composerHint: "Enter to send · Shift+Enter for newline",
 		systemReady: "GCode Lit shell ready. Sessions and tools use the host bridge when Electron is available.",
 		sessionOpened: "Opened session {{id}}",
