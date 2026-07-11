@@ -8,7 +8,12 @@ import {
 	type RuntimePromptPayload,
 } from "../src/types"
 import { CLAUDE_MODEL_FALLBACK } from "../src/providers/claude"
-import { CODEX_MODEL_FALLBACK, isCodexQuotaOrAccountLimit } from "../src/providers/codex"
+import {
+	CODEX_DEFAULT_MODEL,
+	CODEX_MODEL_FALLBACK,
+	isCodexQuotaOrAccountLimit,
+	shouldRetryCodexWithFallbackModel,
+} from "../src/providers/codex"
 import { FakeProvider } from "./fake-provider"
 
 describe("neutral runtime contract", () => {
@@ -69,6 +74,12 @@ describe("Claude model fallback", () => {
 })
 
 describe("Codex quota / model listing", () => {
+	test("uses a compatible default and retries stale model aliases", () => {
+		expect(CODEX_DEFAULT_MODEL).toBe("gpt-5.5")
+		expect(shouldRetryCodexWithFallbackModel("The gpt-5.6-old model requires a newer version of Codex")).toBe(true)
+		expect(shouldRetryCodexWithFallbackModel("permission denied")).toBe(false)
+	})
+
 	test("quota messages are detected as account state", () => {
 		expect(isCodexQuotaOrAccountLimit("quota exceeded")).toBe(true)
 		expect(isCodexQuotaOrAccountLimit("Rate limit hit")).toBe(true)

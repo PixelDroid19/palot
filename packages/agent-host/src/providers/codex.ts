@@ -59,6 +59,17 @@ export const CODEX_MODEL_FALLBACK: AgentModelInfo[] = [
 	},
 ]
 
+/** Stable model sent when the local Codex config points at a newer model alias. */
+export const CODEX_DEFAULT_MODEL = "gpt-5.5"
+
+/** Whether Codex rejected a model because the installed CLI cannot support it. */
+export function shouldRetryCodexWithFallbackModel(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error)
+	return /requires a newer version of codex|unsupported model|unknown model|invalid model/i.test(
+		message,
+	)
+}
+
 /**
  * Whether an error message indicates account quota / rate limit rather than
  * "models unavailable". Callers must keep the model catalog visible.
@@ -169,6 +180,8 @@ class CodexSession implements AgentSession {
 		{ resolve: (decision: AgentPermissionDecision | "cancel") => void }
 	>()
 	private closed = false
+	private fallbackRetryAttempted = false
+	private lastTurnParams: Record<string, unknown> | null = null
 
 	constructor(
 		private readonly provider: CodexProvider,
@@ -201,7 +214,7 @@ class CodexSession implements AgentSession {
 			cwd: this.opts.cwd,
 			sandbox: codexSandbox(this.opts.sandbox),
 			approvalPolicy: approvalPolicy(this.opts.sandbox),
-			...(this.opts.model ? { model: this.opts.model } : {}),
+			model: this.opts.model || CODEX_DEFAULT_MODEL,
 			...(config ? { config } : {}),
 		}
 		const result = (await (this.opts.resumeId
@@ -227,25 +240,54 @@ class CodexSession implements AgentSession {
 		const done = new Promise<AgentRunResult>((resolve, reject) => {
 			this.turn = { resolve, reject, messages: [], notices: [], usage: null }
 		})
+		const turnParams = {
+			threadId: this.threadId,
+			input: userInput,
+			...(input.model ? { model: input.model } : {}),
+			...(input.reasoningEffort ? { effort: input.reasoningEffort } : {}),
+			...(input.sandbox
+				? {
+						sandboxPolicy: sandboxPolicy(input.sandbox, this.opts.cwd),
+						approvalPolicy: approvalPolicy(input.sandbox),
+					}
+				: {}),
+		}
+		this.fallbackRetryAttempted = false
+		this.lastTurnParams = turnParams
 		try {
-			await rpc.request("turn/start", {
-				threadId: this.threadId,
-				input: userInput,
-				...(input.model ? { model: input.model } : {}),
-				...(input.reasoningEffort ? { effort: input.reasoningEffort } : {}),
-				...(input.sandbox
-					? {
-							sandboxPolicy: sandboxPolicy(input.sandbox, this.opts.cwd),
-							approvalPolicy: approvalPolicy(input.sandbox),
-						}
-					: {}),
-			})
+			await rpc.request("turn/start", turnParams)
 		} catch (err) {
-			this.busy = false
-			this.turn = null
-			throw err
+			if (!shouldRetryCodexWithFallbackModel(err)) {
+				this.busy = false
+				this.turn = null
+				throw err
+			}
+
+			try {
+				await rpc.request("turn/start", { ...turnParams, model: CODEX_DEFAULT_MODEL })
+			} catch (fallbackError) {
+				this.busy = false
+				this.turn = null
+				throw fallbackError
+			}
 		}
 		return done
+	}
+
+	private async retryFailedTurnWithFallback(): Promise<void> {
+		const params = this.lastTurnParams
+		if (!params || !this.turn) return
+		try {
+			const rpc = await this.provider.connection()
+			await rpc.request("turn/start", { ...params, model: CODEX_DEFAULT_MODEL })
+		} catch (error) {
+			const pending = this.turn
+			this.busy = false
+			this.currentTurnId = null
+			this.turn = null
+			this.cancelPendingPermissions()
+			pending?.reject(error instanceof Error ? error : new Error(String(error)))
+		}
 	}
 
 	async steer(text: string): Promise<void> {
@@ -318,15 +360,26 @@ class CodexSession implements AgentSession {
 				const status = readString(turn?.status)
 				const error = asRecord(turn?.error)
 				const pending = this.turn
+				if (!pending) return
+				if (status === "failed" && error) {
+					const turnError = new Error(readString(error.message) || "Codex turn failed")
+					if (!this.fallbackRetryAttempted && shouldRetryCodexWithFallbackModel(turnError)) {
+						this.fallbackRetryAttempted = true
+						this.currentTurnId = null
+						void this.retryFailedTurnWithFallback()
+						return
+					}
+					this.busy = false
+					this.currentTurnId = null
+					this.turn = null
+					this.cancelPendingPermissions()
+					pending.reject(turnError)
+					return
+				}
 				this.busy = false
 				this.currentTurnId = null
 				this.turn = null
 				this.cancelPendingPermissions()
-				if (!pending) return
-				if (status === "failed" && error) {
-					pending.reject(new Error(readString(error.message) || "Codex turn failed"))
-					return
-				}
 				pending.resolve({
 					message: pending.messages.join("\n\n"),
 					threadId: this.threadId,
