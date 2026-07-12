@@ -330,6 +330,11 @@ export class GcodeApp extends LitElement {
 		navigate("/")
 	}
 
+	private projectName(directory?: string): string {
+		const normalized = (directory || "").replaceAll("\\", "/").replace(/\/+$/, "")
+		return normalized.split("/").pop() || ""
+	}
+
 	private toggleSidebar(): void {
 		this.sidebarOpen = !this.sidebarOpen
 	}
@@ -451,6 +456,10 @@ export class GcodeApp extends LitElement {
 											activeSession || this.route.name === "session"
 												? html`
 														<span class="appbar-divider" aria-hidden="true"></span>
+														${this.projectName(activeSessionCwd)
+															? html`<span class="appbar-project">${this.projectName(activeSessionCwd)}</span>
+																<span class="appbar-separator" aria-hidden="true">/</span>`
+															: null}
 														<span class="appbar-session">
 															${
 																this.isChatParityFixture()
@@ -476,18 +485,32 @@ export class GcodeApp extends LitElement {
 																				@click=${() => this.startRename(activeSession?.title || "Session")}
 																			>
 																				${activeSession?.title || "Session"}
-																			</button>`
-																}
-												${activeSessionCwd
-													? html`<button
-														type="button"
-														class="appbar-action"
-														data-active=${String(this.terminalOpen)}
-														@click=${() => this.toggleTerminal()}
-													>
-														Terminal
-													</button>`
-													: null}
+																		</button>`
+															}
+														</span>
+														<div class="appbar-actions">
+															${activeSessionCwd
+																? html`<button
+																		type="button"
+																		class="appbar-action"
+																		data-active=${String(this.terminalOpen)}
+																		@click=${() => this.toggleTerminal()}
+																	>
+																		Terminal
+																	</button>`
+																: null}
+															<button
+																type="button"
+																class="appbar-close"
+																aria-label="Close session"
+																title="Close session"
+																@click=${() => this.onNewSession()}
+															>
+																<svg viewBox="0 0 16 16" aria-hidden="true">
+																	<path d="m4 4 8 8M12 4l-8 8" />
+																</svg>
+															</button>
+														</div>
 										`
 												: null
 										}

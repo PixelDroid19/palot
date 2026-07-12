@@ -143,12 +143,32 @@ describe("Lit app-frame parity contract", () => {
 		expect(app).not.toContain("<gcode-session-controls")
 	})
 
+	test("Lit session composer keeps its toolbar usable at narrow widths", () => {
+		const composerStyles = read("lit/components/gcode-composer.scss")
+		const controlsStyles = read("lit/components/gcode-session-controls.scss")
+		expect(composerStyles).toContain("overflow-x: auto")
+		expect(composerStyles).toContain("flex: 0 0 32px")
+		expect(controlsStyles).toContain("width: max-content")
+	})
+
 	test("Lit app bar keeps React-style inline session renaming", () => {
 		const app = read("lit/components/gcode-app.ts")
 		const sessions = read("lit/session-store.ts")
 		expect(app).toContain("editingSessionTitle")
 		expect(app).toContain("renameSession")
 		expect(sessions).toContain("rename(sessionId")
+	})
+
+	test("Lit session app bar mirrors the React breadcrumb and close affordance", () => {
+		const app = read("lit/components/gcode-app.ts")
+		const styles = read("lit/components/gcode-app.scss")
+		expect(app).toContain('class="appbar-project"')
+		expect(app).toContain('class="appbar-actions"')
+		expect(app).toContain('class="appbar-close"')
+		expect(app).toContain('navigate("/")')
+		expect(styles).toContain(".appbar-project")
+		expect(styles).toContain(".appbar-actions")
+		expect(styles).toContain(".appbar-close")
 	})
 
 	test("Lit shell owns the command palette and its session navigation", () => {

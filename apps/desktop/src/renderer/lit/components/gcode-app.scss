@@ -62,6 +62,22 @@ gcode-sidebar {
 	background: color-mix(in srgb, var(--gcode-border) 75%, transparent);
 }
 
+.appbar-project,
+.appbar-separator {
+	flex: 0 0 auto;
+	font-size: 12px;
+	line-height: 1;
+}
+
+.appbar-project {
+	color: var(--gcode-fg-muted);
+}
+
+.appbar-separator {
+	margin: 0 2px;
+	color: color-mix(in srgb, var(--gcode-fg-muted) 45%, transparent);
+}
+
 .appbar-session {
 	overflow: hidden;
 	font-size: 12px;
@@ -109,11 +125,54 @@ gcode-sidebar {
 	-webkit-app-region: no-drag;
 }
 
+.appbar-actions {
+	display: flex;
+	min-width: 0;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 2px;
+	margin-left: auto;
+}
+
+.appbar-actions .appbar-action {
+	margin-left: 0;
+}
+
 .appbar-action:hover,
 .appbar-action[data-active="true"] {
 	border-color: var(--gcode-border);
 	background: var(--gcode-bg-muted);
 	color: var(--gcode-fg);
+}
+
+.appbar-close {
+	display: grid;
+	width: 24px;
+	height: 24px;
+	margin-left: 0;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	place-items: center;
+	background: transparent;
+	color: var(--gcode-fg-muted);
+	-webkit-app-region: no-drag;
+}
+
+.appbar-close:hover {
+	border-color: var(--gcode-border);
+	background: var(--gcode-bg-muted);
+	color: var(--gcode-fg);
+}
+
+.appbar-close svg {
+	width: 14px;
+	height: 14px;
+	fill: none;
+	stroke: currentcolor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.25;
 }
 
 .appbar gcode-session-controls {

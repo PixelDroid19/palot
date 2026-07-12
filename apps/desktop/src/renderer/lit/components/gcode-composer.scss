@@ -49,9 +49,17 @@ textarea {
 
 .toolbar-start {
 	display: flex;
+	flex: 1 1 auto;
 	min-width: 0;
 	align-items: center;
 	gap: var(--gcode-space-2);
+	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: none;
+}
+
+.toolbar-start::-webkit-scrollbar {
+	display: none;
 }
 
 .hint {
@@ -61,6 +69,7 @@ textarea {
 
 .send {
 	display: grid;
+	flex: 0 0 32px;
 	width: 32px;
 	height: 32px;
 	padding: 0;

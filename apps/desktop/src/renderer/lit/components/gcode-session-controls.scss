@@ -5,11 +5,13 @@
 .controls {
 	display: flex;
 	min-width: 0;
+	width: max-content;
 	align-items: center;
 	gap: 6px;
 }
 
 select {
+	flex: 0 0 auto;
 	max-width: 132px;
 	height: 28px;
 	overflow: hidden;
