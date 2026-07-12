@@ -30,6 +30,8 @@ describe("Lit app-frame parity contract", () => {
 		const styles = read("lit/components/gcode-home.scss")
 		expect(home).toContain("Build what's next")
 		expect(home).toContain("What should this session work on?")
+		expect(home).toContain('emitBubbled(this, "gcode-home-submit"')
+		expect(home).not.toContain('class="start"')
 		expect(home).not.toContain("workingDirLabel")
 		expect(home).not.toContain("pickDirectory")
 		expect(styles).not.toContain(".directory-control")
@@ -77,6 +79,7 @@ describe("Lit app-frame parity contract", () => {
 		expect(app).toContain('get("fixture") === "chat"')
 		expect(chat).not.toContain('class="topbar"')
 		expect(chatStyles).toContain("max-width: 896px")
+		expect(app).toContain('gcode-home-submit')
 	})
 
 	test("Lit route and session state cover the React project entry and live turn status", () => {

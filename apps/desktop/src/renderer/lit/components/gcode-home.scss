@@ -192,29 +192,6 @@ button:focus-visible {
 	outline-offset: 2px;
 }
 
-.start {
-	border: 1px solid var(--gcode-border);
-	border-radius: 8px;
-	background: var(--gcode-bg-muted);
-	color: var(--gcode-fg);
-	font: inherit;
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.start {
-	margin-top: 8px;
-	padding: 9px 14px;
-	background: var(--gcode-accent);
-	color: var(--gcode-accent-foreground);
-	font-weight: 600;
-}
-
-.start:disabled {
-	cursor: not-allowed;
-	opacity: 0.5;
-}
-
 .error {
 	margin: 8px 0 0;
 	text-align: center;

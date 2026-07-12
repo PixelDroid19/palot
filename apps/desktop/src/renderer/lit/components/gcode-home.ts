@@ -7,7 +7,7 @@
 import { html, LitElement } from "lit"
 import { customElement, state } from "lit/decorators.js"
 import type { SessionRuntimeDescriptor } from "../../../preload/api"
-import { BusTopics, gcodeBus } from "../bus"
+import { BusTopics, emitBubbled, gcodeBus } from "../bus"
 import { LocaleController } from "../locale-controller"
 import { navigate } from "../router"
 import { sessionStore } from "../session-store"
@@ -80,10 +80,11 @@ export class GcodeHome extends LitElement {
 		}
 	}
 
-	private async start(): Promise<void> {
+	private async start(promptText = this.draft): Promise<void> {
+		const text = promptText.trim()
+		if (!text) return
 		this.error = ""
 		if (!this.runtimeId || !this.cwd) {
-			this.error = this.locale.t("subagentChat.noneInstalled")
 			return
 		}
 		this.busy = true
@@ -116,12 +117,20 @@ export class GcodeHome extends LitElement {
 				sandbox: "workspace-write",
 			})
 			sessionStore.select(id)
+			this.draft = ""
+			emitBubbled(this, "gcode-home-submit", { sessionId: id, text })
 			navigate(`/session/${id}`)
 		} catch (err) {
 			this.error = err instanceof Error ? err.message : String(err)
 		} finally {
 			this.busy = false
 		}
+	}
+
+	private onPromptKeydown(event: KeyboardEvent): void {
+		if (event.key !== "Enter" || event.shiftKey || event.isComposing) return
+		event.preventDefault()
+		void this.start()
 	}
 
 	private renderSuggestionIcon(index: number) {
@@ -135,8 +144,7 @@ export class GcodeHome extends LitElement {
 	}
 
 	render() {
-		const canLaunch = !!this.runtimeId && !!this.cwd && !this.busy
-		const canCompose = !!this.runtimeId && !!this.cwd
+		const canCompose = !!this.runtimeId && !!this.cwd && !this.busy
 		return html`
 			<section class="home" aria-label=${this.locale.t("litShell.newSession")}>
 				<div class="hero-area">
@@ -145,14 +153,12 @@ export class GcodeHome extends LitElement {
 						<div class="hero-heading"><h1>Build what's next</h1></div>
 						<div class="suggestions">
 							${SUGGESTIONS.map(
-									(suggestion, index) => html`
+								(suggestion, index) => html`
 									<button
 										type="button"
 										class="suggestion"
 										?disabled=${!canCompose}
-										@click=${() => {
-											this.draft = suggestion
-										}}
+										@click=${() => void this.start(suggestion)}
 									>
 										<span class="suggestion-mark">${this.renderSuggestionIcon(index)}</span>
 										<p>${suggestion}</p>
@@ -169,6 +175,7 @@ export class GcodeHome extends LitElement {
 							placeholder="What should this session work on?"
 							.value=${this.draft}
 							?disabled=${!canCompose}
+							@keydown=${(event: KeyboardEvent) => this.onPromptKeydown(event)}
 							@input=${(event: Event) => {
 								this.draft = (event.target as HTMLTextAreaElement).value
 							}}
@@ -181,6 +188,7 @@ export class GcodeHome extends LitElement {
 											<span>${this.locale.t("runtimePicker.runtime")}</span>
 											<select
 												.value=${this.runtimeId}
+												?disabled=${this.busy}
 												@change=${(event: Event) => {
 													this.runtimeId = (event.target as HTMLSelectElement).value
 												}}
@@ -199,20 +207,6 @@ export class GcodeHome extends LitElement {
 								: null
 						}
 					</div>
-					${
-						this.runtimeId
-							? html`
-								<button
-									type="button"
-									class="start"
-									?disabled=${!canLaunch}
-									@click=${() => this.start()}
-								>
-									${this.busy ? "Starting…" : this.locale.t("litShell.newSession")}
-								</button>
-							`
-							: null
-					}
 					${
 						this.error
 							? html`<p class="error" role="alert">${this.error}</p>`

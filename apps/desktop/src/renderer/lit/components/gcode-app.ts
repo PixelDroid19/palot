@@ -400,7 +400,10 @@ export class GcodeApp extends LitElement {
 			case "home":
 			case "project":
 			default:
-				return html`<gcode-home></gcode-home>`
+				return html`<gcode-home
+					@gcode-home-submit=${(event: CustomEvent<{ sessionId: string; text: string }>) =>
+						this.onSend(event)}
+				></gcode-home>`
 		}
 	}
 
