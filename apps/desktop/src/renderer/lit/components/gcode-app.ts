@@ -25,7 +25,6 @@ import "./gcode-command-palette"
 import "./gcode-home"
 import "./gcode-onboarding"
 import "./gcode-settings-panel"
-import "./gcode-session-controls"
 import "./gcode-sidebar"
 import "./gcode-terminal-panel"
 import { styles } from "./gcode-app.css.js"
@@ -376,6 +375,7 @@ export class GcodeApp extends LitElement {
 				return html`
 					<div class="session-layout">
 						<gcode-chat-panel
+							session-id=${route.sessionId}
 							title=${parityFixture ? "Lit visual parity" : active?.title || route.sessionId.slice(0, 8)}
 							runtime-id=${parityFixture ? "codex" : active?.runtimeId || ""}
 							.messages=${parityFixture ? PARITY_CHAT_MESSAGES : this.messages}
@@ -487,12 +487,6 @@ export class GcodeApp extends LitElement {
 													>
 														Terminal
 													</button>`
-													: null}
-												${activeSessionId && activeSession
-													? html`<gcode-session-controls
-															session-id=${activeSessionId}
-															runtime-id=${activeSession.runtimeId}
-														></gcode-session-controls>`
 													: null}
 										`
 												: null

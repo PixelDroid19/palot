@@ -12,6 +12,7 @@ export class GcodeSessionControls extends LitElement {
 
 	@property({ type: String, attribute: "session-id" }) sessionId = ""
 	@property({ type: String, attribute: "runtime-id" }) runtimeId = ""
+	@property({ type: Boolean }) compact = false
 	@state() private runtimes: SessionRuntimeDescriptor[] = []
 
 	connectedCallback(): void {
@@ -82,6 +83,20 @@ export class GcodeSessionControls extends LitElement {
 						: null
 				}
 				${
+					runtime.capabilities.sandboxModes
+						? html`<select
+							aria-label="Sandbox mode"
+							.value=${meta?.sandbox || "read-only"}
+							@change=${(event: Event) => this.patch({ sandbox: (event.target as HTMLSelectElement).value })}
+						>
+							<option value="plan" ?selected=${meta?.sandbox === "plan"}>Plan</option>
+							<option value="read-only" ?selected=${(meta?.sandbox || "read-only") === "read-only"}>Read only</option>
+							<option value="workspace-write" ?selected=${(meta?.sandbox || "read-only") === "workspace-write"}>Workspace write</option>
+							<option value="danger-full-access" ?selected=${meta?.sandbox === "danger-full-access"}>Full access</option>
+						</select>`
+						: null
+				}
+				${
 					efforts.length > 0
 						? html`<select
 							aria-label="Reasoning effort"
@@ -91,22 +106,9 @@ export class GcodeSessionControls extends LitElement {
 							${efforts.map(
 								(effort) =>
 									html`<option value=${effort} ?selected=${effort === (meta?.effort || selectedModel?.defaultEffort || efforts[0])}>
-										${effort}
+										${effort.charAt(0).toUpperCase() + effort.slice(1)}
 									</option>`,
 							)}
-						</select>`
-						: null
-				}
-				${
-					runtime.capabilities.sandboxModes
-						? html`<select
-							aria-label="Sandbox mode"
-							.value=${meta?.sandbox || "workspace-write"}
-							@change=${(event: Event) => this.patch({ sandbox: (event.target as HTMLSelectElement).value })}
-						>
-							<option value="read-only" ?selected=${(meta?.sandbox || "workspace-write") === "read-only"}>Read only</option>
-							<option value="workspace-write" ?selected=${(meta?.sandbox || "workspace-write") === "workspace-write"}>Workspace write</option>
-							<option value="danger-full-access" ?selected=${meta?.sandbox === "danger-full-access"}>Full access</option>
 						</select>`
 						: null
 				}

@@ -11,16 +11,20 @@
 
 select {
 	max-width: 132px;
-	height: 26px;
+	height: 28px;
 	overflow: hidden;
-	padding: 0 22px 0 7px;
-	border: 1px solid var(--gcode-border);
+	padding: 0 22px 0 8px;
+	border: 0;
 	border-radius: 6px;
-	background: var(--gcode-bg-elevated);
+	background: transparent;
 	color: var(--gcode-fg-muted);
 	font: 11px var(--gcode-font);
 	text-overflow: ellipsis;
 }
 
 select:hover,
-select:focus { border-color: var(--gcode-border-strong); color: var(--gcode-fg); }
+select:focus {
+	outline: 0;
+	background: var(--gcode-bg-muted);
+	color: var(--gcode-fg);
+}

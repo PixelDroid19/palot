@@ -128,14 +128,19 @@ describe("Lit app-frame parity contract", () => {
 
 	test("Lit session chrome exposes descriptor-driven model, effort and sandbox controls", () => {
 		const app = read("lit/components/gcode-app.ts")
+		const composer = read("lit/components/gcode-composer.ts")
 		const controls = read("lit/components/gcode-session-controls.ts")
 		const sessions = read("lit/session-store.ts")
-		expect(app).toContain("gcode-session-controls")
+		expect(composer).toContain("gcode-session-controls")
+		expect(composer).toContain('aria-label="Submit"')
+		expect(read("lit/components/gcode-composer.scss")).toContain(".status-bar")
+		expect(read("lit/components/gcode-composer.scss")).toContain("padding: 8px 16px 16px")
 		expect(controls).toContain("describeRuntimes")
 		expect(controls).toContain("selectedModel?.efforts")
 		expect(controls).toContain("switchLitRuntime")
 		expect(controls).toContain("updateMeta")
 		expect(sessions).toContain("updateMeta(")
+		expect(app).not.toContain("<gcode-session-controls")
 	})
 
 	test("Lit app bar keeps React-style inline session renaming", () => {

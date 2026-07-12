@@ -26,6 +26,7 @@ export class GcodeChatPanel extends LitElement {
 	private locale = new LocaleController(this)
 
 	@property({ type: String }) title = "GCode"
+	@property({ type: String, attribute: "session-id" }) sessionId = ""
 	@property({ type: String, attribute: "runtime-id" }) runtimeId = ""
 	@property({ attribute: false }) messages: ChatMessageView[] = []
 	@property({ attribute: false }) tools: LitToolEvent[] = []
@@ -164,6 +165,8 @@ export class GcodeChatPanel extends LitElement {
 					: null
 			}
 			<gcode-composer
+				session-id=${this.sessionId}
+				runtime-id=${this.runtimeId}
 				?disabled=${this.busy || !!this.permission || !!this.question}
 				@gcode-send=${(e: CustomEvent<{ text: string }>) => {
 					this.dispatchEvent(

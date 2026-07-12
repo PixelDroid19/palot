@@ -2,17 +2,18 @@
 
 :host {
 	display: block;
-	padding: 8px 32px 16px;
+	padding: 8px 16px 16px;
 	background: var(--gcode-bg);
 	font-family: var(--gcode-font);
 	color: var(--gcode-fg);
 }
 
 .shell {
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	gap: var(--gcode-space-2);
-	max-width: 896px;
+	width: min(896px, 100%);
 	margin: 0 auto;
 	border: 1px solid var(--gcode-border);
 	border-radius: var(--gcode-radius);
@@ -38,9 +39,19 @@ textarea {
 
 .toolbar {
 	display: flex;
+	min-height: 40px;
 	align-items: center;
 	justify-content: space-between;
 	gap: var(--gcode-space-3);
+	padding: 4px 8px 8px;
+	border-top: 1px solid var(--gcode-border);
+}
+
+.toolbar-start {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: var(--gcode-space-2);
 }
 
 .hint {
@@ -49,12 +60,24 @@ textarea {
 }
 
 .send {
-	padding: 6px 14px;
+	display: grid;
+	width: 32px;
+	height: 32px;
+	padding: 0;
 	border-radius: var(--gcode-radius-sm);
 	background: var(--gcode-accent);
 	color: var(--gcode-accent-foreground);
-	font-weight: 600;
-	font-size: 13px;
+	place-items: center;
+}
+
+.send svg {
+	width: 16px;
+	height: 16px;
+	fill: none;
+	stroke: currentcolor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.5;
 }
 
 .send:disabled {
@@ -64,4 +87,29 @@ textarea {
 
 .send:not(:disabled):hover {
 	filter: brightness(1.05);
+}
+
+.status-bar {
+	display: flex;
+	width: min(896px, 100%);
+	box-sizing: border-box;
+	align-items: center;
+	margin: 0 auto;
+	padding: 8px 8px 0;
+	color: color-mix(in srgb, var(--gcode-fg-muted) 60%, transparent);
+	font-size: 11px;
+}
+
+.status-local {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.status-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--gcode-success);
 }
