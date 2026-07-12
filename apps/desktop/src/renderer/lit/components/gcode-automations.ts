@@ -31,11 +31,23 @@ export class GcodeAutomations extends LitElement {
 	@state() private creating = false
 	@state() private selectedRunId: string | null = null
 	@state() private bannerDismissed = false
+	private onKeydown = (event: KeyboardEvent): void => {
+		if (event.key === "Escape" && this.showCreate) {
+			event.preventDefault()
+			this.showCreate = false
+		}
+	}
 
 	connectedCallback(): void {
 		super.connectedCallback()
 		this.bannerDismissed = localStorage.getItem("gcode:automationsBannerDismissed") === "true"
+		window.addEventListener("keydown", this.onKeydown)
 		void this.reload()
+	}
+
+	disconnectedCallback(): void {
+		window.removeEventListener("keydown", this.onKeydown)
+		super.disconnectedCallback()
 	}
 
 	private dismissBanner(): void {
@@ -79,7 +91,7 @@ export class GcodeAutomations extends LitElement {
 			this.name = ""
 			this.prompt = ""
 			this.workspace = ""
-				this.showCreate = false
+			this.showCreate = false
 			await this.reload()
 		} catch (err) {
 			this.error = err instanceof Error ? err.message : String(err)
@@ -220,44 +232,59 @@ export class GcodeAutomations extends LitElement {
 
 	private renderCreate() {
 		return html`
-			<div class="form">
-				<label>
-					${this.locale.t("litAutomations.name")}
-					<input
-						.value=${this.name}
-						@input=${(e: Event) => {
-							this.name = (e.target as HTMLInputElement).value
-						}}
-					/>
-				</label>
-				<label>
-					${this.locale.t("litAutomations.prompt")}
-					<textarea
-						rows="4"
-						.value=${this.prompt}
-						@input=${(e: Event) => {
-							this.prompt = (e.target as HTMLTextAreaElement).value
-						}}
-					></textarea>
-				</label>
-				<label>
-					${this.locale.t("litAutomations.workspace")}
-					<input
-						.value=${this.workspace}
-						placeholder="/path/to/project"
-						@input=${(e: Event) => {
-							this.workspace = (e.target as HTMLInputElement).value
-						}}
-					/>
-				</label>
-				<button
-					type="button"
-					class="primary"
-					?disabled=${this.creating}
-					@click=${() => this.create()}
-				>
-					${this.locale.t("litAutomations.create")}
-				</button>
+			<div class="create-backdrop" @click=${(event: Event) => {
+				if (event.target === event.currentTarget) this.showCreate = false
+			}}>
+				<section class="create-dialog" role="dialog" aria-modal="true" aria-labelledby="automation-dialog-title">
+					<header class="create-header">
+						<h2 id="automation-dialog-title">Create automation</h2>
+						<button type="button" class="dialog-close" aria-label="Close" @click=${() => (this.showCreate = false)}>
+							<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" /></svg>
+						</button>
+					</header>
+					<div class="form">
+						<label>
+							${this.locale.t("litAutomations.name")}
+							<input
+								.value=${this.name}
+								@input=${(e: Event) => {
+									this.name = (e.target as HTMLInputElement).value
+								}}
+								autofocus
+							/>
+						</label>
+						<label>
+							${this.locale.t("litAutomations.prompt")}
+							<textarea
+								rows="4"
+								.value=${this.prompt}
+								@input=${(e: Event) => {
+									this.prompt = (e.target as HTMLTextAreaElement).value
+								}}
+							></textarea>
+						</label>
+						<label>
+							Projects
+							<input
+								.value=${this.workspace}
+								placeholder="/path/to/project"
+								@input=${(e: Event) => {
+									this.workspace = (e.target as HTMLInputElement).value
+								}}
+							/>
+						</label>
+						<div class="dialog-footer">
+							<button
+								type="button"
+								class="primary"
+								?disabled=${this.creating}
+								@click=${() => this.create()}
+							>
+								${this.locale.t("litAutomations.create")}
+							</button>
+						</div>
+					</div>
+				</section>
 			</div>
 		`
 	}
@@ -370,9 +397,10 @@ export class GcodeAutomations extends LitElement {
 						</div>
 					</aside>
 					<section class="detail-panel">
-						${this.showCreate ? this.renderCreate() : this.renderRunDetail()}
+						${this.renderRunDetail()}
 					</section>
 				</div>
+				${this.showCreate ? this.renderCreate() : null}
 			</div>
 		`
 	}
