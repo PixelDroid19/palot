@@ -10,8 +10,10 @@ import type {
 	LitToolEvent,
 } from "../chat-runtime"
 import { LocaleController } from "../locale-controller"
+import "./gcode-cli-approval"
 import "./gcode-composer"
 import "./gcode-markdown"
+import "./gcode-tool-card"
 import { styles } from "./gcode-chat-panel.css.js"
 
 export interface ChatMessageView {
@@ -34,6 +36,30 @@ export class GcodeChatPanel extends LitElement {
 	@property({ attribute: false }) question: LitQuestionRequest | null = null
 	@property({ type: Boolean }) busy = false
 
+	private renderToolIcon(name: string) {
+		const normalized = name.toLowerCase()
+		if (["read", "list", "glob", "grep", "search"].some((word) => normalized.includes(word))) {
+			return html`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" aria-hidden="true">
+				<circle cx="6.75" cy="6.75" r="3.25"></circle>
+				<path d="m9.25 9.25 3.25 3.25"></path>
+			</svg>`
+		}
+		if (["bash", "shell", "command", "terminal"].some((word) => normalized.includes(word))) {
+			return html`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" aria-hidden="true">
+				<path d="m3.25 5.25 3 2.75-3 2.75M7.75 10.75h4.5"></path>
+			</svg>`
+		}
+		if (["edit", "write", "patch"].some((word) => normalized.includes(word))) {
+			return html`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" aria-hidden="true">
+				<path d="m3.25 10.75-.5 2.5 2.5-.5 6.5-6.5-2-2zM8.75 4.75l2 2"></path>
+			</svg>`
+		}
+		return html`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" aria-hidden="true">
+			<rect x="3" y="3" width="10" height="10" rx="1.25"></rect>
+			<path d="M5.5 6.25h5M5.5 8h3.5M5.5 9.75h5"></path>
+		</svg>`
+	}
+
 	private emitPermission(decision: LitPermissionDecision): void {
 		if (!this.permission) return
 		this.dispatchEvent(
@@ -43,6 +69,16 @@ export class GcodeChatPanel extends LitElement {
 				composed: true,
 			}),
 		)
+	}
+
+	private handlePermissionDecision(event: CustomEvent<{ decision: string }>): void {
+		const decisions: Record<string, LitPermissionDecision> = {
+			accept: "allow",
+			acceptForSession: "allow-session",
+			decline: "deny",
+		}
+		const decision = decisions[event.detail?.decision]
+		if (decision) this.emitPermission(decision)
 	}
 
 	private emitQuestionAnswer(questionText: string, label: string): void {
@@ -93,9 +129,15 @@ export class GcodeChatPanel extends LitElement {
 								)}
 								${this.tools.map(
 									(t) => html`
-										<div class="tool-card" data-status=${t.status} data-tool-id=${t.id}>
-											<div class="tool-name">${t.name} · ${t.status}</div>
-											${t.detail ? html`<div class="tool-detail">${t.detail}</div>` : null}
+										<div class="tool" data-tool-id=${t.id}>
+											<gcode-tool-card
+												card-title=${t.name}
+												subtitle=${t.detail || ""}
+												status=${t.status === "failed" ? "error" : t.status}
+											>
+												<span slot="icon">${this.renderToolIcon(t.name)}</span>
+												<span slot="trailing" class="tool-status" data-status=${t.status}>${t.status}</span>
+											</gcode-tool-card>
 										</div>
 									`,
 								)}
@@ -105,37 +147,22 @@ export class GcodeChatPanel extends LitElement {
 			${
 				this.permission
 					? html`
-							<div class="gate" data-testid="permission-gate">
-								<div class="gate-title">
-									${this.locale.t("cliApprovals.title", {
+							<gcode-cli-approval
+								session-id=${this.sessionId}
+								.requests=${[
+									{
+										requestId: this.permission.requestId,
 										name: this.permission.toolName || "tool",
-									})}
-								</div>
-								${
-									this.permission.description
-										? html`<div class="gate-desc">${this.permission.description}</div>`
-										: null
-								}
-								<div class="gate-actions">
-									<button
-										type="button"
-										class="primary"
-										@click=${() => this.emitPermission("allow")}
-									>
-										${this.locale.t("cliApprovals.allow")}
-									</button>
-									<button type="button" @click=${() => this.emitPermission("allow-session")}>
-										${this.locale.t("cliApprovals.allowSession")}
-									</button>
-									<button
-										type="button"
-										class="danger"
-										@click=${() => this.emitPermission("deny")}
-									>
-										${this.locale.t("cliApprovals.deny")}
-									</button>
-								</div>
-							</div>
+										title: this.locale.t("cliApprovals.title", {
+											name: this.permission.toolName || "tool",
+										}),
+										detail: this.permission.description,
+										decisions: ["acceptForSession"],
+									},
+								]}
+								@gcode-permission-decision=${(event: CustomEvent<{ decision: string }>) =>
+									this.handlePermissionDecision(event)}
+							></gcode-cli-approval>
 						`
 					: null
 			}

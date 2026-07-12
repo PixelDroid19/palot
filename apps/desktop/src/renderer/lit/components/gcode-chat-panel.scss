@@ -46,34 +46,23 @@
 	padding: 12px 16px;
 }
 
-.tool-card {
+.tool {
 	max-width: 896px;
 	margin: 0 auto;
 	width: 100%;
-	border-left: 2px solid color-mix(in srgb, var(--gcode-border-strong) 75%, transparent);
-	background: transparent;
-	padding: 4px 12px;
-	font-size: 12px;
-	font-family: var(--gcode-font-mono);
 }
 
-.tool-card[data-status="running"] {
-	border-left-color: var(--gcode-accent);
+.tool-status {
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
 }
 
-.tool-card[data-status="failed"] {
-	border-left-color: var(--gcode-danger);
+.tool-status[data-status="running"] {
+	color: var(--gcode-accent);
 }
 
-.tool-name {
-	font-weight: 600;
-	color: var(--gcode-fg);
-}
-
-.tool-detail {
-	color: var(--gcode-fg-muted);
-	margin-top: 4px;
-	white-space: pre-wrap;
+.tool-status[data-status="failed"] {
+	color: var(--gcode-danger);
 }
 
 .gate {

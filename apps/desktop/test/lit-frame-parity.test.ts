@@ -151,6 +151,27 @@ describe("Lit app-frame parity contract", () => {
 		expect(controlsStyles).toContain("width: max-content")
 	})
 
+	test("Lit chat renders tool events through the shared tool-card chrome", () => {
+		const chat = read("lit/components/gcode-chat-panel.ts")
+		const styles = read("lit/components/gcode-chat-panel.scss")
+		expect(chat).toContain('import "./gcode-tool-card"')
+		expect(chat).toContain("<gcode-tool-card")
+		expect(chat).toContain('slot="icon"')
+		expect(chat).toContain("renderToolIcon")
+		expect(chat).toContain('stroke="currentColor"')
+		expect(chat).toContain("card-title=${t.name}")
+		expect(chat).toContain('t.status === "failed" ? "error" : t.status')
+		expect(styles).not.toContain(".tool-card")
+	})
+
+	test("Lit permission requests use the shared CLI approval surface", () => {
+		const chat = read("lit/components/gcode-chat-panel.ts")
+		expect(chat).toContain('import "./gcode-cli-approval"')
+		expect(chat).toContain("<gcode-cli-approval")
+		expect(chat).toContain("gcode-permission-decision")
+		expect(chat).not.toContain('data-testid="permission-gate"')
+	})
+
 	test("Lit app bar keeps React-style inline session renaming", () => {
 		const app = read("lit/components/gcode-app.ts")
 		const sessions = read("lit/session-store.ts")
