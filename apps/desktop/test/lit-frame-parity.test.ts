@@ -44,6 +44,8 @@ describe("Lit app-frame parity contract", () => {
 		expect(styles).not.toContain(".directory-control")
 		expect(styles).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))")
 		expect(styles).toContain(".composer-area")
+		expect(styles).toContain("box-sizing: border-box")
+		expect(styles).toContain("width: min(896px, 100%)")
 	})
 
 	test("the Lit tree remains free of React runtime imports", () => {
@@ -103,8 +105,13 @@ describe("Lit app-frame parity contract", () => {
 		const sidebar = read("lit/components/gcode-sidebar.ts")
 		expect(sidebar).toContain("selectActiveSessions")
 		expect(sidebar).toContain("selectRecentSessions")
+		expect(sidebar).toContain("selectTimelineTasks")
+		expect(sidebar).toContain("filterTasksByQuery")
 		expect(sidebar).toContain("groupTasksByWorkspace")
+		expect(sidebar).toContain('aria-label="Search tasks"')
+		expect(sidebar).toContain('role="tablist"')
 		expect(sidebar).toContain('class="project"')
+		expect(read("lit/components/gcode-sidebar.scss")).toContain(".catalog-controls")
 	})
 
 	test("Lit session chrome owns the desktop terminal without React", () => {

@@ -6,9 +6,12 @@ import { html, LitElement } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
 import type { TranslationKey } from "../../i18n"
 import {
+	filterTasksByQuery,
 	groupTasksByWorkspace,
 	selectActiveSessions,
 	selectRecentSessions,
+	selectTimelineTasks,
+	type TaskCatalogView,
 } from "../../lib/session-catalog"
 import { runtimeLabel } from "../../lib/session-runtimes"
 import { BusTopics, emitBubbled, gcodeBus } from "../bus"
@@ -26,6 +29,8 @@ export class GcodeSidebar extends LitElement {
 	activeId: string | null = null
 
 	@state() private sessions: LitSessionSummary[] = []
+	@state() private taskView: TaskCatalogView = "workspace"
+	@state() private taskQuery = ""
 	private unsubList: (() => void) | null = null
 
 	connectedCallback(): void {
@@ -49,6 +54,10 @@ export class GcodeSidebar extends LitElement {
 		sessionStore.select(id)
 		emitBubbled(this, "gcode-session-select", { id })
 		navigate(`/session/${id}`)
+	}
+
+	private onTaskQuery(event: Event): void {
+		this.taskQuery = (event.target as HTMLInputElement).value
 	}
 
 	private renderSession(session: LitSessionSummary, compact = false) {
@@ -108,10 +117,12 @@ export class GcodeSidebar extends LitElement {
 			name: session.title,
 			projectDirectory: session.directory,
 		}))
-		const active = selectActiveSessions(catalog)
+		const filtered = filterTasksByQuery(catalog, this.taskQuery)
+		const active = selectActiveSessions(filtered)
 		const activeIds = new Set(active.map((session) => session.id))
-		const recent = selectRecentSessions(catalog, activeIds, 5)
-		const groups = groupTasksByWorkspace(catalog)
+		const recent = selectRecentSessions(filtered, activeIds, 5)
+		const timeline = selectTimelineTasks(filtered, "updated", 13)
+		const groups = groupTasksByWorkspace(filtered)
 		const byId = new Map(this.sessions.map((session) => [session.id, session]))
 		const summaries = (items: readonly { id: string }[]) =>
 			items.map((item) => byId.get(item.id)).filter((item): item is LitSessionSummary => !!item)
@@ -130,22 +141,59 @@ export class GcodeSidebar extends LitElement {
 						${this.renderIcon("automation")}<span>${this.t("litAutomations.title")}</span>
 					</a>
 				</div>
+			${this.sessions.length > 0
+					? html`
+						<div class="catalog-controls">
+							<div class="view-switch" role="tablist" aria-label="Task view">
+								<button
+									type="button"
+									role="tab"
+									aria-selected=${String(this.taskView === "workspace")}
+									data-active=${String(this.taskView === "workspace")}
+									@click=${() => (this.taskView = "workspace")}
+								>
+									Workspace
+								</button>
+								<button
+									type="button"
+									role="tab"
+									aria-selected=${String(this.taskView === "timeline")}
+									data-active=${String(this.taskView === "timeline")}
+									@click=${() => (this.taskView = "timeline")}
+								>
+									Timeline
+								</button>
+							</div>
+							<input
+								class="task-search"
+								aria-label="Search tasks"
+								placeholder="Search tasks…"
+								.value=${this.taskQuery}
+								@input=${(event: Event) => this.onTaskQuery(event)}
+							/>
+						</div>
+					`
+					: null}
 				${
 					this.sessions.length === 0
 						? html`<div class="empty">${this.t("litShell.emptySessions")}</div>`
 						: html`
-								${this.renderSection(this.t("taskCatalog.activeNow"), summaries(active))}
-								${this.renderSection("Recent", summaries(recent))}
-								${groups.length > 0 ? html`<div class="section-label">Projects</div>` : null}
-								${groups.map(
-									(group) => html`
-										<section class="project">
-											<div class="project-label">${group.label}</div>
-											<div class="section-list" role="list">${this.renderSession(summaries(group.tasks)[0]!)}</div>
-											${summaries(group.tasks).slice(1).map((session) => this.renderSession(session, true))}
-										</section>
-									`,
-								)}
+								${this.taskView === "timeline"
+									? this.renderSection("Timeline", summaries(timeline))
+									: html`
+										${this.renderSection(this.t("taskCatalog.activeNow"), summaries(active))}
+										${this.renderSection("Recent", summaries(recent))}
+										${groups.length > 0 ? html`<div class="section-label">Projects</div>` : null}
+										${groups.map(
+											(group) => html`
+												<section class="project">
+													<div class="project-label">${group.label}</div>
+													<div class="section-list" role="list">${this.renderSession(summaries(group.tasks)[0]!)}</div>
+													${summaries(group.tasks).slice(1).map((session) => this.renderSession(session, true))}
+												</section>
+											`,
+										)}
+									`}
 							`
 				}
 			</div>

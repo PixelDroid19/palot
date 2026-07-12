@@ -28,9 +28,14 @@
 	padding: 0 24px;
 }
 
-.hero-content,
-.composer-area {
+.hero-content {
+	box-sizing: border-box;
 	width: min(896px, 100%);
+}
+
+.composer-area {
+	box-sizing: border-box;
+	width: 100%;
 }
 
 .hero-content {
@@ -130,6 +135,9 @@ h1 {
 }
 
 .composer-shell {
+	box-sizing: border-box;
+	width: min(896px, 100%);
+	margin: 0 auto;
 	border: 1px solid var(--gcode-border);
 	border-radius: var(--gcode-radius);
 	background: color-mix(in srgb, var(--gcode-bg) 75%, transparent);
@@ -200,6 +208,9 @@ textarea:disabled {
 }
 
 .status-bar {
+	box-sizing: border-box;
+	width: min(896px, 100%);
+	margin: 0 auto;
 	display: flex;
 	min-width: 0;
 	align-items: center;
