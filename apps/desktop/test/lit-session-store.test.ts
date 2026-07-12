@@ -104,8 +104,6 @@ describe("lit sessionStore (shipped persistence shape)", () => {
 			title: "Configured session",
 			runtimeId: "codex",
 			directory: "/workspace",
-		})
-		sessionStore.updateMeta("configured-1", {
 			model: "gpt-5.1-codex",
 			effort: "high",
 			sandbox: "read-only",

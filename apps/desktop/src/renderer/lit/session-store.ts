@@ -209,6 +209,7 @@ class SessionStore {
 		directory?: string
 		sandbox?: string
 		model?: string
+		effort?: string
 	}): void {
 		const existing = readPayload(input.id)
 		const now = Date.now()
@@ -227,6 +228,7 @@ class SessionStore {
 				cwd: input.directory || existing?.meta?.cwd || "",
 				sandbox: input.sandbox || existing?.meta?.sandbox || "workspace-write",
 				model: input.model ?? existing?.meta?.model,
+				effort: input.effort ?? existing?.meta?.effort,
 				threadId: existing?.meta?.threadId ?? null,
 			},
 			messages: existing?.messages ?? [],

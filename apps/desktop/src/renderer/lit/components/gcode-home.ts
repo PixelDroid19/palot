@@ -20,6 +20,39 @@ const SUGGESTIONS = [
 	"Generate a knowledge base: explore the whole codebase and write or update AGENTS.md with the architecture, key modules, conventions, build/test commands, and gotchas a new contributor needs.",
 ] as const
 
+const CLI_PREFS_KEY = "gcode:cliRuntimePrefs"
+
+interface CliRuntimePrefs {
+	model: string
+	effort: string
+	sandbox: string
+}
+
+function loadCliPrefs(runtimeId: string): CliRuntimePrefs | null {
+	try {
+		const all = JSON.parse(localStorage.getItem(CLI_PREFS_KEY) || "{}") as Record<
+			string,
+			CliRuntimePrefs
+		>
+		return all[runtimeId] ?? null
+	} catch {
+		return null
+	}
+}
+
+function saveCliPrefs(runtimeId: string, prefs: CliRuntimePrefs): void {
+	try {
+		const all = JSON.parse(localStorage.getItem(CLI_PREFS_KEY) || "{}") as Record<
+			string,
+			CliRuntimePrefs
+		>
+		all[runtimeId] = prefs
+		localStorage.setItem(CLI_PREFS_KEY, JSON.stringify(all))
+	} catch {
+		// Preferences are convenience state; a storage failure must not block launch.
+	}
+}
+
 @customElement("gcode-home")
 export class GcodeHome extends LitElement {
 	static styles = styles
@@ -27,6 +60,9 @@ export class GcodeHome extends LitElement {
 
 	@state() private runtimes: SessionRuntimeDescriptor[] = []
 	@state() private runtimeId = ""
+	@state() private modelId = ""
+	@state() private effort = ""
+	@state() private sandbox = "read-only"
 	@state() private cwd = ""
 	@state() private draft = ""
 	@state() private busy = false
@@ -47,9 +83,69 @@ export class GcodeHome extends LitElement {
 	}
 
 	private syncProjectDirectory(): void {
-		if (this.cwd) return
-		const project = sessionStore.list().find((session) => session.directory)
-		if (project?.directory) this.cwd = project.directory
+		const projects = sessionStore
+			.list()
+			.filter((session) => !!session.directory)
+			.sort((a, b) => b.updatedAt - a.updatedAt)
+		const selected = projects.find((session) => session.directory === this.cwd) ?? projects[0]
+		const next = selected?.directory ?? ""
+		if (next !== this.cwd) this.cwd = next
+	}
+
+	private projectName(): string {
+		const normalized = this.cwd.replaceAll("\\", "/").replace(/\/+$/, "")
+		return normalized.split("/").pop() || ""
+	}
+
+	private selectedRuntime(): SessionRuntimeDescriptor | undefined {
+		return this.runtimes.find((runtime) => runtime.id === this.runtimeId)
+	}
+
+	private selectedModel() {
+		const runtime = this.selectedRuntime()
+		return runtime?.models.find((model) => model.slug === this.modelId) ?? runtime?.models[0]
+	}
+
+	private syncRuntimeConfig(): void {
+		const model = this.selectedModel()
+		if (!model) {
+			this.modelId = ""
+			this.effort = ""
+			return
+		}
+		if (this.modelId !== model.slug) this.modelId = model.slug
+		if (!model.efforts.includes(this.effort)) {
+			this.effort = model.defaultEffort || model.efforts[0] || ""
+		}
+	}
+
+	private restoreRuntimePrefs(runtimeId: string): void {
+		const prefs = loadCliPrefs(runtimeId)
+		this.modelId = prefs?.model ?? ""
+		this.effort = prefs?.effort ?? ""
+		this.sandbox = prefs?.sandbox ?? "read-only"
+		this.syncRuntimeConfig()
+	}
+
+	private persistRuntimePrefs(): void {
+		if (!this.runtimeId) return
+		saveCliPrefs(this.runtimeId, {
+			model: this.modelId,
+			effort: this.effort,
+			sandbox: this.sandbox,
+		})
+	}
+
+	private onRuntimeChange(runtimeId: string): void {
+		this.runtimeId = runtimeId
+		this.restoreRuntimePrefs(runtimeId)
+	}
+
+	private onModelChange(modelId: string): void {
+		this.modelId = modelId
+		this.effort = ""
+		this.syncRuntimeConfig()
+		this.persistRuntimePrefs()
 	}
 
 	private async loadRuntimes(): Promise<void> {
@@ -74,6 +170,7 @@ export class GcodeHome extends LitElement {
 			const installed = list.find((runtime) => runtime.installed)
 			if (installed) this.runtimeId = installed.id
 			else if (list[0]) this.runtimeId = list[0].id
+			this.restoreRuntimePrefs(this.runtimeId)
 		} catch (err) {
 			this.runtimes = []
 			this.error = err instanceof Error ? err.message : String(err)
@@ -97,7 +194,12 @@ export class GcodeHome extends LitElement {
 							open: (
 								sessionId: string,
 								runtimeId: string,
-								options: { cwd: string; sandbox?: string },
+								options: {
+									cwd: string
+									sandbox?: string
+									model?: string
+									reasoningEffort?: string
+								},
 							) => Promise<unknown>
 						}
 					}
@@ -106,15 +208,21 @@ export class GcodeHome extends LitElement {
 			if (!bridge?.agentSession) {
 				throw new Error("Desktop agentSession bridge is required for CLI sessions.")
 			}
+			this.persistRuntimePrefs()
 			sessionStore.upsertAndPersist({
 				id,
 				title: this.locale.t("litShell.newSessionTitle"),
 				runtimeId: this.runtimeId,
 				directory: this.cwd,
+				model: this.modelId || undefined,
+				effort: this.effort || undefined,
+				sandbox: this.sandbox,
 			})
 			await bridge.agentSession.open(id, this.runtimeId, {
 				cwd: this.cwd,
-				sandbox: "workspace-write",
+				sandbox: this.sandbox,
+				model: this.modelId || undefined,
+				reasoningEffort: this.effort || undefined,
 			})
 			sessionStore.select(id)
 			this.draft = ""
@@ -145,12 +253,17 @@ export class GcodeHome extends LitElement {
 
 	render() {
 		const canCompose = !!this.runtimeId && !!this.cwd && !this.busy
+		const runtime = this.selectedRuntime()
+		const model = this.selectedModel()
 		return html`
 			<section class="home" aria-label=${this.locale.t("litShell.newSession")}>
 				<div class="hero-area">
 					<div class="hero-content">
 						<div class="wordmark"><gcode-wordmark></gcode-wordmark></div>
-						<div class="hero-heading"><h1>Build what's next</h1></div>
+						<div class="hero-heading">
+							<h1>Build what's next</h1>
+							${this.projectName() ? html`<p class="project-name">${this.projectName()}</p>` : null}
+						</div>
 						<div class="suggestions">
 							${SUGGESTIONS.map(
 								(suggestion, index) => html`
@@ -180,33 +293,98 @@ export class GcodeHome extends LitElement {
 								this.draft = (event.target as HTMLTextAreaElement).value
 							}}
 						></textarea>
-						${
-							this.runtimeId
-								? html`
-									<div class="launch-controls">
-										<label>
-											<span>${this.locale.t("runtimePicker.runtime")}</span>
-											<select
-												.value=${this.runtimeId}
+						${runtime && (runtime.models.length > 0 || runtime.capabilities.sandboxModes)
+							? html`
+								<div class="config-toolbar" aria-label="Session configuration">
+										${runtime.models.length > 0
+											? html`<select
+												aria-label="Model"
+												.value=${this.modelId}
 												?disabled=${this.busy}
-												@change=${(event: Event) => {
-													this.runtimeId = (event.target as HTMLSelectElement).value
-												}}
+												@change=${(event: Event) =>
+													this.onModelChange((event.target as HTMLSelectElement).value)}
 											>
-												${this.runtimes.map(
-													(runtime) => html`
-														<option value=${runtime.id} ?selected=${runtime.id === this.runtimeId}>
-															${runtime.displayName || runtime.id}
-														</option>
-													`,
+												${runtime.models.map(
+													(modelOption) => html`<option
+														value=${modelOption.slug}
+														?selected=${modelOption.slug === this.modelId}
+													>
+														${modelOption.label}
+													</option>`,
 												)}
-											</select>
-										</label>
+											</select>`
+											: null}
+										${runtime.capabilities.sandboxModes
+											? html`<select
+												aria-label="Sandbox mode"
+												.value=${this.sandbox}
+												?disabled=${this.busy}
+													@change=${(event: Event) => {
+														this.sandbox = (event.target as HTMLSelectElement).value
+														this.persistRuntimePrefs()
+													}}
+											>
+												<option value="plan">Plan</option>
+												<option value="read-only">Read only</option>
+												<option value="workspace-write">Workspace write</option>
+												<option value="danger-full-access">Full access</option>
+											</select>`
+											: null}
+										${model?.efforts.length
+											? html`<select
+												aria-label="Reasoning effort"
+												.value=${this.effort}
+												?disabled=${this.busy}
+													@change=${(event: Event) => {
+														this.effort = (event.target as HTMLSelectElement).value
+														this.persistRuntimePrefs()
+													}}
+											>
+												${model.efforts.map(
+													(effort) => html`<option value=${effort} ?selected=${effort === this.effort}>
+														${effort.charAt(0).toUpperCase() + effort.slice(1)}
+													</option>`,
+												)}
+											</select>`
+											: null}
 									</div>
 								`
+								: null}
+						</div>
+						${
+							runtime
+								? html`<div class="status-bar">
+									<span class="status-local"><span class="status-dot"></span>Local</span>
+									<select
+										class="runtime-select"
+										aria-label=${this.locale.t("runtimePicker.runtime")}
+										.value=${this.runtimeId}
+										?disabled=${this.busy}
+										@change=${(event: Event) =>
+											this.onRuntimeChange((event.target as HTMLSelectElement).value)}
+									>
+										${this.runtimes
+											.filter((runtimeOption) => runtimeOption.installed)
+											.map(
+												(runtimeOption) => html`<option
+													value=${runtimeOption.id}
+													?selected=${runtimeOption.id === this.runtimeId}
+												>
+													${runtimeOption.displayName || runtimeOption.id}
+												</option>`,
+											)}
+									</select>
+								</div>`
 								: null
 						}
-					</div>
+					${
+						!this.cwd
+							? html`<p class="workspace-empty">
+								No workspaces visible yet. Add a project folder, or restore hidden projects from the sidebar —
+								Claude, Codex, and OpenCode share the same workspace list.
+							</p>`
+							: null
+					}
 					${
 						this.error
 							? html`<p class="error" role="alert">${this.error}</p>`
