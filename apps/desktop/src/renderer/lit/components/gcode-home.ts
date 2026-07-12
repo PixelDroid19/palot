@@ -7,6 +7,7 @@
 import { html, LitElement } from "lit"
 import { customElement, state } from "lit/decorators.js"
 import type { SessionRuntimeDescriptor } from "../../../preload/api"
+import { BusTopics, gcodeBus } from "../bus"
 import { LocaleController } from "../locale-controller"
 import { navigate } from "../router"
 import { sessionStore } from "../session-store"
@@ -30,10 +31,25 @@ export class GcodeHome extends LitElement {
 	@state() private draft = ""
 	@state() private busy = false
 	@state() private error = ""
+	private unsubSessions: (() => void) | null = null
 
 	connectedCallback(): void {
 		super.connectedCallback()
+		this.syncProjectDirectory()
+		this.unsubSessions = gcodeBus.subscribe(BusTopics.sessionListChanged, () => this.syncProjectDirectory())
 		void this.loadRuntimes()
+	}
+
+	disconnectedCallback(): void {
+		this.unsubSessions?.()
+		this.unsubSessions = null
+		super.disconnectedCallback()
+	}
+
+	private syncProjectDirectory(): void {
+		if (this.cwd) return
+		const project = sessionStore.list().find((session) => session.directory)
+		if (project?.directory) this.cwd = project.directory
 	}
 
 	private async loadRuntimes(): Promise<void> {
@@ -61,18 +77,6 @@ export class GcodeHome extends LitElement {
 		} catch (err) {
 			this.runtimes = []
 			this.error = err instanceof Error ? err.message : String(err)
-		}
-	}
-
-	private async pickDir(): Promise<void> {
-		try {
-			const g = (
-				window as unknown as { gcode?: { pickDirectory?: () => Promise<string | null> } }
-			).gcode
-			const dir = await g?.pickDirectory?.()
-			if (dir) this.cwd = dir
-		} catch {
-			// Native picker cancellation is an expected no-op.
 		}
 	}
 
@@ -190,19 +194,6 @@ export class GcodeHome extends LitElement {
 												)}
 											</select>
 										</label>
-										<label class="directory-control">
-											<span>${this.locale.t("subagent.workingDirLabel")}</span>
-											<input
-												.value=${this.cwd}
-												placeholder=${this.locale.t("subagent.workingDirPlaceholder")}
-												@input=${(event: Event) => {
-													this.cwd = (event.target as HTMLInputElement).value
-												}}
-											/>
-											<button type="button" class="pick-directory" @click=${() => this.pickDir()}>
-												Browse
-											</button>
-										</label>
 									</div>
 								`
 								: null
@@ -225,12 +216,7 @@ export class GcodeHome extends LitElement {
 					${
 						this.error
 							? html`<p class="error" role="alert">${this.error}</p>`
-							: html`
-								<p class="workspace-hint">
-									No workspaces visible yet. Add a project folder, or restore hidden projects from the
-									sidebar — Claude, Codex, and OpenCode share the same workspace list.
-								</p>
-							`
+							: null
 					}
 				</div>
 			</section>
