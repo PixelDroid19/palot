@@ -155,6 +155,8 @@ describe("Lit app-frame parity contract", () => {
 	test("onboarding uses React-like progress and a centered step surface", () => {
 		const onboarding = read("lit/components/gcode-onboarding.ts")
 		const styles = read("lit/components/gcode-onboarding.scss")
+		expect(onboarding).toContain("Your native workspace for multiple coding runtimes.")
+		expect(onboarding).toContain("GCode unifies OpenCode, Codex, Claude Code")
 		expect(onboarding).toContain('class="progress"')
 		expect(onboarding).toContain('class="step-area"')
 		expect(onboarding).toContain("Get Started")

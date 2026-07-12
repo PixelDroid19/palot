@@ -79,6 +79,43 @@
 	margin-bottom: 8px;
 }
 
+.welcome-content {
+	display: flex;
+	width: min(448px, 100%);
+	flex-direction: column;
+	gap: 32px;
+	text-align: center;
+}
+
+.welcome-content .wordmark {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 0;
+}
+
+.welcome-content .wordmark gcode-wordmark {
+	height: 24px;
+	width: auto;
+}
+
+.welcome-description {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.welcome-lead {
+	color: var(--gcode-fg-muted);
+	font-size: 18px;
+	line-height: 1.4;
+}
+
+.welcome-body {
+	color: color-mix(in srgb, var(--gcode-fg-muted) 70%, transparent);
+	font-size: 14px;
+	line-height: 1.6;
+}
+
 h1,
 p {
 	margin: 0;
@@ -103,6 +140,22 @@ h1 {
 	align-items: center;
 	gap: 12px;
 	margin-top: 8px;
+}
+
+.welcome-cta {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.welcome-cta svg {
+	width: 16px;
+	height: 16px;
+	fill: none;
+	stroke: currentcolor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.5;
 }
 
 button {

@@ -326,6 +326,29 @@ export class GcodeOnboarding extends LitElement {
 		`
 	}
 
+	private renderWelcomeStep() {
+		return html`
+			<div class="welcome-content">
+				<div class="wordmark"><gcode-wordmark></gcode-wordmark></div>
+				<div class="welcome-description">
+					<p class="welcome-lead">Your native workspace for multiple coding runtimes.</p>
+					<p class="welcome-body">
+						GCode unifies OpenCode, Codex, Claude Code, and other adapters behind one session UI — real-time
+						streaming, native notifications, and multi-session support without making any single tool the
+						product base.
+					</p>
+				</div>
+				<div class="actions">
+					<button type="button" class="primary welcome-cta" @click=${() => this.advance()}>
+						Get Started
+						<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" /></svg>
+					</button>
+					<p class="hint">This takes less than a minute.</p>
+				</div>
+			</div>
+		`
+	}
+
 	render() {
 		const titles = [
 			this.locale.t("litOnboarding.welcomeTitle"),
@@ -355,28 +378,29 @@ export class GcodeOnboarding extends LitElement {
 				</div>
 				<main class="step-area">
 					<section class="step-content">
-						${this.step === 0 ? html`<gcode-wordmark class="wordmark"></gcode-wordmark>` : null}
-						<h1>${titles[this.step]}</h1>
-						<p class="body">${bodies[this.step]}</p>
-						${this.step === 1 ? this.renderRuntimesStep() : null}
-						${this.step === 2 ? this.renderMigrationStep() : null}
-						${this.error ? html`<div class="error">${this.error}</div>` : null}
-						<div class="actions">
-							${
-								this.step < 3
-									? html`
-											<button type="button" class="primary" @click=${() => this.advance()}>
-												${this.step === 0 ? "Get Started" : this.locale.t("litOnboarding.next")} →
-											</button>
-										`
-									: html`
-											<button type="button" class="primary" @click=${() => this.finish()}>
-												${this.locale.t("litOnboarding.finish")}
-											</button>
-										`
-							}
-							${this.step === 0 ? html`<p class="hint">This takes less than a minute.</p>` : null}
-						</div>
+						${this.step === 0
+							? this.renderWelcomeStep()
+							: html`
+									<h1>${titles[this.step]}</h1>
+									<p class="body">${bodies[this.step]}</p>
+									${this.step === 1 ? this.renderRuntimesStep() : null}
+									${this.step === 2 ? this.renderMigrationStep() : null}
+									${this.error ? html`<div class="error">${this.error}</div>` : null}
+									<div class="actions">
+										${this.step < 3
+											? html`
+													<button type="button" class="primary" @click=${() => this.advance()}>
+														${this.locale.t("litOnboarding.next")} →
+													</button>
+												`
+												: html`
+														<button type="button" class="primary" @click=${() => this.finish()}>
+															${this.locale.t("litOnboarding.finish")}
+														</button>
+													`}
+									</div>
+								`
+						}
 					</section>
 				</main>
 			</div>
